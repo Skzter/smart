@@ -1,0 +1,4 @@
+version: "3"
+
+vars:
+  BIN_PATH: "{{.PWD}}/win/bin"

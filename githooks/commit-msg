@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Get the commit message
+commit_msg=$(cat "$1")
+
+# Get current branch name
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+
+# Extract issue number from branch name (format: number-feature-description)
+issue_number=$(echo "$branch_name" | sed -n 's/^\([0-9]\+\)-.*/\1/p')
+
+# Skip validation for main/master branches or if no issue number found
+if [ "$branch_name" = "main" ] || [ "$branch_name" = "master" ] || [ -z "$issue_number" ]; then
+	echo "✅ Skipping commit message validation for branch '$branch_name' or no issue number found."
+    exit 0
+fi
+
+# Conventional commit pattern with issue number as scope
+# Format: type(scope): description
+pattern="^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)\(#$issue_number\): .+"
+
+# Check if commit message matches the pattern
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo "❌ Invalid commit message format!"
+    echo ""
+    echo "Expected format: type(#$issue_number): description"
+    echo "Where type is one of: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+    echo ""
+    echo "Example for branch '$branch_name':"
+    echo "  feat($issue_number): add user authentication"
+    echo "  fix($issue_number): resolve login validation bug"
+    echo ""
+    echo "Your message: $commit_msg"
+    exit 1
+fi
+
+echo "✅ Commit message format is valid"
+exit 0

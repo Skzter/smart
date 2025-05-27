@@ -1,0 +1,1 @@
+# S.M.A.R.T - Software for Mockserver and Automated Resource Testing

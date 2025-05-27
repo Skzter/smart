@@ -1,0 +1,60 @@
+version: "3"
+
+includes:
+  local: ./Taskfile_{{OS}}.yml
+
+env:
+  GOPRIVATE: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
+  LPATH: "{{.BIN_PATH}}:{{.PATH}}"
+
+vars:
+  VERSION: '{{now | date "15-04-05"}}-debug'
+
+tasks:
+  setup:
+    desc: "Setup the project"
+    cmds:
+      - git config core.hooksPath githooks
+      - go mod tidy
+
+  build:
+    desc: "Build the project"
+    cmds:
+      - cmd: go build -o bin/suproxy -ldflags "-X 'main.Version=${VERSION}'" cmd/suproxy/main.go 
+        platforms: [linux, darwin]
+      - cmd: go build -o bin/autotester -ldflags "-X 'main.Version=${VERSION}'" cmd/autotester/main.go
+        platforms: [linux, darwin]
+      - cmd: go build -o bin/suproxy.exe -ldflags "-X 'main.Version=${VERSION}'" cmd/suproxy/main.go
+        platforms: [windows/amd64]
+      - cmd: go build -o bin/autotester.exe -ldflags "-X 'main.Version=${VERSION}'" cmd/autotester/main.go
+        platforms: [windows/amd64]
+
+  run-suproxy:
+    desc: "Run the project"
+    cmds:
+      - go run cmd/suproxy/main.go
+
+  run-autotester:
+    desc: "Run the project"
+    cmds:
+      - go run cmd/autotester/main.go
+
+  test:
+    desc: "Run the tests"
+    cmds:
+      - go test -v ./...
+
+  lint:
+    desc: "Run the lint"
+    cmds:
+      - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
+    ignore_error: false
+
+  pre-commit:
+    desc: "Run the pre-commit"
+    cmds:
+      - task: lint
+      - task: test
+
+
+
