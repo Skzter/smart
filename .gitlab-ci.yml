@@ -1,5 +1,4 @@
 stages:
-  - prepare
   - testing
 
 variables:
@@ -8,26 +7,12 @@ variables:
 default:
   image: 'golang:$GO_VERSION'
 
-.go-cache:
-  variables:
-    GOPATH: $CI_PROJECT_DIR/.go
-  before_script:
-    - mkdir -p .go
-  cache:
-    paths:
-        - .go/pkg/mod/
-
 lint:
   stage: testing
-  extends:
-    - .go-cache
-
   script:
     - ./bin/task lint
 
 unit_test:
   stage: testing
-  extends:
-    - .go-cache
   script:
     - ./bin/task test
