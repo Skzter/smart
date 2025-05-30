@@ -21,6 +21,7 @@ autotester
 coverage.*
 *.coverprofile
 profile.cov
+.gitlab-ci-local
 
 # Go workspace file
 go.work
