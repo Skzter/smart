@@ -5,7 +5,9 @@ OS=$(uname -s)
 ARCH=$(uname -m)
 
 # Determine the correct task binary to use
-if [ "$ARCH" = "arm64" ]; then
+if command -v task </dev/null 2>&1; then
+    TASK_BIN="task"
+elif [ "$ARCH" = "arm64" ]; then
     TASK_BIN="./bin/arm/task"
 elif [ "$OS" = "Linux" ]; then
     TASK_BIN="./bin/task"

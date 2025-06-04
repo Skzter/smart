@@ -15,19 +15,32 @@ tasks:
     desc: "Setup the project"
     cmds:
       - git config core.hooksPath githooks
-      - go mod tidy
+      - go mod download
 
   build:
     desc: "Build the project"
     cmds:
-      - cmd: go build -o bin/suproxy -ldflags "-X 'main.Version=${VERSION}'" cmd/suproxy/main.go 
+      - cmd: go build -o bin/suproxy -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
         platforms: [linux, darwin]
-      - cmd: go build -o bin/autotester -ldflags "-X 'main.Version=${VERSION}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [linux, darwin]
-      - cmd: go build -o bin/suproxy.exe -ldflags "-X 'main.Version=${VERSION}'" cmd/suproxy/main.go
+      - cmd: go build -o bin/suproxy.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
         platforms: [windows/amd64]
-      - cmd: go build -o bin/autotester.exe -ldflags "-X 'main.Version=${VERSION}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
+
+  build-pipeline:
+    desc: "Use in build job of pipeline to make production build binaries"
+    vars:
+      BUILD_BRANCH:
+        sh: git rev-parse --abbrev-ref HEAD
+      BUILD_DATE:
+        sh: date +"%Y-%m-%d-%H:%M:%S"
+      VERSION: '{{.BUILD_BRANCH}}-{{.BUILD_DATE}}'
+    cmds:
+      - echo {{.VERSION}}
+      - CGO_ENABLED=0 go build -o build/suproxy -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - CGO_ENABLED=0 go build -o build/autotester -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
 
   run-suproxy:
     desc: "Run the project"
