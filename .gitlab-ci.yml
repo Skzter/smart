@@ -1,0 +1,65 @@
+stages:
+  - prepare
+  - testing
+  - build
+  - deploy
+
+variables:
+  GO_VERSION: 1.24
+
+default:
+  image: golang:$GO_VERSION
+
+.go_cache:
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+  rules:
+    - if: $GITLAB_CI == "false"
+      when: never
+    - when: always
+  before_script:
+    - mkdir -p .go
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    fallback_keys:
+      - $CI_DEFAULT_BRANCH
+    paths:
+      - .go/pkg/mod/
+
+go_mod_download:
+  stage: prepare
+  extends: .go_cache
+  script:
+    - ./bin/task setup
+
+lint_go:
+  stage: testing
+  extends: .go_cache
+  script:
+    - ./bin/task lint
+
+unit_test_go:
+  stage: testing
+  extends: .go_cache
+  script:
+    - ./bin/task test
+
+build_go_artifacts:
+  stage: build
+  extends: .go_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - ./bin/task build-pipeline
+  artifacts:
+    name: Go_Bin
+    paths:
+      - build/
+
+build_go_no_artifacts:
+  stage: build
+  extends: .go_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+  script:
+    - ./bin/task build-pipeline

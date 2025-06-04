@@ -1,4 +1,4 @@
 version: "3"
 
 vars:
-  BIN_PATH: "{{.PWD}}/arm/bin"
+  BIN_PATH: "{{.PWD}}/bin/arm"
