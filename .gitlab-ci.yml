@@ -14,11 +14,15 @@ default:
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
   rules:
-    - if:  $GITLAB_CI == false
+    - if: $GITLAB_CI == "false"
       when: never
+    - when: always
   before_script:
     - mkdir -p .go
   cache:
+    key: $CI_COMMIT_REF_SLUG
+    fallback_keys:
+      - $CI_DEFAULT_BRANCH
     paths:
       - .go/pkg/mod/
 
@@ -45,7 +49,6 @@ build_go_artifacts:
   extends: .go_cache
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: always
   script:
     - ./bin/task build-pipeline
   artifacts:
@@ -58,6 +61,5 @@ build_go_no_artifacts:
   extends: .go_cache
   rules:
     - if: $CI_COMMIT_BRANCH != "main"
-      when: always
   script:
     - ./bin/task build-pipeline
