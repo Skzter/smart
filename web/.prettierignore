@@ -1,5 +1,10 @@
 # Ignore artifacts:
-build
-coverage
 dist
 node_modules
+src/assets/
+.vscode/*
+!.vscode/extensions.json
+index.html
+package.json
+pnpm-*
+README.md

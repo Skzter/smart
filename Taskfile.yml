@@ -28,6 +28,12 @@ tasks:
         platforms: [windows/amd64]
       - cmd: go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
+  
+  build-frontend:
+    cmds:
+      - task: lint-frontend
+      - task: format-frontend
+      - cd web/ && pnpm run build
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -76,6 +82,7 @@ tasks:
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
