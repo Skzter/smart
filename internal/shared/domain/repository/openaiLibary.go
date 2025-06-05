@@ -12,12 +12,11 @@ import (
 )
 
 type OpenAi struct {
-	endpoint string
-	key      string
+	key string
 }
 
-func NewOpenAi(endpoint string, key string) OpenAi {
-	return OpenAi{endpoint: endpoint, key: key}
+func NewOpenAi(key string) OpenAi {
+	return OpenAi{key: key}
 }
 
 func (qa OpenAi) CreateRequest(request entity.Request, ctx context.Context) (entity.Response, error) {
@@ -29,12 +28,19 @@ func (qa OpenAi) CreateRequest(request entity.Request, ctx context.Context) (ent
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Body.UserPrompt),
 		},
-		Instructions: param.NewOpt(request.Body.SystemPrompt)}
+		Instructions: param.NewOpt(request.Body.SystemPrompt),
+		Model:        request.Model,
+	}
 
 	resp, err := client.Responses.New(ctx, openaiRequest)
 	if err != nil {
-		return entity.Response{}, nil
+		return entity.Response{}, err
 	}
 
-	return entity.Response{Output: resp.Output[0].Content[0].Text, Id: resp.ID}, nil
+	return entity.Response{
+		Output:       resp.Output[0].Content[0].Text,
+		Id:           resp.ID,
+		Status:       string(resp.Status),
+		ErrorMessage: resp.Error.Message,
+	}, nil
 }

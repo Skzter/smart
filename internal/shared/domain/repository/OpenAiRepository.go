@@ -7,5 +7,5 @@ import (
 )
 
 type RepositoryInterface interface {
-	CreateRequest(entity.Request, context.Context) entity.Response
+	CreateRequest(entity.Request, context.Context) (entity.Response, error)
 }

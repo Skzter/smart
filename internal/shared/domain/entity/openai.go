@@ -11,6 +11,8 @@ type Request struct {
 }
 
 type Response struct {
-	Output string
-	Id     string
+	Output       string
+	Id           string
+	Status       string
+	ErrorMessage string
 }
