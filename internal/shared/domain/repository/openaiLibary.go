@@ -20,9 +20,9 @@ func NewOpenAi(endpoint string, key string) OpenAi {
 	return OpenAi{endpoint: endpoint, key: key}
 }
 
-func (OA OpenAi) CreateRequest(request entity.Request, ctx context.Context) (entity.Response, error) {
+func (qa OpenAi) CreateRequest(request entity.Request, ctx context.Context) (entity.Response, error) {
 	client := openai.NewClient(
-		option.WithAPIKey(OA.key),
+		option.WithAPIKey(qa.key),
 	)
 
 	openaiRequest := responses.ResponseNewParams{
@@ -37,5 +37,4 @@ func (OA OpenAi) CreateRequest(request entity.Request, ctx context.Context) (ent
 	}
 
 	return entity.Response{Output: resp.Output[0].Content[0].Text, Id: resp.ID}, nil
-
 }
