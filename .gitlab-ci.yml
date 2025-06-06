@@ -1,7 +1,6 @@
 stages:
   - prepare
-  - static_analysis
-  - testing
+  - code_analysis_and_testing
   - build
   - deploy
 
@@ -32,13 +31,13 @@ go_mod_download:
     - ./bin/task setup
 
 lint_go:
-  stage: static_analysis
+  stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task lint
 
 static_analysis_go:
-  stage: static_analysis
+  stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task static-analysis
@@ -47,7 +46,7 @@ static_analysis_go:
       when: on_success
 
 unit_test_go:
-  stage: testing
+  stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task test
