@@ -63,6 +63,12 @@ tasks:
       - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
     ignore_error: false
 
+  static-analysis:
+    desc: "Run static code analysis tools like gosec and staticcheck"
+    cmds:
+      - go tool staticcheck -tests=false ./...
+      - go tool gosec -tests -exclude-generated ./...
+
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
