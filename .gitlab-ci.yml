@@ -63,3 +63,14 @@ build_go_no_artifacts:
     - if: $CI_COMMIT_BRANCH != "main"
   script:
     - ./bin/task build-pipeline
+
+deploy_htwk:
+  image: alpine:latest
+  stage: deploy
+  script:
+    - apk add --no-cache openssh sshpass
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PASSWORD" > ~/.ssh/ssh_password.txt
+    - chmod 600 ~/.ssh/ssh_password.txt
+    - ssh-keyscan -H 141.57.8.221 >> ~/.ssh/known_hosts
+    - sshpass -f ~/.ssh/ssh_password.txt ssh stud@141.57.8.221 'echo "Hello world!"'
