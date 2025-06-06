@@ -2,6 +2,7 @@ package OpenAIRepository
 
 import (
 	"context"
+	"errors"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 
@@ -38,9 +39,8 @@ func (qa OpenAi) CreateRequest(request entity.Request, ctx context.Context) (ent
 	}
 
 	return entity.Response{
-		Output:       resp.Output[0].Content[0].Text,
-		Id:           resp.ID,
-		Status:       string(resp.Status),
-		ErrorMessage: resp.Error.Message,
-	}, nil
+		Output: resp.Output[0].Content[0].Text,
+		Id:     resp.ID,
+		Status: string(resp.Status),
+	}, errors.New(resp.Error.Message)
 }

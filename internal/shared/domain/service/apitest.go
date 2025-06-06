@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	repo := repository.NewOpenAi("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") // Dummy Test Key
+	repo := repository.NewOpenAi("Key") // Dummy Test Key
 	request := entity.Request{
 		Model: "gpt-4o",
 		Body: entity.RequestBody{
