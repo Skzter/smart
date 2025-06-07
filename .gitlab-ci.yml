@@ -1,6 +1,6 @@
 stages:
   - prepare
-  - testing
+  - code_analysis_and_testing
   - build
   - deploy
 
@@ -10,15 +10,20 @@ variables:
 default:
   image: golang:$GO_VERSION
 
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
 .go_cache:
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
   rules:
     - if: $GITLAB_CI == "false"
       when: never
-    - when: always
-  before_script:
-    - mkdir -p .go
+    - when: on_success
   cache:
     key: $CI_COMMIT_REF_SLUG
     fallback_keys:
@@ -33,13 +38,22 @@ go_mod_download:
     - ./bin/task setup
 
 lint_go:
-  stage: testing
+  stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task lint
 
+static_analysis_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task static-analysis
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+
 unit_test_go:
-  stage: testing
+  stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task test
@@ -49,6 +63,7 @@ build_go_artifacts:
   extends: .go_cache
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   script:
     - ./bin/task build-pipeline
   artifacts:
@@ -61,6 +76,7 @@ build_go_no_artifacts:
   extends: .go_cache
   rules:
     - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
   script:
     - ./bin/task build-pipeline
 
