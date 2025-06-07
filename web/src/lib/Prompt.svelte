@@ -1,6 +1,6 @@
 <script lang="ts">
     import {Button, Input} from "flowbite-svelte";
-    let { input = $bindable(''), onsubmit } = $props();
+    let {input = $bindable(""), onsubmit} = $props();
 </script>
 
 <div class="flex">
