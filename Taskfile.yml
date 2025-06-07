@@ -63,6 +63,15 @@ tasks:
       - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
     ignore_error: false
 
+  static-analysis:
+    desc: "Run static code analysis tools like gosec and staticcheck"
+    vars:
+      GOVERSION:
+        sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
+      EXCLUDE_RULES: 'G104,G107'
+    cmds:
+      - go tool staticcheck -tests=false ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
