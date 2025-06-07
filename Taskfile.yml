@@ -71,7 +71,8 @@ tasks:
       EXCLUDE_RULES: 'G104,G107'
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir={{.EXCLUDE_DIRS}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - pwd
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
