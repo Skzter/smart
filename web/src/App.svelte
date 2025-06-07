@@ -3,21 +3,25 @@
     import viteLogo from "/vite.svg";
     import Prompt from "./lib/Prompt.svelte";
     import Box from "./lib/Box.svelte";
+    import { getResponse } from "./lib/Api.svelte.ts";
     let prompt = $state('');
     let convo = $state([]);
+
+
     function onsubmit(){
-	convo.push({ q: prompt, a: 42});
-	console.log(convo);
+	getResponse(prompt, convo);
 	prompt = '';
     }
+    $inspect(convo);
+    $inspect(prompt);
 </script>
 
 
 <div class="flex w-screen justify-center">
     <div class="flex flex-col w-8/10 gap-2">
 	{#each convo as c, i}
-	    <Box msg={c.q} name={"User"} />
-	    <Box msg={c.a} name={"Bot"} />
+	    <Box msg={c.question} name={"User"} />
+	    <Box msg={c.answer} name={"Bot"} />
 	{/each}
 	<Prompt bind:input={prompt} {onsubmit} />
     </div>
