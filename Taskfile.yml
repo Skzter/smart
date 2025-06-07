@@ -69,10 +69,9 @@ tasks:
       GOVERSION:
         sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
       EXCLUDE_RULES: 'G104,G107'
-      EXCLUDE_DIRS: 'web'
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -exclude-dir={{.EXCLUDE_DIRS}} -confidence medium -severity medium -nosec -exclude-generated -sort ./...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir={{.EXCLUDE_DIRS}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
