@@ -1,0 +1,87 @@
+openapi: 3.1.0
+info:
+  title: "Interface Frontend"
+  version: 1.0.0
+paths:
+  /api/v1:
+    post:
+      summary: "Takes user message and returns LLMs message."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestPayload'
+      responses:
+        '200':
+          description: Successful processing of the message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+components:
+  schemas:
+    RequestPayload:
+      type: object
+      required:
+        - content 
+        - context
+      properties:
+        content:
+          type: array
+          items:
+            type: object
+            required:
+              - role
+              - message 
+            properties:
+              role:
+                type: string
+                enum: [user, assistant, system]
+              message:
+                type: string
+        context:
+          type: object
+          properties:
+            identifier:
+              type: string
+
+    SuccesResponse:
+      type: object
+      properties:
+        content:
+          type: object
+          properties:
+            message:
+              type: string
+        tool_calls:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              arguments:
+                type: object
+                additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "An error occurred while processing the request."
