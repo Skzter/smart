@@ -1,0 +1,32 @@
+services:
+  suproxy:
+    build:
+      context: ..
+      dockerfile: deployments/suproxy/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+
+  autotester:
+    build:
+      context: ..
+      dockerfile: deployments/autotester/Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - default
+
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    networks:
+      - default
+
+  redis:
+    image: valkey/valkey:alpine
+    networks:
+      - default
