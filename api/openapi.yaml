@@ -1,6 +1,7 @@
 openapi: 3.1.0
 info:
   title: "Interface Frontend"
+  description: api for the connection from frontend to backend.
   version: 1.0.0
 paths:
   /api/v1/chat:
@@ -32,13 +33,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-
 components:
   schemas:
     RequestPayload:
       type: object
       required:
-        - content 
+        - content
         - context
       properties:
         content:
@@ -47,7 +47,7 @@ components:
             type: object
             required:
               - role
-              - message 
+              - message
             properties:
               role:
                 type: string
@@ -60,7 +60,7 @@ components:
             identifier:
               type: string
 
-    SuccesResponse:
+    SuccessResponse:
       type: object
       properties:
         content:
