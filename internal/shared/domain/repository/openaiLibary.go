@@ -13,14 +13,19 @@ import (
 	"github.com/openai/openai-go/responses"
 )
 
+// OpenAi represents an OpenAI API client wrapper.
 type OpenAi struct {
-	key string
+	key string // API key for authentication
 }
 
+// NewOpenAi creates a new OpenAI client instance with the provided API key.
 func NewOpenAi(key string) *OpenAi {
 	return &OpenAi{key: key}
 }
 
+// CreateRequest sends a request to the OpenAI API and returns the response.
+// It takes a Request entity containing the model and prompts, a context for cancellation,
+// and a logger for error reporting.
 func (qa *OpenAi) CreateRequest(request entity.Request, ctx context.Context, logger *slog.Logger) (entity.Response, error) {
 	client := openai.NewClient(
 		option.WithAPIKey(qa.key),
