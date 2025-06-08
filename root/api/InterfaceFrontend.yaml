@@ -3,7 +3,7 @@ info:
   title: "Interface Frontend"
   version: 1.0.0
 paths:
-  /api/v1:
+  /api/v1/chat:
     post:
       summary: "Takes user message and returns LLMs message."
       requestBody:
