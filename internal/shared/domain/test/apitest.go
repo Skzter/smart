@@ -21,39 +21,40 @@ func main() {
 
 	service := service.NewService(
 		repository.NewOpenAi(apiKey),
-		"This is a test, answer however you like to future Requests",
-		"gpt-4o",
+		"You are a helpful AI assistant. Please provide clear and concise responses.",
+		"gpt-4",
 		logger,
 	)
 
-	// Simplte request test
-	//
-	// resp, err := service.RequestWithoutSession("Pleae tell me about diffren services Check24 offers")
-
-	// Conversation test
-	// logger.Info("Creating conversation")
-	conv := service.CreateConversation()
-	// logger.Info("Sending conversation request to OpenAI")
-	// conv.Request("The secret number is 24. Remember this.")
-	resp, err := conv.Request("what is the secret number?")
-
-	/*
-		repo := repository.NewOpenAi(apiKey)
-		request := entity.Request{
-			Model: "gpt-4o",
-			Body: entity.RequestBody{
-				UserPrompt: "Please generate test scenarios for my web application that validate core functionalities and edge cases.",
-				SystemPrompt: "You are a testing assistant that specializes in creating comprehensive test cases for web applications." +
-					"Focus on generating clear, specific, and actionable test scenarios that cover both happy paths and edge cases.",
-			},
-		}
-		logger.Info("Sending request to OpenAI")
-		resp, err := repo.CreateRequest(request, context.Background(), logger)
-	*/
-
+	// Test single request functionality
+	logger.Info("Testing single request")
+	resp, err := service.RequestWithoutSession("What is the capital of France?")
 	if err != nil {
+		logger.Error("Single request failed", "error", err)
 		return
 	}
-	logger.Info("Received response", "status", resp.Status, "id", resp.Id)
-	println(resp.Output)
+	logger.Info("Single request response", "status", resp.Status, "id", resp.Id)
+	println("Single Request Response:", resp.Output)
+
+	// Test conversation functionality
+	logger.Info("Testing conversation")
+	conv := service.CreateConversation()
+
+	// First conversation message
+	resp, err = conv.Request("Remember this fact: The speed of light is 299,792 kilometers per second.")
+	if err != nil {
+		logger.Error("Conversation first message failed", "error", err)
+		return
+	}
+	logger.Info("First conversation response", "status", resp.Status, "id", resp.Id)
+	println("First Response:", resp.Output)
+
+	// Follow-up conversation message
+	resp, err = conv.Request("What fact did I just tell you about speed?")
+	if err != nil {
+		logger.Error("Conversation follow-up failed", "error", err)
+		return
+	}
+	logger.Info("Follow-up conversation response", "status", resp.Status, "id", resp.Id)
+	println("Follow-up Response:", resp.Output)
 }
