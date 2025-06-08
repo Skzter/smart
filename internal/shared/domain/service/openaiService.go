@@ -27,7 +27,10 @@ func NewService(api repository.RepositoryInterface, systemPrompt string, model s
 func (c *Client) RequestWithoutSession(prompt string) (entity.Response, error) {
 	request := entity.NewRequest(c.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.systemPrompt})
 
-	c.logger.Info("Sending simple request to OpenAI")
+	c.logger.Info("Sending simple request to OpenAI",
+		"model", c.model,
+		"prompt", prompt,
+		"system_prompt", c.systemPrompt)
 	return c.api.CreateRequest(request, context.Background(), c.logger)
 }
 
@@ -39,10 +42,17 @@ func (c *Conversation) Request(prompt string) (entity.Response, error) {
 	var resp entity.Response
 	var err error
 	if c.lastID == "" {
-		c.client.logger.Info("No previous successful request, sending simple request")
+		c.client.logger.Info("Starting new conversation",
+			"model", c.client.model,
+			"prompt", prompt,
+			"system_prompt", c.client.systemPrompt)
 		resp, err = c.client.RequestWithoutSession(prompt)
 	} else {
-		c.client.logger.Info("Sending conversation request to OpenAI")
+		c.client.logger.Info("Continuing conversation",
+			"model", c.client.model,
+			"prompt", prompt,
+			"system_prompt", c.client.systemPrompt,
+			"previous_response_id", c.lastID)
 		request := entity.NewRequestSession(c.client.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.client.systemPrompt}, c.lastID)
 
 		resp, err = c.client.api.CreateRequest(request, context.Background(), c.client.logger)
