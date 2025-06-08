@@ -15,7 +15,7 @@ tasks:
     desc: "Setup the project"
     cmds:
       - git config core.hooksPath githooks
-      - go mod download
+      - go mod tidy
 
   build:
     desc: "Build the project"
@@ -36,7 +36,7 @@ tasks:
         sh: git rev-parse --abbrev-ref HEAD
       BUILD_DATE:
         sh: date +"%Y-%m-%d-%H:%M:%S"
-      VERSION: '{{.BUILD_BRANCH}}-{{.BUILD_DATE}}'
+      VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
     cmds:
       - echo {{.VERSION}}
       - CGO_ENABLED=0 go build -o build/suproxy -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
@@ -44,13 +44,17 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
+    env:
+      APP_CMD: "./cmd/suproxy"
     cmds:
-      - go run cmd/suproxy/main.go
+      - go tool air
 
   run-autotester:
     desc: "Run the project"
+    env:
+      APP_CMD: "./cmd/autotester"
     cmds:
-      - go run cmd/autotester/main.go
+      - go tool air
 
   test:
     desc: "Run the tests"
@@ -63,11 +67,17 @@ tasks:
       - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
     ignore_error: false
 
+  static-analysis:
+    desc: "Run static code analysis tools like gosec and staticcheck"
+    vars:
+      GOVERSION:
+        sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
+      EXCLUDE_RULES: "G104,G107"
+    cmds:
+      - go tool staticcheck -tests=false ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
       - task: lint
       - task: test
-
-
-
