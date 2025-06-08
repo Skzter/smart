@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -38,14 +38,13 @@ func (qa *OpenAi) CreateRequest(request entity.Request, ctx context.Context, log
 	}
 
 	resp, err := client.Responses.New(ctx, openaiRequest)
-	if err != nil || resp.Error.Message != "" {
-		logger.Error("Failed to create request", "error", err)
-		return entity.Response{}, err
+	if err != nil {
+		logger.Error("OpenAI API call failed", "err", err)
+		return entity.Response{}, fmt.Errorf("openai request: %w", err)
 	}
-
 	if resp.Error.Message != "" {
-		logger.Error("Request returned error", "error", err)
-		return entity.Response{}, errors.New(resp.Error.Message)
+		logger.Error("OpenAI returned error", "msg", resp.Error.Message, "code", resp.Error.Code)
+		return entity.Response{}, fmt.Errorf("openai api error: %s", resp.Error.Message)
 	}
 
 	return entity.Response{

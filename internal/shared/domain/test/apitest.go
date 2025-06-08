@@ -28,7 +28,7 @@ func main() {
 
 	// Simplte request test
 	//
-	// resp, err := service.SimpleRequest("Pleae tell me about diffren services Check24 offers")
+	// resp, err := service.RequestWithoutSession("Pleae tell me about diffren services Check24 offers")
 
 	// Conversation test
 	// logger.Info("Creating conversation")
