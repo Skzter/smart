@@ -21,16 +21,16 @@ type RepositoryInterface interface {
 	CreateRequest(context.Context, entity.Request) (entity.Response, error)
 }
 
-// OpenAi represents an OpenAI API client wrapper and logger-system
-type OpenAi struct {
+// OpenAiRepository represents an OpenAI API client wrapper and logger-system
+type OpenAiRepository struct {
 	key    string       // API key for authentication
 	logger *slog.Logger // logger for Errors and Responses
 	client openai.Client
 }
 
-// NewOpenAi creates a new OpenAI client instance with the provided API key.
-func NewOpenAi(logger *slog.Logger, key string) *OpenAi {
-	return &OpenAi{
+// NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
+func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAiRepository {
+	return &OpenAiRepository{
 		key:    key,
 		logger: logger,
 		client: openai.NewClient(
@@ -41,7 +41,7 @@ func NewOpenAi(logger *slog.Logger, key string) *OpenAi {
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
-func (qa *OpenAi) CreateRequest(ctx context.Context, request entity.Request) (entity.Response, error) {
+func (qa *OpenAiRepository) CreateRequest(ctx context.Context, request entity.Request) (entity.Response, error) {
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Body.UserPrompt),
@@ -64,7 +64,7 @@ func (qa *OpenAi) CreateRequest(ctx context.Context, request entity.Request) (en
 	}
 
 	return entity.Response{
-		Output: resp.Output[0].Content[0].Text,
-		Id:     resp.ID,
+		Text: resp.Output[0].Content[0].Text,
+		Id:   resp.ID,
 	}, nil
 }

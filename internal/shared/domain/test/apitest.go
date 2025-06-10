@@ -21,7 +21,7 @@ func main() {
 	apiKey := config.GetOpenAIKey()
 
 	service := service.NewService(
-		repository.NewOpenAi(logger, apiKey),
+		repository.NewOpenAiRepository(logger, apiKey),
 		"You are a helpful AI assistant. Please provide clear and concise responses.",
 		"gpt-4",
 		logger,

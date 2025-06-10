@@ -16,8 +16,8 @@ type Service struct {
 }
 
 type Conversation struct {
-	lastID string
-	client *Service
+	lastID  string
+	service *Service
 }
 
 func NewService(api repository.RepositoryInterface, systemPrompt string, model string, logger *slog.Logger) Service {
@@ -36,36 +36,36 @@ func (c *Service) RequestWithoutSession(prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return resp.Output, err
+	return resp.Text, err
 }
 
 func (c *Service) CreateConversation() Conversation {
-	return Conversation{client: c}
+	return Conversation{service: c}
 }
 
 func (c *Conversation) Request(prompt string) (string, error) {
 	var resp entity.Response
 	var err error
 	if c.lastID == "" {
-		request := entity.NewRequest(c.client.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.client.systemPrompt})
-		c.client.logger.Info("Starting new conversation",
-			"model", c.client.model,
+		request := entity.NewRequest(c.service.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.service.systemPrompt})
+		c.service.logger.Info("Starting new conversation",
+			"model", c.service.model,
 			"prompt", prompt,
-			"system_prompt", c.client.systemPrompt)
-		resp, err = c.client.api.CreateRequest(context.Background(), request)
+			"system_prompt", c.service.systemPrompt)
+		resp, err = c.service.api.CreateRequest(context.Background(), request)
 	} else {
-		c.client.logger.Info("Continuing conversation",
-			"model", c.client.model,
+		c.service.logger.Info("Continuing conversation",
+			"model", c.service.model,
 			"prompt", prompt,
-			"system_prompt", c.client.systemPrompt,
+			"system_prompt", c.service.systemPrompt,
 			"previous_response_id", c.lastID)
-		request := entity.NewRequestSession(c.client.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.client.systemPrompt}, c.lastID)
+		request := entity.NewRequestSession(c.service.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.service.systemPrompt}, c.lastID)
 
-		resp, err = c.client.api.CreateRequest(context.Background(), request)
+		resp, err = c.service.api.CreateRequest(context.Background(), request)
 	}
 
 	if err == nil {
 		c.lastID = resp.Id
 	}
-	return resp.Output, err
+	return resp.Text, err
 }
