@@ -3,21 +3,21 @@
     let text_align = $state("");
     let bg_col = $state("");
     let padding = $state("");
-    let width = $state("");
+    let width = "w-fit";
     let direction = $state("");
+    
     if (name == "User") {
         text_align = "text-end";
         bg_col = "bg-sky-300";
         padding = "p-2";
-        width = "w-fit";
         direction = "justify-end";
     } else if (name === "Bot") {
         text_align = "text-start";
         bg_col = "bg-gray-200";
         padding = "p-2";
-        width = "w-fit";
         direction = "justify-start";
     }
+    
 </script>
 
 <div class = "flex {direction}">
