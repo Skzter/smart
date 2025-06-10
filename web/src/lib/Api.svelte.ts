@@ -16,11 +16,10 @@ const params = {
 };
 
 /**
- * Fetches data from the api
+ * Fetches data from the api and returns the data
  * @param msg - Message from the user
- * @param convo - Array of Object of the whole conversation.New message with answer get pushed to array.
  * @example
- * getResponse("Gib mir eine zufällige Buchbeschreibung", [])
+ * getResponse("Gib mir eine zufällige Buchbeschreibung")
  */
 export async function getResponse(msg: string): Promise<string> {
     try {
