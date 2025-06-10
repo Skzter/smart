@@ -8,11 +8,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-func LoadConfig(logger *slog.Logger) error {
+type ConfigLoader struct {
+	logger *slog.Logger
+}
+
+func NewConfigLoader(logger *slog.Logger) *ConfigLoader {
+	return &ConfigLoader{
+		logger: logger,
+	}
+}
+
+func (cl ConfigLoader) LoadConfig() error {
 	if err := godotenv.Load(); err != nil {
-		logger.Warn("No .env file found (using local env vars)")
+		cl.logger.Warn("No .env file found (using local env vars)")
 	} else {
-		logger.Info(".env file loaded")
+		cl.logger.Info(".env file loaded")
 	}
 
 	viper.AutomaticEnv()
@@ -22,7 +32,7 @@ func LoadConfig(logger *slog.Logger) error {
 		return errors.New("OPENAI_API_KEY is required but not set")
 	}
 
-	logger.Info("Config loaded successfully")
+	cl.logger.Info("Config loaded successfully")
 	return nil
 }
 
