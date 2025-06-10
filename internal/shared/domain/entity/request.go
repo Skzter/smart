@@ -6,3 +6,13 @@ type Request struct {
 	Body  RequestBody // The request body containing prompts
 	Id    string      // Optional session ID for conversation continuity
 }
+
+// NewRequestSession creates a new Request with a session ID for conversations.
+func NewRequestSession(model string, body RequestBody, session string) Request {
+	return Request{Model: model, Body: body, Id: session}
+}
+
+// NewRequest creates a new Request without a session ID.
+func NewRequest(model string, body RequestBody) Request {
+	return Request{Model: model, Body: body}
+}

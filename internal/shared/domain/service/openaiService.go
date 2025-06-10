@@ -31,7 +31,7 @@ func (c *Client) RequestWithoutSession(prompt string) (entity.Response, error) {
 		"model", c.model,
 		"prompt", prompt,
 		"system_prompt", c.systemPrompt)
-	return c.api.CreateRequest(request, context.Background(), c.logger)
+	return c.api.CreateRequest(context.Background(), request)
 }
 
 func (c *Client) CreateConversation() Conversation {
@@ -55,7 +55,7 @@ func (c *Conversation) Request(prompt string) (entity.Response, error) {
 			"previous_response_id", c.lastID)
 		request := entity.NewRequestSession(c.client.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.client.systemPrompt}, c.lastID)
 
-		resp, err = c.client.api.CreateRequest(request, context.Background(), c.client.logger)
+		resp, err = c.client.api.CreateRequest(context.Background(), request)
 	}
 
 	if err == nil {

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/packages/param"
 	"github.com/openai/openai-go/responses"
+
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
@@ -18,7 +18,7 @@ type RepositoryInterface interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
 	// It takes a Request entity containing the model and prompts,
 	// a context for cancellation, and a logger for error reporting.
-	CreateRequest(entity.Request, context.Context, *slog.Logger) (entity.Response, error)
+	CreateRequest(context.Context, entity.Request) (entity.Response, error)
 }
 
 // OpenAi represents an OpenAI API client wrapper and logger-system
@@ -28,13 +28,11 @@ type OpenAi struct {
 }
 
 // NewOpenAi creates a new OpenAI client instance with the provided API key.
-func NewOpenAi(key string) *OpenAi {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+func NewOpenAi(logger *slog.Logger, key string) *OpenAi {
 	return &OpenAi{
 		key:    key,
 		logger: logger,
 	}
-
 }
 
 // CreateRequest sends a request to the OpenAI API and returns the response.

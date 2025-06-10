@@ -11,8 +11,9 @@ import (
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	loader := config.NewConfigLoader(logger)
 
-	err := config.LoadConfig(logger)
+	err := loader.LoadConfig()
 	if err != nil {
 		logger.Error("Failed to load config", "error", err)
 		return
@@ -20,7 +21,7 @@ func main() {
 	apiKey := config.GetOpenAIKey()
 
 	service := service.NewService(
-		repository.NewOpenAi(apiKey),
+		repository.NewOpenAi(logger, apiKey),
 		"You are a helpful AI assistant. Please provide clear and concise responses.",
 		"gpt-4",
 		logger,
