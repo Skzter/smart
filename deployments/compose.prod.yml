@@ -1,17 +1,13 @@
 services:
   suproxy:
-    build:
-      context: ..
-      dockerfile: deployments/suproxy/Dockerfile.dev
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest
     ports:
       - "8080:8080"
     networks:
       - default
 
   autotester:
-    build:
-      context: ..
-      dockerfile: deployments/autotester/Dockerfile.dev
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
     ports:
       - "8081:8081"
     networks:
