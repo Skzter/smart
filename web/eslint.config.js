@@ -36,7 +36,7 @@ export default [
         },
         processor: svelte.processors[".svelte"],
         rules: {
-            ...svelte.configs.recommended.rules
-        }
-    }
+            ...svelte.configs.recommended.rules,
+        },
+    },
 ];
