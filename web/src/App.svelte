@@ -19,7 +19,7 @@
 </script>
 
 <div class="flex w-screen justify-center">
-    <div class="flex flex-col w-8/10 gap-2">
+    <div class="flex flex-col w-8/10 gap-2 overflow-auto px-4 pt-4 pb-28">
         {#each convo as c}
             <Box msg={c.question} name={"User"} />
             {#await c.answer}
