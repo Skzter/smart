@@ -25,6 +25,7 @@ type RepositoryInterface interface {
 type OpenAi struct {
 	key    string       // API key for authentication
 	logger *slog.Logger // logger for Errors and Responses
+	client openai.Client
 }
 
 // NewOpenAi creates a new OpenAI client instance with the provided API key.
@@ -32,16 +33,15 @@ func NewOpenAi(logger *slog.Logger, key string) *OpenAi {
 	return &OpenAi{
 		key:    key,
 		logger: logger,
+		client: openai.NewClient(
+			option.WithAPIKey(key),
+		),
 	}
 }
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *OpenAi) CreateRequest(ctx context.Context, request entity.Request) (entity.Response, error) {
-	client := openai.NewClient(
-		option.WithAPIKey(qa.key),
-	)
-
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Body.UserPrompt),
@@ -53,7 +53,7 @@ func (qa *OpenAi) CreateRequest(ctx context.Context, request entity.Request) (en
 		openaiRequest.PreviousResponseID = param.NewOpt(request.Id)
 	}
 
-	resp, err := client.Responses.New(ctx, openaiRequest)
+	resp, err := qa.client.Responses.New(ctx, openaiRequest)
 	if err != nil {
 		qa.logger.Error("OpenAI API call failed", "err", err)
 		return entity.Response{}, fmt.Errorf("openai request: %w", err)
