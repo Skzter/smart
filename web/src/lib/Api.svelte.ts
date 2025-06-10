@@ -22,22 +22,19 @@ const params = {
  * @example
  * getResponse("Gib mir eine zufällige Buchbeschreibung", [])
  */
-export function getResponse(msg: string, convo) {
-    axios({
-        method: "get",
-        url: url,
-        baseURL: baseURL,
-        params: params,
-    })
-        .then(function (response) {
-            console.log(response);
-            let QuestionAnswer: RequestResponse = {
-                question: msg,
-                answer: response.data.data[0].description,
-            };
-            convo.push(QuestionAnswer);
-        })
-        .catch((error) => {
-            console.log(error);
+export async function getResponse(msg: string): Promise<string> {
+    try {
+        const response = await axios({
+            method: "get",
+            url: url,
+            baseURL: baseURL,
+            params: params,
         });
+
+        const data = await response;
+        console.log(data);
+        return data.data.data[0].description;
+    } catch (error) {
+        throw error;
+    }
 }
