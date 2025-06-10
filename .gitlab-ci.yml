@@ -82,6 +82,8 @@ build_go_artifacts:
 
 .docker_build:
   image: docker:dind
+  tags:
+    - fdit
   rules:
 #    - if: $CI_COMMIT_BRANCH == "main"
 #      when: on_success
@@ -109,5 +111,5 @@ build_autotester_go_container:
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
   script:
-    - docker build f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
+    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
