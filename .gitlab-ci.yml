@@ -96,7 +96,7 @@ build_suproxy_go_container:
     - job: build_go_artifacts
       artifacts: true
   script:
-    - docker build -f deployments/suproxy/Dockerfile.prod
+    - docker build -f deployments/suproxy/Dockerfile.prod .
 
 build_autotester_go_container:
   stage: build
@@ -105,4 +105,4 @@ build_autotester_go_container:
     - job: build_go_artifacts
       artifacts: true
   script:
-    - docker build -f deployments/autotester/Dockerfile.prod
+    - docker build -f deployments/autotester/Dockerfile.prod .
