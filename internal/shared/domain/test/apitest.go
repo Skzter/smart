@@ -34,8 +34,8 @@ func main() {
 		logger.Error("Single request failed", "error", err)
 		return
 	}
-	logger.Info("Single request response", "status", resp.Status, "id", resp.Id)
-	println("Single Request Response:", resp.Output)
+	logger.Info("Single request response", "text", resp)
+	println("Single Request Response:", resp)
 
 	// Test conversation functionality
 	logger.Info("Testing conversation")
@@ -47,8 +47,8 @@ func main() {
 		logger.Error("Conversation first message failed", "error", err)
 		return
 	}
-	logger.Info("First conversation response", "status", resp.Status, "id", resp.Id)
-	println("First Response:", resp.Output)
+	logger.Info("First conversation response", "text", resp)
+	println("First Response:", resp)
 
 	// Follow-up conversation message
 	resp, err = conv.Request("What fact did I just tell you about speed?")
@@ -56,6 +56,6 @@ func main() {
 		logger.Error("Conversation follow-up failed", "error", err)
 		return
 	}
-	logger.Info("Follow-up conversation response", "status", resp.Status, "id", resp.Id)
-	println("Follow-up Response:", resp.Output)
+	logger.Info("Follow-up conversation response", "text", resp)
+	println("Follow-up Response:", resp)
 }

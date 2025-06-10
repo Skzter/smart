@@ -66,6 +66,5 @@ func (qa *OpenAi) CreateRequest(ctx context.Context, request entity.Request) (en
 	return entity.Response{
 		Output: resp.Output[0].Content[0].Text,
 		Id:     resp.ID,
-		Status: string(resp.Status),
 	}, nil
 }
