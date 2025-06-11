@@ -10,8 +10,8 @@
 
     // Params for Dummy API
     const params = {
-	_locale: "de_DE",
-	_quantity: 1,
+        _locale: "de_DE",
+        _quantity: 1,
     };
 
     async function onsubmit() {

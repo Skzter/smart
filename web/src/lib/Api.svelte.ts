@@ -9,7 +9,10 @@ const url = "/books";
  * @example
  * getResponse("Gib mir eine zufällige Buchbeschreibung")
  */
-export async function getResponse(msg: string, params: object): Promise<string> {
+export async function getResponse(
+    msg: string,
+    params: object,
+): Promise<string> {
     try {
         const response = await axios({
             method: "get",
