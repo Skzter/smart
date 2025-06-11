@@ -57,8 +57,9 @@ components:
         context:
           type: object
           properties:
-            identifier:
+            id:
               type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
 
     SuccessResponse:
       type: object
@@ -68,6 +69,9 @@ components:
           properties:
             message:
               type: string
+            id:
+              type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
           type: array
           items:
@@ -85,3 +89,6 @@ components:
         message:
           type: string
           example: "An error occurred while processing the request."
+        id:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
