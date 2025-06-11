@@ -5,6 +5,7 @@
     let direction = $state("");
     let padding = "p-2.5";
     let width = "w-fit";
+    let font = "font-sans";
     
     if (name == "User") {
         text_align = "text-end";

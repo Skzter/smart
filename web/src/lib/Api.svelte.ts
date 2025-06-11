@@ -3,25 +3,13 @@ import axios from "axios";
 const baseURL = "https://fakerapi.it/api/v2";
 const url = "/books";
 
-// Type for conversation between user and llm
-interface RequestResponse {
-    question: string;
-    answer: string;
-}
-
-// Params for API
-const params = {
-    _locale: "de_DE",
-    _quantity: 1,
-};
-
 /**
  * Fetches data from the api and returns the data
  * @param msg - Message from the user
  * @example
  * getResponse("Gib mir eine zufällige Buchbeschreibung")
  */
-export async function getResponse(msg: string): Promise<string> {
+export async function getResponse(msg: string, params: object): Promise<string> {
     try {
         const response = await axios({
             method: "get",

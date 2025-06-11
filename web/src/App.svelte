@@ -8,10 +8,16 @@
     let prompt = $state("");
     let convo = $state([]);
 
+    // Params for Dummy API
+    const params = {
+	_locale: "de_DE",
+	_quantity: 1,
+    };
+
     async function onsubmit() {
         const UserQuestion = prompt;
         prompt = "";
-        const answerPromise = getResponse(prompt);
+        const answerPromise = getResponse(prompt, params);
         convo.push({question: UserQuestion, answer: answerPromise});
     }
     $inspect(convo);
