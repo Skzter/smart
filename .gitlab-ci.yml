@@ -79,3 +79,37 @@ build_go_no_artifacts:
       when: on_success
   script:
     - ./bin/task build-pipeline
+
+.docker_build:
+  image: docker:dind
+  tags:
+    - fdit
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+build_suproxy_go_container:
+  stage: build
+  extends: .docker_build
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/suproxy:latest
+  script:
+    - docker build -f deployments/suproxy/Dockerfile.prod -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+
+build_autotester_go_container:
+  stage: build
+  extends: .docker_build
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
+  script:
+    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG

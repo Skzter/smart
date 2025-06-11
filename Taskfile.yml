@@ -56,6 +56,18 @@ tasks:
     cmds:
       - go tool air
 
+  compose-local:
+    desc: "Run the whole project in docker-compose for local environment"
+    dir: 'deployments'
+    cmds:
+      - docker compose -f compose.dev.yml up -d
+
+  compose-local-down:
+    desc: "Stop all the containers in local environment"
+    dir: 'deployments'
+    cmds:
+      - docker compose -f compose.dev.yml down
+
   test:
     desc: "Run the tests"
     cmds:
@@ -76,6 +88,7 @@ tasks:
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
