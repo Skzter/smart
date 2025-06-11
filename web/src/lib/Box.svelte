@@ -2,28 +2,25 @@
     let {msg, name} = $props();
     let text_align = $state("");
     let bg_col = $state("");
-    let padding = $state("");
-    let width = "w-fit";
     let direction = $state("");
+    let padding = "p-2.5";
+    let width = "w-fit";
     
     if (name == "User") {
         text_align = "text-end";
         bg_col = "bg-sky-300";
-        padding = "p-2";
         direction = "justify-end";
     } else if (name === "Bot") {
         text_align = "text-start";
         bg_col = "bg-gray-200";
-        padding = "p-2";
         direction = "justify-start";
     }
-    
 </script>
 
-<div class = "flex {direction}">
-    <div class="{bg_col} {width} {direction} border-2 border-black border-solid rounded-xl">
-        <h1 class="{text_align} {padding} text-xl">{name}</h1>
-        <p class="{text_align} {padding}">{msg}</p>
+<div class = "flex {direction} m-4">
+    <div class=" font-mono {bg_col} {width} {direction} {padding} border-2 border-black border-solid rounded-xl">
+        <h1 class="{text_align} tracking-wide uppercase font-bold text-xl">{name}</h1>
+        <p class="{text_align} {font}">{msg}</p>
     </div>
 </div>
 
