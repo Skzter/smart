@@ -1,0 +1,71 @@
+openapi: 3.0.4
+info:
+ title: suproxy - OpenAPI 3.0
+ version: 1.0.0
+ description: |-
+  This is a suproxy based on the OpenAPI 3.0 specification.
+tags:
+ - name: Offerlist
+paths:
+ /api/v1/Offerlist:
+   post:
+     tags:
+       - Offerlist
+     summary: Requesting Offerlist
+     operationId: RequestID
+     requestBody:
+       content:
+         application/json:
+           schema:
+             $ref: '#/components/schemas/Offerlist'
+       required: true
+     responses:
+       '200':
+         description: Successful operation
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/Offerlist'
+       '400':
+         description: Invalid input
+       '422':
+         description: Validation exception
+       default:
+         description: Unexpected error
+         content:
+           application/json:
+             schema:
+               $ref: "#/components/schemas/Error"
+components:
+ schemas:
+   Offerlist:
+     required:
+       - source
+       - destination
+       - header
+     type: object
+     properties:
+       prompt:
+         type: string
+         example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
+       source:
+         type: string
+         example: "storage"
+       destination:
+         type: string
+         example: "autotester"
+       Requestlist:
+         type: array
+         items:
+             type: string
+             example: "Request1-HotelsMitGolfplatz, Request2-FlügeNachCanada"
+   Error:
+     type: object
+     properties:
+       code:
+         type: string
+       message:
+         type: string
+     required:
+       - code
+       - message
