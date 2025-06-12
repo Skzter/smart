@@ -3,7 +3,8 @@
     let {input = $bindable(""), onsubmit} = $props();
 </script>
 
-<div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t flex">
+<form class="fixed bottom-0 left-0 w-full bg-white p-4 border-t flex"
+      on:submit|preventDefault={onsubmit}>
     <Input
         type="text"
         bind:value={input}
@@ -11,5 +12,5 @@
         required
         class="flex-1 mr-2"
     />
-    <Button color="purple" onclick={onsubmit}>Send</Button>
-</div>
+    <Button color="purple" type="submit" disabled={!input}>Send</Button>
+</form>
