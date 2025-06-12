@@ -128,4 +128,12 @@ deploy_htwk:
     - chmod 600 ~/.ssh/ssh_password.txt
     - ssh-keyscan -H 141.57.8.221 >> ~/.ssh/known_hosts
     - sshpass -f ~/.ssh/ssh_password.txt scp deployments/compose.prod.yml stud@141.57.8.221:/home/stud
-    - sshpass -f ~/.ssh/ssh_password.txt ssh stud@141.57.8.221 'echo $CI_REGISTRY_PASSWORD | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin && docker-compose pull && docker-compose up -d --remove-orphans && docker image prune -f'
+    - sshpass -f ~/.ssh/ssh_password.txt ssh stud@141.57.8.221 "
+        export CI_REGISTRY_USER=$CI_REGISTRY_USER;
+        export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
+        export CI_REGISTRY=$CI_REGISTRY;
+        echo \$CI_REGISTRY_PASSWORD | docker login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
+        docker-compose pull &&
+        docker-compose up -d --remove-orphans && 
+        docker image prune -f
+      "
