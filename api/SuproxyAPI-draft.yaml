@@ -1,0 +1,76 @@
+openapi: 3.0.4
+info:
+  title: Suproxy API
+  description: API for suproxy between supplier-d and supplier
+  version: 1.0.0
+paths:
+  /api/v1/request:
+    post:
+      summary: takes request from supplier-d and returns response from supplier
+      operationId: RequestID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/suRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/suResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '422':
+          description: Invalid Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    suRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+          example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
+        source:
+          type: string
+          example: "storage"
+        destination:
+          type: string
+          example: "autotester"
+        header:
+          type: string
+          example: "hier könnte ihr header stehen"
+        request-message:
+          type: string
+          example: "Request1-HotelsMitGolfplatz, Request2-FlügeNachCanada"
+    suResponse:
+      type: object
+      properties:
+        header:
+          type: string
+          example: "hier könnte ihr header stehen"
+        response-message:
+          type: string
+          example: "Request1-HotelsMitGolfplatz, Request2-FlügeNachCanada"
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error"
