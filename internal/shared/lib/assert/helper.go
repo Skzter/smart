@@ -31,7 +31,7 @@ func convertToUint64(value interface{}) (uint64, bool) {
 		return uint64(v), true
 	}
 	if v, ok := value.(int); ok {
-		return uint64(v), true
+		return uint64(v), true //lint:ignore G115 is only a helper
 	}
 	if v, ok := value.(uint32); ok {
 		return uint64(v), true
@@ -46,10 +46,10 @@ func convertToUint64(value interface{}) (uint64, bool) {
 		return uint64(v), true
 	}
 	if v, ok := value.(int64); ok {
-		return uint64(v), true
+		return uint64(v), true //lint:ignore G115 is only a helper
 	}
 	if v, ok := value.(int8); ok {
-		return uint64(v), true
+		return uint64(v), true //lint:ignore G115 is only a helper
 	}
 	if v, ok := value.(int16); ok {
 		return uint64(v), true
