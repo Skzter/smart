@@ -13,24 +13,24 @@ import (
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
-// OpenAIInterface defines methods for interacting with OpenAI API.
-type OpenAIInterface interface {
+// OpenAI defines methods for interacting with OpenAI API.
+type OpenAI interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
 	// It takes a Request entity containing the model and prompts,
 	// a context for cancellation, and a logger for error reporting.
 	CreateRequest(context.Context, entity.Request, string, string) (entity.Response, error)
 }
 
-// OpenAI represents an OpenAI API client wrapper and logger-system
-type OpenAI struct {
+// openAI represents an openAI API client wrapper and logger-system
+type openAI struct {
 	key    string       // API key for authentication
 	logger *slog.Logger // logger for Errors and Responses
 	client openai.Client
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAI {
-	return &OpenAI{
+func NewOpenAiRepository(logger *slog.Logger, key string) *openAI {
+	return &openAI{
 		key:    key,
 		logger: logger,
 		client: openai.NewClient(
@@ -41,7 +41,7 @@ func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAI {
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
-func (qa *OpenAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (entity.Response, error) {
+func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (entity.Response, error) {
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Prompt),
@@ -49,8 +49,8 @@ func (qa *OpenAI) CreateRequest(ctx context.Context, request entity.Request, sys
 		Instructions: param.NewOpt(systemPrompt),
 		Model:        model,
 	}
-	if request.Id != "" {
-		openaiRequest.PreviousResponseID = param.NewOpt(request.Id)
+	if request.LastId != "" {
+		openaiRequest.PreviousResponseID = param.NewOpt(request.LastId)
 	}
 
 	resp, err := qa.client.Responses.New(ctx, openaiRequest)
