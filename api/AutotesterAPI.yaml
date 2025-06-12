@@ -1,0 +1,146 @@
+openapi: 3.0.0
+info:
+  title: "Autotester API"
+  description: api for the connection from frontend to backend.
+  version: 1.0.0
+paths:
+  /api/v1/chat:
+    post:
+      summary: "Takes user message and returns LLMs message."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Successful processing of the message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/v1/userInfo:
+    post:
+      summary: "Requests User Info from Backend on inital load"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        
+      responses:
+        '200':
+          description: Successful Request for user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        data:
+          type: string
+        agent:
+          type: string 
+          enum: [user, system]
+          
+    Conversation:
+      type: object
+      properties:
+        ConversationId:
+          type: string
+        Messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+
+    UserRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+          
+    UserResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        allConversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+          
+    ChatRequest:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/Message'
+        userId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        conversationId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+
+    ChatResponse:
+      type: object
+      properties:
+        content:
+          type: object
+          properties:
+            message:
+              $ref: '#/components/schemas/Message'
+            userId:
+              type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+            conversationId:
+              type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        tool_calls:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              arguments:
+                type: object
+                additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "An error occurred while processing the request."
