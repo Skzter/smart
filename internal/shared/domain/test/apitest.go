@@ -20,42 +20,31 @@ func main() {
 	}
 	apiKey := config.GetOpenAIKey()
 
-	service := service.NewService(
+	openAIService := service.NewService(
 		repository.NewOpenAiRepository(logger, apiKey),
 		"You are a helpful AI assistant. Please provide clear and concise responses.",
-		"gpt-4",
+		"gpt-4.1",
 		logger,
 	)
 
-	// Test single request functionality
-	logger.Info("Testing single request")
-	resp, err := service.RequestWithoutSession("What is the capital of France?")
-	if err != nil {
-		logger.Error("Single request failed", "error", err)
-		return
-	}
-	logger.Info("Single request response", "text", resp)
-	println("Single Request Response:", resp)
-
 	// Test conversation functionality
 	logger.Info("Testing conversation")
-	conv := service.CreateConversation()
 
 	// First conversation message
-	resp, err = conv.Request("Remember this fact: The speed of light is 299,792 kilometers per second.")
+	resp, err := openAIService.Request(service.NewRequest("Remember this fact: The speed of light is 299,792 kilometers per second."))
 	if err != nil {
 		logger.Error("Conversation first message failed", "error", err)
 		return
 	}
-	logger.Info("First conversation response", "text", resp)
-	println("First Response:", resp)
+	logger.Info("First conversation response", "id", resp.Id, "text", resp.Text)
+	println("First Response:", resp.Text)
 
 	// Follow-up conversation message
-	resp, err = conv.Request("What fact did I just tell you about speed?")
+	resp, err = openAIService.Request(service.NewRequestSession("Remember this fact: The speed of light is 299,792 kilometers per second.", resp.Id))
 	if err != nil {
 		logger.Error("Conversation follow-up failed", "error", err)
 		return
 	}
-	logger.Info("Follow-up conversation response", "text", resp)
-	println("Follow-up Response:", resp)
+	logger.Info("Follow-up conversation response", "id", resp.Id, "text", resp.Text)
+	println("Follow-up Response:", resp.Text)
 }

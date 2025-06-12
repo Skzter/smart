@@ -8,11 +8,6 @@ type Request struct {
 }
 
 // NewRequestSession creates a new Request with a session ID for conversations.
-func NewRequestSession(model string, body RequestBody, session string) Request {
+func NewRequest(model string, body RequestBody, session string) Request {
 	return Request{Model: model, Body: body, Id: session}
-}
-
-// NewRequest creates a new Request without a session ID.
-func NewRequest(model string, body RequestBody) Request {
-	return Request{Model: model, Body: body}
 }

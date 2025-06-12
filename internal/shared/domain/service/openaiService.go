@@ -8,64 +8,37 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 )
 
-type Service struct {
+type openAIRequest struct {
+	prompt string
+	lastID string
+}
+
+type OpenAIService struct {
 	api          repository.RepositoryInterface
 	systemPrompt string
 	model        string
 	logger       *slog.Logger
 }
 
-type Conversation struct {
-	lastID  string
-	service *Service
+func NewRequest(prompt string) openAIRequest {
+	return openAIRequest{prompt: prompt}
 }
 
-func NewService(api repository.RepositoryInterface, systemPrompt string, model string, logger *slog.Logger) Service {
-	return Service{api, systemPrompt, model, logger}
+func NewRequestSession(prompt string, lastID string) openAIRequest {
+	return openAIRequest{prompt: prompt, lastID: lastID}
 }
 
-func (c *Service) RequestWithoutSession(prompt string) (string, error) {
-	request := entity.NewRequest(c.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.systemPrompt})
+func NewService(api repository.RepositoryInterface, systemPrompt string, model string, logger *slog.Logger) OpenAIService {
+	return OpenAIService{api, systemPrompt, model, logger}
+}
 
-	c.logger.Info("Sending simple request to OpenAI",
+func (c *OpenAIService) Request(serviceRequest openAIRequest) (entity.Response, error) {
+	c.logger.Info("Continuing conversation",
 		"model", c.model,
-		"prompt", prompt,
-		"system_prompt", c.systemPrompt)
+		"prompt", serviceRequest.prompt,
+		"system_prompt", c.systemPrompt,
+		"previous_response_id", serviceRequest.lastID)
+	request := entity.NewRequest(c.model, entity.RequestBody{UserPrompt: serviceRequest.prompt, SystemPrompt: c.systemPrompt}, serviceRequest.lastID)
 
-	resp, err := c.api.CreateRequest(context.Background(), request)
-	if err != nil {
-		return "", err
-	}
-	return resp.Text, err
-}
-
-func (c *Service) CreateConversation() Conversation {
-	return Conversation{service: c}
-}
-
-func (c *Conversation) Request(prompt string) (string, error) {
-	var resp entity.Response
-	var err error
-	if c.lastID == "" {
-		request := entity.NewRequest(c.service.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.service.systemPrompt})
-		c.service.logger.Info("Starting new conversation",
-			"model", c.service.model,
-			"prompt", prompt,
-			"system_prompt", c.service.systemPrompt)
-		resp, err = c.service.api.CreateRequest(context.Background(), request)
-	} else {
-		c.service.logger.Info("Continuing conversation",
-			"model", c.service.model,
-			"prompt", prompt,
-			"system_prompt", c.service.systemPrompt,
-			"previous_response_id", c.lastID)
-		request := entity.NewRequestSession(c.service.model, entity.RequestBody{UserPrompt: prompt, SystemPrompt: c.service.systemPrompt}, c.lastID)
-
-		resp, err = c.service.api.CreateRequest(context.Background(), request)
-	}
-
-	if err == nil {
-		c.lastID = resp.Id
-	}
-	return resp.Text, err
+	return c.api.CreateRequest(context.Background(), request)
 }
