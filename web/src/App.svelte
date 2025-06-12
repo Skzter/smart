@@ -14,7 +14,7 @@
         _quantity: 1,
     };
 
-    async function onsubmit() {
+    async function onclick() {
         const UserQuestion = prompt;
         prompt = "";
         const answerPromise = getResponse(prompt, params);
@@ -37,6 +37,6 @@
                 <Box msg={error} name={"Bot"} />
             {/await}
         {/each}
-        <Prompt bind:input={prompt} {onsubmit} />
+        <Prompt bind:input={prompt} {onclick} />
     </div>
 </div>

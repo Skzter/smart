@@ -1,10 +1,9 @@
 <script lang="ts">
     import {Button, Input} from "flowbite-svelte";
-    let {input = $bindable(""), onsubmit} = $props();
+    let {input = $bindable(""), onclick} = $props();
 </script>
 
-<form class="fixed bottom-0 left-0 w-full bg-white p-4 border-t flex"
-      on:submit|preventDefault={onsubmit}>
+<div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t flex">
     <Input
         type="text"
         bind:value={input}
@@ -12,5 +11,5 @@
         required
         class="flex-1 mr-2"
     />
-    <Button color="purple" type="submit" disabled={!input}>Send</Button>
-</form>
+    <Button color="purple" {onclick} disabled={!input}>Send</Button>
+</div>
