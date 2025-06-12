@@ -133,7 +133,7 @@ deploy_htwk:
         export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
         export CI_REGISTRY=$CI_REGISTRY;
         echo \$CI_REGISTRY_PASSWORD | docker login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
-        docker-compose pull &&
-        docker-compose up -d --remove-orphans && 
+        docker-compose -f compose.prod.yml pull &&
+        docker-compose -f compose.prod.yml up -d --remove-orphans && 
         docker image prune -f
       "
