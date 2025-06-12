@@ -1,5 +1,7 @@
 module gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart
 
+require github.com/pkg/errors v0.9.1
+
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v1.3.0
