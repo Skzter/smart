@@ -13,24 +13,24 @@ import (
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
-// RepositoryInterface defines methods for interacting with OpenAI API.
-type RepositoryInterface interface {
+// OpenAIInterface defines methods for interacting with OpenAI API.
+type OpenAIInterface interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
 	// It takes a Request entity containing the model and prompts,
 	// a context for cancellation, and a logger for error reporting.
-	CreateRequest(context.Context, entity.Request) (entity.Response, error)
+	CreateRequest(context.Context, entity.Request, string, string) (entity.Response, error)
 }
 
-// OpenAiRepository represents an OpenAI API client wrapper and logger-system
-type OpenAiRepository struct {
+// OpenAI represents an OpenAI API client wrapper and logger-system
+type OpenAI struct {
 	key    string       // API key for authentication
 	logger *slog.Logger // logger for Errors and Responses
 	client openai.Client
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAiRepository {
-	return &OpenAiRepository{
+func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAI {
+	return &OpenAI{
 		key:    key,
 		logger: logger,
 		client: openai.NewClient(
@@ -41,13 +41,13 @@ func NewOpenAiRepository(logger *slog.Logger, key string) *OpenAiRepository {
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
-func (qa *OpenAiRepository) CreateRequest(ctx context.Context, request entity.Request) (entity.Response, error) {
+func (qa *OpenAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (entity.Response, error) {
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
-			OfString: param.NewOpt(request.Body.UserPrompt),
+			OfString: param.NewOpt(request.Prompt),
 		},
-		Instructions: param.NewOpt(request.Body.SystemPrompt),
-		Model:        request.Model,
+		Instructions: param.NewOpt(systemPrompt),
+		Model:        model,
 	}
 	if request.Id != "" {
 		openaiRequest.PreviousResponseID = param.NewOpt(request.Id)

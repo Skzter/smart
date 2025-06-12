@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
 	config "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/configs"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
@@ -21,6 +23,7 @@ func main() {
 	apiKey := config.GetOpenAIKey()
 
 	openAIService := service.NewService(
+		context.Background(),
 		repository.NewOpenAiRepository(logger, apiKey),
 		"You are a helpful AI assistant. Please provide clear and concise responses.",
 		"gpt-4.1",
@@ -31,7 +34,7 @@ func main() {
 	logger.Info("Testing conversation")
 
 	// First conversation message
-	resp, err := openAIService.Request(service.NewRequest("Remember this fact: The speed of light is 299,792 kilometers per second."))
+	resp, err := openAIService.Request(entity.NewRequest("tell me the capital of France", ""))
 	if err != nil {
 		logger.Error("Conversation first message failed", "error", err)
 		return
@@ -40,7 +43,7 @@ func main() {
 	println("First Response:", resp.Text)
 
 	// Follow-up conversation message
-	resp, err = openAIService.Request(service.NewRequestSession("Remember this fact: The speed of light is 299,792 kilometers per second.", resp.Id))
+	resp, err = openAIService.Request(entity.NewRequest("tell me the capital of France", resp.Id))
 	if err != nil {
 		logger.Error("Conversation follow-up failed", "error", err)
 		return
