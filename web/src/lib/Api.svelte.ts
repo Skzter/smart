@@ -25,6 +25,7 @@ export async function getResponse(
         console.log(data);
         return data.data.data[0].description;
     } catch (error) {
+        console.log(error);
         throw error;
     }
 }

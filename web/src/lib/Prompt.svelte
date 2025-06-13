@@ -1,6 +1,6 @@
 <script lang="ts">
-    import {Button, Input} from "flowbite-svelte";
-    let {input = $bindable(""), onclick} = $props();
+    import { Button, Input } from "flowbite-svelte";
+    let { input = $bindable(""), onclick } = $props();
 </script>
 
 <div class="fixed bottom-0 left-0 w-full bg-white p-4 border-t flex">

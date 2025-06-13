@@ -1,5 +1,5 @@
 <script lang="ts">
-    let {msg, name} = $props();
+    let { msg, name } = $props();
     let text_align = $state("");
     let bg_col = $state("");
     let direction = $state("");
