@@ -13,22 +13,22 @@ type LogStamp struct {
 	userID    string    // userID identifies the user or system responsible for the corresponding action
 }
 
-func NewLogStamp(userID string) *LogStamp {
-	return &LogStamp{
+func NewLogStamp(userID string) LogStamp {
+	return LogStamp{
 		loggingID: uuid.New().String(),
 		timeStamp: time.Now(),
 		userID:    userID,
 	}
 }
 
-func (ls *LogStamp) GetLoggingId() string {
+func (ls LogStamp) GetLoggingId() string {
 	return ls.loggingID
 }
 
-func (ls *LogStamp) GetTimeStamp() time.Time {
+func (ls LogStamp) GetTimeStamp() time.Time {
 	return ls.timeStamp
 }
 
-func (ls *LogStamp) GetUserID() string {
+func (ls LogStamp) GetUserID() string {
 	return ls.userID
 }
