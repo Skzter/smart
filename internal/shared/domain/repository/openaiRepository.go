@@ -33,7 +33,6 @@ type openAI struct {
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
 func NewOpenAiRepository(logger *slog.Logger, key string) (OpenAI, error) {
 	if err := assert.NotNil(logger); err != nil {
-		logger.Error(err.Error())
 		return nil, err
 	}
 
