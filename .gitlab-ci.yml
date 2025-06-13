@@ -37,33 +37,33 @@ go_mod_download:
   script:
     - go mod download
 
-#lint_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task lint
-#
-#static_analysis_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task static-analysis
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#      when: on_success
-#
-#unit_test_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task test
+lint_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task lint
+
+static_analysis_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task static-analysis
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+
+unit_test_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test
 
 build_go_artifacts:
   stage: build
   extends: .go_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   script:
     - ./bin/task build-pipeline
   artifacts:
@@ -71,22 +71,22 @@ build_go_artifacts:
     paths:
       - build/
 
-#build_go_no_artifacts:
-#  stage: build
-#  extends: .go_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main"
-#      when: on_success
-#  script:
-#    - ./bin/task build-pipeline
+build_go_no_artifacts:
+  stage: build
+  extends: .go_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
+  script:
+    - ./bin/task build-pipeline
 
 .docker_build:
   image: docker:dind
   tags:
     - fdit
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   before_script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
 
@@ -119,6 +119,9 @@ build_autotester_go_container:
 deploy_htwk:
   image: alpine:latest
   stage: deploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   interruptible: true
   resource_group: production
   script:
