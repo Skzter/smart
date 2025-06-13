@@ -86,16 +86,16 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, sys
 
 	resp, err := qa.client.Responses.New(ctx, openaiRequest)
 	if err != nil {
-		qa.logger.Error("OpenAI API call failed", "err", err)
+		qa.logger.Error("openAI API call failed", "err", err)
 		return nil, fmt.Errorf("openai request: %w", err)
 	}
 	if resp.Error.Message != "" {
-		qa.logger.Error("OpenAI returned error", "msg", resp.Error.Message, "code", resp.Error.Code)
+		qa.logger.Error("openAI returned error", "msg", resp.Error.Message, "code", resp.Error.Code)
 		return nil, fmt.Errorf("openai api error: %s", resp.Error.Message)
 	}
 	text := resp.OutputText()
 	if text == "" {
-		qa.logger.Error("Respons contains no message")
+		qa.logger.Error("response contains no message")
 		return nil, fmt.Errorf("openai api error: Respons contains no message")
 	}
 
