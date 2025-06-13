@@ -3,18 +3,27 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		//nolint:errcheck
-		fmt.Fprintf(w, "Hello World!")
+		if _, err := fmt.Fprintf(w, "Hello World!"); err != nil {
+			fmt.Println(err)
+		}
 	})
 
-	//nolint:gosec
-	if err := http.ListenAndServe(":8081", mux); err != nil {
+	server := &http.Server{
+		Addr:         ":8081",
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }
