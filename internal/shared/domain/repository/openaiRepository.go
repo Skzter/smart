@@ -31,7 +31,7 @@ type openAI struct {
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, key string) (*openAI, error) {
+func NewOpenAiRepository(logger *slog.Logger, key string) (OpenAI, error) {
 	if err := assert.NotNil(logger); err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -55,6 +55,25 @@ func NewOpenAiRepository(logger *slog.Logger, key string) (*openAI, error) {
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (*entity.Response, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		qa.logger.Error(err.Error())
+		return nil, err
+	}
+
+	var err error
+	switch {
+	case request.Prompt == "":
+		err = errors.New("creating request without invalid Data: Prompt is empty")
+	case systemPrompt == "":
+		err = errors.New("creating request without system prompt")
+	case model == "":
+		err = errors.New("creating request without model")
+	}
+	if err != nil {
+		qa.logger.Error(err.Error())
+		return nil, err
+	}
+
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Prompt),
@@ -74,6 +93,11 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, sys
 	if resp.Error.Message != "" {
 		qa.logger.Error("OpenAI returned error", "msg", resp.Error.Message, "code", resp.Error.Code)
 		return nil, fmt.Errorf("openai api error: %s", resp.Error.Message)
+	}
+	text := resp.OutputText()
+	if text == "" {
+		qa.logger.Error("Respons contains no message")
+		return nil, fmt.Errorf("openai api error: Respons contains no message")
 	}
 
 	return &entity.Response{

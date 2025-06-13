@@ -5,8 +5,3 @@ type Request struct {
 	Prompt string
 	LastId string // Optional session ID for conversation continuity
 }
-
-// NewRequestSession creates a new Request with a session ID for conversations.
-func NewRequest(prompt string, session string) Request {
-	return Request{Prompt: prompt, LastId: session}
-}
