@@ -134,6 +134,7 @@ deploy_htwk:
         export CI_REGISTRY=$CI_REGISTRY;
         echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
         podman-compose -f compose.prod.yml pull &&
+        podman-compose -f compose.prod.yml down &&
         podman-compose -f compose.prod.yml up -d --remove-orphans && 
         podman image prune -f
       "
