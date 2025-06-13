@@ -11,16 +11,14 @@ import (
 )
 
 type OpenAIService struct {
-	context      context.Context
-	api          repository.OpenAI
+	repo         repository.OpenAI
 	systemPrompt string
 	model        string
 	logger       *slog.Logger
 }
 
-func NewService(ctx context.Context, key string, systemPrompt string, model string, logger *slog.Logger) (*OpenAIService, error) {
-	if err := assert.NotNil(ctx, logger); err != nil {
-		logger.Error(err.Error())
+func NewService(key string, systemPrompt string, model string, logger *slog.Logger) (*OpenAIService, error) {
+	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
 
@@ -43,15 +41,20 @@ func NewService(ctx context.Context, key string, systemPrompt string, model stri
 		return nil, err
 	}
 
-	return &OpenAIService{ctx, repo, systemPrompt, model, logger}, nil
+	return &OpenAIService{repo, systemPrompt, model, logger}, nil
 }
 
-func (c *OpenAIService) Request(serviceRequest entity.Request) (*entity.Response, error) {
+func (c *OpenAIService) Request(ctx context.Context, serviceRequest entity.Request) (*entity.Response, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		c.logger.Error(err.Error())
+		return nil, err
+	}
+
 	if serviceRequest.Prompt == "" {
 		err := errors.New("no prompt in request")
 		c.logger.Error(err.Error())
 		return nil, err
 	}
 	request := entity.Request{Prompt: serviceRequest.Prompt, LastId: serviceRequest.LastId}
-	return c.api.CreateRequest(context.Background(), request, c.systemPrompt, c.model)
+	return c.repo.CreateRequest(ctx, request, c.systemPrompt, c.model)
 }
