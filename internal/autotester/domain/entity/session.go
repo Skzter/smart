@@ -1,11 +1,12 @@
 package entity
 
+// Session represents a conversation session, holding communication elements and the history of the conversation
 type Session struct {
-	SessionId
-	currentSessionSummary SessionSummary
-	summaryHistory        []*SessionSummary
-	userRequests          []*UserRequest
-	requestsForLLM        []*RequestForLLM
-	llmResponses          []*LLMResponse
-	responsesForUser      []*ResponseForUser
+	SessionId             // unique identifier of the session, embedded struct
+	CurrentSessionSummary SessionSummary
+	History               []*SessionSummary
+	UserRequests          []*UserRequest
+	RequestsForLLM        []*RequestForLLM
+	LlmResponses          []*LLMResponse
+	ResponsesForUser      []*ResponseForUser
 }

@@ -2,7 +2,7 @@ package entity
 
 type LLMResponse struct {
 	SessionId
-	logStamp   LogStamp
-	answerText *ModelAnswerText
-	testCode   *TestCode
+	LogStamp   LogStamp
+	AnswerText *ModelAnswerText
+	TestCode   *TestCode
 }

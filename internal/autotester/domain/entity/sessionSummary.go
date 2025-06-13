@@ -3,7 +3,7 @@ package entity
 import "time"
 
 type SessionSummary struct {
-	summary   string
-	createdAt time.Time
-	messages  []*Message
+	Summary   string // concatenation of messages in the correct order
+	CreatedAt time.Time
+	Messages  []*Message
 }

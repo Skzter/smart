@@ -2,6 +2,6 @@ package entity
 
 type UserRequest struct {
 	SessionId
-	logStamp   LogStamp
-	userPrompt *UserPrompt
+	LogStamp   LogStamp
+	UserPrompt *UserPrompt
 }

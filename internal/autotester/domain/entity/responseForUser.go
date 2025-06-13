@@ -1,8 +1,9 @@
 package entity
 
+// ResponseForUser represents a response sent to the user, including text and test case(s).
 type ResponseForUser struct {
 	SessionId
-	logStamp     LogStamp
-	responseText ModelAnswerText
-	testCases    []TestCase
+	LogStamp     LogStamp
+	ResponseText ModelAnswerText
+	TestCases    []*TestCase // list of test cases for multiple options
 }

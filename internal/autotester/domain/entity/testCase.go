@@ -1,14 +1,13 @@
 package entity
 
 type TestCase struct {
-	testID         string
-	description    string
-	expectedOutput string
-	testCode       TestCode
-	// status als enum still  missing
-
+	TestID         string
+	Description    string
+	ExpectedOutput string
+	TestCode       TestCode
+	Status         TestStatus // implemented as enum
 }
 
 type TestCode struct {
-	code string
+	Code string
 }
