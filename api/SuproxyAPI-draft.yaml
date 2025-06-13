@@ -44,30 +44,27 @@ components:
     suRequest:
       type: object
       properties:
+        header:
+          type: string
+          example: "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
         prompt:
           type: string
           example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
         source:
           type: string
-          example: "storage"
+          example: "storage/ip/..."
         destination:
           type: string
-          example: "autotester"
-        header:
-          type: string
-          example: "hier könnte ihr header stehen"
+          example: "autotester/ip/..."
         request-message:
           type: string
-          example: "Request1-HotelsMitGolfplatz, Request2-FlügeNachCanada"
+          example: "request json von supplier-d"
     suResponse:
       type: object
       properties:
-        header:
-          type: string
-          example: "hier könnte ihr header stehen"
         response-message:
           type: string
-          example: "Request1-HotelsMitGolfplatz, Request2-FlügeNachCanada"
+          example: "response vom Supplier"
     Error:
       type: object
       properties:
