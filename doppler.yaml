@@ -1,3 +1,0 @@
-setup:
-  - project: htwk-project
-    config: dev

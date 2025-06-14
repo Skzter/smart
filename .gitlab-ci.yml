@@ -35,7 +35,7 @@ go_mod_download:
   stage: prepare
   extends: .go_cache 
   script:
-    - ./bin/task setup
+    - go mod download
 
 lint_go:
   stage: code_analysis_and_testing

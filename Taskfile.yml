@@ -16,6 +16,8 @@ tasks:
     cmds:
       - git config core.hooksPath githooks
       - go mod tidy
+      - "{{.BIN_PATH}}/doppler login"
+      - "{{.BIN_PATH}}/doppler setup -c dev -p htwk-projekt"
 
   build:
     desc: "Build the project"
@@ -39,22 +41,22 @@ tasks:
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
     cmds:
       - echo {{.VERSION}}
-      - CGO_ENABLED=0 {{.BIN_PATH}}/doppler run -- go build -o build/suproxy -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
-      - CGO_ENABLED=0 {{.BIN_PATH}}/doppler run -- go build -o build/autotester -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
 
   run-suproxy:
     desc: "Run the project"
     env:
       APP_CMD: "./cmd/suproxy"
     cmds:
-      - {{.BIN_PATH}}/doppler run -- go tool air
+      - "{{.BIN_PATH}}/doppler run -- go tool air"
 
   run-autotester:
     desc: "Run the project"
     env:
       APP_CMD: "./cmd/autotester"
     cmds:
-      - {{.BIN_PATH}}/doppler run -- go tool air
+      - "{{.BIN_PATH}}/doppler run -- go tool air"
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -71,7 +73,7 @@ tasks:
   test:
     desc: "Run the tests"
     cmds:
-      - go test -v ./...
+      - go tool gotestsum ./...
 
   lint:
     desc: "Run the lint"
