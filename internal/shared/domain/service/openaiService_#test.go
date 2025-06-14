@@ -11,12 +11,12 @@ import (
 
 func TestService(t *testing.T) {
 	// test with invalid parameters
-	if _, err := NewService("", "", "", nil); err == nil {
+	if _, err := NewService("", "", nil); err == nil {
 		t.Error("service created with invalid parameters, but no error was thrown")
 	}
 
 	// test with valid parameters
-	serv, err := NewService(os.Getenv("OPENAI_KEY"), "You are a helpful ai assistant", "gpt-4.1-nano-2025-04-14", slog.New(slog.DiscardHandler))
+	serv, err := NewService("You are a helpful ai assistant", "gpt-4.1-nano-2025-04-14", slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	if err != nil || serv == nil {
 		t.Errorf("failed to create service: %v", err)
 		return

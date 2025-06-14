@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -31,16 +32,12 @@ type openAI struct {
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, key string) (OpenAI, error) {
+func NewOpenAiRepository(logger *slog.Logger) (OpenAI, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
 
-	if key == "" {
-		err := errors.New("creating OpenAIRepository without key")
-		logger.Error(err.Error())
-		return nil, err
-	}
+	key := os.Getenv("OPENAI_KEY")
 
 	return &openAI{
 		key:    key,
@@ -55,22 +52,16 @@ func NewOpenAiRepository(logger *slog.Logger, key string) (OpenAI, error) {
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		qa.logger.Error(err.Error())
 		return nil, err
 	}
 
-	var err error
 	switch {
 	case request.Prompt == "":
-		err = errors.New("creating request without invalid Data: Prompt is empty")
+		return nil, errors.New("creating request without invalid Data: Prompt is empty")
 	case systemPrompt == "":
-		err = errors.New("creating request without system prompt")
+		return nil, errors.New("creating request without system prompt")
 	case model == "":
-		err = errors.New("creating request without model")
-	}
-	if err != nil {
-		qa.logger.Error(err.Error())
-		return nil, err
+		return nil, errors.New("creating request without model")
 	}
 
 	openaiRequest := responses.ResponseNewParams{
@@ -95,8 +86,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, sys
 	}
 	text := resp.OutputText()
 	if text == "" {
-		qa.logger.Error("response contains no message")
-		return nil, fmt.Errorf("openai api error: Respons contains no message")
+		return nil, fmt.Errorf("openai api error: Response contains no message")
 	}
 
 	return &entity.Response{

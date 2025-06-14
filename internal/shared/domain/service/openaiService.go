@@ -17,26 +17,19 @@ type OpenAIService struct {
 	logger       *slog.Logger
 }
 
-func NewService(key string, systemPrompt string, model string, logger *slog.Logger) (*OpenAIService, error) {
+func NewService(systemPrompt string, model string, logger *slog.Logger) (*OpenAIService, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
 
-	var err error
 	switch {
-	case key == "":
-		err = errors.New("creating openAiService without key")
 	case systemPrompt == "":
-		err = errors.New("creating openAiService without system prompt")
+		return nil, errors.New("creating openAiService without system prompt")
 	case model == "":
-		err = errors.New("creating openAiService without model")
-	}
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
+		return nil, errors.New("creating openAiService without model")
 	}
 
-	repo, err := repository.NewOpenAiRepository(logger, key)
+	repo, err := repository.NewOpenAiRepository(logger)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +45,6 @@ func (c *OpenAIService) Request(ctx context.Context, serviceRequest entity.Reque
 
 	if serviceRequest.Prompt == "" {
 		err := errors.New("no prompt in request")
-		c.logger.Error(err.Error())
 		return nil, err
 	}
 	request := entity.Request{Prompt: serviceRequest.Prompt, LastId: serviceRequest.LastId}

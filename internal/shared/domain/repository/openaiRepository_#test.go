@@ -2,7 +2,6 @@ package repository
 
 import (
 	"log/slog"
-	"os"
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -12,13 +11,13 @@ func TestRepository(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
 	// test with invalid parameters
-	if _, err := NewOpenAiRepository(nil, ""); err == nil {
+	if _, err := NewOpenAiRepository(nil); err == nil {
 		t.Error("called NewOpenAiRepository with invalid parmeters, but no error was thrown")
 		return
 	}
 
 	// test with proper parameters
-	repo, err := NewOpenAiRepository(logger, os.Getenv("OPENAI_KEY"))
+	repo, err := NewOpenAiRepository(logger)
 	if err != nil || repo == nil {
 		t.Errorf("failed to create OpenAiRepository: %v", err)
 		return
