@@ -83,8 +83,20 @@ tasks:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
+  lint-frontend:
+    desc: "Run the frontend lint"
+    cmds:
+      - cd web/ && pnpm eslint .  
+
+  format-frontend:
+    desc: "Run the frontend formatter"
+    cmds:
+      - cd web/ && pnpm prettier --write .
+
   pre-commit:
     desc: "Run the pre-commit"
     cmds:
       - task: lint
       - task: test
+      - task: lint-frontend
+      - task: format-frontend
