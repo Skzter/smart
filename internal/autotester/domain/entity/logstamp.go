@@ -22,7 +22,6 @@ func NewLogStamp(actorId string) (LogStamp, error) {
 		timeStamp: time.Now(),
 		actorId:   actorId,
 	}, nil
-
 }
 
 func (ls LogStamp) GetLoggingId() string {

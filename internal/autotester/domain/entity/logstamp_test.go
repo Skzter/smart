@@ -3,7 +3,6 @@ package entity
 import "testing"
 
 func TestNewLogStamp(t *testing.T) {
-
 	tests := []struct {
 		TestName    string
 		ActorId     string
@@ -41,7 +40,5 @@ func TestNewLogStamp(t *testing.T) {
 				t.Errorf("Expected different UUIDs, but got identical: %s", ls.GetLoggingId())
 			}
 		})
-
 	}
-
 }
