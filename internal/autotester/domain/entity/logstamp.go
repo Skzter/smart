@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,12 +13,16 @@ type LogStamp struct {
 	actorId   string // actorID identifies the user OR system responsible for the corresponding action
 }
 
-func NewLogStamp(actorId string) LogStamp {
+func NewLogStamp(actorId string) (LogStamp, error) {
+	if actorId == "" {
+		return LogStamp{}, errors.New("no actorId given")
+	}
 	return LogStamp{
 		loggingId: uuid.New().String(),
 		timeStamp: time.Now(),
 		actorId:   actorId,
-	}
+	}, nil
+
 }
 
 func (ls LogStamp) GetLoggingId() string {
