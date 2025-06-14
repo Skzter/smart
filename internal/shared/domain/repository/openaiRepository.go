@@ -71,18 +71,20 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, sys
 		Instructions: param.NewOpt(systemPrompt),
 		Model:        model,
 	}
-	if request.LastId != "" {
-		openaiRequest.PreviousResponseID = param.NewOpt(request.LastId)
+	if request.SessionID != "" {
+		openaiRequest.PreviousResponseID = param.NewOpt(request.SessionID)
 	}
 
 	resp, err := qa.client.Responses.New(ctx, openaiRequest)
 	if err != nil {
-		qa.logger.Error("openAI API call failed", "err", err)
-		return nil, fmt.Errorf("openai request: %w", err)
+		err := fmt.Errorf("openai request: %w", err)
+		qa.logger.Error(err.Error())
+		return nil, err
 	}
 	if resp.Error.Message != "" {
-		qa.logger.Error("openAI returned error", "msg", resp.Error.Message, "code", resp.Error.Code)
-		return nil, fmt.Errorf("openai api error: %s", resp.Error.Message)
+		err := fmt.Errorf("openai api error: %s", resp.Error.Message)
+		qa.logger.Error(err.Error())
+		return nil, err
 	}
 	text := resp.OutputText()
 	if text == "" {
@@ -90,7 +92,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, sys
 	}
 
 	return &entity.Response{
-		Text: resp.OutputText(),
-		Id:   resp.ID,
+		Text:      resp.OutputText(),
+		SessionID: resp.ID,
 	}, nil
 }

@@ -47,6 +47,6 @@ func (c *OpenAIService) Request(ctx context.Context, serviceRequest entity.Reque
 		err := errors.New("no prompt in request")
 		return nil, err
 	}
-	request := entity.Request{Prompt: serviceRequest.Prompt, LastId: serviceRequest.LastId}
+	request := entity.Request{Prompt: serviceRequest.Prompt, SessionID: serviceRequest.SessionID}
 	return c.repo.CreateRequest(ctx, request, c.systemPrompt, c.model)
 }
