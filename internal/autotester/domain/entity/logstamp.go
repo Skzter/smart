@@ -6,29 +6,28 @@ import (
 	"github.com/google/uuid"
 )
 
-// LogStamp represents a timestamped log entry containing metadata such as the logging ID and the user ID.
 type LogStamp struct {
-	loggingID string    // loggingID uniquely identifies each logStamp
-	timeStamp time.Time // timeStamp for the when
-	userID    string    // userID identifies the user or system responsible for the corresponding action
+	loggingId string
+	timeStamp time.Time
+	actorId   string // actorID identifies the user OR system responsible for the corresponding action
 }
 
-func NewLogStamp(userID string) LogStamp {
+func NewLogStamp(actorId string) LogStamp {
 	return LogStamp{
-		loggingID: uuid.New().String(),
+		loggingId: uuid.New().String(),
 		timeStamp: time.Now(),
-		userID:    userID,
+		actorId:   actorId,
 	}
 }
 
 func (ls LogStamp) GetLoggingId() string {
-	return ls.loggingID
+	return ls.loggingId
 }
 
 func (ls LogStamp) GetTimeStamp() time.Time {
 	return ls.timeStamp
 }
 
-func (ls LogStamp) GetUserID() string {
-	return ls.userID
+func (ls LogStamp) GetActorId() string {
+	return ls.actorId
 }

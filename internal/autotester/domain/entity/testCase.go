@@ -5,7 +5,7 @@ type TestCase struct {
 	Description    string
 	ExpectedOutput string
 	TestCode       TestCode
-	Status         TestStatus // implemented as enum
+	Status         TestStatus // implemented as enumeration
 }
 
 type TestCode struct {

@@ -1,10 +1,9 @@
 package entity
 
-// File represents a file with name, binary data and the file MIME type
 type File struct {
-	fileName string // fileName is the name of the file
+	fileName string
 	fileData []byte // fileData contains the binary data of the file
-	mimeType string // mimeType is the MIME type of the file
+	mimeType string
 }
 
 func (f *File) GetFileName() string {
