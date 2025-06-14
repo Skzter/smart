@@ -54,7 +54,7 @@ components:
         destination:
           type: string
           example: "IP or Hostname"
-        request-message:
+        request:
           type: string
           example: "request json von supplier-d"
     Error:
