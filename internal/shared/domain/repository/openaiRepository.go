@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -21,20 +21,25 @@ type OpenAI interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
 	// It takes a Request entity containing the model and prompts,
 	// a context for cancellation, and a logger for error reporting.
-	CreateRequest(context.Context, entity.Request, string, string) (*entity.Response, error)
+	CreateRequest(context.Context, entity.Request) (*entity.Response, error)
 }
 
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
-	key    string       // API key for authentication
-	logger *slog.Logger // logger for Errors and Responses
-	client openai.Client
+	key     string       // API key for authentication
+	logger  *slog.Logger // logger for Errors and Responses
+	client  openai.Client
+	timeout int // timeout in seconds
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger) (OpenAI, error) {
+func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
+	}
+
+	if timeout <= 0 {
+		return nil, fmt.Errorf("invalid timout: %d seconds", timeout)
 	}
 
 	key := os.Getenv("OPENAI_KEY")
@@ -45,37 +50,46 @@ func NewOpenAiRepository(logger *slog.Logger) (OpenAI, error) {
 		client: openai.NewClient(
 			option.WithAPIKey(key),
 		),
+		timeout: timeout,
 	}, nil
 }
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
-func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request, systemPrompt string, model string) (*entity.Response, error) {
+func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
 
 	switch {
 	case request.Prompt == "":
-		return nil, errors.New("creating request without invalid Data: Prompt is empty")
-	case systemPrompt == "":
-		return nil, errors.New("creating request without system prompt")
-	case model == "":
-		return nil, errors.New("creating request without model")
+		return nil, fmt.Errorf("creating request without invalid Data: Prompt is empty")
+	case request.SystemPrompt == "":
+		return nil, fmt.Errorf("creating request without system prompt")
+	case request.Model == "":
+		return nil, fmt.Errorf("creating request without model")
 	}
 
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
 			OfString: param.NewOpt(request.Prompt),
 		},
-		Instructions: param.NewOpt(systemPrompt),
-		Model:        model,
+		Instructions: param.NewOpt(request.SystemPrompt),
+		Model:        request.Model,
 	}
 	if request.SessionID != "" {
 		openaiRequest.PreviousResponseID = param.NewOpt(request.SessionID)
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(qa.timeout))
+	defer cancel()
+
+	if ctx == nil {
+		return nil, fmt.Errorf("failed to generate new context")
+	}
+
 	resp, err := qa.client.Responses.New(ctx, openaiRequest)
+
 	if err != nil {
 		err := fmt.Errorf("openai request: %w", err)
 		qa.logger.Error(err.Error())

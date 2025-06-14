@@ -2,6 +2,8 @@ module gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-f
 
 require github.com/pkg/errors v0.9.1
 
+require github.com/google/uuid v1.6.0
+
 require github.com/openai/openai-go v1.3.0
 
 require (
@@ -98,7 +100,6 @@ require (
 	github.com/google/generative-ai-go v0.20.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect

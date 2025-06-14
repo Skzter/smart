@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -11,30 +11,21 @@ import (
 )
 
 type OpenAIService struct {
-	repo         repository.OpenAI
-	systemPrompt string
-	model        string
-	logger       *slog.Logger
+	repo   repository.OpenAI
+	logger *slog.Logger
 }
 
-func NewService(systemPrompt string, model string, logger *slog.Logger) (*OpenAIService, error) {
+func NewService(logger *slog.Logger, timeout int) (*OpenAIService, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
 
-	switch {
-	case systemPrompt == "":
-		return nil, errors.New("creating openAiService without system prompt")
-	case model == "":
-		return nil, errors.New("creating openAiService without model")
-	}
-
-	repo, err := repository.NewOpenAiRepository(logger)
+	repo, err := repository.NewOpenAiRepository(logger, timeout)
 	if err != nil {
 		return nil, err
 	}
 
-	return &OpenAIService{repo, systemPrompt, model, logger}, nil
+	return &OpenAIService{repo, logger}, nil
 }
 
 func (c *OpenAIService) Request(ctx context.Context, serviceRequest entity.Request) (*entity.Response, error) {
@@ -43,10 +34,15 @@ func (c *OpenAIService) Request(ctx context.Context, serviceRequest entity.Reque
 		return nil, err
 	}
 
-	if serviceRequest.Prompt == "" {
-		err := errors.New("no prompt in request")
-		return nil, err
+	switch {
+	case serviceRequest.Prompt == "":
+		return nil, fmt.Errorf("no prompt in request")
+	case serviceRequest.SystemPrompt == "":
+		return nil, fmt.Errorf("creating openAiService without system prompt")
+	case serviceRequest.Model == "":
+		return nil, fmt.Errorf("creating openAiService without model")
 	}
+
 	request := entity.Request{Prompt: serviceRequest.Prompt, SessionID: serviceRequest.SessionID}
-	return c.repo.CreateRequest(ctx, request, c.systemPrompt, c.model)
+	return c.repo.CreateRequest(ctx, request)
 }
