@@ -7,7 +7,6 @@ import (
 )
 
 func TestNewLogStamp(t *testing.T) {
-
 	actorID := "user123"
 	ls := entity.NewLogStamp(actorID)
 	ls2 := entity.NewLogStamp(actorID)
@@ -22,5 +21,4 @@ func TestNewLogStamp(t *testing.T) {
 	if ls.GetLoggingId() == ls2.GetLoggingId() {
 		t.Errorf("Expected different UUIDs, but got identical: %s", ls.GetLoggingId())
 	}
-
 }
