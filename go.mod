@@ -1,10 +1,10 @@
 module gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart
 
-require github.com/pkg/errors v0.9.1
-
-require github.com/google/uuid v1.6.0
-
-require github.com/openai/openai-go v1.3.0
+require (
+	github.com/google/uuid v1.6.0
+	github.com/openai/openai-go v1.3.0
+	github.com/pkg/errors v0.9.1
+)
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
