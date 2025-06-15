@@ -1,0 +1,72 @@
+{
+    "status": {
+        "http_status_code": 200,
+        "status_message": "OK",
+        "is_failure": false
+    },
+    "validation": {
+        "failed_requests": [],
+        "information_issues": {
+            "wrong_information": {
+                "issue": "Request specified return date as 2025-07-31 but many offers return on 2025-07-29",
+                "details": [
+                    {
+                        "offerid": 3096144901,
+                        "returndate": "2025-07-29"
+                    },
+                    {
+                        "offerid": 2540193639,
+                        "returndate": "2025-07-29"
+                    }
+                ]
+            },
+            "missing_information": {
+                "issue": "Airline names are missing in several segments",
+                "placeholders": [
+                    {
+                        "offerid": 3096144901,
+                        "missing_fields": ["inboundairline.name", "outboundairline.name"],
+                        "suggested_placeholder": "Unknown Airline"
+                    }
+                ]
+            }
+        },
+        "input_output_matching": {
+            "objectid_match": true,
+            "duration_match": true,
+            "departuredate_range_match": true,
+            "room_assignment_match": true,
+            "airports_check": {
+                "used_airport": "MUC",
+                "in_list": true
+            }
+        },
+        "data_validation": {
+            "departure_date_window": {
+                "requested": "2025-07-21",
+                "valid_range": ["2025-07-21", "2025-07-28"],
+                "examples_within_range": [
+                    {
+                        "offerid": 3096144901,
+                        "departuredate": "2025-07-22"
+                    },
+                    {
+                        "offerid": 2331434853,
+                        "departuredate": "2025-07-23"
+                    }
+                ]
+            },
+            "traveler_ages": {
+                "requested": {
+                    "a1": 36,
+                    "a2": 36
+                },
+                "matched_in_offers": true
+            },
+            "hotel_objectid_match": {
+                "requested": "3418",
+                "response_match": true
+            }
+        }
+    }
+}
