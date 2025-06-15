@@ -17,6 +17,9 @@ importers:
       flowbite-svelte:
         specifier: ^1.5.4
         version: 1.5.4(rollup@4.41.1)(svelte@5.33.14)(tailwindcss@4.1.8)
+      typescript-cookie:
+        specifier: ^1.0.6
+        version: 1.0.6
     devDependencies:
       '@eslint/js':
         specifier: ^9.28.0
@@ -1550,6 +1553,10 @@ packages:
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
+
+  typescript-cookie@1.0.6:
+    resolution: {integrity: sha512-s+BZr7/9BUG6Kg7jGGcOY/4XJcP+iZRFdF3q4FPTfRSP83ivLWF94OcH8PrzGmnS8Ab9qP7ENu/ikLwNFsIafA==}
+    engines: {node: '>=14'}
 
   typescript-eslint@8.33.1:
     resolution: {integrity: sha512-AgRnV4sKkWOiZ0Kjbnf5ytTJXMUZQ0qhSVdQtDNYLPLnjsATEYhaO94GlRQwi4t4gO8FfjM6NnikHeKjUm8D7A==}
@@ -3155,6 +3162,8 @@ snapshots:
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
+
+  typescript-cookie@1.0.6: {}
 
   typescript-eslint@8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3):
     dependencies:
