@@ -111,4 +111,3 @@ tasks:
       - task: lint
       - task: test
       - task: lint-frontend
-      - task: format-frontend
