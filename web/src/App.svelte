@@ -2,25 +2,69 @@
     import Prompt from "./lib/Prompt.svelte";
     import Box from "./lib/Box.svelte";
     import { Spinner } from "flowbite-svelte";
-    import { getResponse } from "./lib/Api.svelte.ts";
+    import { getChatResponse, getUserInfo } from "./lib/Api.svelte.ts";
+    import { getCookie } from "typescript-cookie";
+    //import { setCookie } from "typescript-cookie";
+
     let prompt = $state("");
     let convo = $state([]);
+
+    // get UserId and ConversationId for api calls from cookies
+    var userId = getCookie("userId");
+    var conversationId = getCookie("conversationId");
+
+    //var allConversations = [];
+
+    // load UserData when opening the page
+    const userInfoUrl = "/userInfo";
+
+    window.onload = () => {
+        console.log(userId + " " + conversationId);
+        // get data to userId
+        if (userId !== undefined) {
+            const userData = getUserInfo(userId, userInfoUrl);
+            console.log(userData);
+        }
+    };
+
+    //const chatUrl = "/chat";
+
+    // Params for real api
+    let paramsChatRequest = {
+        message: { data: "", agent: 0 },
+        userId: userId,
+        conversationId: conversationId,
+    };
 
     // Params for Dummy API
     const params = {
         _locale: "de_DE",
         _quantity: 1,
     };
+    // Url for Dummy API
+    const url1 = "/books";
 
     async function onclick() {
         const UserQuestion = prompt;
         prompt = "";
-        const answerPromise = getResponse(prompt, params);
+        // for real api - currently not working
+        paramsChatRequest.message.data = UserQuestion;
+        const LLMAnswer = getChatResponse(params, url1);
         convo.push({
             id: convo.length,
             question: UserQuestion,
-            answer: answerPromise,
+            answer: LLMAnswer,
         });
+        /*
+	if (userId === undefined){
+	    userId = LLMAnswer.userId;
+	    setCookie("userId", userId);
+	}
+	if (conversationId === undefined){
+	    conversationId = LLMAnswer.conversationId;
+	    setCookie("conversationId", conversation);
+	}
+	*/
     }
 </script>
 
