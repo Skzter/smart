@@ -33,7 +33,7 @@ workflow:
 
 go_mod_download:
   stage: prepare
-  extends: .go_cache
+  extends: .go_cache 
   script:
     - go mod download
 
