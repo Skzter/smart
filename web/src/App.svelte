@@ -12,17 +12,16 @@
     // get UserId and ConversationId for api calls from cookies
     var userId = getCookie("userId");
     var conversationId = getCookie("conversationId");
+    userId = "ashdf";
 
     //var allConversations = [];
 
     // load UserData when opening the page
     const userInfoUrl = "/userInfo";
 
-    window.onload = () => {
-        console.log(userId + " " + conversationId);
-        // get data to userId
+    window.onload = async () => {
         if (userId !== undefined) {
-            const userData = getUserInfo(userId, userInfoUrl);
+            const userData = await getUserInfo(userId, userInfoUrl);
             console.log(userData);
         }
     };

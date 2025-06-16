@@ -1,7 +1,7 @@
 import axios from "axios";
 // added dummy api for testing purposes
 const baseURLdummy = "https://fakerapi.it/api/v2";
-//const baseURL = "/api/v1";
+const baseURL = "/api/v1";
 
 /**
  * Fetches data from the api and returns the data for the chat
@@ -31,13 +31,13 @@ export async function getChatResponse(params: object, url: string): string {
  * @param url: url for api
  */
 // needs fixing
-export async function getUserInfo(params: object, url: string) {
+export async function getUserInfo(params: object, url: string): object {
     try {
         const response = await axios({
-            method: "get",
+            method: "post",
             url: url,
-            baseURL: baseURLdummy,
-            params: params,
+            baseURL: baseURL,
+            data: params,
         });
 
         const data = await response;
