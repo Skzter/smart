@@ -1,0 +1,69 @@
+openapi: 3.0.4
+info:
+  title: suproxy - OpenAPI 3.0
+  version: 1.0.0
+  description:  API for suproxy between supplier-d and supplier
+tags:
+- name: Offerlist
+paths:
+  /api/v1/Offerlist:
+    post:
+      tags:
+        - Offerlist
+      summary: takes request from supplier-d and returns response from supplier
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Offerlist'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offerlist'
+        '400':
+          description: Invalid Request
+        '422':
+          description: Validation exception
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '500':
+            description: Internal server error
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Offerlist:
+      type: object
+      properties:
+        header:
+          type: string
+          example: "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
+        prompt:
+          type: string
+          example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
+        destination:
+          type: string
+          example: "IP or Hostname"
+        request:
+          type: string
+          example: "request json von supplier-d"
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - message
