@@ -22,13 +22,13 @@ tasks:
   build:
     desc: "Build the project"
     cmds:
-      - cmd: go build -o bin/suproxy -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/suproxy -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
         platforms: [linux, darwin]
-      - cmd: go build -o bin/autotester -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/autotester -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [linux, darwin]
-      - cmd: go build -o bin/suproxy.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/suproxy.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
         platforms: [windows/amd64]
-      - cmd: go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
 
   build-pipeline:
