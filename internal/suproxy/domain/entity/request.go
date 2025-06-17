@@ -5,7 +5,7 @@ import (
 )
 
 type Request struct {
-	RequestID int       `json:"id"`
+	RequestID int       `json:"request_id"`
 	PromptID  int       `json:"prompt_id"`
 	Status    string    `json:"status"`
 	Type      string    `json:"type"`

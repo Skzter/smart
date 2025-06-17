@@ -1,8 +1,8 @@
 package entity
 
 type DatabaseEntry struct {
-	EntryID   int    `json:"entry_id"`
-	PromptID  int    `json:"prompt_id"`
-	RequestID int    `json:"request_id"`
-	Tags      string `json:"tags"`
+	EntryID   int
+	PromptID  int
+	RequestID int
+	Tags      string
 }
