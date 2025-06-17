@@ -7,10 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+
 func main() {
 	router := gin.Default()
 
-	router.POST("/api/v1/Offerlist", getOfferlist)
+	api := router.Group("/api/v1")
+	{
+		api.POST("/Offerlist", postOfferlist)
+	}
 
 	err := router.Run("localhost:8080")
 	if err != nil {
@@ -18,6 +22,6 @@ func main() {
 	}
 }
 
-func getOfferlist(c *gin.Context) {
+func postOfferlist(c *gin.Context) {
 	c.String(http.StatusOK, "This is my Offerlist")
 }
