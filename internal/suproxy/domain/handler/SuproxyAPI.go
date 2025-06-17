@@ -36,9 +36,24 @@ func main() {
 }
 
 func postOfferlist(c *gin.Context) {
-	c.String(http.StatusOK, "This is my Offerlist")
+	var offer Offerlist
+
+	if err := c.ShouldBindJSON(&offer); err != nil {
+		c.JSON(http.StatusBadRequest, Error{
+			Code:    "400",
+			Message: "Invalid JSON",
+		})
+		return
+	}
+
+	// Beispielhafte Rückgabe des Angebots
+	c.JSON(http.StatusOK, offer)
 }
 
 func postError(c *gin.Context) {
-	c.String(http.StatusNotFound, "Error")
+	c.JSON(http.StatusNotFound, Error{
+		Code:    "404",
+		Message: "Dies ist ein simuliertes Beispiel für einen Fehler",
+	})
 }
+
