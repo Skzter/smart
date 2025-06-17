@@ -7,6 +7,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Structs for Tests
+type Offerlist struct {
+	Header      string `json:"header"`
+	Prompt      string `json:"prompt"`
+	Destination string `json:"destination"`
+	Request     string `json:"request"`
+}
+
+type Error struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
 
 func main() {
 	router := gin.Default()
