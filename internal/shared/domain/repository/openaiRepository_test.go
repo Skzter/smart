@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 func TestRepository(t *testing.T) {
@@ -25,7 +25,7 @@ func TestRepository(t *testing.T) {
 
 	// test with missing parameters
 	// point of this test is to pass invalid value as ctx parameter, but prevented by linter
-	if _, err := repo.CreateRequest(t.Context(), entity.Request{}); err == nil {
+	if _, err := repo.CreateRequest(t.Context(), entity.RequestForLlmDTO{}); err == nil {
 		t.Error("created request with invalid parmeters, but no error was thrown")
 		return
 	}

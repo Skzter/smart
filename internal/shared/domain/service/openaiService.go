@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -27,7 +27,7 @@ func NewService(logger *slog.Logger, timeout int) (*OpenAIService, error) {
 	return &OpenAIService{repo, logger}, nil
 }
 
-func (c *OpenAIService) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
+func (c *OpenAIService) Request(ctx context.Context, request entity.RequestForLlmDTO) (*entity.LLMResponseDTO, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		c.logger.Error(err.Error())
 		return nil, err

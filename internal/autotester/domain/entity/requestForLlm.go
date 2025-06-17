@@ -8,3 +8,7 @@ type RequestForLLM struct {
 	UserPrompt         *UserPrompt
 	SessionContextData *SessionSummary // data to generate context for the LLM
 }
+
+func (r RequestForLLM) ToDTO() RequestForLlmDTO {
+	return RequestForLlmDTO{}
+}

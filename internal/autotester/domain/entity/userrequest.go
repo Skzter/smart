@@ -5,3 +5,7 @@ type UserRequest struct {
 	LogStamp   LogStamp
 	UserPrompt *UserPrompt
 }
+
+func (UserRequest) ToDTO() UserRequestDTO {
+	return UserRequestDTO{}
+}
