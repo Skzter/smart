@@ -1,7 +1,21 @@
 package main
 
-import "fmt"
+import (
+	"context"
+	"log/slog"
+
+	"github.com/gin-gonic/gin"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	router := gin.Default()
+	logger := slog.New(slog.DiscardHandler)
+	ctx := context.Background()
+
+	router.POST("/api/v1/chat", func(c *gin.Context) {
+		handler.HandleChatRequest(c, logger, ctx)
+	})
+
+	router.Run(":8080")
 }
