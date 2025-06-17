@@ -8,20 +8,25 @@ const baseURL = "/api/v1";
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChatResponse(params: object, url: string): string {
+export async function getChatResponse(params: object, url: string) {
     try {
         const response = await axios({
             method: "get",
             url: url,
             baseURL: baseURLdummy,
-            params: params,
+            params: params, //bei post muss data heißen
         });
-
-        const data = await response;
-        return data.data.data[0].description;
+        const answer = {
+            message: {
+                data: response.data.data[0].description,
+                agent: "system",
+            },
+            userId: "1",
+            conversationId: "1",
+        };
+        return answer;
     } catch (error) {
-        console.log(error);
-        throw error;
+        return error;
     }
 }
 
@@ -30,8 +35,7 @@ export async function getChatResponse(params: object, url: string): string {
  * @param params: parameters for api
  * @param url: url for api
  */
-// needs fixing
-export async function getUserInfo(params: object, url: string): object {
+export async function getUserInfo(params: object, url: string) {
     try {
         const response = await axios({
             method: "post",
@@ -39,11 +43,8 @@ export async function getUserInfo(params: object, url: string): object {
             baseURL: baseURL,
             data: params,
         });
-
-        const data = await response;
-        return data;
+        return response;
     } catch (error) {
-        console.log(error);
-        throw error;
+        return error;
     }
 }

@@ -2,9 +2,9 @@
     import Prompt from "./lib/Prompt.svelte";
     import Box from "./lib/Box.svelte";
     import { Spinner } from "flowbite-svelte";
-    import { getChatResponse, getUserInfo } from "./lib/Api.svelte.ts";
-    import { getCookie } from "typescript-cookie";
-    //import { setCookie } from "typescript-cookie";
+    import { getChatResponse, getUserInfo } from "./lib/Api.ts";
+    import { getCookie, setCookie } from "typescript-cookie";
+    import { onMount } from "svelte";
 
     let prompt = $state("");
     let convo = $state([]);
@@ -12,19 +12,20 @@
     // get UserId and ConversationId for api calls from cookies
     var userId = getCookie("userId");
     var conversationId = getCookie("conversationId");
-    userId = "ashdf";
-
-    //var allConversations = [];
 
     // load UserData when opening the page
     const userInfoUrl = "/userInfo";
+    let paramsUserInfo = {
+        userId: userId,
+    };
 
-    window.onload = async () => {
+    let userData = {};
+    onMount(async () => {
         if (userId !== undefined) {
-            const userData = await getUserInfo(userId, userInfoUrl);
+            userData = await getUserInfo(paramsUserInfo, userInfoUrl);
             console.log(userData);
         }
-    };
+    });
 
     //const chatUrl = "/chat";
 
@@ -44,37 +45,39 @@
     const url1 = "/books";
 
     async function onclick() {
-        const UserQuestion = prompt;
+        const userQuestion = prompt;
         prompt = "";
         // for real api - currently not working
-        paramsChatRequest.message.data = UserQuestion;
-        const LLMAnswer = getChatResponse(params, url1);
+        paramsChatRequest.message.data = userQuestion;
+        const answerPromise = getChatResponse(params, url1);
         convo.push({
             id: convo.length,
-            question: UserQuestion,
-            answer: LLMAnswer,
+            question: userQuestion,
+            answerPromise: answerPromise,
         });
-        /*
-	if (userId === undefined){
-	    userId = LLMAnswer.userId;
-	    setCookie("userId", userId);
-	}
-	if (conversationId === undefined){
-	    conversationId = LLMAnswer.conversationId;
-	    setCookie("conversationId", conversation);
-	}
-	*/
+        if (userId === "undefined") {
+            console.log("giving userID");
+            userId = answerPromise;
+            setCookie("userId", userId);
+        }
+        if (conversationId === "undefined") {
+            console.log("giving conversationId");
+            conversationId = answerPromise;
+            setCookie("conversationId", conversationId);
+        }
+        console.log("u: " + userId + " c: " + conversationId);
     }
+    $inspect(convo);
 </script>
 
 <div class="flex w-screen justify-center">
     <div class="flex flex-col w-8/10 gap-2 overflow-auto px-4 pt-4 pb-28">
         {#each convo as c (c.id)}
             <Box msg={c.question} name="User" />
-            {#await c.answer}
+            {#await c.answerPromise}
                 <Spinner color="blue" />
-            {:then answer}
-                <Box msg={answer} name="Bot" />
+            {:then result}
+                <Box msg={result.message.data} name="Bot" />
             {:catch error}
                 {console.log(error)}
                 <Box msg={error} name="Bot" />
