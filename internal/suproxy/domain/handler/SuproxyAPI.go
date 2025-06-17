@@ -26,6 +26,7 @@ func main() {
 	api := router.Group("/api/v1")
 	{
 		api.POST("/Offerlist", postOfferlist)
+		api.POST("/Error", postError)
 	}
 
 	err := router.Run("localhost:8080")
@@ -36,4 +37,8 @@ func main() {
 
 func postOfferlist(c *gin.Context) {
 	c.String(http.StatusOK, "This is my Offerlist")
+}
+
+func postError(c *gin.Context) {
+	c.String(http.StatusNotFound, "Error")
 }
