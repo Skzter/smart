@@ -7,19 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Structs for Tests
-type Offerlist struct {
-	Header      string `json:"header"`
-	Prompt      string `json:"prompt"`
-	Destination string `json:"destination"`
-	Request     string `json:"request"`
-}
-
-type Error struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
 func main() {
 	router := gin.Default()
 
@@ -36,24 +23,22 @@ func main() {
 }
 
 func postOfferlist(c *gin.Context) {
-	var offer Offerlist
+	var offer map[string]interface{}
 
 	if err := c.ShouldBindJSON(&offer); err != nil {
-		c.JSON(http.StatusBadRequest, Error{
-			Code:    "400",
-			Message: "Invalid JSON",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "400",
+			"message": "Invalid JSON",
 		})
 		return
 	}
 
-	// Beispielhafte Rückgabe des Angebots
 	c.JSON(http.StatusOK, offer)
 }
 
 func postError(c *gin.Context) {
-	c.JSON(http.StatusNotFound, Error{
-		Code:    "404",
-		Message: "Dies ist ein simuliertes Beispiel für einen Fehler",
+	c.JSON(http.StatusNotFound, gin.H{
+		"code":    "404",
+		"message": "Dies ist ein simuliertes Beispiel für einen Fehler",
 	})
 }
-
