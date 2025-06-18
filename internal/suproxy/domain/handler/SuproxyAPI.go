@@ -29,7 +29,7 @@ func main() {
 		api.POST("/Error", postError)
 	}
 
-	err := router.Run("localhost:8080")
+	err := router.Run("127.0.0.1:8080")
 	if err != nil {
 		log.Fatal(err)
 	}
