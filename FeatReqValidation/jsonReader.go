@@ -23,11 +23,11 @@ var ValidRequests_correctData []Data
 var ValidRequests_incorrectData []Data
 var InvalidRequests []Data
 
-func main() {
+func main(validationFile string) {
 	// >>read JSON data from a file
 	// >>the file contains a list of Validation objects
 	// >>each object has an HttpCode, Message, and IssueTag
-	fileContents, err := os.ReadFile("val.json")
+	fileContents, err := os.ReadFile(validationFile)
 	if err != nil {
 		panic(err)
 	}
