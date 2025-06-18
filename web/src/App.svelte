@@ -13,13 +13,13 @@
     var userId = getCookie("userId");
     var conversationId = getCookie("conversationId");
 
-    // load UserData when opening the page
-    const userInfoUrl = "/userInfo";
     let paramsUserInfo = {
         userId: userId,
     };
-
+    const userInfoUrl = "/userInfo";
     let userData = {};
+
+    // load UserData when opening the page
     onMount(async () => {
         if (userId !== undefined) {
             userData = await getUserInfo(paramsUserInfo, userInfoUrl);
@@ -27,54 +27,35 @@
         }
     });
 
-    //const chatUrl = "/chat";
-
-    // Params for real api
     let paramsChatRequest = {
         message: { data: "", agent: 0 },
         userId: userId,
         conversationId: conversationId,
     };
-
-    // Params for Dummy API
-    const params = {
-        _locale: "de_DE",
-        _quantity: 1,
-    };
-    // Url for Dummy API
-    const url1 = "/books";
+    const chatUrl = "/chat";
 
     async function onclick() {
         const userQuestion = prompt;
         prompt = "";
-        // for real api - currently not working
         paramsChatRequest.message.data = userQuestion;
-        const answerPromise = getChatResponse(params, url1);
+        const answerPromise = getChatResponse(paramsChatRequest, chatUrl);
         convo.push({
             id: convo.length,
             question: userQuestion,
             answerPromise: answerPromise,
         });
-        console.log("u: " + userId + " c: " + conversationId);
     }
 
     function setIdsAsCookie(data) {
         if (userId === undefined) {
-            console.log("giving userID");
             userId = data.userId;
-            console.log(userId);
             setCookie("userId", userId);
-            console.log("getting cookie", getCookie("userId"));
         }
         if (conversationId === undefined) {
-            console.log("giving conversationId");
             conversationId = data.conversationId;
-            console.log(conversationId);
             setCookie("conversationId", conversationId);
-            console.log("getting cookie", getCookie("conversationId"));
         }
     }
-    $inspect(convo);
 </script>
 
 <div class="flex w-screen justify-center">
