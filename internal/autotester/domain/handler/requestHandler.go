@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"log/slog"
 	"net/http"
 
@@ -11,8 +10,25 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
+type AutotesterController struct {
+	logger  *slog.Logger
+	service *service.OpenAIService
+}
+
+func NewAutotesterController(logger *slog.Logger) (a *AutotesterController, err error) {
+	service, err := service.NewService(logger, 5)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AutotesterController{
+		logger:  logger,
+		service: service,
+	}, err
+}
+
 // handle Frontend Request JSON to String
-func HandleChatRequest(c *gin.Context, logger *slog.Logger, ctx context.Context) {
+func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	var userRequest entity.UserRequestDTO
 
 	if err := c.BindJSON(&userRequest); err != nil {
@@ -25,23 +41,15 @@ func HandleChatRequest(c *gin.Context, logger *slog.Logger, ctx context.Context)
 	// Call Request to openAI
 	// service needed
 	// entity.Request(body.Message, body.ConversationID)
-
-	// handling response openai
-	service, err := service.NewService(logger, 5)
+	resp, err := a.ServiceHandler(c, userRequest)
 	if err != nil {
 		return
 	}
-	// DTO to real entitys
-
-	_, error := service.Request(ctx, entity.RequestForLlmDTO{UserPrompt: userRequest.Message.MessageBody, SystemPrompt: "Du bist ein hilfreicher Assistent", Model: "gpt-o4"})
-
-	var resp entity.ResponseForUserDTO
-	resp.ResponseText.Text = error.Error()
 	// respons from LLM To frontend
 	c.IndentedJSON(http.StatusOK, resp)
 }
 
-func HandleUserInfoRequest(c *gin.Context) {
+func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	var body entity.UserRequestDTO
 	var resp entity.ResponseForUser
 	if err := c.BindJSON(&body); err != nil {
@@ -49,4 +57,13 @@ func HandleUserInfoRequest(c *gin.Context) {
 		return
 	}
 	c.IndentedJSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
+}
+
+func (a *AutotesterController) ServiceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response entity.ResponseForUserDTO, err error) {
+	var resp entity.ResponseForUserDTO
+
+	// DTO to real entitys
+	_, error := a.service.Request(c, entity.RequestForLlmDTO{UserPrompt: userRequest.Message.MessageBody, SystemPrompt: "Du bist ein hilfreicher Assistent", Model: "gpt-o4"})
+	resp.ResponseText.Text = error.Error()
+	return resp, err
 }
