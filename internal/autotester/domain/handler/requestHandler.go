@@ -33,7 +33,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	var userRequest entity.UserRequestDTO
 
 	if err := c.BindJSON(&userRequest); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		a.logger.Error("JSON binding failed", "error", err)
 		return
 	}
@@ -49,17 +49,17 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 	// respons from LLM To frontend
-	c.IndentedJSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, resp)
 }
 
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	var body entity.UserRequestDTO
 	var resp entity.ResponseForUser
 	if err := c.BindJSON(&body); err != nil {
-		c.IndentedJSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
+	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
 }
 
 func (a *AutotesterController) ServiceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
