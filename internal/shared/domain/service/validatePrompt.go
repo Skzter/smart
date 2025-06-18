@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"log/slog"
-
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
@@ -33,10 +31,8 @@ func (c *OpenAIService) ValidatePrompt(ctx context.Context, sessionID, userPromp
 	case "true":
 		return nil
 	case "false":
-		c.logger.Error("Prompt validation failed (model returned false)", slog.String("sessionID", sessionID))
 		return ErrPromptInvalid
 	default:
-		c.logger.Error("Unexpected validation response format", slog.String("response", resp.Text))
 		return fmt.Errorf("unexpected validation response: %q", resp.Text)
 	}
 }
