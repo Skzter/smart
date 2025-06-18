@@ -13,11 +13,11 @@ const defaultValidationSystemPrompt = "Überprüfe diesen Prompt auf Richtigkeit
 
 var ErrPromptInvalid = errors.New("prompt validation failed")
 
-func (c *OpenAIService) ValidatePrompt(ctx context.Context, sessionID, userPrompt string) error {
+func (c *OpenAIService) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) error {
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
-		Model:        "gpt-4.1-1106-preview",
+		Model:        "gpt-4.1-nano-2025-04-14",
 		SystemPrompt: defaultValidationSystemPrompt,
 	}
 
