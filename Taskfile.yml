@@ -33,6 +33,7 @@ tasks:
   
   build-frontend:
     cmds:
+      - cd web/ && pnpm install
       - task: lint-frontend
       - task: format-frontend
       - cd web/ && pnpm run build
