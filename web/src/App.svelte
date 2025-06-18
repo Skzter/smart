@@ -55,17 +55,24 @@
             question: userQuestion,
             answerPromise: answerPromise,
         });
-        if (userId === "undefined") {
-            console.log("giving userID");
-            userId = answerPromise;
-            setCookie("userId", userId);
-        }
-        if (conversationId === "undefined") {
-            console.log("giving conversationId");
-            conversationId = answerPromise;
-            setCookie("conversationId", conversationId);
-        }
         console.log("u: " + userId + " c: " + conversationId);
+    }
+
+    function setIdsAsCookie(data) {
+        if (userId === undefined) {
+            console.log("giving userID");
+            userId = data.userId;
+            console.log(userId);
+            setCookie("userId", userId);
+            console.log("getting cookie", getCookie("userId"));
+        }
+        if (conversationId === undefined) {
+            console.log("giving conversationId");
+            conversationId = data.conversationId;
+            console.log(conversationId);
+            setCookie("conversationId", conversationId);
+            console.log("getting cookie", getCookie("conversationId"));
+        }
     }
     $inspect(convo);
 </script>
@@ -77,6 +84,7 @@
             {#await c.answerPromise}
                 <Spinner color="blue" />
             {:then result}
+                {setIdsAsCookie(result)}
                 <Box msg={result.message.data} name="Bot" />
             {:catch error}
                 {console.log(error)}
