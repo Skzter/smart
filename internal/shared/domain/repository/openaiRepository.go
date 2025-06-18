@@ -12,7 +12,7 @@ import (
 	"github.com/openai/openai-go/packages/param"
 	"github.com/openai/openai-go/responses"
 
-	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -21,7 +21,7 @@ type OpenAI interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
 	// It takes a Request entity containing the model and prompts,
 	// a context for cancellation, and a logger for error reporting.
-	CreateRequest(context.Context, entity.RequestForLlmDTO) (*entity.LLMResponseDTO, error)
+	CreateRequest(context.Context, entity.Request) (*entity.Response, error)
 }
 
 // openAI represents an openAI API client wrapper and logger-system
@@ -56,13 +56,13 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
-func (qa *openAI) CreateRequest(ctx context.Context, request entity.RequestForLlmDTO) (*entity.LLMResponseDTO, error) {
+func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
 
 	switch {
-	case request.UserPrompt == "":
+	case request.Prompt == "":
 		return nil, fmt.Errorf("creating request without invalid Data: Prompt is empty")
 	case request.SystemPrompt == "":
 		return nil, fmt.Errorf("creating request without system prompt")
@@ -72,7 +72,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.RequestForLl
 
 	openaiRequest := responses.ResponseNewParams{
 		Input: responses.ResponseNewParamsInputUnion{
-			OfString: param.NewOpt(request.UserPrompt),
+			OfString: param.NewOpt(request.Prompt),
 		},
 		Instructions: param.NewOpt(request.SystemPrompt),
 		Model:        request.Model,
@@ -105,7 +105,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.RequestForLl
 		return nil, fmt.Errorf("openai api error: Response contains no message")
 	}
 
-	return &entity.LLMResponseDTO{
+	return &entity.Response{
 		Text:      resp.OutputText(),
 		SessionID: resp.ID,
 	}, nil

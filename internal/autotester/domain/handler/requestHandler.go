@@ -6,7 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	repoEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
@@ -62,8 +63,8 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 }
 
 func (a *AutotesterController) ServiceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
-	resp, err := a.service.Request(c, entity.RequestForLlmDTO{
-		UserPrompt:   userRequest.Message.MessageBody,
+	resp, err := a.service.Request(c, repoEntity.Request{
+		Prompt:       userRequest.Message.MessageBody,
 		SessionID:    userRequest.SessionId,
 		SystemPrompt: "Du bist ein hilfreicher Assistent",
 		Model:        "gpt-4.1-nano-2025-04-14"},

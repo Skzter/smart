@@ -1,5 +1,7 @@
 package entity
 
+import repoEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+
 // RequestForLLM represents a request sent to the language model, including prompts and context.
 type RequestForLLM struct {
 	SessionId
@@ -9,6 +11,6 @@ type RequestForLLM struct {
 	SessionContextData *SessionSummary // data to generate context for the LLM
 }
 
-func (r RequestForLLM) ToDTO() RequestForLlmDTO {
-	return RequestForLlmDTO{}
+func (r RequestForLLM) ToDTO() repoEntity.Request {
+	return repoEntity.Request{}
 }

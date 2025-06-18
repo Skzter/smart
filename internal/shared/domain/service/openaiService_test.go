@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
 func TestService(t *testing.T) {
@@ -22,7 +22,7 @@ func TestService(t *testing.T) {
 	}
 
 	// test with invalid parameters
-	if _, err := serv.Request(t.Context(), entity.RequestForLlmDTO{}); err == nil {
+	if _, err := serv.Request(t.Context(), entity.Request{}); err == nil {
 		t.Error("request created with invalid parameters, but no error was thrown")
 	}
 
