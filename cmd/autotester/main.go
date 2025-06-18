@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	router := gin.Default()
-	logger := slog.New(slog.DiscardHandler)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	ctx := context.Background()
 
 	router.POST("/api/v1/chat", func(c *gin.Context) {

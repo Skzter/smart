@@ -17,28 +17,41 @@ func HandleChatRequest(c *gin.Context, logger *slog.Logger, ctx context.Context)
 
 	if err := c.BindJSON(&userRequest); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		logger.Error("JSON binding failed", "error", err)
 		return
 	}
 
 	// validation Method
 
-	// Call Request to openAI
-	// service needed
-	// entity.Request(body.Message, body.ConversationID)
-
 	// handling response openai
 	service, err := service.NewService(logger, 5)
 	if err != nil {
+		logger.Error(err.Error())
 		return
 	}
+
 	// DTO to real entitys
 
-	_, error := service.Request(ctx, entity.RequestForLlmDTO{UserPrompt: userRequest.Message.MessageBody, SystemPrompt: "Du bist ein hilfreicher Assistent", Model: "gpt-o4"})
+	resp, err := service.Request(ctx, entity.RequestForLlmDTO{
+		UserPrompt:   userRequest.Message.MessageBody,
+		SessionID:    userRequest.SessionId,
+		SystemPrompt: "Du bist ein hilfreicher Assistent",
+		Model:        "gpt-4.1-nano-2025-04-14"},
+	)
 
-	var resp entity.ResponseForUserDTO
-	resp.ResponseText.Text = error.Error()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+	text := entity.MessageDTO{MessageBody: resp.Text, Actor: "system"}
+	response := entity.ResponseForUserDTO{
+		ResponseText: text,
+		SessionIdDTO: entity.SessionIdDTO{Id: resp.SessionID},
+		LogStampDTO:  entity.LogStampDTO{ActorId: ""},
+	}
+
 	// respons from LLM To frontend
-	c.IndentedJSON(http.StatusOK, resp)
+	c.IndentedJSON(http.StatusOK, response)
 }
 
 func HandleUserInfoRequest(c *gin.Context) {

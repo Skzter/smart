@@ -1,9 +1,9 @@
 package entity
 
 type ResponseForUserDTO struct {
-	SessionId    `json:"ConversationId"`
-	LogStamp     LogStampDTO
-	ResponseText ModelAnswerTextDTO
+	ResponseText MessageDTO `json:"message"`
+	SessionIdDTO
+	LogStampDTO
 }
 
 func (ResponseForUserDTO) ToEntity() ResponseForUser {

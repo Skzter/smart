@@ -1,7 +1,7 @@
 package entity
 
 type MessageDTO struct {
-	MessageBody string `json:"message"`
+	MessageBody string `json:"data"`
 	Actor       string `json:"agent"`
 }
 

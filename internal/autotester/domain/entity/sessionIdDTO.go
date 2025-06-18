@@ -1,7 +1,7 @@
 package entity
 
 type SessionIdDTO struct {
-	Id string `json:"ConversationId"`
+	Id string `json:"conversationId"`
 }
 
 func (SessionIdDTO) ToEntity() SessionId {
