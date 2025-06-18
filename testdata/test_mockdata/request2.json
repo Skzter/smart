@@ -1,0 +1,97 @@
+{
+    "apimode": "live",
+    "id": "bbd3e15e-0868-46fc-a05a-5501928a7645",
+    "method": "search.getOfferList",
+    "params": [
+        {
+            "airlineslist": null,
+            "departureairportlist": [
+                "FRA",
+                "FKB",
+                "LBC",
+                "MUC",
+                "PAD",
+                "BRE",
+                "NUE",
+                "ERF",
+                "KSF",
+                "RLG",
+                "FDH",
+                "HAJ",
+                "LEJ",
+                "HAM",
+                "FMM",
+                "DTM",
+                "SCN",
+                "CGN",
+                "HHN",
+                "NRN",
+                "FMO",
+                "BER",
+                "STR",
+                "DRS",
+                "DUS",
+                "GWT"
+            ],
+            "departuredate": "2025-07-07",
+            "journeyattributelist": [],
+            "maxtravelduration": 7,
+            "mintravelduration": 7,
+            "objectidlist": [
+                "203425"
+            ],
+            "regionidlist": null,
+            "returndate": "2025-07-15",
+            "rooms": [
+                {
+                    "id": 1,
+                    "mealtypelist": [],
+                    "roomattributelist": [],
+                    "roomtypelist": [],
+                    "travelerassignment": [
+                        "a1",
+                        "a2"
+                    ]
+                }
+            ],
+            "sortdirection": "asc",
+            "sortfield": "price",
+            "touroperatorlist": [
+                "SLR",
+                "TUID",
+                "ATID",
+                "ALL",
+                "XTUI",
+                "TUR3",
+                "TUR1",
+                "ITS",
+                "JAHN",
+                "DER",
+                "MWR",
+                "ANEX",
+                "BU",
+                "OGE",
+                "NEC",
+                "EWHO",
+                "BCH",
+                "COR",
+                "COS",
+                "BYE",
+                "ETI",
+                "TJAL",
+                "ALD"
+            ],
+            "traveldatetype": "duration",
+            "travelers": {
+                "adults": {
+                    "a1": 36,
+                    "a2": 36
+                },
+                "children": [],
+                "infants": []
+            },
+            "traveltype": "package"
+        }
+    ],
+    "requestSource": "pr.offerlist"
+}
