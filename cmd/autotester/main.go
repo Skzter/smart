@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"os"
 
@@ -13,13 +12,18 @@ import (
 func main() {
 	router := gin.Default()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	ctx := context.Background()
+	controller, err := handler.NewAutotesterController(logger)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	router.POST("/api/v1/chat", func(c *gin.Context) {
-		handler.HandleChatRequest(c, logger, ctx)
+		controller.HandleChatRequest(c)
 	})
 
-	err := router.Run(":8080")
+	err = router.Run(":8080")
 
 	if err != nil {
 		return
