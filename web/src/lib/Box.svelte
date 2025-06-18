@@ -25,6 +25,6 @@
         <h1 class="{text_align} tracking-wide uppercase font-bold text-xl">
             {name}
         </h1>
-        <p class="{text_align} {font}">{msg}</p>
+        <p class="{text_align} {font} whitespace-pre-wrap">{msg}</p>
     </div>
 </div>
