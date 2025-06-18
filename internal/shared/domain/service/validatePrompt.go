@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
@@ -26,8 +25,7 @@ func (c *OpenAIService) ValidatePrompt(ctx context.Context, userPrompt string, s
 		return err
 	}
 
-	lower := strings.ToLower(resp.Text)
-	switch lower {
+	switch resp.Text {
 	case "true":
 		return nil
 	case "false":
