@@ -23,7 +23,7 @@ var ValidRequests_correctData []Data
 var ValidRequests_incorrectData []Data
 var InvalidRequests []Data
 
-func main(validationFile string) {
+func jsonReader(validationFile string) {
 	// >>read JSON data from a file
 	// >>the file contains a list of Validation objects
 	// >>each object has an HttpCode, Message, and IssueTag
