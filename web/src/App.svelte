@@ -11,14 +11,15 @@
 
     // get UserId and ConversationId for api calls from cookies
     var userId = getCookie("userId");
-    if(userId === undefined) {
-	userId = "";
+    if (userId === undefined) {
+        userId = "";
     }
     var conversationId = getCookie("conversationId");
-    if(conversationId === undefined) {
-	conversationId = "";
+    if (conversationId === undefined) {
+        conversationId = "";
     }
 
+    // for next sprint
     let paramsUserInfo = {
         userId: userId,
     };
@@ -29,6 +30,7 @@
     onMount(async () => {
         if (userId !== undefined) {
             userData = await getUserInfo(paramsUserInfo, userInfoUrl);
+            console.log(userData);
         }
     });
 
@@ -55,12 +57,12 @@
         if (userId === "") {
             userId = data.data.userId;
             setCookie("userId", userId);
-	    paramsChatRequest.userId = userId;
+            paramsChatRequest.userId = userId;
         }
         if (conversationId === "") {
             conversationId = data.data.conversationId;
             setCookie("conversationId", conversationId);
-	    paramsChatRequest.conversationId = conversationId;
+            paramsChatRequest.conversationId = conversationId;
         }
     }
 </script>
