@@ -64,6 +64,10 @@ Repeat: Your only valid response is exactly 'true' or 'false'. No further text.`
 
 var ErrPromptInvalid = errors.New("prompt validation failed")
 
+// ValidatePrompt validates user prompts against a predefined system prompt to ensure they contain
+// all necessary information for Autoplaywright test generation. It takes a context, OpenAI service instance,
+// the user's prompt text, and a session ID. It returns nil if the prompt is valid, ErrPromptInvalid if
+// the prompt is missing required information, or an error if the validation request fails.
 func ValidatePrompt(ctx context.Context, service *service.OpenAIService, userPrompt string, sessionID string) error {
 	req := entity.Request{
 		Prompt:       userPrompt,
