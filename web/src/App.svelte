@@ -3,7 +3,7 @@
     import Box from "./lib/Box.svelte";
     import { Spinner } from "flowbite-svelte";
     import { getChatResponse, getUserInfo } from "./lib/Api.ts";
-    import { getCookie, setCookie } from "typescript-cookie";
+    import { getCookie } from "typescript-cookie";
     import { onMount } from "svelte";
 
     let prompt = $state("");
@@ -56,12 +56,12 @@
     function setIdsAsCookie(data) {
         if (userId === "") {
             userId = data.data.userId;
-            setCookie("userId", userId);
+            //setCookie("userId", userId); // for future oder so
             paramsChatRequest.userId = userId;
         }
         if (conversationId === "") {
             conversationId = data.data.conversationId;
-            setCookie("conversationId", conversationId);
+            //setCookie("conversationId", conversationId); //for future oder so
             paramsChatRequest.conversationId = conversationId;
         }
     }
