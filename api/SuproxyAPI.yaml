@@ -15,7 +15,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Offerlist'
+              $ref: '#/components/schemas/OfferlistRequest'
         required: true
       responses:
         '200':
@@ -23,31 +23,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Offerlist'
+                $ref: '#/components/schemas/OfferlistResponse'
         '400':
           description: Invalid Request
-        '422':
-          description: Validation exception
-        default:
-          description: Unexpected error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: '#/components/schemas/Error'
         '500':
             description: Internal server error
             content:
               application/json:
                 schema:
                   $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
-    Offerlist:
+    OfferlistRequest:
       type: object
       properties:
         header:
-          type: string
-          example: "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
+          type: array
+          items:
+            type: string 
+            example: "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
         prompt:
           type: string
           example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
@@ -57,6 +61,9 @@ components:
         request:
           type: string
           example: "request json von supplier-d"
+    OfferlistResponse:
+      type: string
+      example: "Response JSON from supplier"
     Error:
       type: object
       properties:
