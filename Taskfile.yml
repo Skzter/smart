@@ -35,7 +35,6 @@ tasks:
     cmds:
       - cd web/ && pnpm install
       - task: lint-frontend
-      - task: format-frontend
       - cd web/ && pnpm run build
 
   build-pipeline:
