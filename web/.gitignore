@@ -4,6 +4,7 @@ logs
 npm-debug.log*
 pnpm-debug.log*
 dist/*
+!dist/.gitkeep
 
 node_modules
 *.local
