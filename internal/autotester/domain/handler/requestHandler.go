@@ -45,6 +45,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// entity.Request(body.Message, body.ConversationID)
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "OpenAI service failed"})
 		a.logger.Error(err.Error())
 		return
 	}
