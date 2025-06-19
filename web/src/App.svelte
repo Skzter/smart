@@ -11,7 +11,13 @@
 
     // get UserId and ConversationId for api calls from cookies
     var userId = getCookie("userId");
+    if(userId === "undefined") {
+	userId = "";
+    }
     var conversationId = getCookie("conversationId");
+    if(conversationId === "undefined") {
+	conversationId = "";
+    }
 
     let paramsUserInfo = {
         userId: userId,
@@ -28,7 +34,7 @@
     });
 
     let paramsChatRequest = {
-        message: { data: "", agent: 0 },
+        message: { data: "", agent: "user" },
         userId: userId,
         conversationId: conversationId,
     };
@@ -47,12 +53,12 @@
     }
 
     function setIdsAsCookie(data) {
-        if (userId === undefined) {
-            userId = data.userId;
+        if (userId === "") {
+            userId = data.data.userId;
             setCookie("userId", userId);
         }
-        if (conversationId === undefined) {
-            conversationId = data.conversationId;
+        if (conversationId === "") {
+            conversationId = data.data.conversationId;
             setCookie("conversationId", conversationId);
         }
     }
@@ -66,7 +72,7 @@
                 <Spinner color="blue" />
             {:then result}
                 {setIdsAsCookie(result)}
-                <Box msg={result.message.data} name="Bot" />
+                <Box msg={result.data.message.data} name="Bot" />
             {:catch error}
                 {console.log(error)}
                 <Box msg={error} name="Bot" />
