@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
 type SuproxyController struct {
@@ -27,7 +27,8 @@ func NewSuproxyController(logger *slog.Logger) (*SuproxyController, error) {
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	var request entity.Request
 
-	if err := c.BindJSON(request); err != nil {
+	if err := c.BindJSON(&request); err != nil {
+		s.logger.Error("Failed to bind JSON", "error", err)
 		return
 	}
 
