@@ -1,6 +1,7 @@
 module gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart
 
 require (
+	github.com/gin-gonic/gin v1.10.1
 	github.com/google/uuid v1.6.0
 	github.com/openai/openai-go v1.3.0
 	github.com/pkg/errors v0.9.1

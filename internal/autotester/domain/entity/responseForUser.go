@@ -7,3 +7,7 @@ type ResponseForUser struct {
 	ResponseText ModelAnswerText
 	TestCases    []*TestCase // list of test cases for multiple options
 }
+
+func (ResponseForUser) ToDTO() ResponseForUserDTO {
+	return ResponseForUserDTO{}
+}

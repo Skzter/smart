@@ -35,3 +35,7 @@ func (ls LogStamp) GetTimeStamp() time.Time {
 func (ls LogStamp) GetActorId() string {
 	return ls.actorId
 }
+
+func (LogStamp) ToDTO() LogStampDTO {
+	return LogStampDTO{}
+}
