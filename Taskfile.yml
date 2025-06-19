@@ -30,6 +30,13 @@ tasks:
         platforms: [windows/amd64]
       - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
+  
+  build-frontend:
+    cmds:
+      - cd web/ && pnpm install
+      - task: lint-frontend
+      - task: format-frontend
+      - cd web/ && pnpm run build
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -90,6 +97,16 @@ tasks:
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+
+  lint-frontend:
+    desc: "Run the frontend lint"
+    cmds:
+      - cd web/ && pnpm eslint .  
+
+  format-frontend:
+    desc: "Run the frontend formatter"
+    cmds:
+      - cd web/ && pnpm prettier --write .
 
   pre-commit:
     desc: "Run the pre-commit"
