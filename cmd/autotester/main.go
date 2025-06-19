@@ -26,12 +26,17 @@ func main() {
 		controller.HandleChatRequest(c)
 	})
 
-	staticFS, _ := fs.Sub(web.DistFS, "dist")
+	staticFS, err := fs.Sub(web.DistFS, "dist")
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
 	router.StaticFS("/", http.FS(staticFS))
 
 	err = router.Run(":8081")
-
 	if err != nil {
+		logger.Error(err.Error())
 		return
 	}
 }
