@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +12,7 @@ import (
 )
 
 func main() {
+
 	router := gin.Default()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	controller, err := handler.NewAutotesterController(logger)
@@ -23,7 +26,10 @@ func main() {
 		controller.HandleChatRequest(c)
 	})
 
-	err = router.Run(":8080")
+	staticFS, _ := fs.Sub(website.DistFS, "dist")
+	router.StaticFS("/", http.FS(staticFS))
+
+	err = router.Run(":8081")
 
 	if err != nil {
 		return

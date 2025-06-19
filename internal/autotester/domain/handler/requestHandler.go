@@ -43,7 +43,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// Call Request to openAI
 	// service needed
 	// entity.Request(body.Message, body.ConversationID)
-	resp, err := a.ServiceHandler(c, userRequest)
+	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
 		a.logger.Error(err.Error())
 		return
@@ -62,7 +62,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
 }
 
-func (a *AutotesterController) ServiceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
+func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
 	resp, err := a.service.Request(c, repoEntity.Request{
 		Prompt:       userRequest.Message.MessageBody,
 		SessionID:    userRequest.SessionId,

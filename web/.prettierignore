@@ -1,0 +1,12 @@
+# Ignore artifacts:
+dist
+node_modules
+src/assets/
+.vscode/*
+!.vscode/extensions.json
+index.html
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+README.md
+public
