@@ -109,6 +109,9 @@ build_frontend_artifacts:
 build_go_artifacts:
   stage: build
   extends: .go_cache
+  needs:
+    - job: build_frontend_artifacts
+      artifacts: true
 #  rules:
 #    - if: $CI_COMMIT_BRANCH == "main"
 #      when: on_success
@@ -157,8 +160,6 @@ build_autotester_go_container:
   interruptible: true
   needs:
     - job: build_go_artifacts
-      artifacts: true
-    - job: build_frontend_artifacts
       artifacts: true
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
