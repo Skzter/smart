@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package build
 
 // Compile-time variables injected via ldflags

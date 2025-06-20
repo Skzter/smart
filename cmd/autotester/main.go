@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -33,6 +34,21 @@ func main() {
 	}
 
 	router.StaticFS("/", http.FS(staticFS))
+
+	// Compatibility with Nginx Proxy
+	router.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		// If the request is for /api/assets/, serve from assets directory
+		if strings.HasPrefix(path, "/api/assets/") {
+			// Remove /api prefix to get the actual file path
+			filePath := strings.TrimPrefix(path, "/api")
+			c.Request.URL.Path = filePath
+		}
+
+		// Serve the file using the static filesystem
+		fileServer := http.FileServer(http.FS(staticFS))
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
 
 	err = router.Run(":8081")
 	if err != nil {
