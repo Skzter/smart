@@ -3,8 +3,11 @@ FROM golang:latest AS builder
 WORKDIR /app
 
 COPY build/autotester bin/autotester
+RUN ls -la build/
 COPY web/embed.go web/embed.go
 COPY web/dist web/dist
+RUN ls -la web/
+RUN ls -la web/dist
 
 FROM scratch
 
