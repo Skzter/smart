@@ -1,6 +1,7 @@
 services:
   suproxy:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest
+    restart: always
     ports:
       - "8080:8080"
     networks:
@@ -8,6 +9,7 @@ services:
 
   autotester:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
+    restart: always
     ports:
       - "8081:8081"
     networks:
@@ -15,6 +17,7 @@ services:
 
   postgres:
     image: postgres:alpine
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -24,5 +27,6 @@ services:
 
   redis:
     image: valkey/valkey:alpine
+    restart: always
     networks:
       - default
