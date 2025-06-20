@@ -9,6 +9,9 @@ env:
 
 vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
+  MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
+  OPENAI_KEY_VAR: "{{.MODULE_NAME}}/internal/build.OpenAIKey"
+  VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
 
 tasks:
   setup:
@@ -21,15 +24,23 @@ tasks:
 
   build:
     desc: "Build the project"
+    vars:
+      OPENAI_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
     cmds:
-      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/suproxy -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - echo "building suproxy with version {{.VERSION}}"
+      - cmd: go build -o bin/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
         platforms: [linux, darwin]
-      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/autotester -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - echo "building autotester with version {{.VERSION}}"
+      - cmd: go build -o bin/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
         platforms: [linux, darwin]
-      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/suproxy.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
+      - echo "building suproxy.exe with version {{.VERSION}}"
+      - cmd: go build -o bin/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
         platforms: [windows/amd64]
-      - cmd: CGO_ENABLED=1 "{{.BIN_PATH}}/doppler" run -- go build -o bin/autotester.exe -ldflags "-X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - echo "building autotester.exe with version {{.VERSION}}"
+      - cmd: go build -o bin/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
+    silent: true
   
   build-frontend:
     cmds:
@@ -45,15 +56,21 @@ tasks:
       BUILD_DATE:
         sh: date +"%Y-%m-%d-%H:%M:%S"
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
+      OPENAI_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
     cmds:
-      - echo {{.VERSION}}
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/suproxy/main.go
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X 'main.Version={{.VERSION}}'" cmd/autotester/main.go
+      - echo "building suproxy with version {{.VERSION}}"
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - echo "building autotester with version {{.VERSION}}"
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+    silent: true
 
   run-suproxy:
     desc: "Run the project"
     env:
       APP_CMD: "./cmd/suproxy"
+      OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
+      VERSION_VAR: "{{.VERSION_VAR}}"
     cmds:
       - "{{.BIN_PATH}}/doppler run -- go tool air"
 
@@ -61,6 +78,8 @@ tasks:
     desc: "Run the project"
     env:
       APP_CMD: "./cmd/autotester"
+      OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
+      VERSION_VAR: "{{.VERSION_VAR}}"
     cmds:
       - "{{.BIN_PATH}}/doppler run -- go tool air"
 

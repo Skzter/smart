@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/openai/openai-go"
@@ -12,6 +11,7 @@ import (
 	"github.com/openai/openai-go/packages/param"
 	"github.com/openai/openai-go/responses"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -26,7 +26,6 @@ type OpenAI interface {
 
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
-	key     string       // API key for authentication
 	logger  *slog.Logger // logger for Errors and Responses
 	client  openai.Client
 	timeout int // timeout in seconds
@@ -42,13 +41,10 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 		return nil, fmt.Errorf("invalid timout: %d seconds", timeout)
 	}
 
-	key := os.Getenv("OPENAI_KEY")
-
 	return &openAI{
-		key:    key,
 		logger: logger,
 		client: openai.NewClient(
-			option.WithAPIKey(key),
+			option.WithAPIKey(build.OpenAIKey),
 		),
 		timeout: timeout,
 	}, nil
