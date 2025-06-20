@@ -17,6 +17,26 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH
 
+.pnpm_cache:
+  image: node:latest
+  variables:
+    PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
+  rules:
+    - if: $GITLAB_CI == "false"
+      when: never
+    - when: on_success
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - pnpm config set store-dir $PNPM_HOME
+    - cd web
+    - pnpm install
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - .pnpm-store
+      - node_modules
+
 .go_cache:
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
@@ -36,6 +56,12 @@ go_mod_download:
   extends: .go_cache 
   script:
     - go mod download
+
+lint_frontend:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - pnpm eslint .
 
 lint_go:
   stage: code_analysis_and_testing
@@ -57,6 +83,28 @@ unit_test_go:
   extends: .go_cache
   script:
     - ./bin/task test
+
+build_frontend_artifacts:
+  stage: build
+  extends: .pnpm_cache
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == "main"
+#      when: on_success
+  script:
+    - pnpm build
+  artifacts:
+    name: Frontend_Build
+    paths:
+      - web/dist/
+
+#build_frontend_no_artifacts:
+#  stage: build
+#  extends: .pnpm_cache
+#  rules:
+#    - if: $CI_COMMIT_BRANCH != "main"
+#      when: on_success
+#  script:
+#    - pnpm build
 
 build_go_artifacts:
   stage: build
@@ -110,6 +158,8 @@ build_autotester_go_container:
   needs:
     - job: build_go_artifacts
       artifacts: true
+    - job: build_frontend_artifacts
+      artifacts: true
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
   script:
@@ -119,9 +169,9 @@ build_autotester_go_container:
 deploy_htwk:
   image: alpine:latest
   stage: deploy
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == "main"
+#      when: on_success
   interruptible: true
   resource_group: production
   script:
