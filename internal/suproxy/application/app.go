@@ -36,13 +36,14 @@ func NewApp() (*App, error) {
 	}, nil
 }
 
+// Run starts the application and listens on port 127.0.0.1:8080
 func Run() {
 	app, err := NewApp()
 	if err != nil {
 		panic(err)
 	}
 
-	if err := app.router.Run(":8080"); err != nil {
+	if err := app.router.Run("127.0.0.1:8080"); err != nil {
 		panic(err)
 	}
 }
