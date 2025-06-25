@@ -81,7 +81,7 @@ tasks:
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
     cmds:
-      - "{{.BIN_PATH}}/doppler run -- go tool air"
+      - 'PATH={{.BIN_PATH}}:{{.PATH}} doppler run -- go tool air'
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -135,7 +135,7 @@ tasks:
   generate:
     desc: "run go-generate"
     cmds:
-      - "go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/test.pkl"
+      - 'PATH={{.BIN_PATH}}:{{.PATH}} go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl'
 
   echoPath:
     cmds:
