@@ -131,3 +131,12 @@ tasks:
     cmds:
       - task: lint
       - task: test
+
+  generate:
+    desc: "run go-generate"
+    cmds:
+      - "go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/test.pkl"
+
+  echoPath:
+    cmds:
+      - echo $PATH
