@@ -1,10 +1,6 @@
 package entity
 
 type ChatResponse struct {
-	Content    UserRequest
-	Tools_call ToolCall
-}
-
-func (ChatResponse) ToDTO() ChatResponseDTO {
-	return ChatResponseDTO{}
+	Content    UserRequest `json:"content"`
+	Tools_call ToolCall    `json:"tool_call"`
 }

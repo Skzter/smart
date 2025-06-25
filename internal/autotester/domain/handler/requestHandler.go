@@ -74,10 +74,10 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	if err != nil {
 		return nil, err
 	}
-	text := entity.MessageDTO{MessageBody: resp.Text, Actor: "system"}
+	text := entity.Message{MessageBody: resp.Text, Actor: "system"}
 	return &entity.ResponseForUserDTO{
 		ResponseText: text,
-		SessionIdDTO: entity.SessionIdDTO{Id: resp.SessionID},
+		SessionId:    entity.SessionId{Id: resp.SessionID},
 		LogStampDTO:  entity.LogStampDTO{ActorId: ""},
 	}, nil
 }

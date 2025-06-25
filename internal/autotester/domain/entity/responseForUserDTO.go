@@ -1,8 +1,8 @@
 package entity
 
 type ResponseForUserDTO struct {
-	ResponseText MessageDTO `json:"message"`
-	SessionIdDTO
+	ResponseText Message `json:"message"`
+	SessionId
 	LogStampDTO
 }
 
