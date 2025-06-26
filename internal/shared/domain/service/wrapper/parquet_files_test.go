@@ -3,7 +3,6 @@
 package service
 
 import (
-	"context"
 	"log/slog"
 	"os"
 	"testing"
@@ -429,42 +428,4 @@ func ExampleParquetWrapper() {
 		slog.Int64("columns", info.NumColumns),
 		slog.Int64("size_bytes", info.FileSize),
 	)
-}
-
-// Integration test with ParquetS3Wrapper (requires S3 setup)
-func TestParquetS3Wrapper_Integration(t *testing.T) {
-	// Skip this test if not in integration test mode
-	if testing.Short() {
-		t.Skip("Skipping integration test")
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	// This would require actual S3 configuration
-	s3Config := entity.S3Config{
-		Region: "us-east-1",
-		Bucket: "test-bucket",
-		// AccessKey and SecretKey would be set from environment or config
-	}
-
-	wrapper, err := NewParquetS3Wrapper[UserEvent](logger, s3Config)
-	if err != nil {
-		t.Skipf("Skipping S3 integration test due to setup error: %v", err)
-		return
-	}
-
-	ctx := context.Background()
-
-	// Test data
-	events := []UserEvent{
-		{UserID: 1, EventType: "test", Timestamp: time.Now().UTC()},
-	}
-
-	// This would attempt to upload to S3 (will likely fail without proper credentials)
-	err = wrapper.UploadStructsAsParquet(ctx, "test/events", events, nil)
-	// We expect this to fail in most test environments due to missing AWS credentials
-	// The test validates that the wrapper can be created and the API works
-	if err != nil {
-		t.Logf("Expected S3 error in test environment: %v", err)
-	}
 }

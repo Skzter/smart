@@ -38,7 +38,7 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (*S3Wrapper, erro
 	}
 
 	if config.Region == "" {
-		config.Region = "us-east-1" // Default region
+		config.Region = "eu-central-1" // Default region
 	}
 
 	// Load AWS configuration

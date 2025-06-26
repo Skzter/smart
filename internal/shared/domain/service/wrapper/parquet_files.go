@@ -2,7 +2,6 @@ package service
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -291,74 +290,4 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.Parq
 	)
 
 	return info, nil
-}
-
-// ParquetS3Wrapper combines S3 and Parquet operations for convenient file handling
-type ParquetS3Wrapper[T any] struct {
-	ParquetWrapper[T]
-	s3Wrapper *S3Wrapper
-	logger    *slog.Logger
-}
-
-// NewParquetS3Wrapper creates a wrapper that combines S3 and Parquet operations
-func NewParquetS3Wrapper[T any](logger *slog.Logger, s3Config entity.S3Config) (*ParquetS3Wrapper[T], error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger cannot be nil: %w", err)
-	}
-
-	s3Wrapper, err := NewS3Wrapper(logger, s3Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 wrapper: %w", err)
-	}
-
-	parquetWrapper, err := NewParquetWrapper[T](logger, DefaultParquetConfig())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Parquet wrapper: %w", err)
-	}
-
-	wrapper := &ParquetS3Wrapper[T]{
-		ParquetWrapper: *parquetWrapper,
-		s3Wrapper:      s3Wrapper,
-		logger:         logger,
-	}
-
-	logger.Info("ParquetS3Wrapper initialized")
-
-	return wrapper, nil
-}
-
-// UploadStructsAsParquet converts structs to parquet and uploads to S3
-func (ps *ParquetS3Wrapper[T]) UploadStructsAsParquet(ctx context.Context, key string, data []T, metadata map[string]string) error {
-	// Convert structs to parquet
-	parquetData, err := ps.WriteStructsToParquet(data)
-	if err != nil {
-		return fmt.Errorf("failed to convert structs to parquet: %w", err)
-	}
-
-	// Add parquet-specific metadata
-	if metadata == nil {
-		metadata = make(map[string]string)
-	}
-	metadata["parquet-compression"] = ps.config.CompressionCodec
-	metadata["parquet-rows"] = fmt.Sprintf("%d", len(data))
-
-	// Upload to S3
-	return ps.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
-}
-
-// DownloadStructsFromParquet downloads parquet file from S3 and converts to structs
-func (ps *ParquetS3Wrapper[T]) DownloadStructsFromParquet(ctx context.Context, key string) ([]T, map[string]string, error) {
-	// Download from S3
-	parquetData, metadata, err := ps.s3Wrapper.DownloadParquetFile(ctx, key)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to download parquet file: %w", err)
-	}
-
-	// Convert parquet to structs
-	structs, err := ps.ReadStructsFromParquet(parquetData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to convert parquet to structs: %w", err)
-	}
-
-	return structs, metadata, nil
 }

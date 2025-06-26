@@ -6,7 +6,6 @@ This package provides comprehensive wrappers for both Amazon S3 operations and P
 
 1. **S3Wrapper** - Handle S3 operations for parquet files
 2. **ParquetWrapper** - Generic parquet file operations with Go structs
-3. **ParquetS3Wrapper** - Combined S3 and Parquet operations for seamless file handling
 
 ## Features
 
@@ -74,7 +73,7 @@ config := service.DefaultParquetConfig()
 
 ```go
 type S3Config struct {
-    Region    string // AWS region (default: "us-east-1")
+    Region    string // AWS region (default: "eu-central-1")
     Bucket    string // S3 bucket name (required)
     AccessKey string // AWS access key (optional)
     SecretKey string // AWS secret key (optional)
@@ -87,7 +86,7 @@ type S3Config struct {
 1. **Using AWS Credential Chain** (recommended for production):
 ```go
 config := S3Config{
-    Region: "us-east-1",
+    Region: "eu-central-1",
     Bucket: "my-parquet-bucket",
 }
 ```
@@ -95,7 +94,7 @@ config := S3Config{
 2. **Using explicit credentials**:
 ```go
 config := S3Config{
-    Region:    "us-east-1",
+    Region:    "eu-central-1",
     Bucket:    "my-parquet-bucket",
     AccessKey: "AKIAIOSFODNN7EXAMPLE",
     SecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
@@ -105,7 +104,7 @@ config := S3Config{
 3. **Using S3-compatible services (MinIO, etc.)**:
 ```go
 config := S3Config{
-    Region:    "us-east-1",
+    Region:    "eu-central-1",
     Bucket:    "my-parquet-bucket",
     AccessKey: "minioadmin",
     SecretKey: "minioadmin",
@@ -215,60 +214,6 @@ func main() {
 }
 ```
 
-### Combined S3 and Parquet Operations
-
-```go
-func main() {
-    logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-    
-    // Configure S3
-    s3Config := service.S3Config{
-        Region: "us-east-1",
-        Bucket: "my-data-bucket",
-    }
-    
-    // Create combined wrapper
-    wrapper, err := service.NewParquetS3Wrapper(logger, s3Config)
-    if err != nil {
-        logger.Error("Failed to create wrapper", slog.String("error", err.Error()))
-        return
-    }
-    
-    ctx := context.Background()
-    
-    // Your data
-    products := []Product{
-        {ID: 1, Name: "Laptop", Price: 999.99, Category: "Electronics", InStock: true},
-        {ID: 2, Name: "Book", Price: 29.99, Category: "Literature", InStock: false},
-    }
-    
-    parquetConfig := service.DefaultParquetConfig()
-    metadata := map[string]string{
-        "source": "product-catalog",
-        "version": "1.0",
-    }
-    
-    // Upload structs as parquet to S3
-    err = service.UploadStructsAsParquet(wrapper, ctx, "products/2024/catalog", products, parquetConfig, metadata)
-    if err != nil {
-        logger.Error("Upload failed", slog.String("error", err.Error()))
-        return
-    }
-    
-    // Download and convert back to structs
-    downloadedProducts, fileMetadata, err := service.DownloadStructsFromParquet[Product](wrapper, ctx, "products/2024/catalog.parquet")
-    if err != nil {
-        logger.Error("Download failed", slog.String("error", err.Error()))
-        return
-    }
-    
-    logger.Info("Products downloaded",
-        slog.Int("count", len(downloadedProducts)),
-        slog.Any("metadata", fileMetadata),
-    )
-}
-```
-
 ### Advanced Parquet Operations
 
 ```go
@@ -356,7 +301,7 @@ func main() {
     
     // Configure S3 wrapper
     config := service.S3Config{
-        Region: "us-east-1",
+        Region: "eu-central-1",
         Bucket: "my-parquet-bucket",
     }
     
@@ -469,11 +414,8 @@ logger.Info("File deleted successfully")
 
 The wrapper supports standard AWS environment variables when using the credential chain:
 
-- `AWS_REGION` - AWS region
 - `AWS_ACCESS_KEY_ID` - AWS access key
 - `AWS_SECRET_ACCESS_KEY` - AWS secret key
-- `AWS_SESSION_TOKEN` - AWS session token (for temporary credentials)
-- `AWS_PROFILE` - AWS profile name
 
 ## Error Handling
 
