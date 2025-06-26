@@ -24,7 +24,6 @@ tasks:
 
   build:
     desc: "Build the project"
-    deps: [generate-config]
     vars:
       OPENAI_KEY:
         sh: PATH=$LPATH; doppler secrets get OPENAI_KEY --plain
@@ -51,7 +50,6 @@ tasks:
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
-    deps: [generate-config]
     vars:
       BUILD_BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
@@ -106,7 +104,6 @@ tasks:
 
   lint:
     desc: "Run the lint"
-    deps: [generate-config]
     cmds:
       - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
     ignore_error: false
@@ -133,6 +130,7 @@ tasks:
 
   pre-commit:
     desc: "Run the pre-commit"
+    deps: [generate-config]
     cmds:
       - task: lint
       - task: test
