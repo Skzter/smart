@@ -1,8 +1,8 @@
 <script lang="ts">
     let { msg, name } = $props();
-    let text_align = $state("");
-    let bg_col = $state("");
-    let direction = $state("");
+    let text_align = "";
+    let bg_col = "";
+    let direction = "";
 
     if (name == "User") {
         text_align = "text-end";
