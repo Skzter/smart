@@ -118,6 +118,17 @@ tasks:
     cmds:
       - go tool gotestsum ./...
 
+  test-integration:
+    desc: "Run the integration tests"
+    cmds:
+      - go tool gotestsum -- -tags=integration ./...
+
+  test-integration-coverage:
+    desc: "Run the integration tests with coverage"
+    cmds:
+      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out
+
   lint:
     desc: "Run the lint"
     cmds:
