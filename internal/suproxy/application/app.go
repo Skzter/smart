@@ -1,6 +1,7 @@
 package application
 
 import (
+	"fmt"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -15,20 +16,20 @@ type App struct {
 }
 
 // newApp creates a new instance of App
-func NewApp() (*App, error) {
+func newApp() (*App, error) {
 	logger := slog.Default()
 	if logger == nil {
-		panic("logger is nil")
+		return nil, fmt.Errorf("logger is nil")
 	}
 
 	handler, err := handler.NewSuproxyController(logger)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to create handler: %w", err)
 	}
 
-	router := SetupRouter(handler)
+	router := setupRouter(handler)
 	if router == nil {
-		panic("router is nil")
+		return nil, fmt.Errorf("router is nil")
 	}
 	return &App{
 		logger: logger,
@@ -38,7 +39,7 @@ func NewApp() (*App, error) {
 
 // Run starts the application and listens on port 127.0.0.1:8080
 func Run() {
-	app, err := NewApp()
+	app, err := newApp()
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +50,7 @@ func Run() {
 }
 
 // setupRouter initializes the Gin router and sets up the routes for the API
-func SetupRouter(h *handler.SuproxyController) *gin.Engine {
+func setupRouter(h *handler.SuproxyController) *gin.Engine {
 	router := gin.Default()
 
 	api := router.Group("/api/v1")
