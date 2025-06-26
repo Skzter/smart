@@ -1,27 +1,32 @@
 <script lang="ts">
     let { msg, name } = $props();
-    let text_align = "";
-    let bg_col = "";
-    let direction = "";
-
-    if (name == "User") {
-        text_align = "text-end";
-        bg_col = "bg-sky-300";
-        direction = "justify-end";
-    } else if (name === "Bot") {
-        text_align = "text-start";
-        bg_col = "bg-gray-200";
-        direction = "justify-start";
-    }
 </script>
 
-<div class="flex {direction} m-4">
+<div
+    class="flex m-4"
+    class:justify-end={name === "User"}
+    class:justify-start={name === "Bot"}
+>
     <div
-        class=" font-mono {bg_col} w-fit {direction} p-2.5 border-2 border-black border-solid rounded-xl"
+        class="font-mono w-fit p-2.5 border-2 border-black border-solid rounded-xl"
+        class:justify-end={name === "User"}
+        class:justify-start={name === "Bot"}
+        class:bg-sky-300={name === "User"}
+        class:bg-gray-200={name === "Bot"}
     >
-        <h1 class="{text_align} tracking-wide uppercase font-bold text-xl">
+        <h1
+            class="tracking-wide uppercase font-bold text-xl"
+            class:text-end={name === "User"}
+            class:text-start={name === "Bot"}
+        >
             {name}
         </h1>
-        <p class="{text_align} font-sans whitespace-pre-wrap">{msg}</p>
+        <p
+            class="font-sans whitespace-pre-wrap"
+            class:text-end={name === "User"}
+            class:text-start={name === "Bot"}
+        >
+            {msg}
+        </p>
     </div>
 </div>
