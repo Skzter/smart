@@ -19,7 +19,7 @@ type AutotesterController struct {
 }
 
 func NewAutotesterController(logger *slog.Logger, config *config.Config) (a *AutotesterController, err error) {
-	service, err := service.NewService(logger, 5)
+	service, err := service.NewService(logger, config.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	resp, err := a.service.Request(c, repoEntity.Request{
 		Prompt:       userRequest.Message.MessageBody,
 		SessionID:    userRequest.SessionId,
-		SystemPrompt: a.config.Systemprompt,
+		SystemPrompt: a.config.Validationprompt,
 		Model:        a.config.Model},
 	)
 

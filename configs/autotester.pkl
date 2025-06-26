@@ -3,5 +3,15 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-systemprompt: "Du bist ein hilfreicher Assistent"
+validationprompt: "Du bist ein hilfreicher Assistent"
+
 model:  "gpt-4.1-nano-2025-04-14"
+
+timeout: Int = 5 // Zahlen typisieren, damit auch im go-code dann mit typ
+
+region: ""
+
+bucket: ""
+
+port: "8081" 
+

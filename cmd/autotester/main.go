@@ -41,7 +41,7 @@ func main() {
 
 	router.StaticFS("/", http.FS(staticFS))
 
-	err = router.Run(":8081")
+	err = router.Run(":" + cfg.Port)
 	if err != nil {
 		logger.Error(err.Error())
 		return
