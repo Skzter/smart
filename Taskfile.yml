@@ -11,6 +11,8 @@ vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
   MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
   OPENAI_KEY_VAR: "{{.MODULE_NAME}}/internal/build.OpenAIKey"
+  AWS_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsAccessKey"
+  AWS_SECRET_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsSecretAccessKey"
   VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
 
 tasks:
@@ -27,18 +29,22 @@ tasks:
     vars:
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - cmd: go build -o bin/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - cmd: go build -o bin/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
         platforms: [linux, darwin]
       - echo "building autotester with version {{.VERSION}}"
-      - cmd: go build -o bin/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
         platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
-      - cmd: go build -o bin/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - cmd: go build -o bin/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
-      - cmd: go build -o bin/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
     silent: true
   
@@ -58,11 +64,15 @@ tasks:
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
       - echo "building autotester with version {{.VERSION}}"
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
     silent: true
 
   run-suproxy:
@@ -71,6 +81,10 @@ tasks:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - "{{.BIN_PATH}}/doppler run -- go tool air"
 
@@ -80,6 +94,10 @@ tasks:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - "{{.BIN_PATH}}/doppler run -- go tool air"
 
