@@ -11,6 +11,8 @@ type RequestForLLM struct {
 	SessionContextData *SessionSummary // data to generate context for the LLM
 }
 
+// ToDTO converts the RequestForLLM to a shared repoEntity.Request.
+// Returns an empty repoEntity.Request.
 func (r RequestForLLM) ToDTO() repoEntity.Request {
 	return repoEntity.Request{}
 }
