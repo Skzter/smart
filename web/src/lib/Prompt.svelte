@@ -3,7 +3,7 @@
     let { input = $bindable(""), onclick } = $props();
 
     function handleKeyPress(e: KeyboardEvent) {
-        if (e.key === "Enter" && input && !e.shiftKey) {
+        if (e.key === "Enter" && input.trim() && !e.shiftKey) {
             onclick();
             input = "";
             e.preventDefault();
@@ -22,7 +22,10 @@
         class="w-9/10 resize-none overflow-y-auto"
         rows={3}
     />
-    <Button color="purple" class="w-1/10 h-1/3" {onclick} disabled={!input}
-        >Send</Button
+    <Button
+        color="purple"
+        class="w-1/10 h-1/3"
+        {onclick}
+        disabled={!input.trim()}>Send</Button
     >
 </div>
