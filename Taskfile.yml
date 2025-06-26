@@ -106,6 +106,7 @@ tasks:
 
   lint:
     desc: "Run the lint"
+    deps: [generate-config]
     cmds:
       - go tool golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --timeout=10m
     ignore_error: false
@@ -140,3 +141,4 @@ tasks:
     desc: "generates code for reading pkl configs"
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
+      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl

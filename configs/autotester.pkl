@@ -3,15 +3,16 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-validationprompt: "Du bist ein hilfreicher Assistent"
+validationprompt: String = "Du bist ein hilfreicher Assistent"
+autopwprompt: String = "generier maln test"
 
-model:  "gpt-4.1-nano-2025-04-14"
+model: String = "gpt-4.1-nano-2025-04-14"
 
-timeout: Int = 5 // Zahlen typisieren, damit auch im go-code dann mit typ
+timeout: Int = 5
 
-region: ""
+region: String = ""
 
-bucket: ""
+bucket: String = ""
 
-port: "8081" 
+port: String = "8081" 
 
