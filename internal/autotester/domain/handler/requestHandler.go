@@ -11,11 +11,15 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
+// AutotesterController is the controller for autotesting requests.
+// It encapsulates logging and access to the OpenAI service.
 type AutotesterController struct {
 	logger  *slog.Logger
 	service *service.OpenAIService
 }
 
+// NewAutotesterController creates a new AutotesterController.
+// Returns an initialized controller or an error.
 func NewAutotesterController(logger *slog.Logger) (a *AutotesterController, err error) {
 	service, err := service.NewService(logger, 5)
 	if err != nil {
@@ -28,7 +32,8 @@ func NewAutotesterController(logger *slog.Logger) (a *AutotesterController, err 
 	}, err
 }
 
-// handle Frontend Request JSON to String
+// HandleChatRequest processes a chat request from the frontend.
+// Expects a JSON with UserRequestDTO and returns a response from the LLM.
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	var userRequest entity.UserRequestDTO
 
@@ -38,21 +43,20 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	// validation Method
+	// validation logic
 
-	// Call Request to openAI
-	// service needed
-	// entity.Request(body.Message, body.ConversationID)
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "OpenAI service failed"})
 		a.logger.Error(err.Error())
 		return
 	}
-	// respons from LLM To frontend
+	// Return response from LLM to frontend
 	c.JSON(http.StatusOK, resp)
 }
 
+// HandleUserInfoRequest processes a request for user information.
+// Expects a JSON with UserRequestDTO and returns a ResponseForUser.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	var body entity.UserRequestDTO
 	var resp entity.ResponseForUser
@@ -63,6 +67,8 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
 }
 
+// serviceHandler calls the OpenAI service and prepares the response for the frontend.
+// Returns a ResponseForUserDTO or an error.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
 	resp, err := a.service.Request(c, repoEntity.Request{
 		Prompt:       userRequest.Message.MessageBody,

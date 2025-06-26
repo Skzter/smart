@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestFileExists tests the FileExists function.
+// It checks that the function returns nil for an existing file
+// and returns an error for a non-existing file.
 func TestFileExists(t *testing.T) {
 	tmpDir, err := ioutil.TempDir("", "")
 	if err != nil {
