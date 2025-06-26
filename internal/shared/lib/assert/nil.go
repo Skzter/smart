@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NotNil checks that all provided values are not nil.
+// Returns an error if any value is nil, otherwise returns nil.
 func NotNil(values ...interface{}) error {
 	for i, value := range values {
 		if value == nil {

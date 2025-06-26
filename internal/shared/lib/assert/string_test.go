@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// TestByteLength tests ByteLength.
+// TestByteLength tests the ByteLength function.
 // It checks that ByteLength returns an error if the byte slice length is outside the given range.
 func TestByteLength(t *testing.T) {
 	tests := []struct {
@@ -35,7 +35,7 @@ func TestByteLength(t *testing.T) {
 	}
 }
 
-// TestStringLength tests StringLength.
+// TestStringLength tests the StringLength function.
 // It checks that StringLength returns an error if the string length or allowed values are invalid.
 func TestStringLength(t *testing.T) {
 	tests := []struct {
@@ -69,7 +69,7 @@ func TestStringLength(t *testing.T) {
 	}
 }
 
-// TestStringNotEmpty tests StringNotEmpty.
+// TestStringNotEmpty tests the StringNotEmpty function.
 // It returns an error for empty strings and nil for non-empty strings.
 func TestStringNotEmpty(t *testing.T) {
 	tests := []struct {
