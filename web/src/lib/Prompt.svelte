@@ -13,15 +13,15 @@
 
 <div
     class="fixed bottom-0 left-0 w-full flex flex-row w-screen items-center bg-white p-4 border-t gap-2"
-    on:keydown={handleKeyPress}
 >
     <textarea
+        onkeydown={handleKeyPress}
         bind:value={input}
         placeholder="Prompt"
         required
         class="w-9/10 resize-none overflow-y-auto"
         rows={3}
-    />
+    ></textarea>
     <Button
         color="purple"
         class="w-1/10 h-1/3"
