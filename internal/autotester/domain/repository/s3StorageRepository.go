@@ -1,12 +1,39 @@
 package repository
 
+import (
+	"fmt"
+	"log/slog"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
+)
+
 // s3StorageRepository implements StorageRepository for AWS S3 storage.
 type s3StorageRepository struct {
-	// wrapper service
+	s3Wrapper *service.S3Wrapper
+	logger    *slog.Logger
 }
 
-func NewS3StorageRepository() StorageRepository {
-	return &s3StorageRepository{}
+func NewS3StorageRepository(logger *slog.Logger) (StorageRepository, error) {
+	if err := assert.NotNil(logger); err != nil {
+		return nil, fmt.Errorf("logger cannot be nil: %w", err)
+	}
+
+	s3Wrapper, err := service.NewS3Wrapper(logger, entity.S3Config{
+		Bucket:    "bucket name",
+		AccessKey: build.AwsAccessKey,
+		SecretKey: build.AwsSecretAccessKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create s3Wrapper: %w", err)
+	}
+
+	return &s3StorageRepository{
+		s3Wrapper: s3Wrapper,
+		logger:    logger,
+	}, nil
 }
 
 func (s3 *s3StorageRepository) Create() {
