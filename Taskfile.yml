@@ -114,9 +114,24 @@ tasks:
       - docker compose -f compose.dev.yml down
 
   test:
-    desc: "Run the tests"
+    desc: "Run the tests with gotestsum and coverage threshold"
     cmds:
-      - go tool gotestsum ./...
+      - go tool gotestsum -- -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+      - |
+   #     # Check if 'bc' is installed
+   #     if ! command -v bc &> /dev/null; then
+   #       echo "Error: 'bc' is not installed. Please install it (e.g., 'sudo pacman -S bc' or 'sudo apt install bc')."
+   #       exit 1
+   #     fi
+   #     THRESHOLD=80.0
+   #     COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+   #     echo "Total coverage: $COVERAGE%"
+   #     PASS=$(echo "$COVERAGE >= $THRESHOLD" | bc)
+   #     if [ "$PASS" -ne 1 ]; then
+   #       echo "Coverage $COVERAGE% is below threshold $THRESHOLD%"
+   #       exit 1
+   #     fi
 
   test-integration:
     desc: "Run the integration tests"
