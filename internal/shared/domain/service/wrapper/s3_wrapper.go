@@ -28,7 +28,7 @@ type S3Wrapper struct {
 }
 
 // NewS3Wrapper creates a new S3Wrapper instance
-func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (*S3Wrapper, error) {
+func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, fmt.Errorf("logger cannot be nil: %w", err)
 	}

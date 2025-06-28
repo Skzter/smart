@@ -16,8 +16,8 @@ import (
 // GenericStorageRepository provides a generic implementation of StorageRepository
 // for any entity type T, using S3 and Parquet wrappers.
 type GenericStorageRepository[T any] struct {
-	s3Wrapper      *service.S3Wrapper
-	parquetWrapper *service.ParquetWrapper[T]
+	s3Wrapper      service.S3StorageWrapper
+	parquetWrapper service.ParquetFileWrapper[T]
 	logger         *slog.Logger
 }
 

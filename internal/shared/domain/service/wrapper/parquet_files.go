@@ -31,7 +31,7 @@ func DefaultParquetConfig() entity.ParquetConfig {
 }
 
 // NewParquetWrapper creates a new ParquetWrapper instance
-func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig) (*ParquetWrapper[T], error) {
+func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig) (ParquetFileWrapper[T], error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, fmt.Errorf("logger cannot be nil: %w", err)
 	}
