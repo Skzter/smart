@@ -10,11 +10,11 @@ type StorageRepository[T any] interface {
 	Create(ctx context.Context, obj *T) (string, error)
 
 	// Read retrieves a record or object from the storage based on an identifier or query.
-	Read(key string) (*T, error) // return data or error, Johannes fragen
+	Read(ctx context.Context, key string) (*T, error) // return data or error, Johannes fragen
 
 	// Update modifies an existing record or object in the storage system.
 	Update(ctx context.Context, obj *T, key string) (string, error)
 
 	// Delete removes a record or object from the storage system.
-	Delete(key string) error
+	Delete(ctx context.Context, key string) error
 }
