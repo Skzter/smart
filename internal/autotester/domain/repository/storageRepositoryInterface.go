@@ -13,7 +13,7 @@ type StorageRepository[T any] interface {
 	Read(ctx context.Context, key string) (*T, error) // return data or error, Johannes fragen
 
 	// Update modifies an existing record or object in the storage system.
-	Update(ctx context.Context, obj *T, key string) (string, error)
+	Update(ctx context.Context, obj *T, key string) error
 
 	// Delete removes a record or object from the storage system.
 	Delete(ctx context.Context, key string) error

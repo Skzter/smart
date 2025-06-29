@@ -61,11 +61,11 @@ func testCreate[T any](t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
+	for _, test := range tests {
 		mockParquet := &mockParquetWrapper[T]{
 			WriteStructToParquetFunc: func(data T) ([]byte, error) {
-				if tc.mockParquetError != nil {
-					return nil, tc.mockParquetError
+				if test.mockParquetError != nil {
+					return nil, test.mockParquetError
 				}
 				return []byte("dummy parquet data"), nil
 			},
@@ -73,7 +73,7 @@ func testCreate[T any](t *testing.T) {
 
 		mockS3 := &mockS3Wrapper{
 			UploadParquetFileFunc: func(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-				return tc.mockUploadError
+				return test.mockUploadError
 			},
 		}
 
@@ -83,10 +83,10 @@ func testCreate[T any](t *testing.T) {
 			s3Wrapper:      mockS3,
 		}
 
-		t.Run(tc.testname, func(t *testing.T) {
-			key, err := repo.Create(tc.ctx, tc.obj)
+		t.Run(test.testname, func(t *testing.T) {
+			key, err := repo.Create(test.ctx, test.obj)
 
-			if tc.expectError {
+			if test.expectError {
 				if err == nil {
 					t.Errorf("expected error but got nil")
 				}
@@ -102,6 +102,131 @@ func testCreate[T any](t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestUpdate(t *testing.T) {
+	testUpdate[entity.TestCase](t)
+	testUpdate[entity.SessionSummary](t)
+}
+
+func testUpdate[T any](t *testing.T) {
+	t.Helper()
+
+	tests := getUpdateTests[T]()
+
+	for _, test := range tests {
+		mockParquet := &mockParquetWrapper[T]{
+			WriteStructToParquetFunc: func(data T) ([]byte, error) {
+				if test.mockParquetError != nil {
+					return nil, test.mockParquetError
+				}
+				return []byte("dummy parquet data"), nil
+			},
+		}
+
+		mockS3 := &mockS3Wrapper{
+			FileExistsFunc: func(ctx context.Context, key string) (bool, error) {
+				return test.fileExists, test.mockFileExists
+			},
+			UploadParquetFileFunc: func(ctx context.Context, key string, data []byte, metadata map[string]string) error {
+				return test.mockUploadError
+			},
+		}
+
+		repo := &GenericStorageRepository[T]{
+			logger:         testLogger(),
+			parquetWrapper: mockParquet,
+			s3Wrapper:      mockS3,
+		}
+
+		t.Run(test.testname, func(t *testing.T) {
+			err := repo.Update(test.ctx, test.obj, test.key)
+
+			if test.expectError {
+				if err == nil {
+					t.Errorf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("did not expect error but got: %v", err)
+				}
+			}
+		})
+	}
+}
+
+type updateTestCase[T any] struct {
+	testname         string
+	ctx              context.Context
+	obj              *T
+	key              string
+	mockFileExists   error
+	fileExists       bool
+	mockParquetError error
+	mockUploadError  error
+	expectError      bool
+}
+
+func getUpdateTests[T any]() []updateTestCase[T] {
+	typeName := reflect.TypeOf(*new(T)).Name()
+	return []updateTestCase[T]{
+		{
+			testname:    fmt.Sprintf("%s: nil object returns error", typeName),
+			ctx:         context.Background(),
+			obj:         nil,
+			key:         "valid-key",
+			expectError: true,
+		},
+		{
+			testname:    fmt.Sprintf("%s: empty key returns error", typeName),
+			ctx:         context.Background(),
+			obj:         new(T),
+			key:         "",
+			expectError: true,
+		},
+		{
+			testname:       fmt.Sprintf("%s: FileExists returns error", typeName),
+			ctx:            context.Background(),
+			obj:            new(T),
+			key:            "valid-key",
+			mockFileExists: fmt.Errorf("file exists error"),
+			expectError:    true,
+		},
+		{
+			testname:    fmt.Sprintf("%s: File does not exist", typeName),
+			ctx:         context.Background(),
+			obj:         new(T),
+			key:         "valid-key",
+			fileExists:  false,
+			expectError: true,
+		},
+		{
+			testname:         fmt.Sprintf("%s: Parquet serialization fails", typeName),
+			ctx:              context.Background(),
+			obj:              new(T),
+			key:              "valid-key",
+			fileExists:       true,
+			mockParquetError: fmt.Errorf("parquet error"),
+			expectError:      true,
+		},
+		{
+			testname:        fmt.Sprintf("%s: s3 upload fails", typeName),
+			ctx:             context.Background(),
+			obj:             new(T),
+			key:             "valid-key",
+			fileExists:      true,
+			mockUploadError: fmt.Errorf("upload error"),
+			expectError:     true,
+		},
+		{
+			testname:    fmt.Sprintf("%s: successful update", typeName),
+			ctx:         context.Background(),
+			obj:         new(T),
+			key:         "valid-key",
+			fileExists:  true,
+			expectError: false,
+		},
 	}
 }
 
@@ -132,15 +257,15 @@ func testGenerateKey[T any](t *testing.T) {
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			key := generateKey(tc.input)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			key := generateKey(test.input)
 
-			if !strings.HasPrefix(key, tc.wantType+"_") {
-				t.Errorf("generateKey() = %q, want prefix %q", key, tc.wantType+"_")
+			if !strings.HasPrefix(key, test.wantType+"_") {
+				t.Errorf("generateKey() = %q, want prefix %q", key, test.wantType+"_")
 			}
 
-			expectedLen := len(tc.wantType) + 1 + 17
+			expectedLen := len(test.wantType) + 1 + 17
 			if len(key) != expectedLen {
 				t.Errorf("generateKey() length = %d, want %d", len(key), expectedLen)
 			}
@@ -185,6 +310,7 @@ func (m *mockParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
 
 type mockS3Wrapper struct {
 	UploadParquetFileFunc func(ctx context.Context, key string, data []byte, metadata map[string]string) error
+	FileExistsFunc        func(ctx context.Context, key string) (bool, error)
 }
 
 func (m *mockS3Wrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
@@ -207,7 +333,10 @@ func (m *mockS3Wrapper) DeleteParquetFile(ctx context.Context, key string) error
 }
 
 func (m *mockS3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
-	panic("not implemented")
+	if m.FileExistsFunc != nil {
+		return m.FileExistsFunc(ctx, key)
+	}
+	return true, nil
 }
 
 func (m *mockS3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) {

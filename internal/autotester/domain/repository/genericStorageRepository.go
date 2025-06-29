@@ -133,36 +133,50 @@ func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*
 	return &items[0], nil
 }
 
-func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) (string, error) {
+func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) error {
 	if obj == nil {
-		return "", fmt.Errorf("obj must not be nil")
+		return fmt.Errorf("obj must not be nil")
+	}
+	if key == "" {
+		return fmt.Errorf("key must not be empty")
 	}
 
-	err := gsr.Delete(ctx, key)
+	exists, err := gsr.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
-		gsr.logger.Error("update: deleting existing object failed",
+		gsr.logger.Error("update: failed to check existence",
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return "", fmt.Errorf("failed to delete existing object: %w", err)
+		return fmt.Errorf("failed to check if key exists: %w", err)
 	}
-
-	newKey, err := gsr.Create(ctx, obj)
-	if err != nil {
-		gsr.logger.Error("update: creating updated object failed",
-			slog.String("original_key", key),
-			slog.String("error", err.Error()),
+	if !exists {
+		gsr.logger.Error("update: key does not exist, aborting",
+			slog.String("key", key),
 		)
-		return "", fmt.Errorf("failed to create updated object: %w", err)
+		return fmt.Errorf("cannot update: key does not exist")
 	}
 
-	gsr.logger.Info("update: object successfully deleted and replaced",
-		slog.String("old_key", key),
-		slog.String("new_key", newKey),
+	parquetData, err := gsr.parquetWrapper.WriteStructToParquet(*obj)
+	if err != nil {
+		gsr.logger.Error("update: writing struct to parquet failed",
+			slog.String("type", reflect.TypeOf(obj).Elem().Name()),
+			slog.String("error", err.Error()))
+		return fmt.Errorf("failed to serialize object: %w", err)
+	}
+
+	metadata := map[string]string{}
+
+	err = gsr.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
+	if err != nil {
+		return fmt.Errorf("failed to upload updated object: %w", err)
+	}
+
+	gsr.logger.Info("update: object successfully overwritten",
+		slog.String("key", key),
 		slog.String("type", reflect.TypeOf(obj).Elem().Name()),
 	)
 
-	return newKey, nil
+	return nil
 }
 
 func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) error {
