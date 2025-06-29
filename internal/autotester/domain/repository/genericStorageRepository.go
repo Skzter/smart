@@ -106,7 +106,31 @@ func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (str
 }
 
 func (gsr *GenericStorageRepository[T]) Read(key string) (*T, error) {
-	return nil, nil
+	if key == "" {
+		return nil, fmt.Errorf("key must not be empty")
+	}
+
+	data, _, err := gsr.s3Wrapper.DownloadParquetFile(context.Background(), key)
+	if err != nil {
+		gsr.logger.Error("read: downloading parquet failed",
+			slog.String("key", key),
+			slog.String("error", err.Error()),
+		)
+		return nil, err
+	}
+
+	items, err := gsr.parquetWrapper.ReadStructsFromParquet(data)
+	if err != nil {
+		gsr.logger.Error("read: parsing parquet data failed",
+			slog.String("key", key),
+			slog.String("error", err.Error()),
+		)
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("no data found for key %s", key)
+	}
+	return &items[0], nil
 }
 
 func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) (string, error) {
@@ -142,6 +166,21 @@ func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key 
 }
 
 func (gsr *GenericStorageRepository[T]) Delete(key string) error {
+	if key == "" {
+		return fmt.Errorf("key must not be empty")
+	}
+
+	if err := gsr.s3Wrapper.DeleteParquetFile(context.Background(), key); err != nil {
+		gsr.logger.Error("delete: removing parquet failed",
+			slog.String("key", key),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	gsr.logger.Info("delete: object successfully deleted",
+		slog.String("key", key),
+	)
 	return nil
 }
 
