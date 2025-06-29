@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { vi } from "vitest";
-import Prompt from "../../src/lib/Prompt.svelte";
+import Prompt from "../../src/components/Prompt.svelte";
 
 describe("Prompt Component", () => {
     test("renders textarea and button", () => {

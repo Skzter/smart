@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/svelte";
 import { expect, test } from "vitest";
-import Box from "../../src/lib/Box.svelte";
+import Box from "../../src/components/Box.svelte";
 
 describe("Box component", () => {
     test("Box shows message from Bot", async () => {

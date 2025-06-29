@@ -11,11 +11,11 @@ export default defineConfig({
         globals: true,
         environment: "jsdom",
         setupFiles: "./src/setupTests.ts",
-        include: ["tests/unit/*.test.ts", "tests/component/*.test.ts"],
+        include: ["tests/unit/*.test.ts", "tests/components/*.test.ts"],
         coverage: {
             provider: "v8",
             reporter: ["text", "json", "html"],
-            include: ["src/lib/**/*.{ts,js,svelte}"],
+            include: ["src/{lib,components}/**/*.{ts,js,svelte}"],
             exclude: ["src/**/*.test.{ts}", "src/**/*.d.ts"],
         },
     },
