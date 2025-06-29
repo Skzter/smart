@@ -8,14 +8,17 @@ model: String = "gpt-4.1-nano-2025-04-14"
 port: String = "8081" 
 
 class Prompts {
-    validationprompt : String
-    autopwprompt : String
+    validationPrompt : String
+    autoPlaywrightPrompt : String
 }
-prompts : Prompts = new Prompts {
-    validationprompt = "antworte nur mit `lol`"
-    autopwprompt = "generier maln test"
+prompts : Prompts = new {
+    validationPrompt = 
+        """
+        You are a helpfull Assistant.
+        Answer all questions precisely and unambiguously.
+        """
+    autoPlaywrightPrompt = ""
 }
-
 
 timeout: Int = 5
 

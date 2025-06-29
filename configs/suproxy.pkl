@@ -12,7 +12,7 @@ class Prompts {
     prompt2 : String
     tollerPromp : String
 }
-prompts : Prompts = new Prompts {
+prompts : Prompts = new {
     prompt1 = "hier kommen eure prompts hin"
     prompt2 = "und so weiter"
     tollerPromp = "namen können beliebig gewählt werden"

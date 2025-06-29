@@ -70,7 +70,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	resp, err := a.service.Request(c, repoEntity.Request{
 		Prompt:       userRequest.Message.MessageBody,
 		SessionID:    userRequest.SessionId,
-		SystemPrompt: a.config.Prompts.Validationprompt,
+		SystemPrompt: a.config.Prompts.ValidationPrompt,
 		Model:        a.config.Model},
 	)
 
