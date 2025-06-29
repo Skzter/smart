@@ -77,7 +77,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
-    deps: [generate-config]
+    deps: [generate-config-suproxy]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -91,7 +91,7 @@ tasks:
 
   run-autotester:
     desc: "Run the project"
-    deps: [generate-config]
+    deps: [generate-config-autotester]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -167,5 +167,16 @@ tasks:
   generate-config:
     desc: "generates code for reading pkl configs"
     cmds:
+      - task: generate-config-autotester
+      - task: generate-config-suproxy
+
+  generate-config-autotester:
+    desc: "generates code for reading autotester config"
+    cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
+
+  generate-config-suproxy:
+    desc: "generates code for reading suproxy config"
+    cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+

@@ -3,10 +3,19 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-validationprompt: String = "Du bist ein hilfreicher Assistent"
-autopwprompt: String = "generier maln test"
-
 model: String = "gpt-4.1-nano-2025-04-14"
+
+port: String = "8081" 
+
+class Prompts {
+    validationprompt : String
+    autopwprompt : String
+}
+prompts : Prompts = new Prompts {
+    validationprompt = "antworte nur mit `lol`"
+    autopwprompt = "generier maln test"
+}
+
 
 timeout: Int = 5
 
@@ -14,5 +23,7 @@ region: String = ""
 
 bucket: String = ""
 
-port: String = "8081" 
+
+
+
 
