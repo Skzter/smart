@@ -12,7 +12,7 @@
 </script>
 
 <div
-    class="fixed bottom-0 left-0 w-full flex flex-row w-screen items-center bg-white p-4 border-t gap-2"
+    class="flex flex-row w-screen items-center bg-white border-t gap-2 p-4"
     on:keydown={handleKeyPress}
 >
     <textarea
