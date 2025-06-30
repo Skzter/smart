@@ -28,7 +28,10 @@ func NewAutotesterController(logger *slog.Logger) (a *AutotesterController, err 
 	}, err
 }
 
-// handle Frontend Request JSON to String
+// HandleChatRequest processes an incoming chat request from the frontend.
+//
+// It parses the JSON payload, passes the message to the LLM service,
+// and returns the system-generated response. Handles validation and error cases.
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	var userRequest entity.UserRequestDTO
 
@@ -38,21 +41,18 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	// validation Method
-
-	// Call Request to openAI
-	// service needed
-	// entity.Request(body.Message, body.ConversationID)
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "OpenAI service failed"})
 		a.logger.Error(err.Error())
 		return
 	}
-	// respons from LLM To frontend
 	c.JSON(http.StatusOK, resp)
 }
 
+// HandleUserInfoRequest responds with basic session and logging metadata.
+//
+// This can be used by the frontend to initialize or track a user session.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	var body entity.UserRequestDTO
 	var resp entity.ResponseForUser
