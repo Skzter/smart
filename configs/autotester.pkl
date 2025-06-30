@@ -20,11 +20,11 @@ prompts : Prompts = new {
     autoPlaywrightPrompt = ""
 }
 
-timeout: Int = 5
+timeout: Int = 20
 
-region: String = ""
+region: String = "eu-central-1"
 
-bucket: String = ""
+bucket: String = "smart-autotester"
 
 
 

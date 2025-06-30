@@ -17,3 +17,9 @@ prompts : Prompts = new {
     prompt2 = "und so weiter"
     tollerPromp = "namen können beliebig gewählt werden"
 }
+
+timeout: Int = 20
+
+region: String = "eu-central-1"
+
+bucket: String = "smart-suproxy"
