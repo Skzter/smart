@@ -230,6 +230,174 @@ func getUpdateTests[T any]() []updateTestCase[T] {
 	}
 }
 
+func TestRead(t *testing.T) {
+	testRead[entity.TestCase](t)
+	testRead[entity.SessionSummary](t)
+}
+
+func testRead[T any](t *testing.T) {
+	t.Helper()
+
+	typeName := reflect.TypeOf(*new(T)).Name()
+
+	tests := []struct {
+		testName             string
+		ctx                  context.Context
+		key                  string
+		mockDownloadError    error
+		mockReadParquetError error
+		downloadedData       []byte
+		readParquetData      []T
+		expectError          bool
+	}{
+		{
+			testName:    fmt.Sprintf("%s: empty key", typeName),
+			ctx:         context.Background(),
+			key:         "",
+			expectError: true,
+		},
+		{
+			testName:          fmt.Sprintf("%s: download fails", typeName),
+			ctx:               context.Background(),
+			key:               "test-key",
+			mockDownloadError: fmt.Errorf("download failed"),
+			expectError:       true,
+		},
+		{
+			testName:             fmt.Sprintf("%s: read parquet fails", typeName),
+			ctx:                  context.Background(),
+			key:                  "test-key",
+			downloadedData:       []byte("dummy"),
+			mockReadParquetError: fmt.Errorf("read failed"),
+			expectError:          true,
+		},
+		{
+			testName:        fmt.Sprintf("%s: no data found", typeName),
+			ctx:             context.Background(),
+			key:             "test-key",
+			downloadedData:  []byte("dummy"),
+			readParquetData: []T{},
+			expectError:     true,
+		},
+		{
+			testName:        fmt.Sprintf("%s: success", typeName),
+			ctx:             context.Background(),
+			key:             "test-key",
+			downloadedData:  []byte("dummy"),
+			readParquetData: []T{*new(T)},
+			expectError:     false,
+		},
+	}
+
+	for _, test := range tests {
+		mockParquet := &mockParquetWrapper[T]{
+			ReadStructsFromParquetFunc: func(parquetData []byte) ([]T, error) {
+				if test.mockReadParquetError != nil {
+					return nil, test.mockReadParquetError
+				}
+				return test.readParquetData, nil
+			},
+		}
+		mockS3 := &mockS3Wrapper{
+			DownloadParquetFileFunc: func(ctx context.Context, key string) ([]byte, map[string]string, error) {
+				if test.mockDownloadError != nil {
+					return nil, nil, test.mockDownloadError
+				}
+				return test.downloadedData, nil, nil
+			},
+		}
+
+		repo := &GenericStorageRepository[T]{
+			logger:         testLogger(),
+			parquetWrapper: mockParquet,
+			s3Wrapper:      mockS3,
+		}
+
+		t.Run(test.testName, func(t *testing.T) {
+			obj, err := repo.Read(test.ctx, test.key)
+
+			if test.expectError {
+				if err == nil {
+					t.Errorf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("did not expect error but got: %v", err)
+				}
+				if obj == nil {
+					t.Errorf("expected non-nil object, got nil")
+				}
+			}
+		})
+	}
+}
+
+func TestDelete(t *testing.T) {
+	testDelete[entity.TestCase](t)
+	testDelete[entity.SessionSummary](t)
+}
+
+func testDelete[T any](t *testing.T) {
+	t.Helper()
+
+	typeName := reflect.TypeOf(*new(T)).Name()
+
+	tests := []struct {
+		testname        string
+		ctx             context.Context
+		key             string
+		mockDeleteError error
+		expectError     bool
+	}{
+		{
+			testname:    fmt.Sprintf("%s: empty key returns error", typeName),
+			ctx:         context.Background(),
+			key:         "",
+			expectError: true,
+		},
+		{
+			testname:        fmt.Sprintf("%s: s3 delete fails", typeName),
+			ctx:             context.Background(),
+			key:             "valid-key",
+			mockDeleteError: fmt.Errorf("delete failed"),
+			expectError:     true,
+		},
+		{
+			testname:    fmt.Sprintf("%s: successful delete", typeName),
+			ctx:         context.Background(),
+			key:         "valid-key",
+			expectError: false,
+		},
+	}
+
+	for _, test := range tests {
+		mockS3 := &mockS3Wrapper{
+			DeleteParquetFileFunc: func(ctx context.Context, key string) error {
+				return test.mockDeleteError
+			},
+		}
+
+		repo := &GenericStorageRepository[T]{
+			logger:    testLogger(),
+			s3Wrapper: mockS3,
+		}
+
+		t.Run(test.testname, func(t *testing.T) {
+			err := repo.Delete(test.ctx, test.key)
+
+			if test.expectError {
+				if err == nil {
+					t.Errorf("expected error but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("did not expect error but got: %v", err)
+				}
+			}
+		})
+	}
+}
+
 func TestGenerateKey(t *testing.T) {
 	testGenerateKey[entity.TestCase](t)
 	testGenerateKey[entity.SessionSummary](t)
@@ -241,33 +409,48 @@ func testGenerateKey[T any](t *testing.T) {
 	typeName := reflect.TypeOf(*new(T)).Name()
 
 	tests := []struct {
-		name     string
+		testName string
 		input    any
 		wantType string
 	}{
 		{
-			name:     fmt.Sprintf("%s: value", typeName),
+			testName: fmt.Sprintf("%s: value", typeName),
 			input:    *new(T),
 			wantType: typeName,
 		},
 		{
-			name:     fmt.Sprintf("%s: pointer", typeName),
+			testName: fmt.Sprintf("%s: pointer", typeName),
 			input:    new(T),
 			wantType: typeName,
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.testName, func(t *testing.T) {
 			key := generateKey(test.input)
 
-			if !strings.HasPrefix(key, test.wantType+"_") {
-				t.Errorf("generateKey() = %q, want prefix %q", key, test.wantType+"_")
+			parts := strings.Split(key, "/")
+			if len(parts) != 2 {
+				t.Errorf("generateKey() = %q, expected format 'folder/filename'", key)
 			}
 
-			expectedLen := len(test.wantType) + 1 + 17
-			if len(key) != expectedLen {
-				t.Errorf("generateKey() length = %d, want %d", len(key), expectedLen)
+			folder := parts[0]
+			filename := parts[1]
+
+			if folder != test.wantType {
+				t.Errorf("folder = %q, want %q", folder, test.wantType)
+			}
+
+			expectedPrefix := fmt.Sprintf("%s_", test.wantType)
+			expectedSuffix := ".parquet"
+
+			if !strings.HasPrefix(filename, expectedPrefix) {
+				t.Errorf("filename = %q, expected prefix %q", filename, expectedPrefix)
+			}
+
+			timestamp := strings.TrimSuffix(strings.TrimPrefix(filename, expectedPrefix), expectedSuffix)
+			if len(timestamp) != 17 {
+				t.Errorf("timestamp = %q, expected length 17", timestamp)
 			}
 		})
 	}
@@ -278,7 +461,8 @@ func testLogger() *slog.Logger {
 }
 
 type mockParquetWrapper[T any] struct {
-	WriteStructToParquetFunc func(data T) ([]byte, error)
+	WriteStructToParquetFunc   func(data T) ([]byte, error)
+	ReadStructsFromParquetFunc func(parquetData []byte) ([]T, error)
 }
 
 func (m *mockParquetWrapper[T]) WriteStructToParquet(data T) ([]byte, error) {
@@ -289,7 +473,10 @@ func (m *mockParquetWrapper[T]) WriteStructToParquet(data T) ([]byte, error) {
 }
 
 func (m *mockParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, error) {
-	panic("not implemented")
+	if m.ReadStructsFromParquetFunc != nil {
+		return m.ReadStructsFromParquetFunc(parquetData)
+	}
+	return nil, nil
 }
 
 func (m *mockParquetWrapper[T]) ValidateStruct(data T) error {
@@ -309,8 +496,10 @@ func (m *mockParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
 }
 
 type mockS3Wrapper struct {
-	UploadParquetFileFunc func(ctx context.Context, key string, data []byte, metadata map[string]string) error
-	FileExistsFunc        func(ctx context.Context, key string) (bool, error)
+	UploadParquetFileFunc   func(ctx context.Context, key string, data []byte, metadata map[string]string) error
+	FileExistsFunc          func(ctx context.Context, key string) (bool, error)
+	DownloadParquetFileFunc func(ctx context.Context, key string) ([]byte, map[string]string, error)
+	DeleteParquetFileFunc   func(ctx context.Context, key string) error
 }
 
 func (m *mockS3Wrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
@@ -321,7 +510,10 @@ func (m *mockS3Wrapper) UploadParquetFile(ctx context.Context, key string, data 
 }
 
 func (m *mockS3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte, map[string]string, error) {
-	panic("not implemented")
+	if m.DownloadParquetFileFunc != nil {
+		return m.DownloadParquetFileFunc(ctx, key)
+	}
+	return nil, nil, nil
 }
 
 func (m *mockS3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]string, error) {
@@ -329,7 +521,10 @@ func (m *mockS3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]
 }
 
 func (m *mockS3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
-	panic("not implemented")
+	if m.DeleteParquetFileFunc != nil {
+		return m.DeleteParquetFileFunc(ctx, key)
+	}
+	return nil
 }
 
 func (m *mockS3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {

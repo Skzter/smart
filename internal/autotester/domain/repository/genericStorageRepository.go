@@ -49,7 +49,7 @@ func newGenericStorageRepository[T any](logger *slog.Logger) (*GenericStorageRep
 	}
 
 	s3Config := wrapperEntity.S3Config{
-		Bucket:    "bucket name",
+		Bucket:    "autotester",
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
@@ -71,6 +71,8 @@ func newGenericStorageRepository[T any](logger *slog.Logger) (*GenericStorageRep
 	}, nil
 }
 
+// Create serializes the given object to Parquet format and uploads it to S3,
+// returning the generated key or an error.
 func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (string, error) {
 	if obj == nil {
 		return "", fmt.Errorf("obj must not be nil")
@@ -105,6 +107,8 @@ func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (str
 	return key, nil
 }
 
+// Read downloads the Parquet file from S3 using the given key,
+// deserializes it, and returns the first object found.
 func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*T, error) {
 	if key == "" {
 		return nil, fmt.Errorf("key must not be empty")
@@ -133,6 +137,8 @@ func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*
 	return &items[0], nil
 }
 
+// Update overwrites the existing Parquet file at the given key with the
+// serialized form of the provided object. Returns an error if key does not exist.
 func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) error {
 	if obj == nil {
 		return fmt.Errorf("obj must not be nil")
@@ -179,6 +185,7 @@ func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key 
 	return nil
 }
 
+// Delete removes the Parquet file associated with the given key from S3.
 func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) error {
 	if key == "" {
 		return fmt.Errorf("key must not be empty")
@@ -198,12 +205,13 @@ func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) 
 	return nil
 }
 
-// currently only generates the filename part of the path/filename
+// generateKey creates an S3 key using the type name of the object as folder
+// and a filename with type name and current timestamp.
 func generateKey(obj any) string {
 	objType := reflect.TypeOf(obj)
 	if objType.Kind() == reflect.Ptr {
 		objType = objType.Elem()
 	}
-	time := time.Now().Format("20060102150405000")
-	return fmt.Sprintf("%s_%s", objType.Name(), time)
+	timestamp := time.Now().Format("20060102150405000")
+	return fmt.Sprintf("%s/%s_%s", objType.Name(), objType.Name(), timestamp)
 }
