@@ -63,7 +63,7 @@ func TestDefaultParquetConfig(t *testing.T) {
 	assert.Equal(t, int64(1000), config.RowGroupSize)
 }
 
-func TestWriteAndReadStructsToParquet_UserEvents(t *testing.T) {
+func TestWriteAndReadStructsToParquetUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func TestWriteAndReadStructsToParquet_UserEvents(t *testing.T) {
 	}
 }
 
-func TestWriteAndReadStructsToParquet_Products(t *testing.T) {
+func TestWriteAndReadStructsToParquetProducts(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	config := entity.ParquetConfig{
@@ -163,7 +163,7 @@ func TestWriteAndReadStructsToParquet_Products(t *testing.T) {
 	}
 }
 
-func TestWriteAndReadStructsToParquet_LogEntries(t *testing.T) {
+func TestWriteAndReadStructsToParquetLogEntries(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	config := entity.ParquetConfig{
@@ -221,7 +221,7 @@ func TestWriteAndReadStructsToParquet_LogEntries(t *testing.T) {
 	}
 }
 
-func TestWriteStructToParquet_SingleStruct(t *testing.T) {
+func TestWriteStructToParquetSingleStruct(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
@@ -247,7 +247,7 @@ func TestWriteStructToParquet_SingleStruct(t *testing.T) {
 	assert.Equal(t, event.EventType, readEvents[0].EventType)
 }
 
-func TestGetParquetSchema(t *testing.T) {
+func TestGetParquetSchemaUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
@@ -265,7 +265,7 @@ func TestGetParquetSchema(t *testing.T) {
 	assert.Greater(t, len(schema.Fields()), 0)
 }
 
-func TestValidateStruct(t *testing.T) {
+func TestValidateStructUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
@@ -280,7 +280,7 @@ func TestValidateStruct(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestParquetWrapper_ErrorHandling(t *testing.T) {
+func TestParquetWrapperErrorHandling(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
@@ -310,7 +310,7 @@ func TestParquetWrapper_ErrorHandling(t *testing.T) {
 	}()
 }
 
-func TestGetParquetFileInfo(t *testing.T) {
+func TestGetParquetFileInfoUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
 	require.NoError(t, err)
