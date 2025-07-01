@@ -8,15 +8,11 @@ model: String ="gpt-4.1-nano-2025-04-14"
 port: String = "8080" 
 
 class Prompts {
-    prompt1 : String
-    prompt2 : String
-    tollerPromp : String
+    prompt1 : String = "hier kommen eure prompts hin"
+    prompt2 : String = "und so weiter"
+    tollerPromp : String = "namen können beliebig gewählt werden"
 }
-prompts : Prompts = new {
-    prompt1 = "hier kommen eure prompts hin"
-    prompt2 = "und so weiter"
-    tollerPromp = "namen können beliebig gewählt werden"
-}
+prompts : Prompts
 
 timeout: Int = 20
 

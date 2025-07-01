@@ -8,17 +8,15 @@ model: String = "gpt-4.1-nano-2025-04-14"
 port: String = "8081" 
 
 class Prompts {
-    validationPrompt : String
-    autoPlaywrightPrompt : String
-}
-prompts : Prompts = new {
-    validationPrompt = 
+    validationPrompt : String = 
         """
         You are a helpfull Assistant.
         Answer all questions precisely and unambiguously.
+        For now, only answer with `yes`.
         """
-    autoPlaywrightPrompt = ""
+    autoPlaywrightPrompt : String = ""
 }
+prompts : Prompts
 
 timeout: Int = 20
 
