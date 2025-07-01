@@ -119,13 +119,13 @@ build_frontend_no_artifacts:
 
 build_go_artifacts:
   stage: build
-  extends: .go_cache
+  #extends: .go_cache
   needs:
-    - job: build_frontend_artifacts
+    - [job: build_frontend_artifacts, job: generate_config]
       artifacts: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
+  #rules:
+  #  - if: $CI_COMMIT_BRANCH == "main"
+  #    when: on_success
   script:
     - ./bin/task build-pipeline
   artifacts:
