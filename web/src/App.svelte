@@ -65,11 +65,23 @@
             paramsChatRequest.conversationId = conversationId;
         }
     }
+
+    const scrollToBottom = (node) => {
+        const scroll = () =>
+            node.scroll({
+                top: node.scrollHeight,
+                behavior: "smooth",
+            });
+        scroll();
+
+        return { update: scroll };
+    };
 </script>
 
-<div class="flex w-screen justify-center">
+<main class="flex w-screen justify-center">
     <div
-        class="flex flex-col h-[calc(100vh-132px)] overflow-auto w-8/10 gap-2 px-4 pt-4 pb-28"
+        class="flex flex-col h-[calc(100vh-132px)] overflow-y-auto w-8/10 gap-2 px-4 pt-4 pb-[132px]"
+        use:scrollToBottom={convo}
     >
         {#each convo as c (c.id)}
             <Box msg={c.question} name="User" />
@@ -83,7 +95,7 @@
             {/await}
         {/each}
     </div>
-</div>
-<div class="mt-[0px] mb-[-10px] pb-[5px] h-[100px]">
+</main>
+<footer class="mt-[0px] mb-[-10px] pb-[5px] h-[100px]">
     <Prompt bind:input={prompt} {onclick} />
-</div>
+</footer>
