@@ -8,12 +8,10 @@ import (
 )
 
 func main() {
-
 	cfg, err := config.LoadFromPath(context.Background(), "configs/autotester.pkl")
 
 	application.SetupRoutes(cfg)
 	if err != nil {
 		panic(err)
 	}
-
 }
