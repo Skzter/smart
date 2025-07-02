@@ -26,6 +26,7 @@ tasks:
 
   build:
     desc: "Build the project"
+    deps: [generate-config]
     vars:
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
