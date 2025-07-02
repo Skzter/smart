@@ -100,7 +100,7 @@ frontend_test:
   extends: .pnpm_cache
   script:
     - test:coverage
-  artifact:
+  artifacts:
     - coverage/
     
 build_frontend_artifacts:
