@@ -101,7 +101,8 @@ frontend_test:
   script:
     - pnpm run test:coverage
   artifacts:
-    - coverage/
+    paths:
+    - web/coverage/
     
 build_frontend_artifacts:
   stage: build
