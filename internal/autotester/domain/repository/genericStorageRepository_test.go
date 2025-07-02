@@ -22,7 +22,7 @@ func TestCreate(t *testing.T) {
 	testCreate[entity.SessionSummary](t)
 }
 
-func testCreate[T any](t *testing.T) {
+func testCreate[T Storable](t *testing.T) {
 	t.Helper()
 
 	typeName := reflect.TypeOf(*new(T)).Name()
@@ -121,7 +121,7 @@ func TestUpdate(t *testing.T) {
 	testUpdate[entity.SessionSummary](t)
 }
 
-func testUpdate[T any](t *testing.T) {
+func testUpdate[T Storable](t *testing.T) {
 	t.Helper()
 
 	tests := getUpdateTests[T]()
@@ -265,7 +265,7 @@ func TestRead(t *testing.T) {
 	testRead[entity.SessionSummary](t)
 }
 
-func testRead[T any](t *testing.T) {
+func testRead[T Storable](t *testing.T) {
 	t.Helper()
 
 	typeName := reflect.TypeOf(*new(T)).Name()
@@ -368,7 +368,7 @@ func TestDelete(t *testing.T) {
 	testDelete[entity.SessionSummary](t)
 }
 
-func testDelete[T any](t *testing.T) {
+func testDelete[T Storable](t *testing.T) {
 	t.Helper()
 
 	typeName := reflect.TypeOf(*new(T)).Name()
@@ -435,14 +435,14 @@ func TestGenerateKey(t *testing.T) {
 	testGenerateKey[entity.SessionSummary](t)
 }
 
-func testGenerateKey[T any](t *testing.T) {
+func testGenerateKey[T Storable](t *testing.T) {
 	t.Helper()
 
 	typeName := reflect.TypeOf(*new(T)).Name()
 
 	tests := []struct {
 		testname string
-		input    any
+		input    T
 		wantType string
 	}{
 		{
@@ -452,14 +452,14 @@ func testGenerateKey[T any](t *testing.T) {
 		},
 		{
 			testname: fmt.Sprintf("%s: pointer", typeName),
-			input:    new(T),
+			input:    *new(T),
 			wantType: typeName,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testname, func(t *testing.T) {
-			key := generateKey(test.input)
+			key := generateKey(&test.input)
 
 			parts := strings.Split(key, "/")
 			if len(parts) != 2 {

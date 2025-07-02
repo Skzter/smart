@@ -17,8 +17,8 @@ import (
 const bucketname = "autotester"
 
 // GenericStorageRepository provides a generic implementation of StorageRepository
-// for any entity type T, using S3 and Parquet wrappers.
-type GenericStorageRepository[T any] struct {
+// for saveble entity type T, using S3 and Parquet wrappers.
+type GenericStorageRepository[T Storable] struct {
 	s3Wrapper            service.S3StorageWrapper
 	parquetWrapper       service.ParquetFileWrapper[T]
 	logger               *slog.Logger
@@ -110,7 +110,7 @@ func NewTestCaseStorageRepository(logger *slog.Logger) (StorageRepository[entity
 
 // newGenericStorageRepository constructs a GenericStorageRepository instance for type T.
 // It is unexported to enforce usage of specific typed constructors.
-func newGenericStorageRepository[T any](logger *slog.Logger,
+func newGenericStorageRepository[T Storable](logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	parquetWrapper service.ParquetFileWrapper[T],
 	structValidationFunc func(*T) error) (*GenericStorageRepository[T], error) {
@@ -148,7 +148,7 @@ func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (str
 	}
 
 	key := generateKey(obj)
-	metadata := map[string](string){}
+	metadata := map[string]string{}
 
 	err = gsr.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
@@ -274,7 +274,7 @@ func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) 
 
 // generateKey creates an S3 key using the type name of the object as folder
 // and a filename with type name and current timestamp.
-func generateKey(obj any) string {
+func generateKey[T Storable](obj *T) string {
 	objType := reflect.TypeOf(obj)
 	if objType.Kind() == reflect.Ptr {
 		objType = objType.Elem()

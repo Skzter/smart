@@ -1,10 +1,18 @@
 package repository
 
-import "context"
+import (
+	"context"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+)
+
+type Storable interface {
+	entity.TestCase | entity.SessionSummary
+}
 
 // StorageRepository defines the interface for persistent data storage operations.
 // It provides basic CRUD functionality (Create, Read, Update, Delete) for abstracted storage systems
-type StorageRepository[T any] interface {
+type StorageRepository[T Storable] interface {
 
 	// Create stores a new record or object in the underlying storage system.
 	Create(ctx context.Context, obj *T) (string, error)
