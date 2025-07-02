@@ -1,6 +1,6 @@
 <script lang="ts">
-    import Prompt from "./lib/Prompt.svelte";
-    import Box from "./lib/Box.svelte";
+    import Prompt from "./components/Prompt.svelte";
+    import Box from "./components/Box.svelte";
     import { Spinner } from "flowbite-svelte";
     import { getChatResponse, getUserInfo } from "./lib/Api.ts";
     import { getCookie } from "typescript-cookie";
