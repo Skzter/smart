@@ -21,8 +21,8 @@ tasks:
     cmds:
       - git config core.hooksPath githooks
       - go mod tidy
-      - "{{.BIN_PATH}}/doppler login"
-      - "{{.BIN_PATH}}/doppler setup -c dev -p htwk-projekt"
+      - PATH=$LPATH; doppler login
+      - PATH=$LPATH; doppler setup -c dev -p htwk-projekt
 
   build:
     desc: "Build the project"
@@ -77,6 +77,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
+    deps: [generate-config-suproxy]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -86,10 +87,11 @@ tasks:
       AWS_SECRET_ACCESS_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
-      - "{{.BIN_PATH}}/doppler run -- go tool air"
+      - "PATH=$LPATH; doppler run -- go tool air"
 
   run-autotester:
     desc: "Run the project"
+    deps: [generate-config-autotester]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -99,7 +101,7 @@ tasks:
       AWS_SECRET_ACCESS_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
-      - "{{.BIN_PATH}}/doppler run -- go tool air"
+      - 'PATH=$LPATH; doppler run -- go tool air'
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -157,6 +159,24 @@ tasks:
 
   pre-commit:
     desc: "Run the pre-commit"
+    deps: [generate-config]
     cmds:
       - task: lint
       - task: test
+
+  generate-config:
+    desc: "generates code for reading pkl configs"
+    cmds:
+      - task: generate-config-autotester
+      - task: generate-config-suproxy
+
+  generate-config-autotester:
+    desc: "generates code for reading autotester config"
+    cmds:
+      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
+
+  generate-config-suproxy:
+    desc: "generates code for reading suproxy config"
+    cmds:
+      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+
