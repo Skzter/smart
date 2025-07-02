@@ -95,6 +95,14 @@ unit_test_go:
   script:
     - ./bin/task test
 
+frontend_test:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - test:coverage
+  artifact:
+    - coverage/
+    
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
