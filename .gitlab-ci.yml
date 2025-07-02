@@ -83,6 +83,12 @@ unit_test_go:
   extends: .go_cache
   script:
     - ./bin/task test
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    paths:
+      - smart/coverage.out
+      - smart/coverage.html
+    expire_in: 1 week
 
 build_frontend_artifacts:
   stage: build
