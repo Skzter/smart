@@ -11,9 +11,7 @@
     }
 </script>
 
-<div
-    class="flex flex-row w-screen items-center bg-white border-t gap-2 p-4"
->
+<div class="flex flex-row w-screen items-center bg-white border-t gap-2 p-4">
     <textarea
         onkeydown={handleKeyPress}
         bind:value={input}
