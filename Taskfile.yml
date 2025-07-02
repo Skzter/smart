@@ -57,7 +57,6 @@ tasks:
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
-    deps: [generate-config]
     vars:
       BUILD_BRANCH:
         sh: git rev-parse --abbrev-ref HEAD

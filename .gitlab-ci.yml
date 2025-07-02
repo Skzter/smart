@@ -123,6 +123,8 @@ build_go_artifacts:
   needs:
     - job: build_frontend_artifacts
       artifacts: true
+    - job: generate_config
+      artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
