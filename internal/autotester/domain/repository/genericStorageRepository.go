@@ -11,45 +11,40 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
+
+const bucketname = "autotester"
 
 // GenericStorageRepository provides a generic implementation of StorageRepository
 // for any entity type T, using S3 and Parquet wrappers.
 type GenericStorageRepository[T any] struct {
-	s3Wrapper      service.S3StorageWrapper
-	parquetWrapper service.ParquetFileWrapper[T]
-	logger         *slog.Logger
+	s3Wrapper            service.S3StorageWrapper
+	parquetWrapper       service.ParquetFileWrapper[T]
+	logger               *slog.Logger
+	structValidationFunc func(*T) error
 }
 
 // NewHistoryStorageRepository creates a StorageRepository specifically
 // for SessionSummary entities. It uses a generic implementation internally.
 func NewHistoryStorageRepository(logger *slog.Logger) (StorageRepository[entity.SessionSummary], error) {
-	repo, err := newGenericStorageRepository[entity.SessionSummary](logger)
-	if err != nil {
-		return nil, err
-	}
-	return repo, nil
-}
-
-// NewTestCaseStorageRepository creates a StorageRepository specifically
-// for TestCase entities. It uses a generic implementation internally.
-func NewTestCaseStorageRepository(logger *slog.Logger) (StorageRepository[entity.TestCase], error) {
-	repo, err := newGenericStorageRepository[entity.TestCase](logger)
-	if err != nil {
-		return nil, err
-	}
-	return repo, nil
-}
-
-// newGenericStorageRepository constructs a GenericStorageRepository instance for type T.
-// It is unexported to enforce usage of specific typed constructors.
-func newGenericStorageRepository[T any](logger *slog.Logger) (*GenericStorageRepository[T], error) {
-	if logger == nil {
-		return nil, fmt.Errorf("logger cannot be nil")
+	structValidationFunc := func(summary *entity.SessionSummary) error {
+		if err := assert.StringNotEmpty(summary.Summary); err != nil {
+			return fmt.Errorf("SessionSummary.Summary must not be empty: %w", err)
+		}
+		if err := assert.NotNil(summary.Messages); err != nil {
+			return fmt.Errorf("SessionSummary.Messages must not be nil: %w", err)
+		}
+		for i, msg := range summary.Messages {
+			if err := assert.NotNil(msg); err != nil {
+				return fmt.Errorf("SessionSummary.Messages[%d] must not be nil: %w", i, err)
+			}
+		}
+		return nil
 	}
 
 	s3Config := wrapperEntity.S3Config{
-		Bucket:    "autotester",
+		Bucket:    bucketname,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
@@ -59,23 +54,88 @@ func newGenericStorageRepository[T any](logger *slog.Logger) (*GenericStorageRep
 		return nil, err
 	}
 
-	parquetWrapper, err := service.NewParquetWrapper[T](logger, service.DefaultParquetConfig())
+	parquetWrapper, err := service.NewParquetWrapper[entity.SessionSummary](logger, service.DefaultParquetConfig())
 	if err != nil {
 		return nil, err
 	}
 
+	repo, err := newGenericStorageRepository[entity.SessionSummary](logger, s3Wrapper, parquetWrapper, structValidationFunc)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
+// NewTestCaseStorageRepository creates a StorageRepository specifically
+// for TestCase entities. It uses a generic implementation internally.
+func NewTestCaseStorageRepository(logger *slog.Logger) (StorageRepository[entity.TestCase], error) {
+	validateFunc := func(testcase *entity.TestCase) error {
+		if err := assert.StringNotEmpty(testcase.TestID); err != nil {
+			return fmt.Errorf("testcase.TestID must not be empty: %w", err)
+		}
+		if err := assert.StringNotEmpty(testcase.Description); err != nil {
+			return fmt.Errorf("testcase.Description must not be empty: %w", err)
+		}
+		if err := assert.StringNotEmpty(string(testcase.Status)); err != nil {
+			return fmt.Errorf("testcase.Status must not be empty: %w", err)
+		}
+		if err := assert.StringNotEmpty(testcase.TestCode.Code); err != nil {
+			return fmt.Errorf("testcase.TestCode.Code must not be empty: %w", err)
+		}
+		return nil
+	}
+
+	s3Config := wrapperEntity.S3Config{
+		Bucket:    bucketname,
+		AccessKey: build.AwsAccessKey,
+		SecretKey: build.AwsSecretAccessKey,
+	}
+
+	s3Wrapper, err := service.NewS3Wrapper(logger, s3Config)
+	if err != nil {
+		return nil, err
+	}
+
+	parquetWrapper, err := service.NewParquetWrapper[entity.TestCase](logger, service.DefaultParquetConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := newGenericStorageRepository[entity.TestCase](logger, s3Wrapper, parquetWrapper, validateFunc)
+	if err != nil {
+		return nil, err
+	}
+	return repo, nil
+}
+
+// newGenericStorageRepository constructs a GenericStorageRepository instance for type T.
+// It is unexported to enforce usage of specific typed constructors.
+func newGenericStorageRepository[T any](logger *slog.Logger,
+	s3Wrapper service.S3StorageWrapper,
+	parquetWrapper service.ParquetFileWrapper[T],
+	structValidationFunc func(*T) error) (*GenericStorageRepository[T], error) {
+	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
+		return nil, err
+	}
+
 	return &GenericStorageRepository[T]{
-		s3Wrapper:      s3Wrapper,
-		parquetWrapper: parquetWrapper,
-		logger:         logger,
+		s3Wrapper:            s3Wrapper,
+		parquetWrapper:       parquetWrapper,
+		logger:               logger,
+		structValidationFunc: structValidationFunc,
 	}, nil
 }
 
 // Create serializes the given object to Parquet format and uploads it to S3,
 // returning the generated key or an error.
 func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (string, error) {
-	if obj == nil {
-		return "", fmt.Errorf("obj must not be nil")
+	if err := assert.NotNil(obj); err != nil {
+		return "", fmt.Errorf("obj must not be nil: %w", err)
+	}
+
+	err := gsr.structValidationFunc(obj)
+	if err != nil {
+		return "", fmt.Errorf("validation failed: %w", err)
 	}
 
 	parquetData, err := gsr.parquetWrapper.WriteStructToParquet(*obj)
@@ -110,7 +170,7 @@ func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (str
 // Read downloads the Parquet file from S3 using the given key,
 // deserializes it, and returns the first object found.
 func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*T, error) {
-	if key == "" {
+	if err := assert.StringNotEmpty(key); err != nil {
 		return nil, fmt.Errorf("key must not be empty")
 	}
 
@@ -134,16 +194,23 @@ func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no data found for key %s", key)
 	}
+	if err := gsr.structValidationFunc(&items[0]); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
 	return &items[0], nil
 }
 
 // Update overwrites the existing Parquet file at the given key with the
 // serialized form of the provided object. Returns an error if key does not exist.
 func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) error {
-	if obj == nil {
-		return fmt.Errorf("obj must not be nil")
+	if err := assert.NotNil(obj); err != nil {
+		return fmt.Errorf("obj must not be nil: %w", err)
 	}
-	if key == "" {
+	if err := gsr.structValidationFunc(obj); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
+	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty")
 	}
 
@@ -187,7 +254,7 @@ func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key 
 
 // Delete removes the Parquet file associated with the given key from S3.
 func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) error {
-	if key == "" {
+	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty")
 	}
 

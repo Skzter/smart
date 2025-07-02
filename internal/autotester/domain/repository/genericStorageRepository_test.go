@@ -8,11 +8,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/parquet-go/parquet-go"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
 func TestCreate(t *testing.T) {
@@ -29,15 +31,24 @@ func testCreate[T any](t *testing.T) {
 		testname         string
 		ctx              context.Context
 		obj              *T
+		validationFunc   func(*T) error
 		mockParquetError error
 		mockUploadError  error
 		expectError      bool
 	}{
 		{
-			testname:    fmt.Sprintf("%s: happy path", typeName),
-			ctx:         context.Background(),
-			obj:         new(T),
-			expectError: false,
+			testname:       fmt.Sprintf("%s: happy path", typeName),
+			ctx:            context.Background(),
+			obj:            func() *T { v := validTestObj[T](); return &v }(),
+			validationFunc: func(obj *T) error { return nil },
+			expectError:    false,
+		},
+		{
+			testname:       fmt.Sprintf("%s: object validation fails", typeName),
+			ctx:            context.Background(),
+			obj:            func() *T { v := validTestObj[T](); return &v }(),
+			validationFunc: func(obj *T) error { return fmt.Errorf("validation error") },
+			expectError:    true,
 		},
 		{
 			testname:    fmt.Sprintf("%s: nil obj", typeName),
@@ -48,59 +59,59 @@ func testCreate[T any](t *testing.T) {
 		{
 			testname:         fmt.Sprintf("%s: parquet write fails", typeName),
 			ctx:              context.Background(),
-			obj:              new(T),
+			obj:              func() *T { v := validTestObj[T](); return &v }(),
+			validationFunc:   func(obj *T) error { return nil },
 			mockParquetError: fmt.Errorf("parquet error"),
 			expectError:      true,
 		},
 		{
 			testname:        fmt.Sprintf("%s: s3 upload fails", typeName),
 			ctx:             context.Background(),
-			obj:             new(T),
+			obj:             func() *T { v := validTestObj[T](); return &v }(),
+			validationFunc:  func(obj *T) error { return nil },
 			mockUploadError: fmt.Errorf("s3 error"),
 			expectError:     true,
 		},
 	}
 
 	for _, test := range tests {
-		mockParquet := &mockParquetWrapper[T]{
-			WriteStructToParquetFunc: func(data T) ([]byte, error) {
-				if test.mockParquetError != nil {
-					return nil, test.mockParquetError
-				}
-				return []byte("dummy parquet data"), nil
-			},
+		mockParquet := mocks.NewMockParquetFileWrapper[T](t)
+		mockS3 := mocks.NewMockS3StorageWrapper(t)
+
+		if test.obj != nil && test.validationFunc == nil {
+			t.Fatalf("[%s] %s: validationFunc must not be nil", typeName, test.testname)
 		}
 
-		mockS3 := &mockS3Wrapper{
-			UploadParquetFileFunc: func(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-				return test.mockUploadError
-			},
+		if test.obj != nil && test.validationFunc != nil && test.validationFunc(test.obj) == nil {
+			mockParquet.On("WriteStructToParquet", mock.Anything).
+				Return([]byte("dummy parquet data"), test.mockParquetError)
+
+			if test.mockParquetError == nil {
+				mockS3.On("UploadParquetFile", mock.Anything, mock.Anything, []byte("dummy parquet data"), mock.Anything).
+					Return(test.mockUploadError)
+			}
 		}
 
 		repo := &GenericStorageRepository[T]{
-			logger:         testLogger(),
-			parquetWrapper: mockParquet,
-			s3Wrapper:      mockS3,
+			logger:               testLogger(),
+			parquetWrapper:       mockParquet,
+			s3Wrapper:            mockS3,
+			structValidationFunc: test.validationFunc,
 		}
 
 		t.Run(test.testname, func(t *testing.T) {
 			key, err := repo.Create(test.ctx, test.obj)
 
 			if test.expectError {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
-				if key != "" {
-					t.Errorf("expected empty key on error, but got: %s", key)
-				}
+				require.Error(t, err, "[%s] %s: expected error but got none", typeName, test.testname)
+				require.Equal(t, "", key, "[%s] %s: expected empty key on error, but got: %s", typeName, test.testname, key)
 			} else {
-				if err != nil {
-					t.Errorf("did not expect error but got: %v", err)
-				}
-				if key == "" {
-					t.Errorf("expected non-empty key on success")
-				}
+				require.NoError(t, err, "[%s] %s: did not expect error but got: %v", typeName, test.testname, err)
+				require.NotEmpty(t, key, "[%s] %s: expected non-empty key on success", typeName, test.testname)
 			}
+
+			mockParquet.AssertExpectations(t)
+			mockS3.AssertExpectations(t)
 		})
 	}
 }
@@ -116,42 +127,46 @@ func testUpdate[T any](t *testing.T) {
 	tests := getUpdateTests[T]()
 
 	for _, test := range tests {
-		mockParquet := &mockParquetWrapper[T]{
-			WriteStructToParquetFunc: func(data T) ([]byte, error) {
-				if test.mockParquetError != nil {
-					return nil, test.mockParquetError
-				}
-				return []byte("dummy parquet data"), nil
-			},
-		}
+		mockParquet := mocks.NewMockParquetFileWrapper[T](t)
+		mockS3 := mocks.NewMockS3StorageWrapper(t)
 
-		mockS3 := &mockS3Wrapper{
-			FileExistsFunc: func(ctx context.Context, key string) (bool, error) {
-				return test.fileExists, test.mockFileExists
-			},
-			UploadParquetFileFunc: func(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-				return test.mockUploadError
-			},
+		mockParquet.
+			On("WriteStructToParquet", mock.AnythingOfType(reflect.TypeOf(*new(T)).Name())).
+			Return([]byte("dummy parquet data"), test.mockParquetError).
+			Maybe()
+
+		mockS3.
+			On("FileExists", mock.Anything, test.key).
+			Return(test.fileExists, test.mockFileExists).
+			Maybe()
+
+		if test.mockParquetError == nil && test.fileExists {
+			mockS3.On("UploadParquetFile",
+				mock.Anything,
+				test.key,
+				mock.AnythingOfType("[]uint8"),
+				mock.MatchedBy(func(m map[string]string) bool { return true }),
+			).Return(test.mockUploadError)
 		}
 
 		repo := &GenericStorageRepository[T]{
-			logger:         testLogger(),
-			parquetWrapper: mockParquet,
-			s3Wrapper:      mockS3,
+			logger:               testLogger(),
+			parquetWrapper:       mockParquet,
+			s3Wrapper:            mockS3,
+			structValidationFunc: test.validationFunc,
 		}
 
 		t.Run(test.testname, func(t *testing.T) {
 			err := repo.Update(test.ctx, test.obj, test.key)
 
 			if test.expectError {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				require.Error(t, err)
 			} else {
-				if err != nil {
-					t.Errorf("did not expect error but got: %v", err)
-				}
+				require.NoError(t, err)
 			}
+
+			mockParquet.AssertExpectations(t)
+			mockS3.AssertExpectations(t)
 		})
 	}
 }
@@ -160,6 +175,7 @@ type updateTestCase[T any] struct {
 	testname         string
 	ctx              context.Context
 	obj              *T
+	validationFunc   func(*T) error
 	key              string
 	mockFileExists   error
 	fileExists       bool
@@ -179,32 +195,44 @@ func getUpdateTests[T any]() []updateTestCase[T] {
 			expectError: true,
 		},
 		{
-			testname:    fmt.Sprintf("%s: empty key returns error", typeName),
-			ctx:         context.Background(),
-			obj:         new(T),
-			key:         "",
-			expectError: true,
+			testname:       fmt.Sprintf("%s: object validation fails", typeName),
+			ctx:            context.Background(),
+			obj:            new(T),
+			validationFunc: func(obj *T) error { return fmt.Errorf("validation error") },
+			key:            "valid-key",
+			expectError:    true,
+		},
+		{
+			testname:       fmt.Sprintf("%s: empty key returns error", typeName),
+			ctx:            context.Background(),
+			obj:            new(T),
+			validationFunc: func(obj *T) error { return nil },
+			key:            "",
+			expectError:    true,
 		},
 		{
 			testname:       fmt.Sprintf("%s: FileExists returns error", typeName),
 			ctx:            context.Background(),
 			obj:            new(T),
+			validationFunc: func(obj *T) error { return nil },
 			key:            "valid-key",
 			mockFileExists: fmt.Errorf("file exists error"),
 			expectError:    true,
 		},
 		{
-			testname:    fmt.Sprintf("%s: File does not exist", typeName),
-			ctx:         context.Background(),
-			obj:         new(T),
-			key:         "valid-key",
-			fileExists:  false,
-			expectError: true,
+			testname:       fmt.Sprintf("%s: File does not exist", typeName),
+			ctx:            context.Background(),
+			obj:            new(T),
+			validationFunc: func(obj *T) error { return nil },
+			key:            "valid-key",
+			fileExists:     false,
+			expectError:    true,
 		},
 		{
 			testname:         fmt.Sprintf("%s: Parquet serialization fails", typeName),
 			ctx:              context.Background(),
 			obj:              new(T),
+			validationFunc:   func(obj *T) error { return nil },
 			key:              "valid-key",
 			fileExists:       true,
 			mockParquetError: fmt.Errorf("parquet error"),
@@ -214,18 +242,20 @@ func getUpdateTests[T any]() []updateTestCase[T] {
 			testname:        fmt.Sprintf("%s: s3 upload fails", typeName),
 			ctx:             context.Background(),
 			obj:             new(T),
+			validationFunc:  func(obj *T) error { return nil },
 			key:             "valid-key",
 			fileExists:      true,
 			mockUploadError: fmt.Errorf("upload error"),
 			expectError:     true,
 		},
 		{
-			testname:    fmt.Sprintf("%s: successful update", typeName),
-			ctx:         context.Background(),
-			obj:         new(T),
-			key:         "valid-key",
-			fileExists:  true,
-			expectError: false,
+			testname:       fmt.Sprintf("%s: successful update", typeName),
+			ctx:            context.Background(),
+			obj:            new(T),
+			validationFunc: func(obj *T) error { return nil },
+			key:            "valid-key",
+			fileExists:     true,
+			expectError:    false,
 		},
 	}
 }
@@ -241,30 +271,31 @@ func testRead[T any](t *testing.T) {
 	typeName := reflect.TypeOf(*new(T)).Name()
 
 	tests := []struct {
-		testName             string
+		testname             string
 		ctx                  context.Context
 		key                  string
 		mockDownloadError    error
 		mockReadParquetError error
 		downloadedData       []byte
 		readParquetData      []T
+		validateFunc         func(*T) error
 		expectError          bool
 	}{
 		{
-			testName:    fmt.Sprintf("%s: empty key", typeName),
+			testname:    fmt.Sprintf("%s: empty key", typeName),
 			ctx:         context.Background(),
 			key:         "",
 			expectError: true,
 		},
 		{
-			testName:          fmt.Sprintf("%s: download fails", typeName),
+			testname:          fmt.Sprintf("%s: download fails", typeName),
 			ctx:               context.Background(),
 			key:               "test-key",
 			mockDownloadError: fmt.Errorf("download failed"),
 			expectError:       true,
 		},
 		{
-			testName:             fmt.Sprintf("%s: read parquet fails", typeName),
+			testname:             fmt.Sprintf("%s: read parquet fails", typeName),
 			ctx:                  context.Background(),
 			key:                  "test-key",
 			downloadedData:       []byte("dummy"),
@@ -272,7 +303,7 @@ func testRead[T any](t *testing.T) {
 			expectError:          true,
 		},
 		{
-			testName:        fmt.Sprintf("%s: no data found", typeName),
+			testname:        fmt.Sprintf("%s: no data found", typeName),
 			ctx:             context.Background(),
 			key:             "test-key",
 			downloadedData:  []byte("dummy"),
@@ -280,53 +311,53 @@ func testRead[T any](t *testing.T) {
 			expectError:     true,
 		},
 		{
-			testName:        fmt.Sprintf("%s: success", typeName),
+			testname:        fmt.Sprintf("%s: read empty struct", typeName),
 			ctx:             context.Background(),
 			key:             "test-key",
 			downloadedData:  []byte("dummy"),
 			readParquetData: []T{*new(T)},
+			validateFunc:    func(obj *T) error { return fmt.Errorf("validation error") },
+			expectError:     true,
+		},
+		{
+			testname:        fmt.Sprintf("%s: success", typeName),
+			ctx:             context.Background(),
+			key:             "test-key",
+			downloadedData:  []byte("dummy"),
+			readParquetData: []T{validTestObj[T]()},
+			validateFunc:    func(obj *T) error { return nil },
 			expectError:     false,
 		},
 	}
 
 	for _, test := range tests {
-		mockParquet := &mockParquetWrapper[T]{
-			ReadStructsFromParquetFunc: func(parquetData []byte) ([]T, error) {
-				if test.mockReadParquetError != nil {
-					return nil, test.mockReadParquetError
-				}
-				return test.readParquetData, nil
-			},
+		mockParquet := mocks.NewMockParquetFileWrapper[T](t)
+		mockS3 := mocks.NewMockS3StorageWrapper(t)
+
+		if test.key != "" {
+			mockS3.On("DownloadParquetFile", mock.Anything, test.key).
+				Return(test.downloadedData, map[string]string{}, test.mockDownloadError)
 		}
-		mockS3 := &mockS3Wrapper{
-			DownloadParquetFileFunc: func(ctx context.Context, key string) ([]byte, map[string]string, error) {
-				if test.mockDownloadError != nil {
-					return nil, nil, test.mockDownloadError
-				}
-				return test.downloadedData, nil, nil
-			},
+		if test.downloadedData != nil && test.mockDownloadError == nil {
+			mockParquet.On("ReadStructsFromParquet", test.downloadedData).
+				Return(test.readParquetData, test.mockReadParquetError)
 		}
 
 		repo := &GenericStorageRepository[T]{
-			logger:         testLogger(),
-			parquetWrapper: mockParquet,
-			s3Wrapper:      mockS3,
+			logger:               testLogger(),
+			parquetWrapper:       mockParquet,
+			s3Wrapper:            mockS3,
+			structValidationFunc: test.validateFunc,
 		}
 
-		t.Run(test.testName, func(t *testing.T) {
+		t.Run(test.testname, func(t *testing.T) {
 			obj, err := repo.Read(test.ctx, test.key)
 
 			if test.expectError {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				require.Error(t, err, "[%s] %s: expected error but got none", typeName, test.testname)
 			} else {
-				if err != nil {
-					t.Errorf("did not expect error but got: %v", err)
-				}
-				if obj == nil {
-					t.Errorf("expected non-nil object, got nil")
-				}
+				require.NoError(t, err, "[%s] %s: did not expect error but got: %v", typeName, test.testname, err)
+				require.NotNil(t, obj, "[%s] %s: expected non-nil object", typeName, test.testname)
 			}
 		})
 	}
@@ -371,10 +402,13 @@ func testDelete[T any](t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mockS3 := &mockS3Wrapper{
-			DeleteParquetFileFunc: func(ctx context.Context, key string) error {
-				return test.mockDeleteError
-			},
+		mockS3 := mocks.NewMockS3StorageWrapper(t)
+
+		if test.key != "" {
+			mockS3.
+				On("DeleteParquetFile", mock.Anything, test.key).
+				Return(test.mockDeleteError).
+				Maybe()
 		}
 
 		repo := &GenericStorageRepository[T]{
@@ -386,14 +420,12 @@ func testDelete[T any](t *testing.T) {
 			err := repo.Delete(test.ctx, test.key)
 
 			if test.expectError {
-				if err == nil {
-					t.Errorf("expected error but got nil")
-				}
+				require.Error(t, err)
 			} else {
-				if err != nil {
-					t.Errorf("did not expect error but got: %v", err)
-				}
+				require.NoError(t, err)
 			}
+
+			mockS3.AssertExpectations(t)
 		})
 	}
 }
@@ -409,24 +441,24 @@ func testGenerateKey[T any](t *testing.T) {
 	typeName := reflect.TypeOf(*new(T)).Name()
 
 	tests := []struct {
-		testName string
+		testname string
 		input    any
 		wantType string
 	}{
 		{
-			testName: fmt.Sprintf("%s: value", typeName),
+			testname: fmt.Sprintf("%s: value", typeName),
 			input:    *new(T),
 			wantType: typeName,
 		},
 		{
-			testName: fmt.Sprintf("%s: pointer", typeName),
+			testname: fmt.Sprintf("%s: pointer", typeName),
 			input:    new(T),
 			wantType: typeName,
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.testName, func(t *testing.T) {
+		t.Run(test.testname, func(t *testing.T) {
 			key := generateKey(test.input)
 
 			parts := strings.Split(key, "/")
@@ -460,80 +492,23 @@ func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-type mockParquetWrapper[T any] struct {
-	WriteStructToParquetFunc   func(data T) ([]byte, error)
-	ReadStructsFromParquetFunc func(parquetData []byte) ([]T, error)
-}
-
-func (m *mockParquetWrapper[T]) WriteStructToParquet(data T) ([]byte, error) {
-	if m.WriteStructToParquetFunc != nil {
-		return m.WriteStructToParquetFunc(data)
+func validTestObj[T any]() T {
+	var zero T
+	switch any(zero).(type) {
+	case entity.TestCase:
+		return any(entity.TestCase{
+			TestID:      "id",
+			Description: "desc",
+			TestCode:    entity.TestCode{Code: "code"},
+			Status:      entity.TestStatusPassed,
+		}).(T)
+	case entity.SessionSummary:
+		return any(entity.SessionSummary{
+			Summary:   "summary",
+			CreatedAt: time.Now(),
+			Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+		}).(T)
+	default:
+		panic("validTestObj: unsupported type")
 	}
-	return nil, nil
-}
-
-func (m *mockParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, error) {
-	if m.ReadStructsFromParquetFunc != nil {
-		return m.ReadStructsFromParquetFunc(parquetData)
-	}
-	return nil, nil
-}
-
-func (m *mockParquetWrapper[T]) ValidateStruct(data T) error {
-	panic("not implemented")
-}
-
-func (m *mockParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*wrapperEntity.ParquetFileInfo, error) {
-	panic("not implemented")
-}
-
-func (m *mockParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
-	panic("not implemented")
-}
-
-func (m *mockParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
-	panic("not implemented")
-}
-
-type mockS3Wrapper struct {
-	UploadParquetFileFunc   func(ctx context.Context, key string, data []byte, metadata map[string]string) error
-	FileExistsFunc          func(ctx context.Context, key string) (bool, error)
-	DownloadParquetFileFunc func(ctx context.Context, key string) ([]byte, map[string]string, error)
-	DeleteParquetFileFunc   func(ctx context.Context, key string) error
-}
-
-func (m *mockS3Wrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-	if m.UploadParquetFileFunc != nil {
-		return m.UploadParquetFileFunc(ctx, key, data, metadata)
-	}
-	return nil
-}
-
-func (m *mockS3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte, map[string]string, error) {
-	if m.DownloadParquetFileFunc != nil {
-		return m.DownloadParquetFileFunc(ctx, key)
-	}
-	return nil, nil, nil
-}
-
-func (m *mockS3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]string, error) {
-	panic("not implemented")
-}
-
-func (m *mockS3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
-	if m.DeleteParquetFileFunc != nil {
-		return m.DeleteParquetFileFunc(ctx, key)
-	}
-	return nil
-}
-
-func (m *mockS3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
-	if m.FileExistsFunc != nil {
-		return m.FileExistsFunc(ctx, key)
-	}
-	return true, nil
-}
-
-func (m *mockS3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) {
-	panic("not implemented")
 }
