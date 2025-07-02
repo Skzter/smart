@@ -90,6 +90,7 @@ static_analysis_go:
       when: on_success
 
 sonarqube-check:
+  stage: code_analysis_and_testing
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
