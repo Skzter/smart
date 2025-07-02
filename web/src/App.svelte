@@ -51,7 +51,7 @@
             setIdsAsCookie(answer); // resp id and user id setten
         } catch (err) {
             console.error("api call failed", err);
-            convo[convo.length - 1].answer = err.message; // ob das geht??
+            convo[convo.length - 1].answer = "Interner Server Error - Bitte nochmal versuchen!";
         } finally {
             isLoading = false;
         }
