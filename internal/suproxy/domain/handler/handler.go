@@ -10,10 +10,12 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
+// SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
 	logger *slog.Logger
 }
 
+// NewSuproxyController creates a new instance of SuproxyController
 func NewSuproxyController(logger *slog.Logger) (*SuproxyController, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
@@ -24,6 +26,7 @@ func NewSuproxyController(logger *slog.Logger) (*SuproxyController, error) {
 	}, nil
 }
 
+// PostOfferlist handles the POST request to the /api/v1/Offerlist endpoint
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	var request entity.Request
 
