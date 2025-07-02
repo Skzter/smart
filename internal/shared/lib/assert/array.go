@@ -15,7 +15,7 @@ func ArrayLengthBetween(value interface{}, minValue int, maxValue int) error {
 
 // ArrayLengthGreaterThan checks if the length of the array is greater than minValue.
 func ArrayLengthGreaterThan(value interface{}, minValue int) error {
-	minValue++ // Increase minValue by 1 to check for strictly greater
+	minValue++
 
 	if err := checkArrayLength(value, &minValue, nil); err != nil {
 		return errors.Wrap(err, "Assert failed")
@@ -33,7 +33,7 @@ func ArrayLengthGreaterOrEqualThan(value interface{}, minValue int) error {
 
 // ArrayLengthLessThan checks if the length of the array is less than maxValue.
 func ArrayLengthLessThan(value interface{}, maxValue int) error {
-	maxValue-- // Decrease maxValue by 1 to check for strictly less
+	maxValue--
 
 	if err := checkArrayLength(value, nil, &maxValue); err != nil {
 		return errors.Wrap(err, "Assert failed")

@@ -2,9 +2,9 @@ package entity
 
 // File represents a file entity with a name, binary data, and MIME type.
 type File struct {
-	fileName string // fileName is the name of the file
-	fileData []byte // fileData contains the binary data of the file
-	mimeType string // mimeType is the MIME type of the file
+	fileName string
+	fileData []byte
+	mimeType string
 }
 
 // GetFileName returns the name of the file.

@@ -11,8 +11,8 @@ import (
 
 // OpenAIService handles requests to the OpenAI repository.
 type OpenAIService struct {
-	repo   repository.OpenAI // OpenAI repository interface
-	logger *slog.Logger      // Logger for error messages
+	repo   repository.OpenAI
+	logger *slog.Logger
 }
 
 // NewService creates and returns a new OpenAIService instance.

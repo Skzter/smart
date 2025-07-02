@@ -6,7 +6,7 @@ type TestCase struct {
 	Description    string
 	ExpectedOutput string
 	TestCode       TestCode
-	Status         TestStatus // implemented as enumeration
+	Status         TestStatus
 }
 
 // TestCode contains the code to be executed for a test case.
