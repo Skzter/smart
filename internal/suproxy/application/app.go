@@ -1,10 +1,12 @@
 package application
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 )
 
@@ -15,6 +17,12 @@ func Run() {
 		panic("logger is nil")
 	}
 
+	cfg, err := config.LoadFromPath(context.Background(), "configs/suproxy.pkl")
+	if err != nil {
+		logger.Error(err.Error())
+		panic(err)
+	}
+
 	handler, err := handler.NewSuproxyController(logger)
 	if err != nil {
 		logger.Error("failed to create handler", "error", err)
@@ -23,7 +31,7 @@ func Run() {
 
 	router := setupRouter(handler)
 
-	if err := router.Run("127.0.0.1:8080"); err != nil {
+	if err := router.Run("127.0.0.1:" + cfg.Port); err != nil {
 		logger.Error("failed to run server", "error", err)
 		return
 	}
