@@ -1,11 +1,11 @@
 package handler_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -14,107 +14,106 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 )
 
-// TestPostOfferlist tests the PostOfferlist handler with various inputs
+// TestPostOfferlist tests the PostOfferlist handler with various request scenarios
 func TestPostOfferlist(t *testing.T) {
-	router := setupRouter()
+	gin.SetMode(gin.TestMode)
 
-	tests := map[string]struct {
-		input        entity.Request
-		expectStatus int
+	logger := slog.Default()
+	ctrl, _ := handler.NewSuproxyController(logger)
+
+	tests := []struct {
+		name           string
+		requestBody    string
+		expectedStatus int
+		expectedBody   string
 	}{
-		"valid request": {
-			input: entity.Request{
-				Header:      []string{"Content-Type: application/json"},
-				Prompt:      "Please provide a list of offers",
-				Destination: "https://example.com/api/offers",
-				Request:     `{"query": "offers"}`,
-			},
-			expectStatus: http.StatusOK,
+		{
+			name: "valid JSON request",
+			requestBody: `{
+                "header": ["Content-Type: application/json"],
+                "prompt": "test prompt",
+                "destination": "https://example.com",
+                "request": "{\"some\": \"data\"}"
+            }`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "200",
 		},
-		"empty body": {
-			input:        entity.Request{},
-			expectStatus: http.StatusOK,
+		{
+			name: "empty valid JSON",
+			requestBody: `{
+                "header": [],
+                "prompt": "",
+                "destination": "",
+                "request": ""
+            }`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "200",
 		},
-		"missing destination": {
-			input: entity.Request{
-				Header:  []string{"Content-Type: application/json"},
-				Prompt:  "Prompt without destination",
-				Request: `{"data": "something"}`,
-			},
-			expectStatus: http.StatusOK,
+		{
+			name: "minimal valid JSON",
+			requestBody: `{
+                "header": null,
+                "prompt": "minimal",
+                "destination": "https://test.com",
+                "request": "{}"
+            }`,
+			expectedStatus: http.StatusOK,
+			expectedBody:   "200",
+		},
+		{
+			name:           "invalid JSON",
+			requestBody:    `{"invalid": json}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "",
+		},
+		{
+			name:           "empty request body",
+			requestBody:    "",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "",
+		},
+		{
+			name:           "malformed JSON",
+			requestBody:    `{"header": ["test"], "prompt":}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "",
 		},
 	}
 
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			jsonBody, err := json.Marshal(tc.input)
-			if err != nil {
-				t.Fatalf("Failed to marshal input: %v", err)
-			}
-
-			req, err := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(jsonBody)))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewBufferString(tt.requestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
 			req.Header.Set("Content-Type", "application/json")
 
 			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, req)
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
 
-			if rec.Code != tc.expectStatus {
-				t.Errorf("Expected status %d, got %d", tc.expectStatus, rec.Code)
+			ctrl.PostOfferlist(ctx)
+
+			if rec.Code != tt.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rec.Code)
+			}
+
+			if tt.expectedBody != "" && rec.Body.String() != tt.expectedBody {
+				t.Errorf("Expected response body %s, got %s", tt.expectedBody, rec.Body.String())
 			}
 		})
 	}
 }
 
-// TestPostOfferlistBindFails tests the PostOfferlist handler with invalid input
-func TestPostOfferlistBindFails(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader("invalid"))
-	c.Request.Header.Set("Content-Type", "application/json")
-
-	logger := slog.Default()
-	suproxyHandler, err := handler.NewSuproxyController(logger)
-	if err != nil {
-		t.Fatalf("Failed to create handler: %v", err)
-	}
-
-	suproxyHandler.PostOfferlist(c)
-
-	if w.Code != http.StatusBadRequest && w.Code != http.StatusOK {
-		t.Errorf("Expected status 400 or error response, got %d", w.Code)
-	}
-}
-
-// setupRouter initializes the Gin router and sets up the routes for the API
-func setupRouter() *gin.Engine {
-	logger := slog.Default()
-	if logger == nil {
-		panic("logger is nil")
-	}
-	suproxyHandler, err := handler.NewSuproxyController(logger)
-	if err != nil {
-		panic(err)
-	}
-
-	router := gin.Default()
-
-	api := router.Group("/api/v1")
-	{
-		api.POST("/Offerlist", suproxyHandler.PostOfferlist)
-	}
-
-	return router
-}
-
 // BenchmarkPostOfferlist benchmarks the PostOfferlist handler with a large number of requests
 func BenchmarkPostOfferlist(b *testing.B) {
-	router := setupRouter()
+	gin.SetMode(gin.TestMode)
+
+	logger := slog.Default()
+	ctrl, _ := handler.NewSuproxyController(logger)
+
+	router := gin.New()
+	router.POST("/api/v1/Offerlist", ctrl.PostOfferlist)
 
 	requestBody := entity.Request{
 		Header:      []string{"Content-Type: application/json"},
@@ -129,10 +128,14 @@ func BenchmarkPostOfferlist(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(jsonBody)))
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+		rec := httptest.NewRecorder()
+		router.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			b.Fatalf("Unexpected status code: got %d", rec.Code)
+		}
 	}
 }
