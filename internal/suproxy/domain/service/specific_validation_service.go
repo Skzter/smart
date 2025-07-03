@@ -60,7 +60,7 @@ func (s *SpecificValidationService) ValidateRequestResponse(
 
 	// Combine the request and response into one user message
 	userMessage := fmt.Sprintf("Request:\n%s\n\nResponse:\n%s", string(requestData), string(responseData))
-	
+
 	// Fill in the prompt template with the actual question
 	systemMessage := fmt.Sprintf(specificPromptTemplate, question)
 
@@ -68,18 +68,18 @@ func (s *SpecificValidationService) ValidateRequestResponse(
 	resp, err := s.client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model: openai.GPT4o, 							// use GPT-4o model
+			Model: openai.GPT4o, // use GPT-4o model
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleSystem,
-					Content: systemMessage,					// prompt instruction
+					Content: systemMessage, // prompt instruction
 				},
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: userMessage,					// the input data
+					Content: userMessage, // the input data
 				},
 			},
-			Temperature: 0.0,								// deterministic output
+			Temperature: 0.0, // deterministic output
 		},
 	)
 	if err != nil {
