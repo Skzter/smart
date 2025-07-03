@@ -14,6 +14,39 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+// Storable is a type constraint for all entities that can be persisted by the generic repository.
+//
+// To add a new storable entity type:
+//  1. Add the type to this constraint (e.g. | entity.MyNewType).
+//  2. Implement a validation function for the new type (e.g. myNewTypeValidationFunc).
+//  3. Register the validation function in GetValidationFunc.
+//
+// Example:
+//
+//	type Storable interface {
+//	    entity.TestCase | entity.SessionSummary | entity.MyNewType
+//	}
+type Storable interface {
+	entity.TestCase | entity.SessionSummary
+}
+
+// StorageRepository defines the interface for persistent data storage operations.
+// It provides basic CRUD functionality (Create, Read, Update, Delete) for abstracted storage systems
+type StorageRepository[T Storable] interface {
+
+	// Create stores a new record or object in the underlying storage system.
+	Create(ctx context.Context, obj *T) (string, error)
+
+	// Read retrieves a record or object from the storage based on an identifier or query.
+	Read(ctx context.Context, key string) (*T, error) // return data or error, Johannes fragen
+
+	// Update modifies an existing record or object in the storage system.
+	Update(ctx context.Context, obj *T, key string) error
+
+	// Delete removes a record or object from the storage system.
+	Delete(ctx context.Context, key string) error
+}
+
 const bucketname = "autotester"
 
 // GenericStorageRepository provides a generic implementation of StorageRepository
@@ -25,6 +58,9 @@ type GenericStorageRepository[T Storable] struct {
 	structValidationFunc func(*T) error
 }
 
+// NewStorageRepository creates a new StorageRepository for the given storable type T.
+// It initializes the S3 and Parquet wrappers and sets up the validation function.
+// Returns an error if any dependency cannot be initialized.
 func NewStorageRepository[T Storable](logger *slog.Logger) (StorageRepository[T], error) {
 	s3Config := wrapperEntity.S3Config{
 		Bucket:    bucketname,
@@ -56,6 +92,7 @@ func NewStorageRepository[T Storable](logger *slog.Logger) (StorageRepository[T]
 
 // newGenericStorageRepository constructs a GenericStorageRepository instance for type T.
 // It is unexported to enforce usage of specific typed constructors.
+// Returns an error if any dependency is nil.
 func newGenericStorageRepository[T Storable](logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	parquetWrapper service.ParquetFileWrapper[T],
@@ -72,8 +109,9 @@ func newGenericStorageRepository[T Storable](logger *slog.Logger,
 	}, nil
 }
 
-// Create serializes the given object to Parquet format and uploads it to S3,
-// returning the generated key or an error.
+// Create serializes the given object to Parquet format and uploads it to S3.
+// Returns an error if the key does not exist,
+// validation fails, or upload fails.
 func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (string, error) {
 	if err := assert.NotNil(obj); err != nil {
 		return "", fmt.Errorf("obj must not be nil: %w", err)
@@ -115,6 +153,7 @@ func (gsr *GenericStorageRepository[T]) Create(ctx context.Context, obj *T) (str
 
 // Read downloads the Parquet file from S3 using the given key,
 // deserializes it, and returns the first object found.
+// Returns an error if the key is empty, download fails, or validation fails.
 func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*T, error) {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return nil, fmt.Errorf("key must not be empty")
@@ -147,7 +186,8 @@ func (gsr *GenericStorageRepository[T]) Read(ctx context.Context, key string) (*
 }
 
 // Update overwrites the existing Parquet file at the given key with the
-// serialized form of the provided object. Returns an error if key does not exist.
+// serialized form of the provided object. Returns an error if the key does not exist,
+// validation fails, or upload fails.
 func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key string) error {
 	if err := assert.NotNil(obj); err != nil {
 		return fmt.Errorf("obj must not be nil: %w", err)
@@ -199,6 +239,7 @@ func (gsr *GenericStorageRepository[T]) Update(ctx context.Context, obj *T, key 
 }
 
 // Delete removes the Parquet file associated with the given key from S3.
+// Returns an error if the key is empty or deletion fails.
 func (gsr *GenericStorageRepository[T]) Delete(ctx context.Context, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty")
@@ -229,6 +270,8 @@ func generateKey[T Storable](obj *T) string {
 	return fmt.Sprintf("%s/%s_%s", objType.Name(), objType.Name(), timestamp)
 }
 
+// GetValidationFunc returns the validation function for the given storable type T.
+// Returns an error if no validation function is registered for the type.
 func GetValidationFunc[T Storable]() (func(*T) error, error) {
 	var t T
 	switch any(t).(type) {
@@ -245,6 +288,8 @@ func GetValidationFunc[T Storable]() (func(*T) error, error) {
 	}
 }
 
+// testCaseValidationFunc validates a TestCase entity.
+// Returns an error if any required field is empty.
 func testCaseValidationFunc(testcase *entity.TestCase) error {
 	if err := assert.StringNotEmpty(testcase.TestID); err != nil {
 		return fmt.Errorf("testcase.TestID must not be empty: %w", err)
@@ -261,6 +306,8 @@ func testCaseValidationFunc(testcase *entity.TestCase) error {
 	return nil
 }
 
+// sessionSummaryValidationFunc validates a SessionSummary entity.
+// Returns an error if the summary is empty, messages is nil, or any message is nil.
 func sessionSummaryValidationFunc(summary *entity.SessionSummary) error {
 	if err := assert.StringNotEmpty(summary.Summary); err != nil {
 		return fmt.Errorf("SessionSummary.Summary must not be empty: %w", err)
