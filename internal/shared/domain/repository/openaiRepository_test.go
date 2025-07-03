@@ -49,3 +49,37 @@ func TestRepository(t *testing.T) {
 		}
 	*/
 }
+
+/*
+type input struct {
+	timeout int
+	logger  *slog.Logger
+}
+
+func TestOpenaiRepository(t *testing.T) {
+	// need map with input, output of functions
+	// TODO: implement
+	// newOAIRepo(logger, timeout) returned nil, err, openAI struct
+	// createRequest(context, request entity) returned nil, err, response entity
+	testsNewOpenAiRepo := map[string]struct {
+		input  input
+		result any
+	}{
+		"failing to create new open ai repo": {
+			input:  "",
+			result: "",
+		},
+	}
+
+	// need testing logic
+		for name, test := range tests {
+		  // test := test // NOTE: uncomment for Go < 1.22, see /doc/faq#closures_and_goroutines
+		  t.Run(name, func(t *testing.T) {
+		    t.Parallel()
+		    if got, expected := reverse(test.input), test.result; got != expected { //wo reverse dann halt die zu testende Function ig
+		      t.Fatalf("reverse(%q) returned %q; expected %q", test.input, got, expected)
+	}
+		  })
+		}
+}
+*/
