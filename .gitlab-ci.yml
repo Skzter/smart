@@ -57,6 +57,17 @@ go_mod_download:
   script:
     - go mod download
 
+generate_config:
+  stage: prepare
+  extends: .go_cache 
+  script:
+    - ./bin/task generate-config
+  artifacts:
+    name: Generated_Configs
+    paths:
+      - internal/autotester/domain/config
+      - internal/suproxy/domain/config
+
 lint_frontend:
   stage: code_analysis_and_testing
   extends: .pnpm_cache
@@ -76,6 +87,25 @@ static_analysis_go:
     - ./bin/task static-analysis
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+
+sonarqube-check:
+  stage: code_analysis_and_testing
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
 
 unit_test_go:
@@ -118,6 +148,8 @@ build_go_artifacts:
   extends: .go_cache
   needs:
     - job: build_frontend_artifacts
+      artifacts: true
+    - job: generate_config
       artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"

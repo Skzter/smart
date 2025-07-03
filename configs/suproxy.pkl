@@ -1,0 +1,21 @@
+@go.Package { name = "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config" }
+module config
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+
+model: String ="gpt-4.1-nano-2025-04-14"
+
+port: String = "8080" 
+
+class Prompts {
+    prompt1 : String = "hier kommen eure prompts hin"
+    prompt2 : String = "und so weiter"
+    tollerPromp : String = "namen können beliebig gewählt werden"
+}
+prompts : Prompts
+
+timeout: Int = 20
+
+region: String = "eu-central-1"
+
+bucket: String = "smart-suproxy"
