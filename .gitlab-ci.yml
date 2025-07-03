@@ -82,6 +82,7 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
+    - apt-get update && apt-get install -y bc
     - ./bin/task test
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
