@@ -57,6 +57,17 @@ go_mod_download:
   script:
     - go mod download
 
+generate_config:
+  stage: prepare
+  extends: .go_cache 
+  script:
+    - ./bin/task generate-config
+  artifacts:
+    name: Generated_Configs
+    paths:
+      - internal/autotester/domain/config
+      - internal/suproxy/domain/config
+
 lint_frontend:
   stage: code_analysis_and_testing
   extends: .pnpm_cache
@@ -111,6 +122,8 @@ build_go_artifacts:
   extends: .go_cache
   needs:
     - job: build_frontend_artifacts
+      artifacts: true
+    - job: generate_config
       artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
