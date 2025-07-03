@@ -26,7 +26,7 @@ tasks:
 
   build:
     desc: "Build the project"
-    deps: [generate-config]
+    deps: [generate]
     vars:
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
@@ -57,7 +57,7 @@ tasks:
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
-    deps: [generate-config]
+    deps: [generate]
     vars:
       BUILD_BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
@@ -161,16 +161,29 @@ tasks:
 
   pre-commit:
     desc: "Run the pre-commit"
-    deps: [generate-config]
+    deps: [generate]
     cmds:
       - task: lint
       - task: test
 
-  generate-config:
+  generate:
     desc: "generates code for reading pkl configs"
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-mocks
+
+  generate-suproxy:
+    desc: "generates all code for suproxy"
+    cmds:
+      - task: generate-config-suproxy
+      - task: generate-mocks
+
+  generate-autotester:
+    desc: "generates all code for autotester"
+    cmds:
+      - task: generate-config-autotester
+      - task: generate-mocks
 
   generate-config-autotester:
     desc: "generates code for reading autotester config"
@@ -181,4 +194,9 @@ tasks:
     desc: "generates code for reading suproxy config"
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+
+  generate-mocks:
+    desc: "generates all mockery mocks"
+    cmds:
+      - "go tool github.com/vektra/mockery/v3"
 

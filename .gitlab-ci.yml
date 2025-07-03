@@ -57,11 +57,11 @@ go_mod_download:
   script:
     - go mod download
 
-generate_config:
+go_generate_code:
   stage: prepare
   extends: .go_cache 
   script:
-    - ./bin/task generate-config
+    - ./bin/task generate
   artifacts:
     name: Generated_Configs
     paths:
