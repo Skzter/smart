@@ -25,24 +25,7 @@ type GenericStorageRepository[T Storable] struct {
 	structValidationFunc func(*T) error
 }
 
-// NewHistoryStorageRepository creates a StorageRepository specifically
-// for SessionSummary entities. It uses a generic implementation internally.
-func NewHistoryStorageRepository(logger *slog.Logger) (StorageRepository[entity.SessionSummary], error) {
-	structValidationFunc := func(summary *entity.SessionSummary) error {
-		if err := assert.StringNotEmpty(summary.Summary); err != nil {
-			return fmt.Errorf("SessionSummary.Summary must not be empty: %w", err)
-		}
-		if err := assert.NotNil(summary.Messages); err != nil {
-			return fmt.Errorf("SessionSummary.Messages must not be nil: %w", err)
-		}
-		for i, msg := range summary.Messages {
-			if err := assert.NotNil(msg); err != nil {
-				return fmt.Errorf("SessionSummary.Messages[%d] must not be nil: %w", i, err)
-			}
-		}
-		return nil
-	}
-
+func NewStorageRepository[T Storable](logger *slog.Logger) (StorageRepository[T], error) {
 	s3Config := wrapperEntity.S3Config{
 		Bucket:    bucketname,
 		AccessKey: build.AwsAccessKey,
@@ -54,54 +37,17 @@ func NewHistoryStorageRepository(logger *slog.Logger) (StorageRepository[entity.
 		return nil, err
 	}
 
-	parquetWrapper, err := service.NewParquetWrapper[entity.SessionSummary](logger, service.DefaultParquetConfig())
+	parquetWrapper, err := service.NewParquetWrapper[T](logger, service.DefaultParquetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	repo, err := newGenericStorageRepository[entity.SessionSummary](logger, s3Wrapper, parquetWrapper, structValidationFunc)
-	if err != nil {
-		return nil, err
-	}
-	return repo, nil
-}
-
-// NewTestCaseStorageRepository creates a StorageRepository specifically
-// for TestCase entities. It uses a generic implementation internally.
-func NewTestCaseStorageRepository(logger *slog.Logger) (StorageRepository[entity.TestCase], error) {
-	validateFunc := func(testcase *entity.TestCase) error {
-		if err := assert.StringNotEmpty(testcase.TestID); err != nil {
-			return fmt.Errorf("testcase.TestID must not be empty: %w", err)
-		}
-		if err := assert.StringNotEmpty(testcase.Description); err != nil {
-			return fmt.Errorf("testcase.Description must not be empty: %w", err)
-		}
-		if err := assert.StringNotEmpty(string(testcase.Status)); err != nil {
-			return fmt.Errorf("testcase.Status must not be empty: %w", err)
-		}
-		if err := assert.StringNotEmpty(testcase.TestCode.Code); err != nil {
-			return fmt.Errorf("testcase.TestCode.Code must not be empty: %w", err)
-		}
-		return nil
-	}
-
-	s3Config := wrapperEntity.S3Config{
-		Bucket:    bucketname,
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
-	}
-
-	s3Wrapper, err := service.NewS3Wrapper(logger, s3Config)
+	validationFunc, err := GetValidationFunc[T]()
 	if err != nil {
 		return nil, err
 	}
 
-	parquetWrapper, err := service.NewParquetWrapper[entity.TestCase](logger, service.DefaultParquetConfig())
-	if err != nil {
-		return nil, err
-	}
-
-	repo, err := newGenericStorageRepository[entity.TestCase](logger, s3Wrapper, parquetWrapper, validateFunc)
+	repo, err := newGenericStorageRepository[T](logger, s3Wrapper, parquetWrapper, validationFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -281,4 +227,51 @@ func generateKey[T Storable](obj *T) string {
 	}
 	timestamp := time.Now().Format("20060102150405000")
 	return fmt.Sprintf("%s/%s_%s", objType.Name(), objType.Name(), timestamp)
+}
+
+func GetValidationFunc[T Storable]() (func(*T) error, error) {
+	var t T
+	switch any(t).(type) {
+	case entity.TestCase:
+		return func(obj *T) error {
+			return testCaseValidationFunc(any(obj).(*entity.TestCase))
+		}, nil
+	case entity.SessionSummary:
+		return func(obj *T) error {
+			return sessionSummaryValidationFunc(any(obj).(*entity.SessionSummary))
+		}, nil
+	default:
+		return nil, fmt.Errorf("no validation function registered for type %T", t)
+	}
+}
+
+func testCaseValidationFunc(testcase *entity.TestCase) error {
+	if err := assert.StringNotEmpty(testcase.TestID); err != nil {
+		return fmt.Errorf("testcase.TestID must not be empty: %w", err)
+	}
+	if err := assert.StringNotEmpty(testcase.Description); err != nil {
+		return fmt.Errorf("testcase.Description must not be empty: %w", err)
+	}
+	if err := assert.StringNotEmpty(string(testcase.Status)); err != nil {
+		return fmt.Errorf("testcase.Status must not be empty: %w", err)
+	}
+	if err := assert.StringNotEmpty(testcase.TestCode.Code); err != nil {
+		return fmt.Errorf("testcase.TestCode.Code must not be empty: %w", err)
+	}
+	return nil
+}
+
+func sessionSummaryValidationFunc(summary *entity.SessionSummary) error {
+	if err := assert.StringNotEmpty(summary.Summary); err != nil {
+		return fmt.Errorf("SessionSummary.Summary must not be empty: %w", err)
+	}
+	if err := assert.NotNil(summary.Messages); err != nil {
+		return fmt.Errorf("SessionSummary.Messages must not be nil: %w", err)
+	}
+	for i, msg := range summary.Messages {
+		if err := assert.NotNil(msg); err != nil {
+			return fmt.Errorf("SessionSummary.Messages[%d] must not be nil: %w", i, err)
+		}
+	}
+	return nil
 }
