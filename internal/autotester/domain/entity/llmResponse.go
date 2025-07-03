@@ -1,7 +1,7 @@
 package entity
 
 type LLMResponse struct {
-	SessionId
+	SessionId  string `json:"conversationId"`
 	LogStamp   LogStamp
 	AnswerText *ModelAnswerText
 	TestCode   *TestCode

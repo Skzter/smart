@@ -1,7 +1,7 @@
 package entity
 
 type Session struct {
-	SessionId             // unique identifier of the session, embedded struct
+	SessionId             string `json:"conversationId"`
 	CurrentSessionSummary *SessionSummary
 	History               []*SessionSummary
 	UserRequests          []*UserRequest

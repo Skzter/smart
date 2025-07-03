@@ -32,11 +32,8 @@ func NewAutotesterController(logger *slog.Logger, config *config.Config) (a *Aut
 }
 
 // HandleChatRequest processes an incoming chat request from the frontend.
-//
-// It parses the JSON payload, passes the message to the LLM service,
-// and returns the system-generated response. Handles validation and error cases.
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
-	var userRequest entity.UserRequestDTO
+	var userRequest entity.UserRequest
 
 	if err := c.BindJSON(&userRequest); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
@@ -57,7 +54,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 //
 // This can be used by the frontend to initialize or track a user session.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
-	var body entity.UserRequestDTO
+	var body entity.UserRequest
 	var resp entity.ResponseForUser
 	if err := c.BindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
@@ -66,7 +63,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
 }
 
-func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequestDTO) (response *entity.ResponseForUserDTO, err error) {
+func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
 	resp, err := a.service.Request(c, repoEntity.Request{
 		Prompt:       userRequest.Message.MessageBody,
 		SessionID:    userRequest.SessionId,
@@ -78,9 +75,14 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 		return nil, err
 	}
 	text := entity.Message{MessageBody: resp.Text, Actor: "system"}
-	return &entity.ResponseForUserDTO{
-		ResponseText: text,
-		SessionId:    entity.SessionId{Id: resp.SessionID},
-		LogStampDTO:  entity.LogStampDTO{ActorId: ""},
+	newLogStamp, err := entity.NewLogStamp(text.Actor)
+	if err != nil {
+		return nil, err
+	}
+	return &entity.ResponseForUser{
+		Message:   text,
+		UserId:    "",
+		SessionId: resp.SessionID,
+		LogStamp:  newLogStamp,
 	}, nil
 }

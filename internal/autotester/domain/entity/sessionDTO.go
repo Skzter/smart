@@ -1,7 +1,7 @@
 package entity
 
 type SessionDTO struct {
-	SessionId `json:"ConversationId"`
+	SessionId string    `json:"ConversationId"`
 	Messages  []Message `json:"messages"`
 }
 

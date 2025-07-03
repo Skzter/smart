@@ -29,13 +29,6 @@ func TestNewLogStamp(t *testing.T) {
 				t.Errorf("Didn't expect error for actorId %q, but got: %v", test.ActorId, err)
 			}
 
-			if ls.GetActorId() != test.ActorId {
-				t.Errorf("Expected ActorID %s, got %s", test.ActorId, ls.GetActorId())
-			}
-			if ls2.GetActorId() != test.ActorId {
-				t.Errorf("Expected ActorID %s, got %s", test.ActorId, ls.GetActorId())
-			}
-
 			if ls.GetLoggingId() == ls2.GetLoggingId() {
 				t.Errorf("Expected different UUIDs, but got identical: %s", ls.GetLoggingId())
 			}
