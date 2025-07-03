@@ -100,7 +100,8 @@ frontend_test:
   extends: .pnpm_cache
   script:
     - pnpm run test:coverage
-  coverage: '/^Statements\s:\s\d+(.\d+)?%/'
+  coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
+
   artifacts:
     paths:
     - web/coverage/
