@@ -110,7 +110,10 @@ func BenchmarkPostOfferlist(b *testing.B) {
 	gin.SetMode(gin.TestMode)
 
 	logger := slog.Default()
-	ctrl, _ := handler.NewSuproxyController(logger)
+	ctrl, err := handler.NewSuproxyController(logger)
+	if err != nil {
+		b.Fatalf("Failed to create controller: %v", err)
+	}
 
 	router := gin.New()
 	router.POST("/api/v1/Offerlist", ctrl.PostOfferlist)
