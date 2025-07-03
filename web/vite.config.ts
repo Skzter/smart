@@ -12,11 +12,14 @@ export default defineConfig({
         environment: "jsdom",
         setupFiles: "./src/setupTests.ts",
         include: ["tests/unit/*.test.ts", "tests/components/*.test.ts"],
+        reporters: ["junit"],
+        outputFile: "coverage/junit.xml",
         coverage: {
             provider: "v8",
-            reporter: ["text", "json", "html"],
+            reporter: ["text", "cobertura"],
             include: ["src/{lib,components}/**/*.{ts,js,svelte}"],
             exclude: ["src/**/*.test.{ts}", "src/**/*.d.ts"],
+            reportsDirectory: './coverage',
             thresholds:{
                 statements: 80,
                 branches: 80,

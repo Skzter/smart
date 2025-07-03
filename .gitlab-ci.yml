@@ -101,10 +101,14 @@ frontend_test:
   script:
     - pnpm run test:coverage
   coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
-
   artifacts:
-    paths:
-    - web/coverage/
+    reports: 
+      coverage_report:
+        coverage_format: cobertura
+        path: web/coverage/cobertura-coverage.xml
+      junit: web/coverage/junit.xml
+      
+  
     
 build_frontend_artifacts:
   stage: build
