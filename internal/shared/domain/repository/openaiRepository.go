@@ -16,7 +16,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-type OpenAIclient interface {
+type OpenAIClient interface {
 	Responses() *responses.ResponseService
 }
 
@@ -24,7 +24,7 @@ type openaiclient struct {
 	client openai.Client
 }
 
-func NewOpenAIClient(client openai.Client) OpenAIclient {
+func NewOpenAIClient(client openai.Client) OpenAIClient {
 	return openaiclient{client}
 }
 func (oc openaiclient) Responses() *responses.ResponseService {
@@ -42,7 +42,7 @@ type OpenAI interface {
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
 	logger  *slog.Logger // logger for Errors and Responses
-	client  OpenAIclient
+	client  OpenAIClient
 	timeout int // timeout in seconds
 }
 

@@ -16,3 +16,4 @@ packages:
       dir: './internal/shared/domain/mocks'
     interfaces:
       OpenAI:
+      OpenAIClient:

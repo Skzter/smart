@@ -1,6 +1,7 @@
 package repository
 
 import (
+	// "context"
 	"log/slog"
 	"testing"
 
@@ -21,29 +22,27 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 		expectedErrorMsg string
 	}{
 		{
-			name:             "creating repo with nil logger, correct timeout",
-			logger:           nil,
-			timeout:          5,
-			expectedOutcome:  nil,
-			expectedError:    true,
-			expectedErrorMsg: "assert failed: given value at index 0 is nil",
+			name:            "creating repo with nil logger, correct timeout",
+			logger:          nil,
+			timeout:         5,
+			expectedOutcome: nil,
+			expectedError:   true,
 		},
 		{
-			name:             "creating repo with negative timeout, correct logger",
-			logger:           logger,
-			timeout:          -1,
-			expectedOutcome:  nil,
-			expectedError:    true,
-			expectedErrorMsg: "invalid timout: -1 seconds",
+			name:            "creating repo with negative timeout, correct logger",
+			logger:          logger,
+			timeout:         -1,
+			expectedOutcome: nil,
+			expectedError:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			repo, _ := NewOpenAiRepository(test.logger, test.timeout)
 			if test.expectedError {
-				repo, err := NewOpenAiRepository(test.logger, test.timeout)
-				if repo != test.expectedOutcome && err.Error() != test.expectedErrorMsg {
+				if repo != test.expectedOutcome {
 					t.Errorf("wanted: %q, got: %q", test.expectedOutcome, repo)
 				}
 			}
@@ -126,9 +125,55 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 
 /*
 // Test for creating a request to openai
-// needs mock to do that, only with correct request because validation of request entity already tested
 func TestOpenaiRepository_CreateRequest(t *testing.T) {
-	mockRepo := mocks.NewMockOpenAI(t)
-	mockRepo.EXPECT().CreateRequest()
+	tests := []struct {
+		name             string
+		ctx              context.Context
+		request          entity.Request
+		expectedResponse *entity.Response
+		expectedError    bool
+	}{
+		{
+			name: "test correct CreateRequest call",
+			ctx:  context.TODO(),
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "123",
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedResponse: &entity.Response{
+				Text:      "answer from llm",
+				SessionID: "123",
+			},
+			expectedError: false,
+		},
+	}
+
+	logger := slog.New(slog.DiscardHandler)
+	timeout := 5
+	repo := openAI{
+		logger:  logger,
+		client:  mocks.NewMockOpenAIClient(t),
+		timeout: timeout,
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			resp, err := repo.CreateRequest(test.ctx, test.request)
+			fmt.Println(resp)
+			if test.expectedError {
+				if err == nil {
+					t.Errorf("expected error but go nil")
+				} else if resp != test.expectedResponse {
+					t.Errorf("got %q, wanted %q", resp, test.expectedResponse)
+				}
+			} else if !test.expectedError {
+				if err != nil {
+					t.Errorf("did not expect error but go this: %q", err.Error())
+				}
+			}
+		})
+	}
 }
 */
