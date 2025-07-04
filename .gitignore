@@ -24,6 +24,7 @@ coverage.*
 *.coverprofile
 profile.cov
 .gitlab-ci-local
+.task/
 
 # Go workspace file
 go.work
