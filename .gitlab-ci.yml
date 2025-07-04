@@ -63,11 +63,11 @@ go_generate_code:
   script:
     - ./bin/task generate
   artifacts:
-    name: Generated_Configs
+    name: Generated_Go_Code
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
-      - internal/*mocks/*
+      - internal/**/mocks/
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -90,18 +90,50 @@ static_analysis_go:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
+sonarqube-check:
+  stage: code_analysis_and_testing
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
 unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
     - ./bin/task test
 
+frontend_test:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - pnpm run test:coverage
+  coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
+  artifacts:
+    reports: 
+      coverage_report:
+        coverage_format: cobertura
+        path: web/coverage/cobertura-coverage.xml
+      junit: web/coverage/junit.xml 
+    
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   script:
     - pnpm build
   artifacts:
@@ -109,14 +141,14 @@ build_frontend_artifacts:
     paths:
       - web/dist/
 
-#build_frontend_no_artifacts:
-#  stage: build
-#  extends: .pnpm_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main"
-#      when: on_success
-#  script:
-#    - pnpm build
+build_frontend_no_artifacts:
+  stage: build
+  extends: .pnpm_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
+  script:
+    - pnpm build
 
 build_go_artifacts:
   stage: build
@@ -124,9 +156,11 @@ build_go_artifacts:
   needs:
     - job: build_frontend_artifacts
       artifacts: true
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
+    - job: go_generate_code
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   script:
     - ./bin/task build-pipeline
   artifacts:
@@ -134,14 +168,14 @@ build_go_artifacts:
     paths:
       - build/
 
-#build_go_no_artifacts:
-#  stage: build
-#  extends: .go_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main"
-#      when: on_success
-#  script:
-#    - ./bin/task build-pipeline
+build_go_no_artifacts:
+  stage: build
+  extends: .go_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
+  script:
+    - ./bin/task build-pipeline
 
 .docker_build:
   image: docker:dind

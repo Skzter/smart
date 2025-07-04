@@ -176,6 +176,9 @@ tasks:
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+    sources:
+      - configs/autotester.pkl
+      - configs/suproxy.pkl
 
   generate-mocks:
     desc: "generate all mockery mocks"
