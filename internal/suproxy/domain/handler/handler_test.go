@@ -19,7 +19,10 @@ func TestPostOfferlist(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	logger := slog.Default()
-	ctrl, _ := handler.NewSuproxyController(logger)
+	ctrl, err := handler.NewSuproxyController(logger)
+	if err != nil {
+		t.Fatalf("Failed to create controller: %v", err)
+	}
 
 	tests := []struct {
 		name           string
