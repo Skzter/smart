@@ -64,6 +64,7 @@ func NewDatabaseRepository(logger *slog.Logger) (DatabaseRepository, error) {
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
 	if err := validateDbEntry(dbEntry, dbR); err != nil {
 		dbR.logger.Error("failed to validate dbEntry", slog.String("error", err.Error()))
+		return err
 	}
 
 	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(dbEntry)
@@ -78,7 +79,6 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 		"created": string(rune(time.Now().Unix())),
 	}
 
-	// struct-unixtimestamp
 	key := generateKey(string(reflect.TypeOf(dbEntry).Name()), metadata["created"])
 
 	// Upload file (automatically adds .parquet extension if missing)
@@ -113,10 +113,49 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 }
 
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
+	if err := validateDbEntry(dbEntry, dbR); err != nil {
+		dbR.logger.Error("failed to validate dbEntry", slog.String("error", err.Error()))
+		return err
+	}
+
+	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
+	if err != nil {
+		dbR.logger.Error("download failed", slog.String("error", err.Error()))
+		return err
+	}
+
+	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(dbEntry)
+	if err != nil {
+		dbR.logger.Error("failed to write parquet", slog.String("error", err.Error()))
+		return err
+	}
+
+	dbR.logger.Info("parquet data created", slog.Int("size_bytes", len(parquetData)))
+
+	metadata := map[string]string{
+		"created": string(oldmetadata["created"]),
+		"updated": string(rune(time.Now().Unix())),
+	}
+
+	// overwrites old dbEntry
+	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
+	if err != nil {
+		dbR.logger.Error("upload failed", slog.String("error", err.Error()))
+		return err
+	}
+
 	return nil
 }
 
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
+	err := dbR.s3Wrapper.DeleteParquetFile(ctx, key)
+	if err != nil {
+		dbR.logger.Error("failed to delete file", slog.String("error", err.Error()))
+		return err
+	}
+
+	dbR.logger.Info("file deleted successfully")
+
 	return nil
 }
 
