@@ -57,13 +57,8 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, err
 	}
 
-	switch {
-	case request.Prompt == "":
-		return nil, fmt.Errorf("creating request without invalid Data: Prompt is empty")
-	case request.SystemPrompt == "":
-		return nil, fmt.Errorf("creating request without system prompt")
-	case request.Model == "":
-		return nil, fmt.Errorf("creating request without model")
+	if err := ValidateRequestEntity(request); err != nil {
+		return nil, err
 	}
 
 	openaiRequest := responses.ResponseNewParams{
@@ -105,4 +100,17 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		Text:      resp.OutputText(),
 		SessionID: resp.ID,
 	}, nil
+}
+
+func ValidateRequestEntity(request entity.Request) error {
+	switch {
+	case request.Prompt == "":
+		return fmt.Errorf("request without user prompt")
+	case request.SystemPrompt == "":
+		return fmt.Errorf("request without system prompt")
+	case request.Model == "":
+		return fmt.Errorf("request without model")
+	default:
+		return nil
+	}
 }
