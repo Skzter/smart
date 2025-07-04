@@ -31,7 +31,7 @@ type databaseRepository struct {
 	logger         *slog.Logger
 }
 
-// NewDatabaseRepository creates a new DatabaseRepository
+// NewDatabaseRepository creates a new instance of DatabaseRepository
 func NewDatabaseRepository(logger *slog.Logger) (DatabaseRepository, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 		return err
 	}
 
-	dbR.logger.Info("Parquet data created", slog.Int("size_bytes", len(parquetData)))
+	dbR.logger.Info("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	metadata := map[string]string{
 		"created": string(rune(time.Now().Unix())),
@@ -84,27 +84,32 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 	// Upload file (automatically adds .parquet extension if missing)
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		dbR.logger.Error("Upload failed", slog.String("error", err.Error()))
+		dbR.logger.Error("upload failed", slog.String("error", err.Error()))
 		return err
 	}
 
 	return nil
 }
 
+// ReadRequest reads a request from the database (access through key)
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
-	// Download file
-	data, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, "data/2024/01/user-events.parquet")
+	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
-		dbR.logger.Error("Download failed", slog.String("error", err.Error()))
+		dbR.logger.Error("download failed", slog.String("error", err.Error()))
 		return nil, err
 	}
-
-	dbR.logger.Info("File downloaded",
-		slog.Int("size", len(data)),
+	dbR.logger.Info("file downloaded",
+		slog.Int("size", len(parquetData)),
 		slog.Any("metadata", metadata),
 	)
-
-	return &entity.DatabaseEntry{}, nil
+	dbEntries, err := dbR.parquetWrapper.ReadStructsFromParquet(parquetData)
+	if err != nil {
+		dbR.logger.Error("failed to read parquet data", slog.String("error", err.Error()))
+		return nil, err
+	}
+	dbR.logger.Info("events read from parquet", slog.Int("count", len(dbEntries)))
+	firstEntry := dbEntries[0]
+	return &firstEntry, nil
 }
 
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
@@ -115,7 +120,7 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 	return nil
 }
 
-// validateDbEntry validates dbEntry
+// validateDbEntry validates the dbEntry and logs errors if validation fails
 func validateDbEntry(dbEntry entity.DatabaseEntry, dbR *databaseRepository) error {
 	if err := validateRequest(dbEntry.Request); err != nil {
 		dbR.logger.Error("failed to validate request", slog.String("error", err.Error()))
@@ -168,6 +173,7 @@ func validateTags(t []string) error {
 	return nil
 }
 
+// generateKey generates a unique key for the database entry based on the struct name and current unix timestamp
 func generateKey(structName string, unixTimestamp string) string {
 	return structName + "-" + unixTimestamp
 }
