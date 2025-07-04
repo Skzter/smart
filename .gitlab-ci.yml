@@ -67,6 +67,7 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/*mocks/*
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -98,9 +99,9 @@ unit_test_go:
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == "main"
+#      when: on_success
   script:
     - pnpm build
   artifacts:
@@ -108,14 +109,14 @@ build_frontend_artifacts:
     paths:
       - web/dist/
 
-build_frontend_no_artifacts:
-  stage: build
-  extends: .pnpm_cache
-  rules:
-    - if: $CI_COMMIT_BRANCH != "main"
-      when: on_success
-  script:
-    - pnpm build
+#build_frontend_no_artifacts:
+#  stage: build
+#  extends: .pnpm_cache
+#  rules:
+#    - if: $CI_COMMIT_BRANCH != "main"
+#      when: on_success
+#  script:
+#    - pnpm build
 
 build_go_artifacts:
   stage: build
@@ -123,9 +124,9 @@ build_go_artifacts:
   needs:
     - job: build_frontend_artifacts
       artifacts: true
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: on_success
+#  rules:
+#    - if: $CI_COMMIT_BRANCH == "main"
+#      when: on_success
   script:
     - ./bin/task build-pipeline
   artifacts:
@@ -133,14 +134,14 @@ build_go_artifacts:
     paths:
       - build/
 
-build_go_no_artifacts:
-  stage: build
-  extends: .go_cache
-  rules:
-    - if: $CI_COMMIT_BRANCH != "main"
-      when: on_success
-  script:
-    - ./bin/task build-pipeline
+#build_go_no_artifacts:
+#  stage: build
+#  extends: .go_cache
+#  rules:
+#    - if: $CI_COMMIT_BRANCH != "main"
+#      when: on_success
+#  script:
+#    - ./bin/task build-pipeline
 
 .docker_build:
   image: docker:dind

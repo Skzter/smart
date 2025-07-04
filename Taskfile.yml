@@ -57,7 +57,6 @@ tasks:
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
-    deps: [generate]
     vars:
       BUILD_BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
@@ -79,7 +78,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
-    deps: [generate-config-suproxy]
+    deps: [generate]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -93,7 +92,7 @@ tasks:
 
   run-autotester:
     desc: "Run the project"
-    deps: [generate-config-autotester]
+    deps: [generate]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -167,36 +166,19 @@ tasks:
       - task: test
 
   generate:
-    desc: "generates code for reading pkl configs"
+    desc: "generate code"
     cmds:
-      - task: generate-config-autotester
-      - task: generate-config-suproxy
+      - task: generate-config
       - task: generate-mocks
 
-  generate-suproxy:
-    desc: "generates all code for suproxy"
-    cmds:
-      - task: generate-config-suproxy
-      - task: generate-mocks
-
-  generate-autotester:
-    desc: "generates all code for autotester"
-    cmds:
-      - task: generate-config-autotester
-      - task: generate-mocks
-
-  generate-config-autotester:
-    desc: "generates code for reading autotester config"
+  generate-config:
+    desc: "generate all code for reading config"
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
-
-  generate-config-suproxy:
-    desc: "generates code for reading suproxy config"
-    cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
 
   generate-mocks:
-    desc: "generates all mockery mocks"
+    desc: "generate all mockery mocks"
     cmds:
       - "go tool github.com/vektra/mockery/v3"
 

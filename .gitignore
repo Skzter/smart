@@ -31,7 +31,10 @@ go.work.sum
 
 # env file
 .env
+
+#generated Code
 *.pkl.go
+**/mocks/
 
 # Editor/IDE
 .idea/
