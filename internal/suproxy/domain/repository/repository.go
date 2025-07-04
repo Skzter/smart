@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"reflect"
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
@@ -79,7 +78,7 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 		"created": string(rune(time.Now().Unix())),
 	}
 
-	key := generateKey(string(reflect.TypeOf(dbEntry).Name()), metadata["created"])
+	key := generateKey(dbEntry.Tags[0], dbEntry.Tags[1], metadata["created"])
 
 	// Upload file (automatically adds .parquet extension if missing)
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
@@ -212,7 +211,7 @@ func validateTags(t []string) error {
 	return nil
 }
 
-// generateKey generates a unique key for the database entry based on the struct name and current unix timestamp
-func generateKey(structName string, unixTimestamp string) string {
-	return structName + "-" + unixTimestamp
+// generateKey generates a unique key for the database entry based on tags and timestamp
+func generateKey(tag1 string, tag2 string, unixTimestamp string) string {
+	return tag1 + "-" + tag2 + "-" + unixTimestamp
 }
