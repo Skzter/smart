@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+// TestArrayLengthBetween checks if ArrayLengthBetween correctly validates array length within a range.
 func TestArrayLengthBetween(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -23,6 +24,7 @@ func TestArrayLengthBetween(t *testing.T) {
 	for _, test := range tests {
 		err := ArrayLengthBetween(test.value, test.minValue, test.maxValue)
 
+		// Check if the error result matches the expected outcome.
 		if test.error == true && err == nil {
 			t.Errorf("Got nil, expected error (test id: %d, value: %d, minValue: %d, maxValue: %d)", test.id, test.value, test.minValue, test.maxValue)
 		} else if test.error == false && err != nil {
@@ -31,6 +33,7 @@ func TestArrayLengthBetween(t *testing.T) {
 	}
 }
 
+// TestArrayLengthGreaterThan checks if ArrayLengthGreaterThan correctly validates array length is greater than minValue.
 func TestArrayLengthGreaterThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -46,6 +49,7 @@ func TestArrayLengthGreaterThan(t *testing.T) {
 	for _, test := range tests {
 		err := ArrayLengthGreaterThan(test.value, test.minValue)
 
+		// Check if the error result matches the expected outcome.
 		if test.error == true && err == nil {
 			t.Errorf("Got nil, expected error (test id: %d, value: %d, minValue: %d)", test.id, test.value, test.minValue)
 		} else if test.error == false && err != nil {
@@ -54,6 +58,7 @@ func TestArrayLengthGreaterThan(t *testing.T) {
 	}
 }
 
+// TestArrayLengthGreaterOrEqualThan checks if ArrayLengthGreaterOrEqualThan validates array length is greater or equal to minValue.
 func TestArrayLengthGreaterOrEqualThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -69,6 +74,7 @@ func TestArrayLengthGreaterOrEqualThan(t *testing.T) {
 	for _, test := range tests {
 		err := ArrayLengthGreaterOrEqualThan(test.value, test.minValue)
 
+		// Check if the error result matches the expected outcome.
 		if test.error == true && err == nil {
 			t.Errorf("Got nil, expected error (test id: %d, value: %d, minValue: %d)", test.id, test.value, test.minValue)
 		} else if test.error == false && err != nil {
@@ -77,6 +83,7 @@ func TestArrayLengthGreaterOrEqualThan(t *testing.T) {
 	}
 }
 
+// TestArrayLengthLessThan checks if ArrayLengthLessThan validates array length is less than maxValue.
 func TestArrayLengthLessThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -92,6 +99,7 @@ func TestArrayLengthLessThan(t *testing.T) {
 	for _, test := range tests {
 		err := ArrayLengthLessThan(test.value, test.maxValue)
 
+		// Check if the error result matches the expected outcome.
 		if test.error == true && err == nil {
 			t.Errorf("Got nil, expected error (test id: %d, value: %d, maxValue: %d)", test.id, test.value, test.maxValue)
 		} else if test.error == false && err != nil {
@@ -100,6 +108,7 @@ func TestArrayLengthLessThan(t *testing.T) {
 	}
 }
 
+// TestArrayLengthLessOrEqualThan checks if ArrayLengthLessOrEqualThan validates array length is less or equal to maxValue.
 func TestArrayLengthLessOrEqualThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -115,6 +124,7 @@ func TestArrayLengthLessOrEqualThan(t *testing.T) {
 	for _, test := range tests {
 		err := ArrayLengthLessOrEqualThan(test.value, test.maxValue)
 
+		// Check if the error result matches the expected outcome.
 		if test.error == true && err == nil {
 			t.Errorf("Got nil, expected error (test id: %d, value: %d, maxValue: %d)", test.id, test.value, test.maxValue)
 		} else if test.error == false && err != nil {

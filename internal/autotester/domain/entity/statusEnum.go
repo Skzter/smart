@@ -1,5 +1,6 @@
 package entity
 
+// TestStatus defines the status of a test as a string type.
 type TestStatus string
 
 const (
