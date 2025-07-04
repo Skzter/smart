@@ -16,6 +16,21 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+type OpenAIclient interface {
+	Responses() *responses.ResponseService
+}
+
+type openaiclient struct {
+	client openai.Client
+}
+
+func NewOpenAIClient(client openai.Client) OpenAIclient {
+	return openaiclient{client}
+}
+func (oc openaiclient) Responses() *responses.ResponseService {
+	return &oc.client.Responses
+}
+
 // OpenAI defines methods for interacting with OpenAI API.
 type OpenAI interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
@@ -27,7 +42,7 @@ type OpenAI interface {
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
 	logger  *slog.Logger // logger for Errors and Responses
-	client  openai.Client
+	client  OpenAIclient
 	timeout int // timeout in seconds
 }
 
@@ -43,9 +58,9 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 
 	return &openAI{
 		logger: logger,
-		client: openai.NewClient(
+		client: NewOpenAIClient(openai.NewClient(
 			option.WithAPIKey(build.OpenAIKey),
-		),
+		)),
 		timeout: timeout,
 	}, nil
 }
@@ -79,7 +94,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, fmt.Errorf("failed to generate new context")
 	}
 
-	resp, err := qa.client.Responses.New(ctx, openaiRequest)
+	resp, err := qa.client.Responses().New(ctx, openaiRequest)
 
 	if err != nil {
 		err := fmt.Errorf("openai request: %w", err)
