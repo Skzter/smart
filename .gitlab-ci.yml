@@ -61,7 +61,7 @@ generate_config:
   stage: prepare
   extends: .go_cache 
   script:
-    - ./bin/task generate-config
+    - go tool task generate-config
   artifacts:
     name: Generated_Configs
     paths:
@@ -78,13 +78,13 @@ lint_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task lint
+    - go tool task lint
 
 static_analysis_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task static-analysis
+    - go tool task static-analysis
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -112,7 +112,7 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test
+    - go tool task test
 
 frontend_test:
   stage: code_analysis_and_testing
@@ -163,7 +163,7 @@ build_go_artifacts:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   script:
-    - ./bin/task build-pipeline
+    - go tool task build-pipeline
   artifacts:
     name: Go_Bin
     paths:
@@ -176,7 +176,7 @@ build_go_no_artifacts:
     - if: $CI_COMMIT_BRANCH != "main"
       when: on_success
   script:
-    - ./bin/task build-pipeline
+    - go tool task build-pipeline
 
 .docker_build:
   image: docker:dind
