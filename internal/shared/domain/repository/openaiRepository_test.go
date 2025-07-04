@@ -105,14 +105,17 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+			err := ValidateRequestEntity(test.request)
 			if test.expectedError {
-				if err := ValidateRequestEntity(test.request); test.expectedErrorMsg != err.Error() {
+				if err == nil {
+					t.Errorf("expected error %q, but got nil", test.expectedErrorMsg)
+				}
+				if test.expectedErrorMsg != err.Error() {
 					t.Errorf("wanted: %q, got: %q", test.expectedErrorMsg, err.Error())
 				}
-				if !test.expectedError {
-					if err := ValidateRequestEntity(test.request); test.expectedErrorMsg != err.Error() {
-						t.Errorf("wanted: %q, got: %q", test.expectedErrorMsg, err.Error())
-					}
+			} else if !test.expectedError {
+				if err != nil {
+					t.Errorf("did not expect error but go this: %q", err.Error())
 				}
 			}
 		})
