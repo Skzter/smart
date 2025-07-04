@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	// "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
+// nicht auf errorMsg prüfen, sondern nur error und im namen case beschreiben
 // Test for creating new OpenAiRepository
 func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
@@ -126,5 +128,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 // Test for creating a request to openai
 // needs mock to do that, only with correct request because validation of request entity already tested
 func TestOpenaiRepository_CreateRequest(t *testing.T) {
+	mockRepo := mocks.NewMockOpenAI(t)
+	mockRepo.EXPECT().CreateRequest()
 }
 */
