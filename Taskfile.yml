@@ -78,7 +78,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
-    deps: [generate]
+    deps: [generate-config-suproxy,generate-mocks]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -92,7 +92,7 @@ tasks:
 
   run-autotester:
     desc: "Run the project"
-    deps: [generate]
+    deps: [generate-config-autotester,generate-mocks]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -168,17 +168,29 @@ tasks:
   generate:
     desc: "generate code"
     cmds:
-      - task: generate-config
+      - task: generate-config-autotester
+      - task: generate-config-suproxy
       - task: generate-mocks
 
-  generate-config:
-    desc: "generate all code for reading config"
+  generate-config-autotester:
+    desc: "generate code for reading autotester config"
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
-      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
     sources:
       - configs/autotester.pkl
+    generates:
+      - internal/autotester/domain/config/*
+    method: timestamp
+
+  generate-config-suproxy:
+    desc: "generate code for reading suproxy config"
+    cmds:
+      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+    sources:
       - configs/suproxy.pkl
+    generates:
+      - internal/suproxy/domain/config/*
+    method: timestamp
 
   generate-mocks:
     desc: "generate all mockery mocks"
