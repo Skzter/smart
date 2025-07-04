@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/application"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	application.Run()
 }

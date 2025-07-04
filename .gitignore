@@ -12,6 +12,8 @@ autotester
 !suproxy/
 !autotester/
 !task.exe
+!doppler.exe
+!pkl.exe
 
 # Test binary, built with `go test -c`
 *.test
@@ -22,6 +24,7 @@ coverage.*
 *.coverprofile
 profile.cov
 .gitlab-ci-local
+.task/
 
 # Go workspace file
 go.work
@@ -29,6 +32,7 @@ go.work.sum
 
 # env file
 .env
+*.pkl.go
 
 # Editor/IDE
 .idea/

@@ -1,17 +1,49 @@
 package main
 
 import (
+	"context"
+	"io/fs"
+	"log/slog"
+	"net/http"
+	"os"
+
 	"github.com/gin-gonic/gin"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/web"
 )
 
 func main() {
-	r := gin.Default()
+	cfg, err := config.LoadFromPath(context.Background(), "configs/autotester.pkl")
+	if err != nil {
+		panic(err)
+	}
 
-	r.GET("/", func(c *gin.Context) {
-		c.String(200, "Hello World")
+	router := gin.Default()
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	controller, err := handler.NewAutotesterController(logger, cfg)
+
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	router.POST("/api/v1/chat", func(c *gin.Context) {
+		controller.HandleChatRequest(c)
 	})
 
-	if err := r.Run(":8081"); err != nil {
-		panic(err)
+	staticFS, err := fs.Sub(web.DistFS, "dist")
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	router.StaticFS("/", http.FS(staticFS))
+
+	err = router.Run(":" + cfg.Port)
+	if err != nil {
+		logger.Error(err.Error())
+		return
 	}
 }
