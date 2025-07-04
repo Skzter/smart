@@ -1,20 +1,20 @@
 package repository
 
 import (
-	"context"
 	"log/slog"
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
+// Test for creating new OpenAiRepository
 func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		name             string
 		logger           *slog.Logger
 		timeout          int
-		expectedOutcome  any // hier muss mal openAi repo hin
+		expectedOutcome  any // hier muss mal openAi repo hin oder weg
 		expectedError    bool
 		expectedErrorMsg string
 	}{
@@ -49,31 +49,56 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 	}
 }
 
-func TestOpenaiRepository_CreateRequest(t *testing.T) {
-	// helper logger and repo
-	logger := slog.New(slog.DiscardHandler)
-	repo, _ := NewOpenAiRepository(logger, 5)
-
+func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 	tests := []struct {
 		name             string
-		ctx              context.Context
 		request          entity.Request
-		expectedOutcome  *entity.Response
 		expectedError    bool
 		expectedErrorMsg string
 	}{
 		{
-			name: "create request with nil context, correct request entity",
-			ctx:  nil,
+			name: "validating incorrect request entity => empty prompt",
+			request: entity.Request{
+				Prompt:       "",
+				SessionID:    "123",
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError:    true,
+			expectedErrorMsg: "request without user prompt",
+		},
+		{
+			name: "validating incorrect request entity => empty model",
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "123",
+				Model:        "",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError:    true,
+			expectedErrorMsg: "request without model",
+		},
+		{
+			name: "validating incorrect request entity => empty system prompt",
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "123",
+				Model:        "nano",
+				SystemPrompt: "",
+			},
+			expectedError:    true,
+			expectedErrorMsg: "request without system prompt",
+		},
+		{
+			name: "validating correct request entity",
 			request: entity.Request{
 				Prompt:       "user prompt",
 				SessionID:    "123",
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
-			expectedOutcome:  nil,
-			expectedError:    true,
-			expectedErrorMsg: "assert failed: given value at index 0 is nil",
+			expectedError:    false,
+			expectedErrorMsg: "",
 		},
 	}
 
@@ -81,11 +106,22 @@ func TestOpenaiRepository_CreateRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			if test.expectedError {
-				resp, err := repo.CreateRequest(test.ctx, test.request)
-				if resp != test.expectedOutcome && err.Error() != test.expectedErrorMsg {
-					t.Errorf("wanted: %q, got: %q", test.expectedOutcome, resp)
+				if err := ValidateRequestEntity(test.request); test.expectedErrorMsg != err.Error() {
+					t.Errorf("wanted: %q, got: %q", test.expectedErrorMsg, err.Error())
+				}
+				if !test.expectedError {
+					if err := ValidateRequestEntity(test.request); test.expectedErrorMsg != err.Error() {
+						t.Errorf("wanted: %q, got: %q", test.expectedErrorMsg, err.Error())
+					}
 				}
 			}
 		})
 	}
 }
+
+/*
+// Test for creating a request to openai
+// needs mock to do that, only with correct request because validation of request entity already tested
+func TestOpenaiRepository_CreateRequest(t *testing.T) {
+}
+*/
