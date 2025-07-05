@@ -38,20 +38,14 @@ func TestCreateHistoryStorage(t *testing.T) {
 				logger:         logger,
 			}
 
-			key, err := repo.Create(ctx, test.obj)
+			err := repo.Create(ctx, test.obj)
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Create() expected error but got none")
 				}
-				if key != "" {
-					t.Errorf("Create() expected empty key on error, got: %s", key)
-				}
 			} else {
 				if err != nil {
 					t.Errorf("Create() unexpected error: %v", err)
-				}
-				if key == "" {
-					t.Errorf("Create() expected non-empty key on success")
 				}
 			}
 		})

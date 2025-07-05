@@ -16,7 +16,7 @@ import (
 // SessionSummaryStorageRepository defines the interface for a repository managing SessionSummary entities.
 type SessionSummaryStorageRepository interface {
 	// Create stores a new SessionSummary object in the underlying storage system.
-	Create(ctx context.Context, obj *entity.SessionSummary) (string, error)
+	Create(ctx context.Context, obj *entity.SessionSummary) error
 
 	// Read retrieves a SessionSummary object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.SessionSummary, error)
@@ -68,32 +68,24 @@ func NewSessionSummaryStorageRepository(logger *slog.Logger) (SessionSummaryStor
 // Create serializes the given SessionSummary object to Parquet format and uploads it to S3.
 // Returns the generated S3 key or an error.
 // nolint:dupl
-func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entity.SessionSummary) (string, error) {
+func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entity.SessionSummary) error {
 	if err := validateHistoryData(obj); err != nil {
-		return "", fmt.Errorf("validation failed: %w", err)
+		return fmt.Errorf("validation failed: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		r.logger.Debug("create: writing struct to parquet failed",
-			slog.String("type", "sessionSummary"),
-			slog.String("error", err.Error()),
-		)
-		return "", err
+		return err
 	}
 
 	key := generateSessionSummaryKey()
 	metadata := map[string]string{
-		"created_at": time.Now().UTC().Format(time.RFC3339),
+		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		r.logger.Debug("create: uploading parquet file to S3 failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
-		return "", err
+		return err
 	}
 
 	r.logger.Debug("create: object successfully written and uploaded",
@@ -101,7 +93,7 @@ func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entit
 		slog.String("type", "sessionSummary"),
 	)
 
-	return key, nil
+	return nil
 }
 
 // Read downloads the Parquet file from S3 using the given key and returns the first SessionSummary found.
