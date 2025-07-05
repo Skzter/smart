@@ -1,6 +1,7 @@
 package service_test
 
 import (
+	"encoding/json"
 	"log/slog"
 	"os"
 	"strings"
@@ -10,13 +11,27 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	mockrepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
-func TestValidator_Validate(t *testing.T) {
+func TestValidatorValidate(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	// Create test config with model and prompt
+	cfg := &config.Config{
+		Model: "gpt-4o",
+		Prompts: &config.Prompts{
+			ValidationPrompt: "test prompt",
+		},
+		Timeout: 10,
+	}
+
+	validator := service.NewValidator(logger, cfg)
+
 	tests := []struct {
 		name            string
-		input           *service.Response
+		input           *entity.ValidationResponse
 		expectCall      bool
 		expectedContent string
 	}{
@@ -27,50 +42,50 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "non-200 status",
-			input: &service.Response{
+			input: &entity.ValidationResponse{
 				HTTPStatusCode: 404,
 			},
 			expectCall: false,
 		},
 		{
 			name: "valid 200 response",
-			input: &service.Response{
+			input: &entity.ValidationResponse{
 				HTTPStatusCode: 200,
-				Data: service.Data{
-					Items: []service.Item{
-						{
-							Duration:      5,
-							DepartureDate: "2025-07-01",
-							ReturnDate:    "2025-07-10",
-						},
+				Data: entity.ValidationData{
+					Items: []json.RawMessage{
+						json.RawMessage(`{
+							"duration": 5,
+							"departuredate": "2025-07-01",
+							"returndate": "2025-07-10"
+						}`),
 					},
 				},
 			},
 			expectCall:      true,
-			expectedContent: "Duration: 5 | DepartureDate: 2025-07-01",
+			expectedContent: "duration\": 5",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConnector := mockrepo.NewOpenAI(t)
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+			// If call is expected, setup for CreateRequest
 			if tt.expectCall {
 				mockConnector.
 					On("CreateRequest", mock.Anything, mock.MatchedBy(func(req entity.Request) bool {
 						return strings.Contains(req.Prompt, tt.expectedContent)
 					})).
-					Return(&entity.Response{Text: "mocked"}, nil).
+					Return(&entity.Response{Text: "mocked response"}, nil).
 					Once()
 			}
 
-			validator := service.Validator{
-				Connector: mockConnector,
-				Logger:    logger,
-			}
+			validator.Connector = mockConnector
 
-			validator.Validate(tt.input)
+			err := validator.Validate(tt.input)
+			if (err != nil) != !tt.expectCall {
+				t.Errorf("Validate() error = %v, expectCall %v", err, tt.expectCall)
+			}
 
 			mockConnector.AssertExpectations(t)
 		})
