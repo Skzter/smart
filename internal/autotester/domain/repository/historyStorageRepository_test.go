@@ -511,6 +511,140 @@ func Test_sessionSummaryValidationFunc(t *testing.T) {
 	}
 }
 
+func Test_ListAll(t *testing.T) {
+	ctx := context.Background()
+	logger := slog.Default()
+
+	for _, tt := range getTestListAllCases(ctx) {
+		t.Run(tt.name, func(t *testing.T) {
+			mockS3 := &mocks.MockS3StorageWrapper{}
+			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
+			tt.setupMocks(mockS3, mockParquet)
+
+			repo := &sessionSummaryStorageRepository{
+				s3Wrapper:      mockS3,
+				parquetWrapper: mockParquet,
+				logger:         logger,
+			}
+
+			result := repo.ListAll(ctx)
+			if len(result) != tt.wantCount {
+				t.Errorf("ListAll() got %d entries, want %d", len(result), tt.wantCount)
+			}
+		})
+	}
+}
+
+// nolint:funlen
+func getTestListAllCases(ctx context.Context) []struct {
+	name       string
+	setupMocks func(
+		mockS3 *mocks.MockS3StorageWrapper,
+		mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary],
+	)
+	wantCount int
+} {
+	now := time.Now()
+	validSummary := entity.SessionSummary{
+		Summary:   "valid",
+		CreatedAt: now,
+		Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+	}
+	invalidSummary := entity.SessionSummary{
+		Summary:   "",
+		CreatedAt: now,
+		Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+	}
+
+	return []struct {
+		name       string
+		setupMocks func(
+			mockS3 *mocks.MockS3StorageWrapper,
+			mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary],
+		)
+		wantCount int
+	}{
+		{
+			name: "all valid entries",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return([]string{"key1", "key2"}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key1").
+					Return([]byte("data1"), map[string]string{}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key2").
+					Return([]byte("data2"), map[string]string{}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+					Return([]entity.SessionSummary{validSummary}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+					Return([]entity.SessionSummary{validSummary}, nil)
+			},
+			wantCount: 2,
+		},
+		{
+			name: "list files error",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return(nil, errors.New("list error"))
+			},
+			wantCount: 0,
+		},
+		{
+			name: "no files found",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return([]string{}, nil)
+			},
+			wantCount: 0,
+		},
+		{
+			name: "download error for one file",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return([]string{"key1", "key2"}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key1").
+					Return(nil, nil, errors.New("download error"))
+				mockS3.On("DownloadParquetFile", ctx, "key2").
+					Return([]byte("data2"), map[string]string{}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+					Return([]entity.SessionSummary{validSummary}, nil)
+			},
+			wantCount: 1,
+		},
+		{
+			name: "parquet read error for one file",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return([]string{"key1", "key2"}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key1").
+					Return([]byte("data1"), map[string]string{}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key2").
+					Return([]byte("data2"), map[string]string{}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+					Return(nil, errors.New("parquet error"))
+				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+					Return([]entity.SessionSummary{validSummary}, nil)
+			},
+			wantCount: 1,
+		},
+		{
+			name: "invalid summary is skipped",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary]) {
+				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+					Return([]string{"key1", "key2"}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key1").
+					Return([]byte("data1"), map[string]string{}, nil)
+				mockS3.On("DownloadParquetFile", ctx, "key2").
+					Return([]byte("data2"), map[string]string{}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+					Return([]entity.SessionSummary{invalidSummary}, nil)
+				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+					Return([]entity.SessionSummary{validSummary}, nil)
+			},
+			wantCount: 1,
+		},
+	}
+}
+
 // nolint:dupl
 func Test_generateSessionSummaryKey(t *testing.T) {
 	key := generateSessionSummaryKey()

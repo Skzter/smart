@@ -26,6 +26,8 @@ type SessionSummaryStorageRepository interface {
 
 	// Delete removes a SessionSummary object from storage by its key.
 	Delete(ctx context.Context, key string) error
+
+	ListAll(ctx context.Context) []entity.SessionSummary
 }
 
 // sessionSummaryStorageRepository implements the SessionSummaryStorageRepository interface
@@ -81,7 +83,9 @@ func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entit
 	}
 
 	key := generateSessionSummaryKey()
-	metadata := map[string]string{}
+	metadata := map[string]string{
+		"created_at": time.Now().UTC().Format(time.RFC3339),
+	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
@@ -200,6 +204,50 @@ func (r *sessionSummaryStorageRepository) Delete(ctx context.Context, key string
 		slog.String("key", key),
 	)
 	return nil
+}
+
+func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) []entity.SessionSummary {
+	const prefix = "sessionSummary/"
+	result := make([]entity.SessionSummary, 0)
+
+	keys, err := r.s3Wrapper.ListParquetFiles(ctx, prefix)
+	if err != nil {
+		r.logger.Error("ListAll: failed to list parquet files", slog.String("error", err.Error()))
+		return result
+	}
+	if len(keys) == 0 {
+		r.logger.Info("ListAll: no session summary files found")
+		return result
+	}
+
+	for _, key := range keys {
+		data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
+		if err != nil {
+			r.logger.Warn("ListAll: failed to download parquet file",
+				slog.String("key", key),
+				slog.String("error", err.Error()))
+			continue
+		}
+		items, err := r.parquetWrapper.ReadStructsFromParquet(data)
+		if err != nil {
+			r.logger.Warn("ListAll: failed to read parquet data",
+				slog.String("key", key),
+				slog.String("error", err.Error()))
+			continue
+		}
+		for _, item := range items {
+			if err := sessionSummaryValidationFunc(&item); err == nil {
+				result = append(result, item)
+			} else {
+				r.logger.Warn("ListAll: skipping invalid session summary",
+					slog.String("key", key),
+					slog.String("error", err.Error()))
+			}
+		}
+	}
+
+	r.logger.Info("ListAll: finished loading session summaries", slog.Int("count", len(result)))
+	return result
 }
 
 // generateSessionSummaryKey creates a unique S3 key for a SessionSummary object.

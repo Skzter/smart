@@ -81,7 +81,9 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 	}
 
 	key := generateTestCaseKey()
-	metadata := map[string]string{}
+	metadata := map[string]string{
+		"created_at": time.Now().UTC().Format(time.RFC3339),
+	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
