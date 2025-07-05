@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// TestMapLengthBetween tests MapLengthBetween.
+// It checks that MapLengthBetween returns an error if the map length is outside the given range.
 func TestMapLengthBetween(t *testing.T) {
 	data := map[int]bool{
 		1: true,
@@ -36,6 +38,8 @@ func TestMapLengthBetween(t *testing.T) {
 	}
 }
 
+// TestMapLengthGreaterThan tests MapLengthGreaterThan.
+// It checks that MapLengthGreaterThan returns an error if the map length is not greater than minValue.
 func TestMapLengthGreaterThan(t *testing.T) {
 	data := map[int]bool{
 		1: true,
@@ -64,6 +68,8 @@ func TestMapLengthGreaterThan(t *testing.T) {
 	}
 }
 
+// TestMapLengthGreaterOrEqualThan tests MapLengthGreaterOrEqualThan.
+// It checks that MapLengthGreaterOrEqualThan returns an error if the map length is not greater or equal to minValue.
 func TestMapLengthGreaterOrEqualThan(t *testing.T) {
 	data := map[int]bool{
 		1: true,
@@ -92,6 +98,8 @@ func TestMapLengthGreaterOrEqualThan(t *testing.T) {
 	}
 }
 
+// TestMapLengthLessThan tests MapLengthLessThan.
+// It checks that MapLengthLessThan returns an error if the map length is not less than maxValue.
 func TestMapLengthLessThan(t *testing.T) {
 	data := map[int]bool{
 		1: true,
@@ -120,6 +128,8 @@ func TestMapLengthLessThan(t *testing.T) {
 	}
 }
 
+// TestMapLengthLessOrEqualThan tests MapLengthLessOrEqualThan.
+// It checks that MapLengthLessOrEqualThan returns an error if the map length is not less or equal to maxValue.
 func TestMapLengthLessOrEqualThan(t *testing.T) {
 	data := map[int]bool{
 		1: true,

@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// TestCheckInt tests the checkNumber function with various int types.
+// It verifies correct error handling for different value, min, and max combinations.
 func TestCheckInt(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -98,6 +100,8 @@ func TestCheckInt(t *testing.T) {
 	}
 }
 
+// TestCheckUInt tests the checkNumber function with various uint types.
+// It verifies correct error handling for different value, min, and max combinations.
 func TestCheckUInt(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -190,6 +194,8 @@ func TestCheckUInt(t *testing.T) {
 	}
 }
 
+// TestCheckFloat tests the checkNumber function with float types.
+// It checks error handling for different float values and boundaries.
 func TestCheckFloat(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -252,6 +258,8 @@ func TestCheckFloat(t *testing.T) {
 	}
 }
 
+// TestCheckClosedBoundaries tests checkNumber with closed boundaries enabled.
+// It ensures correct error handling when values are at the boundary.
 func TestCheckClosedBoundaries(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -300,6 +308,7 @@ func TestCheckClosedBoundaries(t *testing.T) {
 	}
 }
 
+// BenchmarkCheckNumberInt benchmarks checkNumber with int values.
 func BenchmarkCheckNumberInt(b *testing.B) {
 	var minValue interface{} = 1
 	var maxValue interface{} = 10
@@ -310,6 +319,7 @@ func BenchmarkCheckNumberInt(b *testing.B) {
 	}
 }
 
+// BenchmarkCheckNumberUInt benchmarks checkNumber with uint values.
 func BenchmarkCheckNumberUInt(b *testing.B) {
 	var minValue interface{} = 1
 	var maxValue interface{} = 10
@@ -320,6 +330,7 @@ func BenchmarkCheckNumberUInt(b *testing.B) {
 	}
 }
 
+// BenchmarkCheckNumberFloat benchmarks checkNumber with float values.
 func BenchmarkCheckNumberFloat(b *testing.B) {
 	var minValue interface{} = 1.0
 	var maxValue interface{} = 10.0
@@ -333,6 +344,8 @@ func BenchmarkCheckNumberFloat(b *testing.B) {
 	}
 }
 
+// TestArrayLength tests the arrayLength function.
+// It checks correct length calculation and error handling for various types.
 func TestArrayLength(t *testing.T) {
 	tests := []struct {
 		id     int
@@ -360,12 +373,15 @@ func TestArrayLength(t *testing.T) {
 	}
 }
 
+// BenchmarkArrayLength benchmarks the arrayLength function.
 func BenchmarkArrayLength(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_, _ = arrayLength([]struct{ id int }{{1}, {2}, {3}})
 	}
 }
 
+// TestCheckArrayLength tests the checkArrayLength function.
+// It verifies correct error handling for different array values and boundaries.
 func TestCheckArrayLength(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -393,6 +409,8 @@ func TestCheckArrayLength(t *testing.T) {
 	}
 }
 
+// TestMapLength tests the arrayLength function with map-like and array types.
+// It checks correct length calculation and error handling.
 func TestMapLength(t *testing.T) {
 	tests := []struct {
 		id     int
