@@ -67,30 +67,21 @@ func NewTestCaseStorageRepository(logger *slog.Logger) (TestCaseStorageRepositor
 // Returns the generated S3 key or an error.
 // nolint:dupl
 func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase) (string, error) {
-	if err := testCaseValidationFunc(obj); err != nil {
+	if err := validateTestCaseData(obj); err != nil {
 		return "", fmt.Errorf("validation failed: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		r.logger.Error("create: writing struct to parquet failed",
-			slog.String("type", "testcase"),
-			slog.String("error", err.Error()),
-		)
 		return "", err
 	}
-
 	key := generateTestCaseKey()
 	metadata := map[string]string{
-		"created_at": time.Now().UTC().Format(time.RFC3339),
+		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		r.logger.Error("create: uploading parquet file to S3 failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return "", err
 	}
 
@@ -112,25 +103,17 @@ func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*enti
 
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
-		r.logger.Error("read: downloading parquet failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 
 	items, err := r.parquetWrapper.ReadStructsFromParquet(data)
 	if err != nil {
-		r.logger.Error("read: parsing parquet data failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no data found for key %s", key)
 	}
-	if err := testCaseValidationFunc(&items[0]); err != nil {
+	if err := validateTestCaseData(&items[0]); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 	return &items[0], nil
@@ -144,30 +127,20 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("key must not be empty")
 	}
 
-	if err := testCaseValidationFunc(obj); err != nil {
+	if err := validateTestCaseData(obj); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
 	exists, err := r.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
-		r.logger.Error("update: failed to check existence",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return fmt.Errorf("failed to check if key exists: %w", err)
 	}
 	if !exists {
-		r.logger.Error("update: key does not exist, aborting",
-			slog.String("key", key),
-		)
 		return fmt.Errorf("cannot update: key does not exist")
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		r.logger.Error("update: writing struct to parquet failed",
-			slog.String("type", "testcase"),
-			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to serialize object: %w", err)
 	}
 
@@ -178,7 +151,7 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("failed to upload updated object: %w", err)
 	}
 
-	r.logger.Info("update: object successfully overwritten",
+	r.logger.Debug("update: object successfully overwritten",
 		slog.String("key", key),
 	)
 
@@ -194,14 +167,10 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 	}
 
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, key); err != nil {
-		r.logger.Error("delete: removing parquet failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return err
 	}
 
-	r.logger.Info("delete: object successfully deleted",
+	r.logger.Debug("delete: object successfully deleted",
 		slog.String("key", key),
 	)
 	return nil
@@ -210,13 +179,13 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 // generateTestCaseKey creates a unique S3 key for a TestCase object.
 // The format is: "testCase/testCase_<timestamp>"
 func generateTestCaseKey() string {
-	timestamp := time.Now().Format("20060102150405000")
-	return fmt.Sprintf("%s/%s_%s", "testCase", "testCase", timestamp)
+	timestamp := time.Now().Unix()
+	return fmt.Sprintf("%s/%s_%d", "testCase", "testCase", timestamp)
 }
 
-// testCaseValidationFunc checks if a TestCase object is valid.
+// validateTestCaseData checks if a TestCase object is valid.
 // Returns an error if any required field is empty or invalid.
-func testCaseValidationFunc(testcase *entity.TestCase) error {
+func validateTestCaseData(testcase *entity.TestCase) error {
 	if err := assert.NotNil(testcase); err != nil {
 		return fmt.Errorf("obj must not be nil: %w", err)
 	}

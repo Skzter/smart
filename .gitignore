@@ -35,7 +35,6 @@ go.work.sum
 
 #generated Code
 *.pkl.go
-**/mocks/
 
 # Editor/IDE
 .idea/

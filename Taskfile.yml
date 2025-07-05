@@ -78,7 +78,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the project"
-    deps: [generate-config-suproxy,generate-mocks]
+    deps: [generate-config-suproxy]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -92,7 +92,7 @@ tasks:
 
   run-autotester:
     desc: "Run the project"
-    deps: [generate-config-autotester,generate-mocks]
+    deps: [generate-config-autotester]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
@@ -195,5 +195,5 @@ tasks:
   generate-mocks:
     desc: "generate all mockery mocks"
     cmds:
-      - "go tool github.com/vektra/mockery/v3"
+      - "go tool mockery"
 

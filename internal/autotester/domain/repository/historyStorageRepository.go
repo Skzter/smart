@@ -69,13 +69,13 @@ func NewSessionSummaryStorageRepository(logger *slog.Logger) (SessionSummaryStor
 // Returns the generated S3 key or an error.
 // nolint:dupl
 func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entity.SessionSummary) (string, error) {
-	if err := sessionSummaryValidationFunc(obj); err != nil {
+	if err := validateHistoryData(obj); err != nil {
 		return "", fmt.Errorf("validation failed: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		r.logger.Error("create: writing struct to parquet failed",
+		r.logger.Debug("create: writing struct to parquet failed",
 			slog.String("type", "sessionSummary"),
 			slog.String("error", err.Error()),
 		)
@@ -89,14 +89,14 @@ func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entit
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		r.logger.Error("create: uploading parquet file to S3 failed",
+		r.logger.Debug("create: uploading parquet file to S3 failed",
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
 		return "", err
 	}
 
-	r.logger.Info("create: object successfully written and uploaded",
+	r.logger.Debug("create: object successfully written and uploaded",
 		slog.String("key", key),
 		slog.String("type", "sessionSummary"),
 	)
@@ -114,25 +114,17 @@ func (r *sessionSummaryStorageRepository) Read(ctx context.Context, key string) 
 
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
-		r.logger.Error("read: downloading parquet failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 
 	items, err := r.parquetWrapper.ReadStructsFromParquet(data)
 	if err != nil {
-		r.logger.Error("read: parsing parquet data failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no data found for key %s", key)
 	}
-	if err := sessionSummaryValidationFunc(&items[0]); err != nil {
+	if err := validateHistoryData(&items[0]); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 	return &items[0], nil
@@ -146,30 +138,20 @@ func (r *sessionSummaryStorageRepository) Update(ctx context.Context, obj *entit
 		return fmt.Errorf("key must not be empty")
 	}
 
-	if err := sessionSummaryValidationFunc(obj); err != nil {
+	if err := validateHistoryData(obj); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
 	exists, err := r.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
-		r.logger.Error("update: failed to check existence",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return fmt.Errorf("failed to check if key exists: %w", err)
 	}
 	if !exists {
-		r.logger.Error("update: key does not exist, aborting",
-			slog.String("key", key),
-		)
 		return fmt.Errorf("cannot update: key does not exist")
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		r.logger.Error("update: writing struct to parquet failed",
-			slog.String("type", "sessionSummary"),
-			slog.String("error", err.Error()))
 		return fmt.Errorf("failed to serialize object: %w", err)
 	}
 
@@ -180,7 +162,7 @@ func (r *sessionSummaryStorageRepository) Update(ctx context.Context, obj *entit
 		return fmt.Errorf("failed to upload updated object: %w", err)
 	}
 
-	r.logger.Info("update: object successfully overwritten",
+	r.logger.Debug("update: object successfully overwritten",
 		slog.String("key", key),
 		slog.String("type", "sessionSummary"),
 	)
@@ -197,14 +179,10 @@ func (r *sessionSummaryStorageRepository) Delete(ctx context.Context, key string
 	}
 
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, key); err != nil {
-		r.logger.Error("delete: removing parquet failed",
-			slog.String("key", key),
-			slog.String("error", err.Error()),
-		)
 		return err
 	}
 
-	r.logger.Info("delete: object successfully deleted",
+	r.logger.Debug("delete: object successfully deleted",
 		slog.String("key", key),
 	)
 	return nil
@@ -216,12 +194,10 @@ func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity
 
 	keys, err := r.s3Wrapper.ListParquetFiles(ctx, prefix)
 	if err != nil {
-		r.logger.Error("ListAll: failed to list parquet files", slog.String("error", err.Error()))
-		return result, fmt.Errorf("failed to list session summary parquet files: %w", err)
+		return nil, fmt.Errorf("failed to list session summary parquet files: %w", err)
 	}
 	if len(keys) == 0 {
-		r.logger.Info("ListAll: no session summary files found")
-		return result, fmt.Errorf("no session summary files found in storage")
+		return nil, fmt.Errorf("no session summary files found in storage")
 	}
 
 	for _, key := range keys {
@@ -240,7 +216,7 @@ func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity
 			continue
 		}
 		for _, item := range items {
-			if err := sessionSummaryValidationFunc(&item); err == nil {
+			if err := validateHistoryData(&item); err == nil {
 				result = append(result, item)
 			} else {
 				r.logger.Warn("ListAll: skipping invalid session summary",
@@ -250,20 +226,20 @@ func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity
 		}
 	}
 
-	r.logger.Info("ListAll: finished loading session summaries", slog.Int("count", len(result)))
+	r.logger.Debug("ListAll: finished loading session summaries", slog.Int("count", len(result)))
 	return result, nil
 }
 
 // generateSessionSummaryKey creates a unique S3 key for a SessionSummary object.
 // The format is: "sessionSummary/sessionSummary_<timestamp>"
 func generateSessionSummaryKey() string {
-	timestamp := time.Now().Format("20060102150405000")
-	return fmt.Sprintf("%s/%s_%s", "sessionSummary", "sessionSummary", timestamp)
+	timestamp := time.Now().Unix()
+	return fmt.Sprintf("%s/%s_%d", "sessionSummary", "sessionSummary", timestamp)
 }
 
-// sessionSummaryValidationFunc validates a SessionSummary entity.
+// validateHistoryData validates a SessionSummary entity.
 // Returns an error if any required field is empty or invalid.
-func sessionSummaryValidationFunc(summary *entity.SessionSummary) error {
+func validateHistoryData(summary *entity.SessionSummary) error {
 	if err := assert.NotNil(summary); err != nil {
 		return fmt.Errorf("obj must not be nil: %w", err)
 	}

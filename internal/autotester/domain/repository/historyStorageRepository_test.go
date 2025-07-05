@@ -14,11 +14,11 @@ import (
 )
 
 // nolint:dupl
-func TestCreate_historyStorage(t *testing.T) {
+func TestCreateHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getCreateHistoryTestcases() {
+	for _, test := range historyCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
@@ -58,7 +58,7 @@ func TestCreate_historyStorage(t *testing.T) {
 	}
 }
 
-func getCreateHistoryTestcases() []struct {
+func historyCreateTestCaseProvider() []struct {
 	name           string
 	obj            *entity.SessionSummary
 	writeStructRet []byte
@@ -148,11 +148,11 @@ func getCreateHistoryTestcases() []struct {
 }
 
 // nolint:dupl
-func TestRead_historyStorage(t *testing.T) {
+func TestReadHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getReadHistoryTestcases() {
+	for _, test := range historyReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
@@ -189,7 +189,7 @@ func TestRead_historyStorage(t *testing.T) {
 	}
 }
 
-func getReadHistoryTestcases() []struct {
+func historyReadTestCaseProvider() []struct {
 	name            string
 	key             string
 	downloadRet     []byte
@@ -264,11 +264,11 @@ func getReadHistoryTestcases() []struct {
 }
 
 // nolint:dupl
-func TestUpdate_historyStorage(t *testing.T) {
+func TestUpdateHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getUpdateHistoryTestcases() {
+	for _, test := range historyUpdateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
@@ -306,7 +306,7 @@ func TestUpdate_historyStorage(t *testing.T) {
 	}
 }
 
-func getUpdateHistoryTestcases() []struct {
+func historyUpdateTestCaseProvider() []struct {
 	name           string
 	obj            *entity.SessionSummary
 	key            string
@@ -389,7 +389,7 @@ func getUpdateHistoryTestcases() []struct {
 }
 
 // nolint:dupl
-func TestDelete_historyStorage(t *testing.T) {
+func TestDeleteHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
@@ -447,7 +447,7 @@ func TestDelete_historyStorage(t *testing.T) {
 	}
 }
 
-func Test_sessionSummaryValidationFunc(t *testing.T) {
+func TestValidateHistoryData(t *testing.T) {
 	tests := []struct {
 		name    string
 		obj     *entity.SessionSummary
@@ -500,22 +500,22 @@ func Test_sessionSummaryValidationFunc(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var err error
 			if test.obj == nil {
-				err = sessionSummaryValidationFunc(nil)
+				err = validateHistoryData(nil)
 			} else {
-				err = sessionSummaryValidationFunc(test.obj)
+				err = validateHistoryData(test.obj)
 			}
 			if (err != nil) != test.wantErr {
-				t.Errorf("sessionSummaryValidationFunc() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("validateHistoryData() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
 }
 
-func Test_ListAll(t *testing.T) {
+func TestListAll(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getTestListAllCases(ctx) {
+	for _, test := range historyListAllTestCaseProvider(ctx) {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
@@ -539,7 +539,7 @@ func Test_ListAll(t *testing.T) {
 }
 
 // nolint:funlen
-func getTestListAllCases(ctx context.Context) []struct {
+func historyListAllTestCaseProvider(ctx context.Context) []struct {
 	name       string
 	setupMocks func(
 		mockS3 *mocks.MockS3StorageWrapper,
@@ -657,7 +657,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 }
 
 // nolint:dupl
-func Test_generateSessionSummaryKey(t *testing.T) {
+func TestGenerateSessionSummaryKey(t *testing.T) {
 	key := generateSessionSummaryKey()
 
 	if key == "" {

@@ -13,11 +13,11 @@ import (
 )
 
 // nolint:dupl
-func TestCreate_testStorage(t *testing.T) {
+func TestCreateTestCaseStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getCreateTestStorageTestcases() {
+	for _, test := range testcaseCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
@@ -57,7 +57,7 @@ func TestCreate_testStorage(t *testing.T) {
 	}
 }
 
-func getCreateTestStorageTestcases() []struct {
+func testcaseCreateTestCaseProvider() []struct {
 	name           string
 	obj            *entity.TestCase
 	writeStructRet []byte
@@ -109,11 +109,11 @@ func getCreateTestStorageTestcases() []struct {
 }
 
 // nolint:dupl
-func TestRead_testStorage(t *testing.T) {
+func TestReadTestCaseStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getReadTestStorageTestcases() {
+	for _, test := range testcaseReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
@@ -150,7 +150,7 @@ func TestRead_testStorage(t *testing.T) {
 	}
 }
 
-func getReadTestStorageTestcases() []struct {
+func testcaseReadTestCaseProvider() []struct {
 	name            string
 	key             string
 	downloadRet     []byte
@@ -225,11 +225,11 @@ func getReadTestStorageTestcases() []struct {
 }
 
 // nolint:dupl
-func TestUpdate_testStorage(t *testing.T) {
+func TestUpdateTestCaseStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getUpdateTestStorageTestcases() {
+	for _, test := range testcaseUpdateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
@@ -267,7 +267,7 @@ func TestUpdate_testStorage(t *testing.T) {
 	}
 }
 
-func getUpdateTestStorageTestcases() []struct {
+func testcaseUpdateTestCaseProvider() []struct {
 	name           string
 	obj            *entity.TestCase
 	key            string
@@ -350,11 +350,37 @@ func getUpdateTestStorageTestcases() []struct {
 }
 
 // nolint:dupl
-func TestDelete_testStorage(t *testing.T) {
+func TestDeleteTestStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, test := range getDeleteTestStorageTestcases() {
+	tests := []struct {
+		name        string
+		key         string
+		deleteRet   error
+		expectError bool
+	}{
+		{
+			name:        "happy path",
+			key:         "valid-key",
+			deleteRet:   nil,
+			expectError: false,
+		},
+		{
+			name:        "empty key",
+			key:         "",
+			deleteRet:   nil,
+			expectError: true,
+		},
+		{
+			name:        "delete error",
+			key:         "valid-key",
+			deleteRet:   errors.New("delete error"),
+			expectError: true,
+		},
+	}
+
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
@@ -382,40 +408,7 @@ func TestDelete_testStorage(t *testing.T) {
 	}
 }
 
-func getDeleteTestStorageTestcases() []struct {
-	name        string
-	key         string
-	deleteRet   error
-	expectError bool
-} {
-	return []struct {
-		name        string
-		key         string
-		deleteRet   error
-		expectError bool
-	}{
-		{
-			name:        "happy path",
-			key:         "valid-key",
-			deleteRet:   nil,
-			expectError: false,
-		},
-		{
-			name:        "empty key",
-			key:         "",
-			deleteRet:   nil,
-			expectError: true,
-		},
-		{
-			name:        "delete error",
-			key:         "valid-key",
-			deleteRet:   errors.New("delete error"),
-			expectError: true,
-		},
-	}
-}
-
-func Test_testCaseValidationFunc(t *testing.T) {
+func TestValidateTestCaseData(t *testing.T) {
 	tests := []struct {
 		name    string
 		obj     *entity.TestCase
@@ -480,16 +473,16 @@ func Test_testCaseValidationFunc(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := testCaseValidationFunc(test.obj)
+			err := validateTestCaseData(test.obj)
 			if (err != nil) != test.wantErr {
-				t.Errorf("testCaseValidationFunc() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("validateTestCaseData() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
 }
 
 // nolint:dupl
-func Test_generateTestCaseKey(t *testing.T) {
+func TestGenerateTestCaseKey(t *testing.T) {
 	key := generateTestCaseKey()
 
 	if key == "" {
