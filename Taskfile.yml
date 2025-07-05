@@ -182,6 +182,6 @@ tasks:
     desc: "generates code for reading suproxy config"
     cmds:
       - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
-    sources:
-      - configs/suproxy.pkl
+    #sources:
+    #  - configs/suproxy.pkl
 
