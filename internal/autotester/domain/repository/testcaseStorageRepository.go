@@ -144,6 +144,10 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("key must not be empty")
 	}
 
+	if err := testCaseValidationFunc(obj); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
 	exists, err := r.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
 		r.logger.Error("update: failed to check existence",

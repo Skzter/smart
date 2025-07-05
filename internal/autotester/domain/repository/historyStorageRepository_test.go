@@ -515,11 +515,11 @@ func Test_ListAll(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
 
-	for _, tt := range getTestListAllCases(ctx) {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range getTestListAllCases(ctx) {
+		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &mocks.MockS3StorageWrapper{}
 			mockParquet := &mocks.MockParquetFileWrapper[entity.SessionSummary]{}
-			tt.setupMocks(mockS3, mockParquet)
+			test.setupMocks(mockS3, mockParquet)
 
 			repo := &sessionSummaryStorageRepository{
 				s3Wrapper:      mockS3,
@@ -527,9 +527,12 @@ func Test_ListAll(t *testing.T) {
 				logger:         logger,
 			}
 
-			result := repo.ListAll(ctx)
-			if len(result) != tt.wantCount {
-				t.Errorf("ListAll() got %d entries, want %d", len(result), tt.wantCount)
+			result, err := repo.ListAll(ctx)
+			if (err != nil) != test.wantErr {
+				t.Errorf("ListAll() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if len(result) != test.wantCount {
+				t.Errorf("ListAll() got %d entries, want %d", len(result), test.wantCount)
 			}
 		})
 	}
@@ -543,6 +546,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 		mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary],
 	)
 	wantCount int
+	wantErr   bool
 } {
 	now := time.Now()
 	validSummary := entity.SessionSummary{
@@ -563,6 +567,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 			mockParquet *mocks.MockParquetFileWrapper[entity.SessionSummary],
 		)
 		wantCount int
+		wantErr   bool
 	}{
 		{
 			name: "all valid entries",
@@ -579,6 +584,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 2,
+			wantErr:   false,
 		},
 		{
 			name: "list files error",
@@ -587,6 +593,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return(nil, errors.New("list error"))
 			},
 			wantCount: 0,
+			wantErr:   true,
 		},
 		{
 			name: "no files found",
@@ -595,6 +602,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return([]string{}, nil)
 			},
 			wantCount: 0,
+			wantErr:   true,
 		},
 		{
 			name: "download error for one file",
@@ -609,6 +617,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,
+			wantErr:   false,
 		},
 		{
 			name: "parquet read error for one file",
@@ -625,6 +634,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,
+			wantErr:   false,
 		},
 		{
 			name: "invalid summary is skipped",
@@ -641,6 +651,7 @@ func getTestListAllCases(ctx context.Context) []struct {
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,
+			wantErr:   false,
 		},
 	}
 }

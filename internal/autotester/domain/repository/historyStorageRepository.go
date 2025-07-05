@@ -27,7 +27,7 @@ type SessionSummaryStorageRepository interface {
 	// Delete removes a SessionSummary object from storage by its key.
 	Delete(ctx context.Context, key string) error
 
-	ListAll(ctx context.Context) []entity.SessionSummary
+	ListAll(ctx context.Context) ([]entity.SessionSummary, error)
 }
 
 // sessionSummaryStorageRepository implements the SessionSummaryStorageRepository interface
@@ -146,6 +146,10 @@ func (r *sessionSummaryStorageRepository) Update(ctx context.Context, obj *entit
 		return fmt.Errorf("key must not be empty")
 	}
 
+	if err := sessionSummaryValidationFunc(obj); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
 	exists, err := r.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
 		r.logger.Error("update: failed to check existence",
@@ -206,18 +210,18 @@ func (r *sessionSummaryStorageRepository) Delete(ctx context.Context, key string
 	return nil
 }
 
-func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) []entity.SessionSummary {
+func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity.SessionSummary, error) {
 	const prefix = "sessionSummary/"
 	result := make([]entity.SessionSummary, 0)
 
 	keys, err := r.s3Wrapper.ListParquetFiles(ctx, prefix)
 	if err != nil {
 		r.logger.Error("ListAll: failed to list parquet files", slog.String("error", err.Error()))
-		return result
+		return result, fmt.Errorf("failed to list session summary parquet files: %w", err)
 	}
 	if len(keys) == 0 {
 		r.logger.Info("ListAll: no session summary files found")
-		return result
+		return result, fmt.Errorf("no session summary files found in storage")
 	}
 
 	for _, key := range keys {
@@ -247,7 +251,7 @@ func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) []entity.
 	}
 
 	r.logger.Info("ListAll: finished loading session summaries", slog.Int("count", len(result)))
-	return result
+	return result, nil
 }
 
 // generateSessionSummaryKey creates a unique S3 key for a SessionSummary object.
