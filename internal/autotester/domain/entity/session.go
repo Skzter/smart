@@ -1,5 +1,6 @@
 package entity
 
+// Session represents a user session containing session summaries, requests, and responses.
 type Session struct {
 	SessionId             // unique identifier of the session, embedded struct
 	CurrentSessionSummary *SessionSummary

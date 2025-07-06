@@ -121,6 +121,21 @@ unit_test_go:
       - smart/coverage.html
     expire_in: 1 week
 
+frontend_test:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - pnpm run test:coverage
+  coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
+  artifacts:
+    reports: 
+      coverage_report:
+        coverage_format: cobertura
+        path: web/coverage/cobertura-coverage.xml
+      junit: web/coverage/junit.xml
+      
+  
+    
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
