@@ -15,10 +15,11 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
+// TestValidatorValidate tests the validation method of the validator
 func TestValidatorValidate(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	// Create test config with model and prompt
+	// Test configuration
 	cfg := &config.Config{
 		Model: "gpt-4o",
 		Prompts: &config.Prompts{
@@ -29,48 +30,51 @@ func TestValidatorValidate(t *testing.T) {
 
 	validator := service.NewValidator(logger, cfg)
 
+	// Test cases as a table
 	tests := []struct {
 		name            string
-		input           *entity.ValidationResponse
+		input           string
 		expectCall      bool
 		expectedContent string
 	}{
 		{
-			name:       "nil response",
-			input:      nil,
+			name:       "empty JSON string",
+			input:      "",
 			expectCall: false,
 		},
 		{
-			name: "non-200 status",
-			input: &entity.ValidationResponse{
-				HTTPStatusCode: 404,
-			},
+			name:       "non-200 status",
+			input:      `{"httpstatuscode":404}`,
 			expectCall: false,
 		},
 		{
 			name: "valid 200 response",
-			input: &entity.ValidationResponse{
-				HTTPStatusCode: 200,
-				Data: entity.ValidationData{
-					Items: []json.RawMessage{
-						json.RawMessage(`{
-							"duration": 5,
-							"departuredate": "2025-07-01",
-							"returndate": "2025-07-10"
-						}`),
+			input: func() string {
+				vr := entity.ValidationResponse{
+					HTTPStatusCode: 200,
+					Data: entity.ValidationData{
+						Items: []json.RawMessage{
+							json.RawMessage(`{
+								"duration": 5,
+								"departuredate": "2025-07-01",
+								"returndate": "2025-07-10"
+							}`),
+						},
 					},
-				},
-			},
+				}
+				b, _ := json.Marshal(vr)
+				return string(b)
+			}(),
 			expectCall:      true,
-			expectedContent: "duration\": 5",
+			expectedContent: "duration\":5",
 		},
 	}
 
+	// Execute tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockConnector := mockrepo.NewOpenAI(t)
 
-			// If call is expected, setup for CreateRequest
 			if tt.expectCall {
 				mockConnector.
 					On("CreateRequest", mock.Anything, mock.MatchedBy(func(req entity.Request) bool {

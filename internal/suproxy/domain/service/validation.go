@@ -20,6 +20,8 @@ var (
 	ErrInvalidHTTPStatus = errors.New("invalid HTTP status")
 )
 
+// Validator is the service that encapsulates the validation logic
+// It uses an OpenAI connector to send validation requests to the AI
 type Validator struct {
 	Connector              repository.OpenAI
 	Logger                 *slog.Logger
@@ -27,6 +29,7 @@ type Validator struct {
 	Model                  string
 }
 
+// itemsString converts a list of raw JSON data into a string, which can be sent to the AI as a prompt
 func itemsString(items []json.RawMessage) string {
 	var result string
 	for _, item := range items {
@@ -35,7 +38,7 @@ func itemsString(items []json.RawMessage) string {
 	return strings.TrimSpace(result)
 }
 
-// NewValidator loads the configuration and returns the validator
+// NewValidator creates a new validator service with logger and configuration
 func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
 	connector, err := repository.NewOpenAiRepository(logger, cfg.Timeout)
 	if err != nil {
@@ -50,14 +53,24 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
 	}
 }
 
-func (v *Validator) Validate(resp *entity.ValidationResponse) error {
-	// Assertion für nil-Check
-	if err := assert.NotNil(resp); err != nil {
+// Validate performs the validation of a supplier request
+func (v *Validator) Validate(jsonStr string) error {
+	if jsonStr == "" {
+		v.Logger.Debug("Validation skipped: empty JSON string")
+		return errors.New("empty json string")
+	}
+
+	var resp entity.ValidationResponse
+	if err := json.Unmarshal([]byte(jsonStr), &resp); err != nil {
+		v.Logger.Error("Failed to unmarshal validation JSON", "error", err)
+		return err
+	}
+
+	if err := assert.NotNil(&resp); err != nil {
 		v.Logger.Debug("Validation skipped: Response is nil", "error", err)
 		return err
 	}
 
-	// Fehler statt Warnung bei ungültigem HTTP Status
 	if resp.HTTPStatusCode != 200 {
 		err := fmt.Errorf("%w: %d", ErrInvalidHTTPStatus, resp.HTTPStatusCode)
 		v.Logger.Error("Validation failed: Invalid HTTP status", "status", resp.HTTPStatusCode, "error", err)
