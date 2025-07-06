@@ -67,6 +67,7 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/build/configs
       - internal/**/mocks/
 
 lint_frontend:

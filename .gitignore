@@ -35,6 +35,7 @@ go.work.sum
 
 #generated Code
 *.pkl.go
+*.msgpack
 
 # Editor/IDE
 .idea/
