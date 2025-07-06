@@ -16,10 +16,9 @@ import (
 
 // TestPostOfferlist tests the PostOfferlist handler with various request scenarios
 func TestPostOfferlist(t *testing.T) {
-	logger := newLogger()
-	ctrl, err := handler.NewSuproxyController(logger)
+	ctrl, err := setupController()
 	if err != nil {
-		t.Fatalf("Failed to create controller: %v", err)
+		t.Fatalf("Failed to setup controller: %v", err)
 	}
 
 	tests := []struct {
@@ -108,10 +107,9 @@ func TestPostOfferlist(t *testing.T) {
 
 // BenchmarkPostOfferlist benchmarks the PostOfferlist handler with a large number of requests
 func BenchmarkPostOfferlist(b *testing.B) {
-	logger := newLogger()
-	_, err := handler.NewSuproxyController(logger)
+	_, err := setupController()
 	if err != nil {
-		b.Fatalf("Failed to create controller: %v", err)
+		b.Fatalf("Failed to setup controller: %v", err)
 	}
 
 	requestBody := entity.Request{
@@ -137,9 +135,12 @@ func BenchmarkPostOfferlist(b *testing.B) {
 		}
 	}
 }
-
-func newLogger() *slog.Logger {
+func setupController() (*handler.SuproxyController, error) {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
-	return logger
+	ctrl, err := handler.NewSuproxyController(logger)
+	if err != nil {
+		return nil, err
+	}
+	return ctrl, nil
 }
