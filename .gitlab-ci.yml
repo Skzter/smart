@@ -111,16 +111,30 @@ sonarqube-check:
 unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
+  variables:
+    TESTCOVERAGE_THRESHOLD: 80
   script:
-    - apt-get update && apt-get install -y bc
-    - ./bin/task test
+    - echo "Running unit tests with coverage"
+    - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
+    - go tool cover -func=coverage.out
+    - echo "Quality Gate - checking test coverage is above threshold"
+    - echo "Threshold - $TESTCOVERAGE_THRESHOLD %"
+    - totalCoverage=$(go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+')
+    - echo "Current test coverage - $totalCoverage %"
+    - |
+      if (( $(echo "$totalCoverage $TESTCOVERAGE_THRESHOLD" | awk '{print ($1 > $2)}') )); then
+          echo "Coverage check passed"
+      else
+          echo "Current test coverage is below threshold. Please add more unit tests or adjust threshold to a lower value."
+          exit 1
+      fi
+
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
-    paths:
-      - smart/coverage.out
-      - smart/coverage.html
+    reports:
+      junit: junit.xml
     expire_in: 1 week
-
+    
 frontend_test:
   stage: code_analysis_and_testing
   extends: .pnpm_cache
