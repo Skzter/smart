@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -15,7 +14,7 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadFromPath(context.Background(), "configs/autotester.pkl")
+	cfg, err := config.LoadAppConfig()
 	if err != nil {
 		panic(err)
 	}
