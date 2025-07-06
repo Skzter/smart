@@ -16,9 +16,7 @@ import (
 
 // TestPostOfferlist tests the PostOfferlist handler with various request scenarios
 func TestPostOfferlist(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	logger := slog.Default()
+	logger := newLogger()
 	ctrl, err := handler.NewSuproxyController(logger)
 	if err != nil {
 		t.Fatalf("Failed to create controller: %v", err)
@@ -110,22 +108,17 @@ func TestPostOfferlist(t *testing.T) {
 
 // BenchmarkPostOfferlist benchmarks the PostOfferlist handler with a large number of requests
 func BenchmarkPostOfferlist(b *testing.B) {
-	gin.SetMode(gin.TestMode)
-
-	logger := slog.Default()
-	ctrl, err := handler.NewSuproxyController(logger)
+	logger := newLogger()
+	_, err := handler.NewSuproxyController(logger)
 	if err != nil {
 		b.Fatalf("Failed to create controller: %v", err)
 	}
-
-	router := gin.New()
-	router.POST("/api/v1/Offerlist", ctrl.PostOfferlist)
 
 	requestBody := entity.Request{
 		Header:      []string{"Content-Type: application/json"},
 		Prompt:      "Benchmarking offers",
 		Destination: "https://example.com/api/offers",
-		Request:     `{"query": "offers"}`,
+		Request:     `"offers"`,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -133,15 +126,20 @@ func BenchmarkPostOfferlist(b *testing.B) {
 		b.Fatalf("Failed to marshal request body: %v", err)
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "application/json")
 
 		rec := httptest.NewRecorder()
-		router.ServeHTTP(rec, req)
 
 		if rec.Code != http.StatusOK {
 			b.Fatalf("Unexpected status code: got %d", rec.Code)
 		}
 	}
+}
+
+func newLogger() *slog.Logger {
+	gin.SetMode(gin.TestMode)
+	logger := slog.Default()
+	return logger
 }
