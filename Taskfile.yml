@@ -146,7 +146,7 @@ tasks:
       EXCLUDE_RULES: "G104,G107"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
   lint-frontend:
     desc: "Run the frontend lint"
@@ -170,18 +170,26 @@ tasks:
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-config-embedded
 
   generate-config-autotester:
     desc: "generates code for reading autotester config"
     cmds:
-      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
+      - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
     sources:
       - configs/autotester.pkl
 
   generate-config-suproxy:
     desc: "generates code for reading suproxy config"
     cmds:
-      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+      - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
     sources:
       - configs/suproxy.pkl
 
+  generate-config-embedded:
+    desc: "generates the config in a binary format to use for embedding in compile time"
+    cmds:
+      - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
+    sources:
+      - configs/suproxy.pkl
+      - configs/autotester.pkl
