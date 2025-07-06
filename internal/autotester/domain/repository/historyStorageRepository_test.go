@@ -687,13 +687,13 @@ func TestNewSessionSummaryStorageRepository(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo, err := NewSessionSummaryStorageRepository(tt.logger)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewSessionSummaryStorageRepository() error = %v, wantErr %v", err, tt.wantErr)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo, err := NewSessionSummaryStorageRepository(test.logger)
+			if (err != nil) != test.wantErr {
+				t.Errorf("NewSessionSummaryStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if !tt.wantErr && repo == nil {
+			if !test.wantErr && repo == nil {
 				t.Errorf("NewSessionSummaryStorageRepository() returned nil repository")
 			}
 		})

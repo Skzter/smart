@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
@@ -42,8 +43,15 @@ type sessionSummaryStorageRepository struct {
 // It initializes the required S3 and Parquet wrappers.
 // Returns the repository or an error.
 func NewSessionSummaryStorageRepository(logger *slog.Logger) (SessionSummaryStorageRepository, error) {
+	ctx := context.Background()
+	pklConfig, err := config.LoadFromPath(ctx, "../../../../configs/autotester.pkl")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config from configs/autotester.pkl: %w", err)
+	}
+
 	s3Config := wrapperEntity.S3Config{
-		Bucket:    "autotester",
+		Region:    pklConfig.Region,
+		Bucket:    pklConfig.Bucket,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
