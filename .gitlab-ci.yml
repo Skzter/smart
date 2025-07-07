@@ -68,7 +68,6 @@ go_generate_code:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
       - internal/build/configs
-      - internal/**/mocks/
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -79,18 +78,12 @@ lint_frontend:
 lint_go:
   stage: code_analysis_and_testing
   extends: .go_cache
-  needs:
-    - job: go_generate_code
-      artifacts: true
   script:
     - ./bin/task lint
 
 static_analysis_go:
   stage: code_analysis_and_testing
   extends: .go_cache
-  needs:
-    - job: go_generate_code
-      artifacts: true
   script:
     - ./bin/task static-analysis
   rules:
@@ -119,9 +112,6 @@ sonarqube-check:
 unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
-  needs:
-    - job: go_generate_code
-      artifacts: true
   script:
     - ./bin/task test
 
