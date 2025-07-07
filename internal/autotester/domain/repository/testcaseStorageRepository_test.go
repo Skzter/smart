@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
@@ -494,32 +495,57 @@ func TestGenerateTestCaseKey(t *testing.T) {
 	}
 }
 
+// nolint:dupl
 func TestNewTestCaseStorageRepository(t *testing.T) {
+	mockS3 := &mocks.MockS3StorageWrapper{}
+	mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+	logger := slog.Default()
+
 	tests := []struct {
-		name    string
-		logger  *slog.Logger
-		wantErr bool
+		name           string
+		logger         *slog.Logger
+		s3Wrapper      service.S3StorageWrapper
+		parquetWrapper service.ParquetFileWrapper[entity.TestCase]
+		wantErr        bool
 	}{
 		{
-			name:    "default logger",
-			logger:  slog.Default(),
-			wantErr: false,
+			name:           "all not nil",
+			logger:         logger,
+			s3Wrapper:      mockS3,
+			parquetWrapper: mockParquet,
+			wantErr:        false,
 		},
 		{
-			name:    "nil logger",
-			logger:  nil,
-			wantErr: true,
+			name:           "nil logger",
+			logger:         nil,
+			s3Wrapper:      mockS3,
+			parquetWrapper: mockParquet,
+			wantErr:        true,
+		},
+		{
+			name:           "nil s3Wrapper",
+			logger:         logger,
+			s3Wrapper:      nil,
+			parquetWrapper: mockParquet,
+			wantErr:        true,
+		},
+		{
+			name:           "nil parquetWrapper",
+			logger:         logger,
+			s3Wrapper:      mockS3,
+			parquetWrapper: nil,
+			wantErr:        true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewTestCaseStorageRepository(test.logger)
+			repo, err := NewTestCaseStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewSessionSummaryStorageRepository() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewTestCaseStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && repo == nil {
-				t.Errorf("NewSessionSummaryStorageRepository() returned nil repository")
+				t.Errorf("NewTestCaseStorageRepository() returned nil repository")
 			}
 		})
 	}

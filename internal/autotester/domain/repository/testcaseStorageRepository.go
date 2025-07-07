@@ -6,10 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
-	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -38,30 +35,18 @@ type testCaseStorageRepository struct {
 }
 
 // NewTestCaseStorageRepository creates a new repository for TestCase entities.
-// It initializes the required S3 and Parquet wrappers.
 // Returns the repository or an error.
-func NewTestCaseStorageRepository(logger *slog.Logger) (TestCaseStorageRepository, error) {
-	ctx := context.Background()
-	pklConfig, err := config.LoadFromPath(ctx, "../../../../configs/autotester.pkl")
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config from configs/autotester.pkl: %w", err)
+func NewTestCaseStorageRepository(logger *slog.Logger,
+	s3Wrapper service.S3StorageWrapper,
+	parquetWrapper service.ParquetFileWrapper[entity.TestCase]) (TestCaseStorageRepository, error) {
+	if err := assert.NotNil(logger); err != nil {
+		return nil, fmt.Errorf("logger must not be nil: %w", err)
 	}
-
-	s3Config := wrapperEntity.S3Config{
-		Region:    pklConfig.Region,
-		Bucket:    pklConfig.Bucket,
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
+	if err := assert.NotNil(s3Wrapper); err != nil {
+		return nil, fmt.Errorf("s3Wrapper must not be nil: %w", err)
 	}
-
-	s3Wrapper, err := service.NewS3Wrapper(logger, s3Config)
-	if err != nil {
-		return nil, err
-	}
-
-	parquetWrapper, err := service.NewParquetWrapper[entity.TestCase](logger, service.DefaultParquetConfig())
-	if err != nil {
-		return nil, err
+	if err := assert.NotNil(parquetWrapper); err != nil {
+		return nil, fmt.Errorf("parquetWrapper must not be nil: %w", err)
 	}
 
 	return &testCaseStorageRepository{
