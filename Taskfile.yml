@@ -108,6 +108,7 @@ tasks:
     desc: "Run the whole project in docker-compose for local environment"
     dir: 'deployments'
     cmds:
+      - docker login gitlab.dit.htwk-leipzig.de:5050
       - docker compose -f compose.dev.yml up -d
 
   compose-local-down:
