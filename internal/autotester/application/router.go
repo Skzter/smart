@@ -19,15 +19,13 @@ func SetupRoutes(cfg *config.Config) {
 	router := gin.Default()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	controller, err := handler.NewAutotesterController(logger, cfg)
-	const chatApiEndpoint string = "/api/v1/chat"
-	const serverPort string = ":8081"
 
 	if err != nil {
 		logger.Error(err.Error())
 		return
 	}
 
-	router.POST(chatApiEndpoint, func(c *gin.Context) {
+	router.POST("/api/v1/chat", func(c *gin.Context) {
 		controller.HandleChatRequest(c)
 	})
 
@@ -39,7 +37,7 @@ func SetupRoutes(cfg *config.Config) {
 
 	router.StaticFS("/", http.FS(staticFS))
 
-	err = router.Run(serverPort)
+	err = router.Run(cfg.Port)
 	if err != nil {
 		logger.Error(err.Error())
 		return

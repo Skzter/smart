@@ -31,7 +31,7 @@ func NewAutotesterController(logger *slog.Logger, config *config.Config) (a *Aut
 	}, nil
 }
 
-// HandleChatRequest processes an incoming chat request from the frontend.
+// handle Frontend Request JSON to String
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	var userRequest entity.UserRequest
 
@@ -50,9 +50,6 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// HandleUserInfoRequest responds with basic session and logging metadata.
-//
-// This can be used by the frontend to initialize or track a user session.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	var body entity.UserRequest
 	var resp entity.ResponseForUser
