@@ -2,6 +2,9 @@ package entity
 
 import "testing"
 
+// TestNewLogStamp tests the NewLogStamp function.
+// It checks that a LogStamp is created correctly for valid actor IDs and returns an error for empty actor IDs.
+// It also verifies that each LogStamp instance has a unique logging ID.
 func TestNewLogStamp(t *testing.T) {
 	tests := []struct {
 		TestName    string

@@ -25,9 +25,7 @@ func SetupRoutes(cfg *config.Config) {
 		return
 	}
 
-	router.POST("/api/v1/chat", func(c *gin.Context) {
-		controller.HandleChatRequest(c)
-	})
+	router.POST("/api/v1/chat", controller.HandleChatRequest)
 
 	staticFS, err := fs.Sub(web.DistFS, "dist")
 	if err != nil {

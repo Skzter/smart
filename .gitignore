@@ -24,6 +24,7 @@ coverage.*
 *.coverprofile
 profile.cov
 .gitlab-ci-local
+.task/
 
 # Go workspace file
 go.work
@@ -32,6 +33,7 @@ go.work.sum
 # env file
 .env
 *.pkl.go
+*.msgpack
 
 # Editor/IDE
 .idea/

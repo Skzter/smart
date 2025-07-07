@@ -8,4 +8,5 @@ type ResponseForUser struct {
 	ToolCall  ToolCall    `json:"tool_calls"`
 	LogStamp  LogStamp    `json:"-"`
 	TestCases []*TestCase `json:"-"` // list of test cases for multiple options
+
 }
