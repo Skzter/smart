@@ -177,8 +177,6 @@ tasks:
     desc: "generate code for reading autotester config"
     cmds:
       - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
-    sources:
-      - configs/autotester.pkl
     generates:
       - internal/autotester/domain/config/*
     method: timestamp
@@ -187,8 +185,6 @@ tasks:
     desc: "generate code for reading suproxy config"
     cmds:
       - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
-    sources:
-      - configs/suproxy.pkl
     generates:
       - internal/suproxy/domain/config/*
     method: timestamp
@@ -202,6 +198,3 @@ tasks:
     desc: "generates the config in a binary format to use for embedding in compile time"
     cmds:
       - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
-    sources:
-      - configs/suproxy.pkl
-      - configs/autotester.pkl
