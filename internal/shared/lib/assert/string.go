@@ -4,6 +4,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ByteLength checks if the length of the byte slice is within the given range.
+// Returns an error if the length is outside the range.
 func ByteLength(value []byte, minLength int, maxLength int) error {
 	if minLength != -1 && maxLength != -1 && minLength > maxLength {
 		return errors.Errorf("Assert misuse: minLength should be smaller than maxLength (minLength: %d, maxLength: %d)", minLength, maxLength)
@@ -22,10 +24,13 @@ func ByteLength(value []byte, minLength int, maxLength int) error {
 }
 
 // StringNotEmpty checks if given string is not empty.
+// Returns an error if the string is empty.
 func StringNotEmpty(value string) error {
 	return StringLength(value, 1, -1, nil)
 }
 
+// StringLength checks if the string length is within the given range and optionally if it is in the allowed values.
+// Returns an error if the string does not meet the requirements.
 func StringLength(value string, minLength int, maxLength int, allowedValues *[]string) error {
 	if minLength != -1 && maxLength != -1 && minLength > maxLength {
 		return errors.Errorf("Assert misuse: minLength should be smaller than maxLength (minLength: %d, maxLength: %d)", minLength, maxLength)

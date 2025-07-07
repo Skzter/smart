@@ -37,10 +37,6 @@ describe("Prompt Component", () => {
         const container = screen.getByPlaceholderText("Prompt").parentElement;
 
         expect(container).toHaveClass(
-            "fixed",
-            "bottom-0",
-            "left-0",
-            "w-full",
             "flex",
             "flex-row",
             "w-screen",

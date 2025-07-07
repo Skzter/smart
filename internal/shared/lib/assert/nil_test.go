@@ -9,6 +9,8 @@ type testData struct {
 	value int
 }
 
+// TestNotNil tests the NotNil function.
+// It checks that NotNil returns an error if any value is nil and nil otherwise.
 func TestNotNil(t *testing.T) {
 	testDataNotNil := testData{value: 5}
 	testDataNotNilPointer := &testDataNotNil
