@@ -7,6 +7,8 @@ model: String ="gpt-4.1-nano-2025-04-14"
 
 port: String = "8080" 
 
+max_items_per_validation: Int = 10
+
 class Prompts {
     validationPrompt : String = "You are a strict, technically experienced mock-data tester. Your task is to determine whether a given HTTP Response is logically and semantically consistent with its corresponding HTTP Request in the context of travel offers.\n\n" +
 

@@ -18,49 +18,49 @@ import (
 var (
 	ErrResponseNil       = errors.New("response is nil")
 	ErrInvalidHTTPStatus = errors.New("invalid HTTP status")
+	ErrEmptyOpenAIResult = errors.New("openai returned empty result")
 )
 
-// Validator is the service that encapsulates the validation logic
-// It uses an OpenAI connector to send validation requests to the AI
+// SetOpenAIService replaces the OpenAI service implementation – used for testing with mocks.
+func (v *Validator) SetOpenAIService(mock repository.OpenAI) {
+	v.openAiService = mock
+}
+
+// Validator encapsulates the logic for validating supplier offer responses
+// It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type Validator struct {
-	Connector              repository.OpenAI
+	openAiService          repository.OpenAI
 	Logger                 *slog.Logger
 	SystemPromptValidation string
 	Model                  string
-}
-
-// itemsString converts a list of raw JSON data into a string, which can be sent to the AI as a prompt
-func itemsString(items []json.RawMessage) string {
-	var result string
-	for _, item := range items {
-		result += string(item) + "\n"
-	}
-	return strings.TrimSpace(result)
+	MaxItems               int
 }
 
 // NewValidator creates a new validator service with logger and configuration
 func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
-	connector, err := repository.NewOpenAiRepository(logger, cfg.Timeout)
+	openAiService, err := repository.NewOpenAiRepository(logger, cfg.Timeout)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	return &Validator{
-		Connector:              connector,
+		openAiService:          openAiService,
 		Logger:                 logger,
 		SystemPromptValidation: cfg.Prompts.ValidationPrompt,
 		Model:                  cfg.Model,
+		MaxItems:               cfg.MaxItemsPerValidation,
 	}
 }
 
-// Validate performs the validation of a supplier request
+// Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
+// to an OpenAI service for validation
 func (v *Validator) Validate(jsonStr string) error {
 	if jsonStr == "" {
 		v.Logger.Debug("Validation skipped: empty JSON string")
 		return errors.New("empty json string")
 	}
 
-	var resp entity.ValidationResponse
+	var resp entity.SupplierOfferResponse
 	if err := json.Unmarshal([]byte(jsonStr), &resp); err != nil {
 		v.Logger.Error("Failed to unmarshal validation JSON", "error", err)
 		return err
@@ -79,18 +79,38 @@ func (v *Validator) Validate(jsonStr string) error {
 
 	v.Logger.Debug("Valid HTTP response. Forwarding to OpenAI...", "status", resp.HTTPStatusCode)
 
-	req := entity.Request{
-		Model:        v.Model,
-		Prompt:       itemsString(resp.Data.Items),
-		SystemPrompt: v.SystemPromptValidation,
+	ctx := context.Background()
+
+	for i, item := range resp.Data.Items {
+		if i >= v.MaxItems {
+			break
+		}
+
+		prompt := strings.TrimSpace(string(item))
+		if prompt == "" {
+			v.Logger.Debug("Skipping empty item", "index", i)
+			continue
+		}
+
+		req := entity.Request{
+			Model:        v.Model,
+			Prompt:       prompt,
+			SystemPrompt: v.SystemPromptValidation,
+		}
+
+		result, err := v.openAiService.CreateRequest(ctx, req)
+		if err != nil {
+			v.Logger.Error("OpenAI request failed", "index", i, "error", err)
+			return err
+		}
+
+		if strings.TrimSpace(result.Text) == "" {
+			v.Logger.Error("OpenAI returned empty result", "index", i)
+			return ErrEmptyOpenAIResult
+		}
+
+		v.Logger.Debug("OpenAI response received", "index", i, "response", result.Text)
 	}
 
-	result, err := v.Connector.CreateRequest(context.Background(), req)
-	if err != nil {
-		v.Logger.Error("OpenAI request failed", "error", err)
-		return err
-	}
-
-	v.Logger.Debug("OpenAI response received", "response", result.Text)
 	return nil
 }

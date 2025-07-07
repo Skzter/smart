@@ -25,12 +25,12 @@ func TestValidatorValidate(t *testing.T) {
 		Prompts: &config.Prompts{
 			ValidationPrompt: "test prompt",
 		},
-		Timeout: 10,
+		Timeout:               10,
+		MaxItemsPerValidation: 3,
 	}
 
 	validator := service.NewValidator(logger, cfg)
 
-	// Test cases as a table
 	tests := []struct {
 		name            string
 		input           string
@@ -50,9 +50,9 @@ func TestValidatorValidate(t *testing.T) {
 		{
 			name: "valid 200 response",
 			input: func() string {
-				vr := entity.ValidationResponse{
+				vr := entity.SupplierOfferResponse{
 					HTTPStatusCode: 200,
-					Data: entity.ValidationData{
+					Data: entity.SupplierOfferData{
 						Items: []json.RawMessage{
 							json.RawMessage(`{
 								"duration": 5,
@@ -84,7 +84,7 @@ func TestValidatorValidate(t *testing.T) {
 					Once()
 			}
 
-			validator.Connector = mockConnector
+			validator.SetOpenAIService(mockConnector)
 
 			err := validator.Validate(tt.input)
 			if (err != nil) != !tt.expectCall {
