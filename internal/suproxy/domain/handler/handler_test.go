@@ -107,7 +107,8 @@ func TestPostOfferlist(t *testing.T) {
 
 // BenchmarkPostOfferlist benchmarks the PostOfferlist handler with a large number of requests
 func BenchmarkPostOfferlist(b *testing.B) {
-	_, err := setupController()
+	handler, err := setupController()
+
 	if err != nil {
 		b.Fatalf("Failed to setup controller: %v", err)
 	}
@@ -120,6 +121,7 @@ func BenchmarkPostOfferlist(b *testing.B) {
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
+
 	if err != nil {
 		b.Fatalf("Failed to marshal request body: %v", err)
 	}
@@ -129,12 +131,18 @@ func BenchmarkPostOfferlist(b *testing.B) {
 		req.Header.Set("Content-Type", "application/json")
 
 		rec := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(rec)
+		ctx.Request = req
+
+		handler.PostOfferlist(ctx)
 
 		if rec.Code != http.StatusOK {
 			b.Fatalf("Unexpected status code: got %d", rec.Code)
 		}
 	}
 }
+
+// setupController initializes the SuproxyController for testing
 func setupController() (*handler.SuproxyController, error) {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
