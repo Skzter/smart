@@ -26,6 +26,12 @@ func (v *Validator) SetOpenAIService(mock repository.OpenAI) {
 	v.openAiService = mock
 }
 
+// OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
+type OpenAIValidationResult struct {
+	Valid  bool     `json:"valid"`
+	Reason []string `json:"reason"`
+}
+
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type Validator struct {
@@ -107,6 +113,20 @@ func (v *Validator) Validate(jsonStr string) error {
 		if strings.TrimSpace(result.Text) == "" {
 			v.Logger.Error("OpenAI returned empty result", "index", i)
 			return ErrEmptyOpenAIResult
+		}
+
+		var validationResult OpenAIValidationResult
+
+		err = json.Unmarshal([]byte(result.Text), &validationResult)
+
+		if err != nil {
+			v.Logger.Error("Failed to parse OpenAI response JSON", "index", i, "error", err, "response", result.Text)
+			return fmt.Errorf("invalid OpenAI response format: %w", err)
+		}
+
+		if !validationResult.Valid {
+			v.Logger.Error("Validation failed", "index", i, "reason", validationResult.Reason)
+			return fmt.Errorf("validation failed for item %d: reasons=%v", i, validationResult.Reason)
 		}
 
 		v.Logger.Debug("OpenAI response received", "index", i, "response", result.Text)
