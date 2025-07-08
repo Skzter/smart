@@ -6,20 +6,17 @@ import (
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	// "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
-// nicht auf errorMsg prüfen, sondern nur error und im namen case beschreiben
 // Test for creating new OpenAiRepository
 func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
-		name             string
-		logger           *slog.Logger
-		timeout          int
-		expectedOutcome  any // hier muss mal openAi repo hin oder weg
-		expectedError    bool
-		expectedErrorMsg string
+		name            string
+		logger          *slog.Logger
+		timeout         int
+		expectedOutcome OpenAI
+		expectedError   bool
 	}{
 		{
 			name:            "creating repo with nil logger, correct timeout",
@@ -52,10 +49,9 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 
 func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 	tests := []struct {
-		name             string
-		request          entity.Request
-		expectedError    bool
-		expectedErrorMsg string
+		name          string
+		request       entity.Request
+		expectedError bool
 	}{
 		{
 			name: "validating incorrect request entity => empty prompt",
@@ -65,8 +61,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
-			expectedError:    true,
-			expectedErrorMsg: "request without user prompt",
+			expectedError: true,
 		},
 		{
 			name: "validating incorrect request entity => empty model",
@@ -76,8 +71,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 				Model:        "",
 				SystemPrompt: "sys prompt",
 			},
-			expectedError:    true,
-			expectedErrorMsg: "request without model",
+			expectedError: true,
 		},
 		{
 			name: "validating incorrect request entity => empty system prompt",
@@ -87,8 +81,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "",
 			},
-			expectedError:    true,
-			expectedErrorMsg: "request without system prompt",
+			expectedError: true,
 		},
 		{
 			name: "validating correct request entity",
@@ -98,8 +91,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
-			expectedError:    false,
-			expectedErrorMsg: "",
+			expectedError: false,
 		},
 	}
 
@@ -109,10 +101,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 			err := ValidateRequestEntity(test.request)
 			if test.expectedError {
 				if err == nil {
-					t.Errorf("expected error %q, but got nil", test.expectedErrorMsg)
-				}
-				if test.expectedErrorMsg != err.Error() {
-					t.Errorf("wanted: %q, got: %q", test.expectedErrorMsg, err.Error())
+					t.Errorf("expected error, but got nil")
 				}
 			} else if !test.expectedError {
 				if err != nil {
@@ -161,7 +150,6 @@ func TestOpenaiRepository_CreateRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := repo.CreateRequest(test.ctx, test.request)
-			fmt.Println(resp)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error but go nil")
