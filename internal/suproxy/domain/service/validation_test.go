@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
+// TestValidatorValidate tests the Validate method of the Validator service
 // nolint:funlen
 func TestValidatorValidate(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
