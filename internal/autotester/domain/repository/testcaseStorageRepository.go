@@ -26,6 +26,8 @@ type TestCaseStorageRepository interface {
 	Delete(ctx context.Context, key string) error
 }
 
+const prefixTestCase = "testCase"
+
 // testCaseStorageRepository provides a repository implementation for TestCase entities,
 // encapsulating logic for S3 and Parquet operations.
 type testCaseStorageRepository struct {
@@ -36,17 +38,9 @@ type testCaseStorageRepository struct {
 
 // NewTestCaseStorageRepository creates a new repository for TestCase entities.
 // Returns the repository or an error.
-func NewTestCaseStorageRepository(logger *slog.Logger,
-	s3Wrapper service.S3StorageWrapper,
-	parquetWrapper service.ParquetFileWrapper[entity.TestCase]) (TestCaseStorageRepository, error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger must not be nil: %w", err)
-	}
-	if err := assert.NotNil(s3Wrapper); err != nil {
-		return nil, fmt.Errorf("s3Wrapper must not be nil: %w", err)
-	}
-	if err := assert.NotNil(parquetWrapper); err != nil {
-		return nil, fmt.Errorf("parquetWrapper must not be nil: %w", err)
+func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, parquetWrapper service.ParquetFileWrapper[entity.TestCase]) (TestCaseStorageRepository, error) {
+	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
+		return nil, err
 	}
 
 	return &testCaseStorageRepository{
@@ -57,7 +51,6 @@ func NewTestCaseStorageRepository(logger *slog.Logger,
 }
 
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
-// Returns the generated S3 key or an error.
 // nolint:dupl
 func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase) error {
 	if err := validateTestCaseData(obj); err != nil {
@@ -78,7 +71,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 		return err
 	}
 
-	r.logger.Info("create: object successfully written and uploaded",
+	r.logger.Debug("create: object successfully written and uploaded",
 		slog.String("key", key),
 		slog.String("type", "testcase"),
 	)
@@ -173,7 +166,7 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 // The format is: "testCase/testCase_<timestamp>"
 func generateTestCaseKey() string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d", "testCase", "testCase", timestamp)
+	return fmt.Sprintf("%s/%s_%d", prefixTestCase, prefixTestCase, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.

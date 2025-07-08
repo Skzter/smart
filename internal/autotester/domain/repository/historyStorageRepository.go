@@ -28,6 +28,8 @@ type SessionSummaryStorageRepository interface {
 	ListAll(ctx context.Context) ([]entity.SessionSummary, error)
 }
 
+const prefixSessionSummary = "sessionSummary"
+
 // sessionSummaryStorageRepository implements the SessionSummaryStorageRepository interface
 // and encapsulates logic for S3 and Parquet operations.
 type sessionSummaryStorageRepository struct {
@@ -38,17 +40,10 @@ type sessionSummaryStorageRepository struct {
 
 // NewSessionSummaryStorageRepository creates a new repository for SessionSummary entities.
 // Returns the repository or an error.
-func NewSessionSummaryStorageRepository(logger *slog.Logger,
-	s3Wrapper service.S3StorageWrapper,
-	parquetWrapper service.ParquetFileWrapper[entity.SessionSummary]) (SessionSummaryStorageRepository, error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger must not be nil: %w", err)
-	}
-	if err := assert.NotNil(s3Wrapper); err != nil {
-		return nil, fmt.Errorf("s3Wrapper must not be nil: %w", err)
-	}
-	if err := assert.NotNil(parquetWrapper); err != nil {
-		return nil, fmt.Errorf("parquetWrapper must not be nil: %w", err)
+// nolint:lll
+func NewSessionSummaryStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, parquetWrapper service.ParquetFileWrapper[entity.SessionSummary]) (SessionSummaryStorageRepository, error) {
+	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
+		return nil, err
 	}
 	return &sessionSummaryStorageRepository{
 		s3Wrapper:      s3Wrapper,
@@ -58,7 +53,6 @@ func NewSessionSummaryStorageRepository(logger *slog.Logger,
 }
 
 // Create serializes the given SessionSummary object to Parquet format and uploads it to S3.
-// Returns the generated S3 key or an error.
 // nolint:dupl
 func (r *sessionSummaryStorageRepository) Create(ctx context.Context, obj *entity.SessionSummary) error {
 	if err := validateHistoryData(obj); err != nil {
@@ -173,10 +167,8 @@ func (r *sessionSummaryStorageRepository) Delete(ctx context.Context, key string
 }
 
 func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity.SessionSummary, error) {
-	const prefix = "sessionSummary/"
 	result := make([]entity.SessionSummary, 0)
-
-	keys, err := r.s3Wrapper.ListParquetFiles(ctx, prefix)
+	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprint(prefixSessionSummary+"/"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list session summary parquet files: %w", err)
 	}
@@ -218,7 +210,7 @@ func (r *sessionSummaryStorageRepository) ListAll(ctx context.Context) ([]entity
 // The format is: "sessionSummary/sessionSummary_<timestamp>"
 func generateSessionSummaryKey() string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d", "sessionSummary", "sessionSummary", timestamp)
+	return fmt.Sprintf("%s/%s_%d", prefixSessionSummary, prefixSessionSummary, timestamp)
 }
 
 // validateHistoryData validates a SessionSummary entity.
