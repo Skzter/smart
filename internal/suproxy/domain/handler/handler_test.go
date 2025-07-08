@@ -2,24 +2,27 @@ package handler_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"encoding/json"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/mock"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
+	sharedentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	suproxyentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
+	mockrepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 )
+
 
 // TestPostOfferlist tests the PostOfferlist handler with various request scenarios
 func TestPostOfferlist(t *testing.T) {
-	ctrl, err := setupController()
-	if err != nil {
-		t.Fatalf("Failed to setup controller: %v", err)
-	}
+	ctrl := setupController(t)
 
 	tests := []struct {
 		name           string
@@ -30,33 +33,33 @@ func TestPostOfferlist(t *testing.T) {
 		{
 			name: "valid JSON request",
 			requestBody: `{
-                "header": ["Content-Type: application/json"],
-                "prompt": "test prompt",
-                "destination": "https://example.com",
-                "request": "{\"some\": \"data\"}"
-            }`,
+				"header": ["Content-Type: application/json"],
+				"prompt": "test prompt",
+				"destination": "https://example.com",
+				"request": "{\"httpstatuscode\":200,\"data\":{\"items\":[\"{}\"]}}"
+			}`,
 			expectedStatus: http.StatusOK,
 			expectedBody:   "200",
 		},
 		{
-			name: "empty valid JSON",
+			name: "empty valid JSON (no request field)",
 			requestBody: `{
-                "header": [],
-                "prompt": "",
-                "destination": "",
-                "request": ""
-            }`,
-			expectedStatus: http.StatusOK,
-			expectedBody:   "200",
+				"header": [],
+				"prompt": "",
+				"destination": "",
+				"request": ""
+			}`,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"empty json string"}`,
 		},
 		{
 			name: "minimal valid JSON",
 			requestBody: `{
-                "header": null,
-                "prompt": "minimal",
-                "destination": "https://test.com",
-                "request": "{}"
-            }`,
+				"header": null,
+				"prompt": "minimal",
+				"destination": "https://example.com",
+				"request": "{\"httpstatuscode\":200,\"data\":{\"items\":[\"{}\"]}}"
+			}`,
 			expectedStatus: http.StatusOK,
 			expectedBody:   "200",
 		},
@@ -64,19 +67,16 @@ func TestPostOfferlist(t *testing.T) {
 			name:           "invalid JSON",
 			requestBody:    `{"invalid": json}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "",
 		},
 		{
 			name:           "empty request body",
 			requestBody:    "",
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "",
 		},
 		{
 			name:           "malformed JSON",
 			requestBody:    `{"header": ["test"], "prompt":}`,
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   "",
 		},
 	}
 
@@ -99,7 +99,7 @@ func TestPostOfferlist(t *testing.T) {
 			}
 
 			if tt.expectedBody != "" && rec.Body.String() != tt.expectedBody {
-				t.Errorf("Expected response body %s, got %s", tt.expectedBody, rec.Body.String())
+				t.Errorf("Expected body %q, got %q", tt.expectedBody, rec.Body.String())
 			}
 		})
 	}
@@ -107,17 +107,13 @@ func TestPostOfferlist(t *testing.T) {
 
 // BenchmarkPostOfferlist benchmarks the PostOfferlist handler with a large number of requests
 func BenchmarkPostOfferlist(b *testing.B) {
-	handler, err := setupController()
+	ctrl := setupController(b)
 
-	if err != nil {
-		b.Fatalf("Failed to setup controller: %v", err)
-	}
-
-	requestBody := entity.Request{
+	requestBody := suproxyentity.Request{
 		Header:      []string{"Content-Type: application/json"},
 		Prompt:      "Benchmarking offers",
 		Destination: "https://example.com/api/offers",
-		Request:     `"offers"`,
+		Request:     `{"httpstatuscode":200,"data":{"items":["{}"]}}`,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -134,7 +130,7 @@ func BenchmarkPostOfferlist(b *testing.B) {
 		ctx, _ := gin.CreateTestContext(rec)
 		ctx.Request = req
 
-		handler.PostOfferlist(ctx)
+		ctrl.PostOfferlist(ctx)
 
 		if rec.Code != http.StatusOK {
 			b.Fatalf("Unexpected status code: got %d", rec.Code)
@@ -143,12 +139,32 @@ func BenchmarkPostOfferlist(b *testing.B) {
 }
 
 // setupController initializes the SuproxyController for testing
-func setupController() (*handler.SuproxyController, error) {
+func setupController(tb testing.TB) *handler.SuproxyController {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
-	ctrl, err := handler.NewSuproxyController(logger)
-	if err != nil {
-		return nil, err
+
+	cfg := &config.Config{
+		Model: "gpt-4o",
+		Prompts: &config.Prompts{
+			ValidationPrompt: "test prompt",
+		},
+		Timeout:               20,
+		MaxItemsPerValidation: 10,
 	}
-	return ctrl, nil
+
+	validator := service.NewValidator(logger, cfg)
+
+	mockConnector := mockrepo.NewOpenAI(tb)
+	mockConnector.
+		On("CreateRequest", mock.Anything, mock.Anything).
+		Return(&sharedentity.Response{Text: `{"valid": true, "reason": []}`}, nil)
+
+	validator.SetOpenAIService(mockConnector)
+
+	ctrl, err := handler.NewSuproxyController(logger, validator)
+	if err != nil {
+		tb.Fatalf("Failed to create controller: %v", err)
+	}
+	return ctrl
 }
+

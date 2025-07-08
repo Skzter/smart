@@ -25,8 +25,8 @@ func TestValidatorValidate(t *testing.T) {
 		Prompts: &config.Prompts{
 			ValidationPrompt: "test prompt",
 		},
-		Timeout:               10,
-		MaxItemsPerValidation: 3,
+		Timeout:               20,
+		MaxItemsPerValidation: 10,
 	}
 
 	validator := service.NewValidator(logger, cfg)
