@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	// "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
 // Test for creating new OpenAiRepository
@@ -15,7 +16,7 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 		name            string
 		logger          *slog.Logger
 		timeout         int
-		expectedOutcome OpenAI
+		expectedOutcome any
 		expectedError   bool
 	}{
 		{
@@ -32,15 +33,36 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 			expectedOutcome: nil,
 			expectedError:   true,
 		},
+		{
+			name:          "creating repo with correct logger, correct timeout",
+			logger:        logger,
+			timeout:       5,
+			expectedError: false,
+		},
+		{
+			name:            "creating repo with nil logger, negative timeout",
+			logger:          nil,
+			timeout:         -1,
+			expectedOutcome: nil,
+			expectedError:   true,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, _ := NewOpenAiRepository(test.logger, test.timeout)
+			repo, err := NewOpenAiRepository(test.logger, test.timeout)
 			if test.expectedError {
-				if repo != test.expectedOutcome {
+				if err == nil {
+					t.Errorf("expected error, but got nil")
+				} else if repo != test.expectedOutcome {
 					t.Errorf("wanted: %q, got: %q", test.expectedOutcome, repo)
+				}
+			} else if !test.expectedError {
+				if err != nil {
+					t.Errorf("did not expect error but go this: %q", err.Error())
+				} else if repo == nil {
+					t.Errorf("wanted repo, got: %q", repo)
 				}
 			}
 		})
@@ -84,6 +106,16 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 			expectedError: true,
 		},
 		{
+			name: "validating incorrect request entity => empty sessionId",
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "",
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: false,
+		},
+		{
 			name: "validating correct request entity",
 			request: entity.Request{
 				Prompt:       "user prompt",
@@ -113,6 +145,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 }
 
 /*
+// not working, dont know how to mock it
 // Test for creating a request to openai
 func TestOpenaiRepository_CreateRequest(t *testing.T) {
 	tests := []struct {
@@ -141,6 +174,7 @@ func TestOpenaiRepository_CreateRequest(t *testing.T) {
 
 	logger := slog.New(slog.DiscardHandler)
 	timeout := 5
+
 	repo := openAI{
 		logger:  logger,
 		client:  mocks.NewMockOpenAIClient(t),
