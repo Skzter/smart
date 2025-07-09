@@ -26,7 +26,7 @@ tasks:
 
   build:
     desc: "Build the project"
-    deps: [generate-config]
+    deps: [generate]
     vars:
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
@@ -167,7 +167,7 @@ tasks:
       EXCLUDE_RULES: "G104,G107"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
   lint-frontend:
     desc: "Run the frontend lint"
@@ -181,28 +181,42 @@ tasks:
 
   pre-commit:
     desc: "Run the pre-commit"
-    deps: [generate-config]
+    deps: [generate]
     cmds:
       - task: lint
       - task: test
 
-  generate-config:
-    desc: "generates code for reading pkl configs"
+  generate:
+    desc: "generate code"
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-config-embedded
 
   generate-config-autotester:
-    desc: "generates code for reading autotester config"
+    desc: "generate code for reading autotester config"
     cmds:
-      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/autotester.pkl
+      - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
     sources:
       - configs/autotester.pkl
 
   generate-config-suproxy:
-    desc: "generates code for reading suproxy config"
+    desc: "generate code for reading suproxy config"
     cmds:
-      - PATH=$LPATH; go tool github.com/apple/pkl-go/cmd/pkl-gen-go configs/suproxy.pkl
+      - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
     sources:
       - configs/suproxy.pkl
 
+  generate-mocks:
+    desc: "generate all mockery mocks"
+    cmds:
+      - "go tool mockery"
+
+  generate-config-embedded:
+    desc: "generates the config in a binary format to use for embedding in compile time"
+    cmds:
+      - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
+    sources:
+    - configs/suproxy.pkl
+    - configs/autotester.pkl
+    

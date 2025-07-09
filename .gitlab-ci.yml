@@ -57,16 +57,17 @@ go_mod_download:
   script:
     - go mod download
 
-generate_config:
+go_generate_code:
   stage: prepare
   extends: .go_cache 
   script:
-    - ./bin/task generate-config
+    - ./bin/task generate
   artifacts:
-    name: Generated_Configs
+    name: Generated_Go_Code
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/build/configs
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -133,9 +134,7 @@ frontend_test:
       coverage_report:
         coverage_format: cobertura
         path: web/coverage/cobertura-coverage.xml
-      junit: web/coverage/junit.xml
-      
-  
+      junit: web/coverage/junit.xml 
     
 build_frontend_artifacts:
   stage: build
@@ -165,7 +164,7 @@ build_go_artifacts:
   needs:
     - job: build_frontend_artifacts
       artifacts: true
-    - job: generate_config
+    - job: go_generate_code
       artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
