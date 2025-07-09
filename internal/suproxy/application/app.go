@@ -7,7 +7,6 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 // Run initializes the application, sets up the logger, handler, and router,
@@ -23,9 +22,7 @@ func Run() {
 		panic(err)
 	}
 
-	validator := service.NewValidator(logger, cfg)
-
-	handler, err := handler.NewSuproxyController(logger, validator)
+	handler, err := handler.NewSuproxyController(logger, cfg)
 
 	if err != nil {
 		logger.Error("failed to create handler", "error", err)
@@ -46,7 +43,7 @@ func setupRouter(h *handler.SuproxyController) *gin.Engine {
 
 	api := router.Group("/api/v1")
 	{
-		api.POST("/Offerlist", h.PostOfferlist)
+		api.POST("/offers", h.PostOfferlist)
 	}
 
 	return router

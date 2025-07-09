@@ -1,50 +1,94 @@
 package handler
 
 import (
+	"io"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+	validator "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
-	logger    *slog.Logger
-	validator *service.Validator
+	logger *slog.Logger
+	config *config.Config
+	client *http.Client
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, validator *service.Validator) (*SuproxyController, error) {
+func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyController, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
 
 	return &SuproxyController{
-		logger:    logger,
-		validator: validator,
+		logger: logger,
+		config: config,
+		client: &http.Client{},
 	}, nil
 }
 
 // PostOfferlist handles the POST request to the /api/v1/Offerlist endpoint
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
-	var request entity.Request
+	request := c.Request
 
-	if err := c.BindJSON(&request); err != nil {
-		s.logger.Error("Failed to bind JSON", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
-		return
-	}
+	// s.logger.Info("request:", "req", request.Header)
 
-	err := s.validator.Validate(request.Request)
+	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8083/api/v1/offers", request.Body)
 	if err != nil {
-		s.logger.Error("Validation failed", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		s.logger.Error("Failed to create request", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "1Invalid request body"})
 		return
 	}
 
-	c.JSON(http.StatusOK, 200)
+	defer func() {
+		if err := req.Body.Close(); err != nil {
+			s.logger.Error("Failed to close response body", "error", err)
+		}
+	}()
+
+	req.Header = request.Header
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		s.logger.Error("Failed to send request", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "2Invalid request body"})
+		return
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			s.logger.Error("Failed to close response body", "error", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		s.logger.Error("Failed to send request", "error", resp.StatusCode)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "3Invalid request body"})
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		s.logger.Error("Failed to read response body", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "4Invalid request body"})
+		return
+	}
+
+	// !TODO: REMOVE THIS - THIS IS FOR TESTING ONLY
+
+	s.handleRequest(body)
+
+	c.Data(200, "application/json", body)
+}
+
+func (s *SuproxyController) handleRequest(data []byte) {
+	val := validator.NewValidator(s.logger, s.config)
+	if err := val.Validate(data); err != nil {
+		s.logger.Error(err.Error())
+	}
 }
