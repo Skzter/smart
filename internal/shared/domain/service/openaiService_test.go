@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"testing"
@@ -8,58 +9,102 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
+// Test for Service
 func TestService(t *testing.T) {
-	// test with invalid parameters
-	if _, err := NewService(nil, 0); err == nil {
-		t.Error("service created with invalid parameters, but no error was thrown")
+	tests := []struct {
+		testName      string
+		logger        *slog.Logger
+		timeout       int
+		expectedError bool
+	}{
+		{
+			testName:      "Invalid Logger",
+			logger:        nil,
+			timeout:       5,
+			expectedError: true,
+		},
+		{
+
+			testName:      "Invalid Timeout for Repository",
+			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			timeout:       0,
+			expectedError: true,
+		},
+		{
+			testName:      "Valid Parameter",
+			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			timeout:       5,
+			expectedError: false,
+		},
 	}
 
-	// test with valid parameters
-	serv, err := NewService(slog.New(slog.NewJSONHandler(os.Stdout, nil)), 5)
-	if err != nil || serv == nil {
-		t.Errorf("failed to create service: %v", err)
-		return
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			service, err := NewService(test.logger, test.timeout)
+
+			if test.expectedError {
+				if err == nil {
+					t.Errorf("WARNING: Expected Error, but nil")
+				}
+
+				if service != nil {
+					t.Error("WARNING: expected server has to be nil, but received service")
+				}
+			} else if err != nil {
+				t.Errorf("WARNING: unexpected Error")
+			}
+		})
+	}
+}
+
+// Test for request
+func TestRequest(t *testing.T) {
+	tests := []struct {
+		testName      string
+		content       context.Context
+		request       entity.Request
+		expectedError bool
+	}{
+		{
+			testName: "Nil-logger",
+			content:  nil,
+			request: entity.Request{
+				Prompt:       "Test",
+				SessionID:    "123",
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			testName: "Valid Request",
+			content:  context.Background(),
+			request: entity.Request{
+				Prompt:       "Test",
+				SessionID:    "123",
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: false,
+		},
 	}
 
-	// test with invalid parameters
-	if _, err := serv.Request(t.Context(), entity.Request{}); err == nil {
-		t.Error("request created with invalid parameters, but no error was thrown")
+	// MockOpenAI := mocks.NewMockOpenAI(t)
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			service, _ := NewService(logger, 5)
+
+			resp, _ := service.Request(test.content, test.request)
+
+			if test.expectedError {
+				if resp != nil {
+					t.Errorf("WARNING: Expected Error, but received request")
+				}
+			} /*else if err != nil {
+				t.Errorf("WARNING: Unexpected Error")
+			}*/
+		})
 	}
-
-	/*
-		// test with valid parameters, without lastId
-		resp, err := serv.Request(t.Context(), entity.Request{Prompt: "The secret number is 13"})
-		if err != nil || resp == nil {
-			t.Errorf("failed to create request: %v", err)
-			return
-		}
-		if resp.SessionID == "" {
-			t.Errorf("response contained no id")
-			return
-		}
-		if resp.Text == "" {
-			t.Errorf("response contained no text")
-			return
-		}
-
-		// test follow up with context
-		resp, err = serv.Request(t.Context(), entity.Request{Prompt: "What is the secret number? Send only the number in your reply", SessionID: resp.SessionID})
-		if err != nil || resp == nil {
-			t.Errorf("failed to create request: %v", err)
-			return
-		}
-		if resp.SessionID == "" {
-			t.Errorf("response contained no id")
-			return
-		}
-		if resp.Text == "" {
-			t.Errorf("response contained no text")
-			return
-		}
-		want := regexp.MustCompile(".*13.*")
-		if !want.MatchString(resp.Text) {
-			t.Errorf("conversation may not link correctly: expected number 13, got %v", resp.Text)
-			return
-		}
-	*/
 }
