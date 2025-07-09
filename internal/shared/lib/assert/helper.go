@@ -1,4 +1,4 @@
-//nolint:gosec,dupl,gocyclo
+//nolint:gosec,dupl,gocyclo,funlen
 package assert
 
 import (
