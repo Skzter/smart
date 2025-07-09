@@ -10,7 +10,7 @@ export default ts.config(
     ...ts.configs.recommended,
     ...svelte.configs.recommended,
     {
-        ignores: ["dist/**"], // Ignoriere den dist-Ordner
+        ignores: ["dist/**", "coverage/**"], // Ignoriere den dist/coverage-Ordner
     },
     {
         languageOptions: {
@@ -47,6 +47,7 @@ export default ts.config(
         rules: {
             // Override or add rule settings here, such as:
             // 'svelte/rule-name': 'error'
+            "svelte/require-each-key": "off",
         },
     },
 );

@@ -11,6 +11,8 @@ vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
   MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
   OPENAI_KEY_VAR: "{{.MODULE_NAME}}/internal/build.OpenAIKey"
+  AWS_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsAccessKey"
+  AWS_SECRET_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsSecretAccessKey"
   VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
 
 tasks:
@@ -19,26 +21,31 @@ tasks:
     cmds:
       - git config core.hooksPath githooks
       - go mod tidy
-      - "{{.BIN_PATH}}/doppler login"
-      - "{{.BIN_PATH}}/doppler setup -c dev -p htwk-projekt"
+      - PATH=$LPATH; doppler login
+      - PATH=$LPATH; doppler setup -c dev -p htwk-projekt
 
   build:
     desc: "Build the project"
+    deps: [generate]
     vars:
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - cmd: go build -o bin/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - cmd: go build -o bin/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
         platforms: [linux, darwin]
       - echo "building autotester with version {{.VERSION}}"
-      - cmd: go build -o bin/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
         platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
-      - cmd: go build -o bin/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - cmd: go build -o bin/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
-      - cmd: go build -o bin/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - cmd: go build -o bin/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
         platforms: [windows/amd64]
     silent: true
   
@@ -58,30 +65,44 @@ tasks:
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
       OPENAI_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/suproxy/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/suproxy/main.go
       - echo "building autotester with version {{.VERSION}}"
-      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}'" cmd/autotester/main.go
+      - CGO_ENABLED=0 "{{.BIN_PATH}}/doppler" run -- go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" cmd/autotester/main.go
     silent: true
 
   run-suproxy:
     desc: "Run the project"
+    deps: [generate-config-suproxy]
     env:
       APP_CMD: "./cmd/suproxy"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
-      - "{{.BIN_PATH}}/doppler run -- go tool air"
+      - "PATH=$LPATH; doppler run -- go tool air"
 
   run-autotester:
     desc: "Run the project"
+    deps: [generate-config-autotester]
     env:
       APP_CMD: "./cmd/autotester"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
+      AWS_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+      AWS_SECRET_ACCESS_KEY:
+        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
-      - "{{.BIN_PATH}}/doppler run -- go tool air"
+      - 'PATH=$LPATH; doppler run -- go tool air'
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -100,6 +121,17 @@ tasks:
     cmds:
       - go tool gotestsum ./...
 
+  test-integration:
+    desc: "Run the integration tests"
+    cmds:
+      - go tool gotestsum -- -tags=integration ./...
+
+  test-integration-coverage:
+    desc: "Run the integration tests with coverage"
+    cmds:
+      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out
+
   lint:
     desc: "Run the lint"
     cmds:
@@ -114,7 +146,7 @@ tasks:
       EXCLUDE_RULES: "G104,G107"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="internal/shared/lib/assert" -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
   lint-frontend:
     desc: "Run the frontend lint"
@@ -128,6 +160,42 @@ tasks:
 
   pre-commit:
     desc: "Run the pre-commit"
+    deps: [generate]
     cmds:
       - task: lint
       - task: test
+
+  generate:
+    desc: "generate code"
+    cmds:
+      - task: generate-config-autotester
+      - task: generate-config-suproxy
+      - task: generate-config-embedded
+
+  generate-config-autotester:
+    desc: "generate code for reading autotester config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
+    sources:
+      - configs/autotester.pkl
+
+  generate-config-suproxy:
+    desc: "generate code for reading suproxy config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
+    sources:
+      - configs/suproxy.pkl
+
+  generate-mocks:
+    desc: "generate all mockery mocks"
+    cmds:
+      - "go tool mockery"
+
+  generate-config-embedded:
+    desc: "generates the config in a binary format to use for embedding in compile time"
+    cmds:
+      - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
+    sources:
+    - configs/suproxy.pkl
+    - configs/autotester.pkl
+    

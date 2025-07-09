@@ -8,6 +8,8 @@ type ResponseForUser struct {
 	TestCases    []*TestCase // list of test cases for multiple options
 }
 
+// ToDTO converts the ResponseForUser to a ResponseForUserDTO.
+// Returns an empty ResponseForUserDTO.
 func (ResponseForUser) ToDTO() ResponseForUserDTO {
 	return ResponseForUserDTO{}
 }

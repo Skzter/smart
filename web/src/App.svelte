@@ -1,23 +1,17 @@
 <script lang="ts">
-    import Prompt from "./lib/Prompt.svelte";
-    import Box from "./lib/Box.svelte";
+    import Prompt from "./components/Prompt.svelte";
+    import Box from "./components/Box.svelte";
     import { Spinner } from "flowbite-svelte";
     import { getChatResponse, getUserInfo } from "./lib/Api.ts";
     import { getCookie } from "typescript-cookie";
     import { onMount } from "svelte";
 
     let prompt = $state("");
-    let convo = $state([]);
+    let convo = $state<{ id: number; question: string; answer: string }[]>([]);
 
     // get UserId and ConversationId for api calls from cookies
-    var userId = getCookie("userId");
-    if (userId === undefined) {
-        userId = "";
-    }
-    var conversationId = getCookie("conversationId");
-    if (conversationId === undefined) {
-        conversationId = "";
-    }
+    var userId = getCookie("userId") || "";
+    var conversationId = getCookie("conversationId") || "";
 
     // for next sprint
     let paramsUserInfo = {
@@ -41,18 +35,27 @@
     };
     const chatUrl = "/chat";
 
+    let isLoading = $state(false);
     async function onclick() {
         const userQuestion = prompt;
         prompt = "";
-        paramsChatRequest.message.data = userQuestion;
-        const answerPromise = getChatResponse(paramsChatRequest, chatUrl);
         convo.push({
-            id: convo.length,
             question: userQuestion,
-            answerPromise: answerPromise,
+            answer: "",
         });
+        isLoading = true;
+        paramsChatRequest.message.data = userQuestion;
+        try {
+            const answer = await getChatResponse(paramsChatRequest, chatUrl);
+            convo[convo.length - 1].answer = answer.data.message.data; // so oder so ähnlich
+            setIdsAsCookie(answer); // resp id and user id setten
+        } catch (err) {
+            console.error("api call failed", err);
+            convo[convo.length - 1].answer = "Interner Server Error - Bitte nochmal versuchen!";
+        } finally {
+            isLoading = false;
+        }
     }
-
     function setIdsAsCookie(data) {
         if (userId === "") {
             userId = data.data.userId;
@@ -65,21 +68,40 @@
             paramsChatRequest.conversationId = conversationId;
         }
     }
+
+    let container: HTMLElement;
+    // Effect to trigger scrolling on relevant changes
+    $effect(() => {
+        if (container && (isLoading || convo.length > 0)) {
+            // Small timeout to ensure DOM updates are complete
+            setTimeout(() => {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: "smooth",
+                });
+            }, 0);
+        }
+    });
 </script>
 
-<div class="flex w-screen justify-center">
-    <div class="flex flex-col w-8/10 gap-2 overflow-auto px-4 pt-4 pb-28">
-        {#each convo as c (c.id)}
+<main class="flex w-screen justify-center">
+    <div
+        class="flex flex-col h-[calc(100vh-132px)] overflow-y-auto w-8/10 gap-2 px-4 pt-4"
+        bind:this={container}
+    >
+        {#each convo as c}
             <Box msg={c.question} name="User" />
-            {#await c.answerPromise}
-                <Spinner color="blue" />
-            {:then result}
-                {setIdsAsCookie(result)}
-                <Box msg={result.data.message.data} name="Bot" />
-            {:catch error}
-                <Box msg={error} name="Bot" />
-            {/await}
+            {#if c.answer}
+                <Box msg={c.answer} name="Bot" />
+            {/if}
         {/each}
-        <Prompt bind:input={prompt} {onclick} />
+        {#if isLoading}
+            <div class="flex justify-start p-4">
+                <Spinner color="blue" />
+            </div>
+        {/if}
     </div>
-</div>
+</main>
+<footer class="mt-[0px] mb-[-10px] pb-[5px] h-[100px]">
+    <Prompt bind:input={prompt} {onclick} />
+</footer>
