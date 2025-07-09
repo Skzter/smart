@@ -285,6 +285,85 @@ func TestDeleteRequest(t *testing.T) {
 		})
 	}
 }
+func TestValidateDbEntry(t *testing.T) {
+	tests := []struct {
+		name        string
+		entry       entity.DatabaseEntry
+		expectError bool
+	}{
+		{
+			name: "valid entry",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      []string{"Content-Type: application/json"},
+					Prompt:      "prompt",
+					Destination: "http://example.com",
+					Request:     "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     []string{"tag1"},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid request - empty prompt",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      []string{"Content-Type: application/json"},
+					Prompt:      "",
+					Destination: "http://example.com",
+					Request:     "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     []string{"tag1"},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid response - empty response",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      []string{"Content-Type: application/json"},
+					Prompt:      "prompt",
+					Destination: "http://example.com",
+					Request:     "{}",
+				},
+				Response: entity.Response{Response: ""},
+				Tags:     []string{"tag1"},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid tags - empty list",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      []string{"Content-Type: application/json"},
+					Prompt:      "prompt",
+					Destination: "http://example.com",
+					Request:     "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     []string{},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+			dbRepo := &databaseRepository{logger: logger} // nur Logger notwendig
+
+			err := validateDbEntry(tt.entry, dbRepo)
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
 
 // setupMocks initializes the mocks for the database repository tests
 func setupMocks(t *testing.T) (
