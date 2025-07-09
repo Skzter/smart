@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
@@ -78,7 +79,7 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 		"created": string(rune(time.Now().Unix())),
 	}
 
-	key := generateKey(dbEntry.Tags[0], dbEntry.Tags[1], metadata["created"])
+	key := generateKey(dbEntry.Tags, metadata["created"])
 
 	// Upload file (automatically adds .parquet extension if missing)
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
@@ -92,6 +93,10 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 // ReadRequest reads a request from the database (access through key)
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
+	if err := assert.StringNotEmpty(key); err != nil {
+		return nil, fmt.Errorf("key must not be empty: %w", err)
+	}
+
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		dbR.logger.Error("download failed", slog.String("error", err.Error()))
@@ -112,6 +117,10 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 }
 
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
+	if err := assert.StringNotEmpty(key); err != nil {
+		return fmt.Errorf("key must not be empty: %w", err)
+	}
+
 	if err := validateDbEntry(dbEntry, dbR); err != nil {
 		dbR.logger.Error("failed to validate dbEntry", slog.String("error", err.Error()))
 		return err
@@ -147,6 +156,10 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 }
 
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
+	if err := assert.StringNotEmpty(key); err != nil {
+		return fmt.Errorf("key must not be empty: %w", err)
+	}
+
 	err := dbR.s3Wrapper.DeleteParquetFile(ctx, key)
 	if err != nil {
 		dbR.logger.Error("failed to delete file", slog.String("error", err.Error()))
@@ -212,6 +225,6 @@ func validateTags(t []string) error {
 }
 
 // generateKey generates a unique key for the database entry based on tags and timestamp
-func generateKey(tag1 string, tag2 string, unixTimestamp string) string {
-	return tag1 + "-" + tag2 + "-" + unixTimestamp
+func generateKey(tags []string, unixTimestamp string) string {
+	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }
