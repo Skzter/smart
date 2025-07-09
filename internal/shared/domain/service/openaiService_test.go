@@ -2,15 +2,17 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
 // Test for Service
-func TestService(t *testing.T) {
+func TestNewService(t *testing.T) {
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
@@ -66,7 +68,7 @@ func TestRequest(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			testName: "Nil-logger",
+			testName: "Nil-Content",
 			content:  nil,
 			request: entity.Request{
 				Prompt:       "Test",
@@ -89,22 +91,35 @@ func TestRequest(t *testing.T) {
 		},
 	}
 
-	// MockOpenAI := mocks.NewMockOpenAI(t)
-
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			service, _ := NewService(logger, 5)
+			mockOpenAiRepo := &mocks.MockOpenAI{}
+			if test.expectedError {
+				mockOpenAiRepo.On("CreateRequest", test.content, test.request).Return(nil, fmt.Errorf("Expected Error"))
+			} else {
+				mockOpenAiRepo.On("CreateRequest", test.content, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
+			}
 
-			resp, _ := service.Request(test.content, test.request)
+			service := OpenAIService{repo: mockOpenAiRepo, logger: logger}
+
+			resp, err := service.Request(test.content, test.request)
 
 			if test.expectedError {
-				if resp != nil {
-					t.Errorf("WARNING: Expected Error, but received request")
+				if err == nil {
+					t.Errorf("WARNING: Expected Error")
 				}
-			} /*else if err != nil {
-				t.Errorf("WARNING: Unexpected Error")
-			}*/
+				if resp != nil {
+					t.Errorf("WARNING: Expected Error")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("WARNING: Unexpected Error")
+				}
+				if resp == nil {
+					t.Errorf("WARNING: Unexpected Error, expected response")
+				}
+			}
 		})
 	}
 }
