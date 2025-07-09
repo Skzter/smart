@@ -10,7 +10,7 @@ import (
 )
 
 // Test for creating new OpenAiRepository
-func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
+func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		name            string
@@ -69,7 +69,7 @@ func TestOpenaiRepository_NewOpenAiRepo(t *testing.T) {
 	}
 }
 
-func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
+func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 	tests := []struct {
 		name          string
 		request       entity.Request
@@ -147,7 +147,7 @@ func TestOpenAiRepo_ValidateRequestEntity(t *testing.T) {
 /*
 // not working, dont know how to mock it
 // Test for creating a request to openai
-func TestOpenaiRepository_CreateRequest(t *testing.T) {
+func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 	tests := []struct {
 		name             string
 		ctx              context.Context
