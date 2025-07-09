@@ -25,8 +25,8 @@ type DatabaseRepository interface {
 }
 
 type databaseRepository struct {
-	s3Wrapper      *service.S3Wrapper
-	parquetWrapper *service.ParquetWrapper[entity.DatabaseEntry]
+	s3Wrapper      service.S3StorageWrapper
+	parquetWrapper service.ParquetFileWrapper[entity.DatabaseEntry]
 	logger         *slog.Logger
 }
 
