@@ -12,7 +12,7 @@ import (
 type LogStamp struct {
 	loggingId string
 	timeStamp time.Time
-	actorId   string // actorID identifies the user OR system responsible for the corresponding action
+	ActorId   string `json:"userId"`
 }
 
 // NewLogStamp creates a new LogStamp with the given actorId.
@@ -24,7 +24,7 @@ func NewLogStamp(actorId string) (LogStamp, error) {
 	return LogStamp{
 		loggingId: uuid.New().String(),
 		timeStamp: time.Now(),
-		actorId:   actorId,
+		ActorId:   actorId,
 	}, nil
 }
 
@@ -36,14 +36,4 @@ func (ls LogStamp) GetLoggingId() string {
 // GetTimeStamp returns the timestamp of the LogStamp.
 func (ls LogStamp) GetTimeStamp() time.Time {
 	return ls.timeStamp
-}
-
-// GetActorId returns the actor ID of the LogStamp.
-func (ls LogStamp) GetActorId() string {
-	return ls.actorId
-}
-
-// ToDTO converts the LogStamp to a LogStampDTO.
-func (LogStamp) ToDTO() LogStampDTO {
-	return LogStampDTO{}
 }
