@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// TestByteLength tests the ByteLength function.
+// It checks that ByteLength returns an error if the byte slice length is outside the given range.
 func TestByteLength(t *testing.T) {
 	tests := []struct {
 		id        int
@@ -33,6 +35,8 @@ func TestByteLength(t *testing.T) {
 	}
 }
 
+// TestStringLength tests the StringLength function.
+// It checks that StringLength returns an error if the string length or allowed values are invalid.
 func TestStringLength(t *testing.T) {
 	tests := []struct {
 		id            int
@@ -65,6 +69,8 @@ func TestStringLength(t *testing.T) {
 	}
 }
 
+// TestStringNotEmpty tests the StringNotEmpty function.
+// It returns an error for empty strings and nil for non-empty strings.
 func TestStringNotEmpty(t *testing.T) {
 	tests := []struct {
 		id    int
@@ -86,6 +92,7 @@ func TestStringNotEmpty(t *testing.T) {
 	}
 }
 
+// BenchmarkStringLength benchmarks the StringLength function.
 func BenchmarkStringLength(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_ = StringLength("hello", 1, 10, &[]string{"foo", "bar", "hello"})

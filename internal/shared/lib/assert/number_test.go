@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// TestNumberBetween tests NumberBetween.
+// It checks that NumberBetween returns an error if the value is not within the given range.
 func TestNumberBetween(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -30,6 +32,8 @@ func TestNumberBetween(t *testing.T) {
 	}
 }
 
+// TestNumberGreaterThan tests NumberGreaterThan.
+// It checks that NumberGreaterThan returns an error if the value is not greater than minValue.
 func TestNumberGreaterThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -54,6 +58,8 @@ func TestNumberGreaterThan(t *testing.T) {
 	}
 }
 
+// TestNumberGreaterOrEqualThan tests NumberGreaterOrEqualThan.
+// It checks that NumberGreaterOrEqualThan returns an error if the value is not greater or equal to minValue.
 func TestNumberGreaterOrEqualThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -77,6 +83,8 @@ func TestNumberGreaterOrEqualThan(t *testing.T) {
 	}
 }
 
+// TestNumberLessThan tests NumberLessThan.
+// It checks that NumberLessThan returns an error if the value is not less than maxValue.
 func TestNumberLessThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -101,6 +109,8 @@ func TestNumberLessThan(t *testing.T) {
 	}
 }
 
+// TestNumberLessOrEqualThan tests NumberLessOrEqualThan.
+// It checks that NumberLessOrEqualThan returns an error if the value is not less or equal to maxValue.
 func TestNumberLessOrEqualThan(t *testing.T) {
 	tests := []struct {
 		id       int
@@ -123,6 +133,8 @@ func TestNumberLessOrEqualThan(t *testing.T) {
 	}
 }
 
+// TestId tests the Id function.
+// It checks that Id returns an error if the value is 0 and nil otherwise.
 func TestId(t *testing.T) {
 	tests := []struct {
 		id    int
@@ -143,6 +155,7 @@ func TestId(t *testing.T) {
 	}
 }
 
+// BenchmarkNumberBetweenInt benchmarks NumberBetween with int values.
 func BenchmarkNumberBetweenInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberBetween(5, 0, 10)
@@ -152,6 +165,7 @@ func BenchmarkNumberBetweenInt(b *testing.B) {
 	}
 }
 
+// BenchmarkNumberBetweenUInt benchmarks NumberBetween with uint values.
 func BenchmarkNumberBetweenUInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberBetween(uint8(5), 0, 10)
@@ -160,6 +174,8 @@ func BenchmarkNumberBetweenUInt(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkNumberBetweenFloat benchmarks NumberBetween with float values.
 func BenchmarkNumberBetweenFloat(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberBetween(float32(5.0), 0.0, 10.0)
@@ -168,6 +184,8 @@ func BenchmarkNumberBetweenFloat(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkNumberLessThanInt benchmarks NumberLessThan with int values.
 func BenchmarkNumberLessThanInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberLessThan(5, 10)
@@ -177,6 +195,7 @@ func BenchmarkNumberLessThanInt(b *testing.B) {
 	}
 }
 
+// BenchmarkNumberLessThanUInt benchmarks NumberLessThan with uint values.
 func BenchmarkNumberLessThanUInt(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberLessThan(uint8(5), 10)
@@ -185,6 +204,8 @@ func BenchmarkNumberLessThanUInt(b *testing.B) {
 		}
 	}
 }
+
+// BenchmarkNumberLessThanFloat benchmarks NumberLessThan with float values.
 func BenchmarkNumberLessThanFloat(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		err := NumberLessThan(float32(5.0), 10.0)
@@ -194,6 +215,7 @@ func BenchmarkNumberLessThanFloat(b *testing.B) {
 	}
 }
 
+// BenchmarkNumberBetweenWorst benchmarks NumberBetween with mixed int/uint types (worst case).
 func BenchmarkNumberBetweenWorst(b *testing.B) {
 	var value uint32 = 5
 	var min int32 = 0

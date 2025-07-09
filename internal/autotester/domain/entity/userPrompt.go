@@ -4,5 +4,5 @@ package entity
 // Created to enforce type safety for RequestForLLM
 type UserPrompt struct {
 	Prompt
-	SessionId
+	SessionId string `json:"conversationId"`
 }

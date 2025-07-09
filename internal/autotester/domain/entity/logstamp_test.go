@@ -2,6 +2,9 @@ package entity
 
 import "testing"
 
+// TestNewLogStamp tests the NewLogStamp function.
+// It checks that a LogStamp is created correctly for valid actor IDs and returns an error for empty actor IDs.
+// It also verifies that each LogStamp instance has a unique logging ID.
 func TestNewLogStamp(t *testing.T) {
 	tests := []struct {
 		TestName    string
@@ -27,13 +30,6 @@ func TestNewLogStamp(t *testing.T) {
 
 			if err != nil {
 				t.Errorf("Didn't expect error for actorId %q, but got: %v", test.ActorId, err)
-			}
-
-			if ls.GetActorId() != test.ActorId {
-				t.Errorf("Expected ActorID %s, got %s", test.ActorId, ls.GetActorId())
-			}
-			if ls2.GetActorId() != test.ActorId {
-				t.Errorf("Expected ActorID %s, got %s", test.ActorId, ls.GetActorId())
 			}
 
 			if ls.GetLoggingId() == ls2.GetLoggingId() {

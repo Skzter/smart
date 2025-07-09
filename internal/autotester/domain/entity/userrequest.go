@@ -1,11 +1,10 @@
 package entity
 
+// UserRequest represents a user request within a session, including prompt and log information.
 type UserRequest struct {
-	SessionId
-	LogStamp   LogStamp
+	SessionId  string   `json:"conversationId"`
+	LogStamp   LogStamp `json:"-"`
 	UserPrompt *UserPrompt
-}
-
-func (UserRequest) ToDTO() UserRequestDTO {
-	return UserRequestDTO{}
+	Message    Message `json:"message"`
+	UserId     string  `json:"userId"`
 }

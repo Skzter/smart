@@ -1,7 +1,6 @@
 package application
 
 import (
-	"context"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -17,7 +16,7 @@ func Run() {
 		panic("logger is nil")
 	}
 
-	cfg, err := config.LoadFromPath(context.Background(), "configs/suproxy.pkl")
+	cfg, err := config.LoadAppConfig()
 	if err != nil {
 		logger.Error(err.Error())
 		panic(err)
