@@ -4,7 +4,7 @@ import repoEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-a
 
 // RequestForLLM represents a request sent to the language model, including prompts and context.
 type RequestForLLM struct {
-	SessionId
+	SessionId          string `json:"conversationId"`
 	RequestId          string
 	SystemPrompt       *SystemPrompt
 	UserPrompt         *UserPrompt
