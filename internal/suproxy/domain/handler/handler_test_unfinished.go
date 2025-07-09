@@ -1,4 +1,4 @@
-package handler_test
+package handler
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ import (
 	mockrepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	suproxyentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
@@ -109,7 +108,7 @@ func BenchmarkPostOfferlist(b *testing.B) {
 	ctrl := setupController(b)
 
 	requestBody := suproxyentity.Request{
-		Header:      []string{"Content-Type: application/json"},
+		Header:      map[string]string{"Content-Type": "application/json"},
 		Prompt:      "Benchmarking offers",
 		Destination: "https://example.com/api/offers",
 		Request:     `{"httpstatuscode":200,"data":{"items":["{}"]}}`,
@@ -138,7 +137,7 @@ func BenchmarkPostOfferlist(b *testing.B) {
 }
 
 // setupController initializes the SuproxyController for testing
-func setupController(tb testing.TB) *handler.SuproxyController {
+func setupController(tb testing.TB) *SuproxyController {
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
 
@@ -160,7 +159,7 @@ func setupController(tb testing.TB) *handler.SuproxyController {
 
 	validator.SetOpenAIService(mockConnector)
 
-	ctrl, err := handler.NewSuproxyController(logger, validator)
+	ctrl, err := NewSuproxyController(logger, cfg)
 	if err != nil {
 		tb.Fatalf("Failed to create controller: %v", err)
 	}

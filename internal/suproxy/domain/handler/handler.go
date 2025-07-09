@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"io"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	validator "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
@@ -35,8 +37,6 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyC
 // PostOfferlist handles the POST request to the /api/v1/Offerlist endpoint
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	request := c.Request
-
-	// s.logger.Info("request:", "req", request.Header)
 
 	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8083/api/v1/offers", request.Body)
 	if err != nil {
@@ -66,12 +66,6 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		}
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Error("Failed to send request", "error", resp.StatusCode)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "3Invalid request body"})
-		return
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		s.logger.Error("Failed to read response body", "error", err)
@@ -81,14 +75,18 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 
 	// !TODO: REMOVE THIS - THIS IS FOR TESTING ONLY
 
-	s.handleRequest(body)
+	supresp := entity.SupplierOfferResponse{
+		HTTPStatusCode: resp.StatusCode,
+		Data:           body,
+	}
+	go s.handleRequest(c, supresp)
 
-	c.Data(200, "application/json", body)
+	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }
 
-func (s *SuproxyController) handleRequest(data []byte) {
+func (s *SuproxyController) handleRequest(ctx context.Context, data entity.SupplierOfferResponse) {
 	val := validator.NewValidator(s.logger, s.config)
-	if err := val.Validate(data); err != nil {
+	if err := val.Validate(ctx, &data); err != nil {
 		s.logger.Error(err.Error())
 	}
 }

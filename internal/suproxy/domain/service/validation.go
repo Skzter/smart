@@ -1,15 +1,20 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
+	"strings"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	repository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
-	suproxyEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
 var (
@@ -57,77 +62,69 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v *Validator) Validate(data []byte) error {
-	if len(data) == 0 {
+func (v *Validator) Validate(ctx context.Context, resp *entity.SupplierOfferResponse) error {
+	if err := assert.NotNil(ctx, resp); err != nil {
+		return err
+	}
+
+	if len(resp.Data) == 0 {
 		v.Logger.Debug("Validation skipped: empty JSON string")
 		return errors.New("empty json string")
 	}
 
-	var resp suproxyEntity.SupplierOfferResponse
-	resp.Data = data
-
-	if err := assert.NotNil(&resp); err != nil {
-		v.Logger.Debug("Validation skipped: Response is nil", "error", err)
-		return err
+	if resp.HTTPStatusCode != http.StatusOK {
+		return errors.New("validation failed: given response is not 200")
 	}
 
 	v.Logger.Debug("Valid HTTP response. Forwarding to OpenAI...", "status", resp.HTTPStatusCode)
 
 	var mappedData []map[string]interface{}
-	if err := json.Unmarshal(data, &mappedData); err != nil {
-		v.Logger.Error("Failed to unmarshal response body", "error", err)
+	if err := json.Unmarshal(resp.Data, &mappedData); err != nil {
 		return err
 	}
 
-	// ctx := context.Background()
+	for i, offer := range mappedData {
+		mOffer, _ := json.Marshal(offer)
+		item := string(mOffer)
 
-	for _, item := range mappedData {
-		str, _ := json.Marshal(item)
-		v.Logger.Info("item", "item", str)
-		/*
-			if i >= v.MaxItems {
-				break
-			}
+		if i >= v.MaxItems {
+			break
+		}
 
-			prompt := strings.TrimSpace(string(item))
-			if prompt == "" {
-				v.Logger.Debug("Skipping empty item", "index", i)
-				continue
-			}
+		item = strings.TrimSpace(item)
+		if item == "" {
+			v.Logger.Debug("Skipping empty item", "index", i)
+			continue
+		}
 
-			req := sharedEntity.Request{
-				Model:        v.Model,
-				Prompt:       prompt,
-				SystemPrompt: v.SystemPromptValidation,
-			}
+		req := sharedEntity.Request{
+			Model:        v.Model,
+			Prompt:       item,
+			SystemPrompt: v.SystemPromptValidation,
+		}
 
-			result, err := v.openAiService.CreateRequest(ctx, req)
-			if err != nil {
-				v.Logger.Error("OpenAI request failed", "index", i, "error", err)
-				return err
-			}
+		result, err := v.openAiService.CreateRequest(ctx, req)
+		if err != nil {
+			return err
+		}
 
-			if strings.TrimSpace(result.Text) == "" {
-				v.Logger.Error("OpenAI returned empty result", "index", i)
-				return ErrEmptyOpenAIResult
-			}
+		if strings.TrimSpace(result.Text) == "" {
+			return fmt.Errorf("%w index: %d", ErrEmptyOpenAIResult, i)
+		}
 
-			var validationResult OpenAIValidationResult
+		var validationResult OpenAIValidationResult
 
-			err = json.Unmarshal([]byte(result.Text), &validationResult)
+		err = json.Unmarshal([]byte(result.Text), &validationResult)
 
-			if err != nil {
-				v.Logger.Error("Failed to parse OpenAI response JSON", "index", i, "error", err, "response", result.Text)
-				return fmt.Errorf("invalid OpenAI response format: %w", err)
-			}
+		if err != nil {
+			return fmt.Errorf("invalid OpenAI response format: %w index: %d", err, i)
+		}
 
-			if !validationResult.Valid {
-				v.Logger.Error("Validation failed", "index", i, "reason", validationResult.Reason)
-				return fmt.Errorf("validation failed for item %d: reasons=%v", i, validationResult.Reason)
-			}
+		if !validationResult.Valid {
+			return fmt.Errorf("validation failed for item %d: reasons=%v", i, validationResult.Reason)
+		}
 
-			v.Logger.Debug("OpenAI response received", "index", i, "response", result.Text)
-		*/
+		v.Logger.Debug("OpenAI response received", "index", i, "response", result.Text)
 	}
 
 	return nil

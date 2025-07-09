@@ -1,7 +1,6 @@
-package service_test
+package service
 
 import (
-	"encoding/json"
 	"log/slog"
 	"os"
 	"strings"
@@ -9,10 +8,9 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	mockrepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
 // TestValidatorValidate tests the Validate method of the Validator service
@@ -29,11 +27,11 @@ func TestValidatorValidate(t *testing.T) {
 		MaxItemsPerValidation: 10,
 	}
 
-	validator := service.NewValidator(logger, cfg)
+	validator := NewValidator(logger, cfg)
 
 	tests := []struct {
 		name            string
-		input           string
+		input           *entity.SupplierOfferResponse
 		expectCall      bool
 		expectedContent string
 		mockResponse    string
@@ -41,34 +39,29 @@ func TestValidatorValidate(t *testing.T) {
 	}{
 		{
 			name:        "empty JSON string",
-			input:       "",
+			input:       nil,
 			expectCall:  false,
 			expectError: true,
 		},
 		{
-			name:        "non-200 status",
-			input:       `{"httpstatuscode":404}`,
+			name: "non-200 status",
+			input: &entity.SupplierOfferResponse{
+				HTTPStatusCode: 200,
+				Data:           []byte{},
+			},
 			expectCall:  false,
 			expectError: true,
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
-			input: func() string {
-				vr := entity.SupplierOfferResponse{
-					HTTPStatusCode: 200,
-					Data: entity.SupplierOfferData{
-						Items: []json.RawMessage{
-							json.RawMessage(`{
-								"duration": 5,
-								"departuredate": "2025-07-01",
-								"returndate": "2025-07-10"
-							}`),
-						},
-					},
-				}
-				b, _ := json.Marshal(vr)
-				return string(b)
-			}(),
+			input: &entity.SupplierOfferResponse{
+				HTTPStatusCode: 200,
+				Data: []byte(`{
+					"duration": 5,
+					"departuredate": "2025-07-01",
+					"returndate": "2025-07-10",
+					}`),
+			},
 			expectCall:      true,
 			expectedContent: "duration\":5",
 			mockResponse:    `{"valid":true,"reason":[]}`,
@@ -76,24 +69,14 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
-			input: func() string {
-				vr := entity.SupplierOfferResponse{
-					HTTPStatusCode: 200,
-					Data: entity.SupplierOfferData{
-						Items: []json.RawMessage{
-							json.RawMessage(`{
-								"duration": 7,
-								"departuredate": "2025-08-01",
-								"returndate": "2025-08-10"
-							}`),
-						},
-					},
-				}
-
-				b, _ := json.Marshal(vr)
-
-				return string(b)
-			}(),
+			input: &entity.SupplierOfferResponse{
+				HTTPStatusCode: 200,
+				Data: []byte(`{
+						"duration": 7,
+						"departuredate": "2025-08-01",
+						"returndate": "2025-08-10"
+						}`),
+			},
 			expectCall:      true,
 			expectedContent: "duration\":7",
 			mockResponse:    `{"valid":false,"reason":["missing_hotelid"]}`,
@@ -101,23 +84,14 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
-			input: func() string {
-				vr := entity.SupplierOfferResponse{
-					HTTPStatusCode: 200,
-					Data: entity.SupplierOfferData{
-						Items: []json.RawMessage{
-							json.RawMessage(`{
-								"duration": 9,
-								"departuredate": "2025-09-01",
-								"returndate": "2025-09-10"
-							}`),
-						},
-					},
-				}
-
-				b, _ := json.Marshal(vr)
-				return string(b)
-			}(),
+			input: &entity.SupplierOfferResponse{
+				HTTPStatusCode: 200,
+				Data: []byte(`{
+						"duration": 9,
+						"departuredate": "2025-09-01",
+						"returndate": "2025-09-10"
+					}`),
+			},
 			expectCall:      true,
 			expectedContent: "duration\":9",
 			mockResponse:    `invalid json`,
@@ -134,12 +108,12 @@ func TestValidatorValidate(t *testing.T) {
 					On("CreateRequest", mock.Anything, mock.MatchedBy(func(req entity.Request) bool {
 						return strings.Contains(req.Prompt, tt.expectedContent)
 					})).
-					Return(&entity.Response{Text: tt.mockResponse}, nil).
+					Return(&entity.Response{Response: tt.mockResponse}, nil).
 					Once()
 			}
 
 			validator.SetOpenAIService(mockConnector)
-			err := validator.Validate(tt.input)
+			err := validator.Validate(t.Context(), tt.input)
 
 			if (err != nil) != tt.expectError {
 				t.Errorf("Validate() error = %v, expectError %v", err, tt.expectError)
