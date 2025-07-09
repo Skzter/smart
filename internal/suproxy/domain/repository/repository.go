@@ -42,7 +42,7 @@ func NewDatabaseRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapp
 	}, nil
 }
 
-// CreateRequest creates, converts JSON to parquet and uploads request to database
+// CreateRequest writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
 	if err := validateDbEntry(dbEntry, dbR); err != nil {
 		dbR.logger.Error("failed to validate dbEntry", slog.String("error", err.Error()))
@@ -58,22 +58,20 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 	dbR.logger.Info("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	metadata := map[string]string{
-		"created": string(rune(time.Now().Unix())),
-	}
+		"created": fmt.Sprintf("%d", time.Now().Unix())}
 
 	key := generateKey(dbEntry.Tags, metadata["created"])
 
-	// Upload file (automatically adds .parquet extension if missing)
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
 		dbR.logger.Error("upload failed", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to upload existing parquet: %w", err)
 	}
 
 	return nil
 }
 
-// ReadRequest reads a request from the database (access through key)
+// ReadRequest retrieves a request from the database by its key, downloading the Parquet file and reading its content.
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return nil, fmt.Errorf("key must not be empty: %w", err)
@@ -82,7 +80,7 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		dbR.logger.Error("download failed", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
 	}
 	dbR.logger.Info("file downloaded",
 		slog.Int("size", len(parquetData)),
@@ -91,13 +89,14 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 	dbEntries, err := dbR.parquetWrapper.ReadStructsFromParquet(parquetData)
 	if err != nil {
 		dbR.logger.Error("failed to read parquet data", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("failed to read parquet data: %w", err)
 	}
 	dbR.logger.Info("events read from parquet", slog.Int("count", len(dbEntries)))
 	firstEntry := dbEntries[0]
 	return &firstEntry, nil
 }
 
+// UpdateRequest updates an existing request in the database by downloading the Parquet file, modifying its content, and re-uploading it.
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty: %w", err)
@@ -105,38 +104,38 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 	if err := validateDbEntry(dbEntry, dbR); err != nil {
 		dbR.logger.Error("failed to validate dbEntry", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
 
 	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		dbR.logger.Error("download failed", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to download data: %w", err)
 	}
 
 	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(dbEntry)
 	if err != nil {
 		dbR.logger.Error("failed to write parquet", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to write parquet: %w", err)
 	}
 
 	dbR.logger.Info("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	metadata := map[string]string{
 		"created": string(oldmetadata["created"]),
-		"updated": string(rune(time.Now().Unix())),
+		"updated": fmt.Sprintf("%d", time.Now().Unix()),
 	}
 
-	// overwrites old dbEntry
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
 		dbR.logger.Error("upload failed", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to upload file: %w", err)
 	}
 
 	return nil
 }
 
+// DeleteRequest deletes a request from the database by removing the Parquet file associated with the given key.
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty: %w", err)
@@ -145,7 +144,7 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 	err := dbR.s3Wrapper.DeleteParquetFile(ctx, key)
 	if err != nil {
 		dbR.logger.Error("failed to delete file", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
 	dbR.logger.Info("file deleted successfully")
@@ -153,24 +152,24 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 	return nil
 }
 
-// validateDbEntry validates the dbEntry and logs errors if validation fails
+// validateDbEntry validates the database entry before processing it
 func validateDbEntry(dbEntry entity.DatabaseEntry, dbR *databaseRepository) error {
 	if err := validateRequest(dbEntry.Request); err != nil {
 		dbR.logger.Error("failed to validate request", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed validate request: %w", err)
 	}
 	if err := validateResponse(dbEntry.Response); err != nil {
 		dbR.logger.Error("failed to validate response", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed validate response: %w", err)
 	}
 	if err := validateTags(dbEntry.Tags); err != nil {
 		dbR.logger.Error("failed to validate tags", slog.String("error", err.Error()))
-		return err
+		return fmt.Errorf("failed validate tags: %w", err)
 	}
 	return nil
 }
 
-// validateRequest validates request from dbEntry
+// validateRequest validates the request part of the database entry
 func validateRequest(rq entity.Request) error {
 	if len(rq.Header) == 0 {
 		return fmt.Errorf("header must not be empty")
@@ -190,7 +189,7 @@ func validateRequest(rq entity.Request) error {
 	return nil
 }
 
-// validateResponse validates response from dbEntry
+// validateResponse validates the response part of the database entry
 func validateResponse(rp entity.Response) error {
 	if err := assert.StringNotEmpty(rp.Response); err != nil {
 		return fmt.Errorf("response must not be empty: %w", err)
@@ -198,7 +197,7 @@ func validateResponse(rp entity.Response) error {
 	return nil
 }
 
-// validateTags validates tags from dbEntry
+// validateTags validates the tags associated with the database entry
 func validateTags(t []string) error {
 	if len(t) == 0 {
 		return fmt.Errorf("tags must not be empty")
@@ -206,7 +205,7 @@ func validateTags(t []string) error {
 	return nil
 }
 
-// generateKey generates a unique key for the database entry based on tags and timestamp
+// generateKey creates a unique key for the database entry based on its tags and a Unix timestamp
 func generateKey(tags []string, unixTimestamp string) string {
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }

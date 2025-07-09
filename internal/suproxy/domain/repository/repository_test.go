@@ -15,12 +15,15 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
+// newTestLogger creates a new logger for testing purposes
 func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
+// testKey is a sample key used for testing purposes
 const testKey = "tag1-tag2-123456"
 
+// getValidEntry returns a valid DatabaseEntry for testing
 func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
 		Request: entity.Request{
@@ -80,10 +83,10 @@ func TestNewDatabaseRepository(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewTestCaseStorageRepository() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewDatabaseRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && repo == nil {
-				t.Errorf("NewTestCaseStorageRepository() returned nil repository")
+				t.Errorf("NewDatabaseRepository() returned nil repository")
 			}
 		})
 	}
@@ -285,11 +288,14 @@ func TestDeleteRequest(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateDbEntry tests the validateDbEntry function
 func TestValidateDbEntry(t *testing.T) {
 	tests := []struct {
 		name        string
 		entry       entity.DatabaseEntry
 		expectError bool
+		errorText   string
 	}{
 		{
 			name: "valid entry",
@@ -306,6 +312,21 @@ func TestValidateDbEntry(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name: "invalid request - empty header",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      []string{},
+					Prompt:      "prompt",
+					Destination: "http://example.com",
+					Request:     "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     []string{"tag1"},
+			},
+			expectError: true,
+			errorText:   "header must not be empty",
+		},
+		{
 			name: "invalid request - empty prompt",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
@@ -318,6 +339,7 @@ func TestValidateDbEntry(t *testing.T) {
 				Tags:     []string{"tag1"},
 			},
 			expectError: true,
+			errorText:   "prompt must not be empty",
 		},
 		{
 			name: "invalid response - empty response",
@@ -332,6 +354,7 @@ func TestValidateDbEntry(t *testing.T) {
 				Tags:     []string{"tag1"},
 			},
 			expectError: true,
+			errorText:   "response must not be empty",
 		},
 		{
 			name: "invalid tags - empty list",
@@ -346,18 +369,20 @@ func TestValidateDbEntry(t *testing.T) {
 				Tags:     []string{},
 			},
 			expectError: true,
+			errorText:   "tags must not be empty",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			dbRepo := &databaseRepository{logger: logger} // nur Logger notwendig
+			dbRepo := &databaseRepository{logger: logger}
 
 			err := validateDbEntry(tt.entry, dbRepo)
 
 			if tt.expectError {
 				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorText)
 			} else {
 				assert.NoError(t, err)
 			}
