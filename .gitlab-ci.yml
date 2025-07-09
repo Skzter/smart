@@ -116,7 +116,10 @@ unit_test_go:
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
     reports:
-      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: web/coverage/cobertura-coverage-go.xml
+      junit: web/coverage/junit.xml
     expire_in: 1 week
     
 frontend_test:
