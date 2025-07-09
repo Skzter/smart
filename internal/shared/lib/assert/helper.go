@@ -1,4 +1,4 @@
-//nolint:gocritic,gocyclo,gosec,funlen
+//nolint:gosec,dupl,gocyclo
 package assert
 
 import (
@@ -214,8 +214,7 @@ func checkArrayLength(value interface{}, minValue *int, maxValue *int) error {
 }
 
 func mapLength(value interface{}) (int, error) {
-	switch reflect.TypeOf(value).Kind() {
-	case reflect.Map:
+	if reflect.TypeOf(value).Kind() == reflect.Map {
 		return reflect.ValueOf(value).Len(), nil
 	}
 
