@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
-	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -32,24 +30,8 @@ type databaseRepository struct {
 }
 
 // NewDatabaseRepository creates a new instance of DatabaseRepository
-func NewDatabaseRepository(logger *slog.Logger) (DatabaseRepository, error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, err
-	}
-
-	s3Config := wrapperEntity.S3Config{
-		Bucket:    "suproxy",
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
-	}
-
-	s3Wrapper, err := service.NewS3Wrapper(logger, s3Config)
-	if err != nil {
-		return nil, err
-	}
-
-	parquetWrapper, err := service.NewParquetWrapper[entity.DatabaseEntry](logger, service.DefaultParquetConfig())
-	if err != nil {
+func NewDatabaseRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, parquetWrapper service.ParquetFileWrapper[entity.DatabaseEntry]) (DatabaseRepository, error) {
+	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
 		return nil, err
 	}
 

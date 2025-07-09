@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
@@ -30,6 +31,61 @@ func getValidEntry() entity.DatabaseEntry {
 		},
 		Response: entity.Response{Response: "OK"},
 		Tags:     []string{"tag1", "tag2"},
+	}
+}
+
+// TestNewDatabaseRepository tests the creation of a new database repository
+func TestNewDatabaseRepository(t *testing.T) {
+	_, mockS3, mockParquet := setupMocks(t)
+	logger := newTestLogger()
+
+	tests := []struct {
+		name           string
+		logger         *slog.Logger
+		s3Wrapper      service.S3StorageWrapper
+		parquetWrapper service.ParquetFileWrapper[entity.DatabaseEntry]
+		wantErr        bool
+	}{
+		{
+			name:           "all not nil",
+			logger:         logger,
+			s3Wrapper:      mockS3,
+			parquetWrapper: mockParquet,
+			wantErr:        false,
+		},
+		{
+			name:           "nil logger",
+			logger:         nil,
+			s3Wrapper:      mockS3,
+			parquetWrapper: mockParquet,
+			wantErr:        true,
+		},
+		{
+			name:           "nil s3Wrapper",
+			logger:         logger,
+			s3Wrapper:      nil,
+			parquetWrapper: mockParquet,
+			wantErr:        true,
+		},
+		{
+			name:           "nil parquetWrapper",
+			logger:         logger,
+			s3Wrapper:      mockS3,
+			parquetWrapper: nil,
+			wantErr:        true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
+			if (err != nil) != test.wantErr {
+				t.Errorf("NewTestCaseStorageRepository() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if !test.wantErr && repo == nil {
+				t.Errorf("NewTestCaseStorageRepository() returned nil repository")
+			}
+		})
 	}
 }
 
