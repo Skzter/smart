@@ -8,6 +8,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
+// GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
+// It uses the configured AutoPlaywrightPrompt as system prompt and gpt-4-1106-preview as model.
 func GeneratePrompt(ctx context.Context, service *service.OpenAIService, config *config.Config, userPrompt string, sessionID string) (string, error) {
 	req := entity.Request{
 		Prompt:       userPrompt,
