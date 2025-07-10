@@ -128,7 +128,7 @@ tasks:
     cmds:
       - echo "Running unit tests with coverage"
       - mkdir -p web/coverage
-      - gotestsum --junitfile web/coverage/junit.xml -- -coverprofile=coverage.out -covermode=count ./...
+      - go tool gotestsum --junitfile web/coverage/junit.xml -- -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
     #  - gocoverageplus -coverprofile=coverage.out -o web/coverage/cobertura.xml
       - echo "Quality Gate checking test coverage is above threshold"
