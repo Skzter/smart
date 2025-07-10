@@ -27,5 +27,8 @@ func NewTestcaseStorageService(logger *slog.Logger, repo repository.TestCaseStor
 }
 
 func (t *testcaseStorageService) SaveTestCase(ctx context.Context, testCase *entity.TestCase) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return err
+	}
 	return t.repo.Create(ctx, testCase)
 }

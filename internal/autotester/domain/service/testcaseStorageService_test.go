@@ -55,22 +55,32 @@ func TestNewTestcaseStorageService(t *testing.T) {
 }
 
 func TestSaveTestCase(t *testing.T) {
-	ctx := context.Background()
 	logger := slog.Default()
-	testCase := &entity.TestCase{}
 
 	tests := []struct {
 		name      string
+		context   context.Context
+		testCase  entity.TestCase
 		createErr error
 		wantErr   bool
 	}{
 		{
 			name:      "success",
+			context:   context.Background(),
+			testCase:  entity.TestCase{},
 			createErr: nil,
 			wantErr:   false,
 		},
 		{
+			name:      "nil context",
+			context:   nil,
+			testCase:  entity.TestCase{},
+			createErr: nil,
+			wantErr:   true,
+		},
+		{
 			name:      "repo returns error",
+			context:   context.Background(),
 			createErr: errors.New("repo error"),
 			wantErr:   true,
 		},
@@ -79,13 +89,13 @@ func TestSaveTestCase(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := &mocks.MockTestCaseStorageRepository{}
-			mockRepo.On("Create", mock.Anything, testCase).Return(test.createErr)
+			mockRepo.On("Create", mock.Anything, mock.Anything).Return(test.createErr)
 
 			svc, err := NewTestcaseStorageService(logger, mockRepo)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			err = svc.SaveTestCase(ctx, testCase)
+			err = svc.SaveTestCase(test.context, &test.testCase)
 			if (err != nil) != test.wantErr {
 				t.Errorf("SaveTestCase() error = %v, wantErr %v", err, test.wantErr)
 			}
