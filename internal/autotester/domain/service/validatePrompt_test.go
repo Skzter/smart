@@ -9,7 +9,8 @@ import (
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
-func TestNewGeneratePromptService(t *testing.T) {
+//nolint:dupl
+func TestNewValidatePromptService(t *testing.T) {
 	service := &mocks.MockOpenAIService{}
 	logger := slog.Default()
 	cfg := config.Config{}
@@ -53,12 +54,12 @@ func TestNewGeneratePromptService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewGeneratePromptService(test.service, test.config, test.logger)
+			repo, err := NewValidatePromptService(test.service, test.config, test.logger)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewGeneratePromptService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewValidatePromptService() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && repo == nil {
-				t.Errorf("NewGeneratePromptService() returned nil service")
+				t.Errorf("NewValidatePromptService() returned nil service")
 			}
 		})
 	}

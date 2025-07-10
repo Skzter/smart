@@ -14,14 +14,14 @@ import (
 
 // ValidatePromptService provides functionality to validate user prompts using OpenAI.
 type ValidatePromptService struct {
-	service *service.OpenAIService
+	service service.OpenAIService
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewValidatePromptService creates a new ValidatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewValidatePromptService(service *service.OpenAIService, config *config.Config, logger *slog.Logger) (*ValidatePromptService, error) {
+func NewValidatePromptService(service service.OpenAIService, config *config.Config, logger *slog.Logger) (*ValidatePromptService, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
