@@ -35,7 +35,7 @@ func SetupRoutes(cfg *config.Config) {
 
 	router.StaticFS("/", http.FS(staticFS))
 
-	err = router.Run(cfg.Port)
+	err = router.Run(":" + cfg.Port)
 	if err != nil {
 		logger.Error(err.Error())
 		return

@@ -11,7 +11,6 @@ require (
 	github.com/parquet-go/parquet-go v0.25.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/gin-gonic/gin v1.10.1
 )
 
 require (
@@ -229,6 +228,7 @@ require (
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
+	github.com/sashabaranov/go-openai v1.40.4 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.28.0 // indirect
 	github.com/securego/gosec/v2 v2.22.4 // indirect

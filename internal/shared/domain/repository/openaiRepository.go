@@ -6,30 +6,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
-	"github.com/openai/openai-go/packages/param"
-	"github.com/openai/openai-go/responses"
+	openai "github.com/sashabaranov/go-openai"
 
+	autoentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
-
-type OpenAIClient interface {
-	Responses() *responses.ResponseService
-}
-
-type openaiclient struct {
-	client openai.Client
-}
-
-func NewOpenAIClient(client openai.Client) OpenAIClient {
-	return openaiclient{client}
-}
-func (oc openaiclient) Responses() *responses.ResponseService {
-	return &oc.client.Responses
-}
 
 // OpenAI defines methods for interacting with OpenAI API.
 type OpenAI interface {
@@ -41,9 +24,10 @@ type OpenAI interface {
 
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
-	logger  *slog.Logger // logger for Errors and Responses
-	client  OpenAIClient
-	timeout int // timeout in seconds
+	logger   *slog.Logger // logger for Errors and Responses
+	client   openai.Client
+	messages []autoentity.Message
+	timeout  int // timeout in seconds
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
@@ -57,11 +41,10 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 	}
 
 	return &openAI{
-		logger: logger,
-		client: NewOpenAIClient(openai.NewClient(
-			option.WithAPIKey(build.OpenAIKey),
-		)),
-		timeout: timeout,
+		logger:   logger,
+		client:   *openai.NewClient(build.OpenAIKey),
+		messages: []autoentity.Message{},
+		timeout:  timeout,
 	}, nil
 }
 
@@ -76,15 +59,27 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, err
 	}
 
-	openaiRequest := responses.ResponseNewParams{
-		Input: responses.ResponseNewParamsInputUnion{
-			OfString: param.NewOpt(request.Prompt),
+	// add Request from user to messages of repo
+	qa.messages = append(qa.messages, autoentity.Message{
+		Actor:       openai.ChatMessageRoleUser,
+		MessageBody: request.Prompt,
+	})
+
+	// create history with sys prompt
+	chatHistory := []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: request.SystemPrompt,
 		},
-		Instructions: param.NewOpt(request.SystemPrompt),
-		Model:        request.Model,
 	}
-	if request.SessionID != "" {
-		openaiRequest.PreviousResponseID = param.NewOpt(request.SessionID)
+
+	// add all messages to history for conversation state
+	for _, message := range qa.messages {
+		msg := openai.ChatCompletionMessage{
+			Role:    message.Actor,
+			Content: message.MessageBody,
+		}
+		chatHistory = append(chatHistory, msg)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(qa.timeout))
@@ -94,25 +89,33 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, fmt.Errorf("failed to generate new context")
 	}
 
-	resp, err := qa.client.Responses().New(ctx, openaiRequest)
+	resp, err := qa.client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model:    request.Model,
+			Messages: chatHistory,
+		})
 
 	if err != nil {
 		err := fmt.Errorf("openai request: %w", err)
 		qa.logger.Error(err.Error())
 		return nil, err
 	}
-	if resp.Error.Message != "" {
-		err := fmt.Errorf("openai api error: %s", resp.Error.Message)
-		qa.logger.Error(err.Error())
-		return nil, err
-	}
-	text := resp.OutputText()
+
+	// first choice of all responses
+	text := resp.Choices[0].Message.Content
 	if text == "" {
 		return nil, fmt.Errorf("openai api error: Response contains no message")
 	}
 
+	// append response to message array of repo
+	qa.messages = append(qa.messages, autoentity.Message{
+		Actor:       openai.ChatMessageRoleAssistant,
+		MessageBody: text,
+	})
+
 	return &entity.Response{
-		Text:      resp.OutputText(),
+		Text:      text,
 		SessionID: resp.ID,
 	}, nil
 }
