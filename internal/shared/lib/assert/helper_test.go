@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+const valueString = "hello"
+
 // TestCheckInt tests the checkNumber function with various int types.
 // It verifies correct error handling for different value, min, and max combinations.
 func TestCheckInt(t *testing.T) {
@@ -78,7 +80,6 @@ func TestCheckInt(t *testing.T) {
 	}
 
 	// non integer
-	const valueString = "hello"
 	var minValue interface{} = 1
 	var maxValue interface{} = 10
 
@@ -172,7 +173,6 @@ func TestCheckUInt(t *testing.T) {
 	}
 
 	// non integer
-	const valueString = "hello"
 	var minValue interface{} = uint(1)
 	var maxValue interface{} = uint(10)
 
@@ -236,7 +236,6 @@ func TestCheckFloat(t *testing.T) {
 	}
 
 	// non float
-	const valueString = "hello"
 	var minValue interface{} = float64(1)
 	var maxValue interface{} = float64(10)
 
@@ -286,7 +285,6 @@ func TestCheckClosedBoundaries(t *testing.T) {
 	}
 
 	// non float
-	const valueString = "hello"
 	var minValue interface{} = float64(1)
 	var maxValue interface{} = float64(10)
 
