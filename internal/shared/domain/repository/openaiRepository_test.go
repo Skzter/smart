@@ -145,13 +145,13 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 }
 
 /*
-// not working, dont know how to mock it
 // Test for creating a request to openai
 func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 	tests := []struct {
 		name             string
 		ctx              context.Context
 		request          entity.Request
+		openaiResponse   string
 		expectedResponse *entity.Response
 		expectedError    bool
 	}{
@@ -164,6 +164,7 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
+			openaiResponse: "korrekt",
 			expectedResponse: &entity.Response{
 				Text:      "answer from llm",
 				SessionID: "123",
@@ -175,12 +176,15 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	timeout := 5
 
+	mockClient := mocks.NewMockOpenAIClient(t)
 	repo := openAI{
 		logger:  logger,
-		client:  mocks.NewMockOpenAIClient(t),
+		client:  mockClient,
 		timeout: timeout,
+		messages: nil,
 	}
 	for _, test := range tests {
+		mockClient.On("CreateChatCompletion", test.ctx, test.request).Return(test.openaiResponse)
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			resp, err := repo.CreateRequest(test.ctx, test.request)

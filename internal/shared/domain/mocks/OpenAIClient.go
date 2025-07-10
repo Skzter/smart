@@ -5,7 +5,9 @@
 package mocks
 
 import (
-	"github.com/openai/openai-go/responses"
+	"context"
+
+	"github.com/sashabaranov/go-openai"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -36,48 +38,68 @@ func (_m *MockOpenAIClient) EXPECT() *MockOpenAIClient_Expecter {
 	return &MockOpenAIClient_Expecter{mock: &_m.Mock}
 }
 
-// Responses provides a mock function for the type MockOpenAIClient
-func (_mock *MockOpenAIClient) Responses() *responses.ResponseService {
-	ret := _mock.Called()
+// CreateChatCompletion provides a mock function for the type MockOpenAIClient
+func (_mock *MockOpenAIClient) CreateChatCompletion(context1 context.Context, chatCompletionRequest openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error) {
+	ret := _mock.Called(context1, chatCompletionRequest)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Responses")
+		panic("no return value specified for CreateChatCompletion")
 	}
 
-	var r0 *responses.ResponseService
-	if returnFunc, ok := ret.Get(0).(func() *responses.ResponseService); ok {
-		r0 = returnFunc()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*responses.ResponseService)
-		}
+	var r0 openai.ChatCompletionResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)); ok {
+		return returnFunc(context1, chatCompletionRequest)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(context.Context, openai.ChatCompletionRequest) openai.ChatCompletionResponse); ok {
+		r0 = returnFunc(context1, chatCompletionRequest)
+	} else {
+		r0 = ret.Get(0).(openai.ChatCompletionResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, openai.ChatCompletionRequest) error); ok {
+		r1 = returnFunc(context1, chatCompletionRequest)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockOpenAIClient_Responses_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Responses'
-type MockOpenAIClient_Responses_Call struct {
+// MockOpenAIClient_CreateChatCompletion_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateChatCompletion'
+type MockOpenAIClient_CreateChatCompletion_Call struct {
 	*mock.Call
 }
 
-// Responses is a helper method to define mock.On call
-func (_e *MockOpenAIClient_Expecter) Responses() *MockOpenAIClient_Responses_Call {
-	return &MockOpenAIClient_Responses_Call{Call: _e.mock.On("Responses")}
+// CreateChatCompletion is a helper method to define mock.On call
+//   - context1 context.Context
+//   - chatCompletionRequest openai.ChatCompletionRequest
+func (_e *MockOpenAIClient_Expecter) CreateChatCompletion(context1 interface{}, chatCompletionRequest interface{}) *MockOpenAIClient_CreateChatCompletion_Call {
+	return &MockOpenAIClient_CreateChatCompletion_Call{Call: _e.mock.On("CreateChatCompletion", context1, chatCompletionRequest)}
 }
 
-func (_c *MockOpenAIClient_Responses_Call) Run(run func()) *MockOpenAIClient_Responses_Call {
+func (_c *MockOpenAIClient_CreateChatCompletion_Call) Run(run func(context1 context.Context, chatCompletionRequest openai.ChatCompletionRequest)) *MockOpenAIClient_CreateChatCompletion_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run()
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 openai.ChatCompletionRequest
+		if args[1] != nil {
+			arg1 = args[1].(openai.ChatCompletionRequest)
+		}
+		run(
+			arg0,
+			arg1,
+		)
 	})
 	return _c
 }
 
-func (_c *MockOpenAIClient_Responses_Call) Return(responseService *responses.ResponseService) *MockOpenAIClient_Responses_Call {
-	_c.Call.Return(responseService)
+func (_c *MockOpenAIClient_CreateChatCompletion_Call) Return(chatCompletionResponse openai.ChatCompletionResponse, err error) *MockOpenAIClient_CreateChatCompletion_Call {
+	_c.Call.Return(chatCompletionResponse, err)
 	return _c
 }
 
-func (_c *MockOpenAIClient_Responses_Call) RunAndReturn(run func() *responses.ResponseService) *MockOpenAIClient_Responses_Call {
+func (_c *MockOpenAIClient_CreateChatCompletion_Call) RunAndReturn(run func(context1 context.Context, chatCompletionRequest openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)) *MockOpenAIClient_CreateChatCompletion_Call {
 	_c.Call.Return(run)
 	return _c
 }

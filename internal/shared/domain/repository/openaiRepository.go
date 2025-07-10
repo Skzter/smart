@@ -22,10 +22,15 @@ type OpenAI interface {
 	CreateRequest(context.Context, entity.Request) (*entity.Response, error)
 }
 
+type OpenAIClient interface {
+	// function we use on the client
+	CreateChatCompletion(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
+}
+
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
 	logger   *slog.Logger // logger for Errors and Responses
-	client   openai.Client
+	client   OpenAIClient
 	messages []autoentity.Message
 	timeout  int // timeout in seconds
 }
@@ -42,7 +47,7 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 
 	return &openAI{
 		logger:   logger,
-		client:   *openai.NewClient(build.OpenAIKey),
+		client:   openai.NewClient(build.OpenAIKey),
 		messages: []autoentity.Message{},
 		timeout:  timeout,
 	}, nil
