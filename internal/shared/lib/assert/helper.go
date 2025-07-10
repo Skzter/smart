@@ -1,4 +1,4 @@
-//nolint:gosec
+//nolint:gocritic
 package assert
 
 import (
@@ -26,37 +26,55 @@ func convertToInt64(value interface{}) (int64, bool) {
 	return 0, false
 }
 
+//nolint:gosec
 func convertToUint64(value interface{}) (uint64, bool) {
 	if v, ok := value.(uint8); ok {
 		return uint64(v), true
 	}
-	if v, ok := value.(int); ok {
-		return uint64(v), true //lint:ignore G115 is only a helper
-	}
-	if v, ok := value.(uint32); ok {
+	if v, ok := value.(uint16); ok {
 		return uint64(v), true
 	}
-	if v, ok := value.(uint); ok {
+	if v, ok := value.(uint32); ok {
 		return uint64(v), true
 	}
 	if v, ok := value.(uint64); ok {
 		return v, true
 	}
-	if v, ok := value.(uint16); ok {
+	if v, ok := value.(uint); ok {
 		return uint64(v), true
 	}
-	if v, ok := value.(int64); ok {
-		return uint64(v), true //lint:ignore G115 is only a helper
+
+	if v, ok := value.(int); ok {
+		if v < 0 {
+			return 0, false
+		}
+		return uint64(v), true
 	}
 	if v, ok := value.(int8); ok {
-		return uint64(v), true //lint:ignore G115 is only a helper
+		if v < 0 {
+			return 0, false
+		}
+		return uint64(v), true
 	}
 	if v, ok := value.(int16); ok {
+		if v < 0 {
+			return 0, false
+		}
 		return uint64(v), true
 	}
 	if v, ok := value.(int32); ok {
+		if v < 0 {
+			return 0, false
+		}
 		return uint64(v), true
 	}
+	if v, ok := value.(int64); ok {
+		if v < 0 {
+			return 0, false
+		}
+		return uint64(v), true
+	}
+
 	return 0, false
 }
 
