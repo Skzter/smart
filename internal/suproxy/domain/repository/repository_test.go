@@ -375,10 +375,7 @@ func TestValidateDbEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			dbRepo := &databaseRepository{logger: logger}
-
-			err := validateDbEntry(tt.entry, dbRepo)
+			err := validateDbEntry(tt.entry)
 
 			if tt.expectError {
 				assert.Error(t, err)
