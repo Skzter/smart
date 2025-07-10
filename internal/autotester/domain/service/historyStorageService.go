@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -18,6 +19,12 @@ type historyStorageService struct {
 }
 
 func NewHistoryStorageService(logger *slog.Logger, repo repository.SessionSummaryStorageRepository) HistoryStorageService {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	if repo == nil {
+		log.Fatal("SessionSummaryStorageRepository must not be nil")
+	}
 	return &historyStorageService{
 		logger: logger,
 		repo:   repo,
@@ -26,7 +33,7 @@ func NewHistoryStorageService(logger *slog.Logger, repo repository.SessionSummar
 
 // Method called by the handler
 func (s *historyStorageService) SaveHistory(ctx context.Context, summary entity.SessionSummary) error {
-	if s.repo == nil {
+	if context.Context. == nil {
 		return fmt.Errorf("SessionSummaryStorageRepository is not set")
 	}
 	if err := s.repo.Create(ctx, &summary); err != nil {
