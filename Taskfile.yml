@@ -127,10 +127,9 @@ tasks:
       TESTCOVERAGE_THRESHOLD: 30
     cmds:
       - echo "Running unit tests with coverage"
-      - mkdir -p web/coverage
-      - go tool gotestsum --junitfile web/coverage/junit.xml -- -coverprofile=coverage.out -covermode=count ./...
+      - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
-      - gocoverageplus -coverprofile=coverage.out -o web/coverage/cobertura.xml
+      - go tool gocoverageplus --input=coverage.out -o cobertura.xml
       - echo "Quality Gate checking test coverage is above threshold"
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
       - |

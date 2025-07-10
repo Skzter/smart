@@ -119,8 +119,8 @@ unit_test_go:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: web/coverage/cobertura-coverage.xml
-      junit: web/coverage/junit.xml
+        path: cobertura-coverage.xml
+      junit: junit.xml
     expire_in: 1 week
     
 frontend_test:
