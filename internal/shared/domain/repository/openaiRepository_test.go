@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	// autotentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	// "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
@@ -147,11 +148,16 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 /*
 // Test for creating a request to openai
 func TestOpenaiRepositoryCreateRequest(t *testing.T) {
+	type openaiResponse struct {
+		method   string
+		response string
+	}
 	tests := []struct {
 		name             string
 		ctx              context.Context
 		request          entity.Request
-		openaiResponse   string
+		messages	 []autotentity.Message
+		openaiResponse   openaiResponse
 		expectedResponse *entity.Response
 		expectedError    bool
 	}{
@@ -164,9 +170,13 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
-			openaiResponse: "korrekt",
+			messages: []autotentity.Message{},
+			openaiResponse: openaiResponse{
+				method: "CreateChatCompletion",
+				response: "korrekt",
+			},
 			expectedResponse: &entity.Response{
-				Text:      "answer from llm",
+				Text:      "korrekt",
 				SessionID: "123",
 			},
 			expectedError: false,
@@ -178,14 +188,14 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 
 	mockClient := mocks.NewMockOpenAIClient(t)
 	repo := openAI{
-		logger:  logger,
-		client:  mockClient,
-		timeout: timeout,
-		messages: nil,
+		logger:   logger,
+		client:   mockClient,
+		timeout:  timeout,
+		messages: []autotentity.Message{},
 	}
 	for _, test := range tests {
-		mockClient.On("CreateChatCompletion", test.ctx, test.request).Return(test.openaiResponse)
 		t.Run(test.name, func(t *testing.T) {
+			mockClient.On(test.openaiResponse.method, test.ctx, test.request).Return(test.openaiResponse.response)
 			t.Parallel()
 			resp, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {

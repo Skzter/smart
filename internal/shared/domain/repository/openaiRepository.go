@@ -107,6 +107,9 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, err
 	}
 
+	if request.SessionID == "" {
+		request.SessionID = resp.ID
+	}
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
@@ -121,7 +124,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	return &entity.Response{
 		Text:      text,
-		SessionID: resp.ID,
+		SessionID: request.SessionID,
 	}, nil
 }
 
