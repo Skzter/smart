@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -36,12 +38,18 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyC
 
 // PostOfferlist handles the POST request to the /api/v1/Offerlist endpoint
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
-	request := c.Request
+	var request entity.Request
 
-	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:8083/api/v1/offers", request.Body)
+	if err := c.BindJSON(&request); err != nil {
+		s.logger.Error("Failed to bind JSON", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
 	if err != nil {
 		s.logger.Error("Failed to create request", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "1Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -51,12 +59,15 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		}
 	}()
 
-	req.Header = request.Header
+	for key, value := range request.Header {
+		req.Header.Set(key, value)
+	}
 
-	resp, err := s.client.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		s.logger.Error("Failed to send request", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "2Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -66,10 +77,23 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		}
 	}()
 
+	if resp.StatusCode != http.StatusOK {
+		s.logger.Error("Failed to send request", "error", resp.StatusCode)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		s.logger.Error("Failed to read response body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "4Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Internal"})
+		return
+	}
+
+	var res []map[string]interface{}
+	if err := json.Unmarshal(body, &res); err != nil {
+		s.logger.Error("Failed to unmarshal response body", "error", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 

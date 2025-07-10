@@ -43,7 +43,7 @@ func setupRouter(h *handler.SuproxyController) *gin.Engine {
 
 	api := router.Group("/api/v1")
 	{
-		api.POST("/offers", h.PostOfferlist)
+		api.POST("/Offerlist", h.PostOfferlist)
 	}
 
 	return router

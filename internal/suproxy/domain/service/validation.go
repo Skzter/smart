@@ -78,7 +78,7 @@ func (v *Validator) Validate(ctx context.Context, resp *entity.SupplierOfferResp
 
 	v.Logger.Debug("Valid HTTP response. Forwarding to OpenAI...", "status", resp.HTTPStatusCode)
 
-	var mappedData []map[string]interface{}
+	var mappedData []map[string]any
 	if err := json.Unmarshal(resp.Data, &mappedData); err != nil {
 		return err
 	}
