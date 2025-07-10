@@ -97,7 +97,7 @@ func TestNewS3WrapperNilLogger(t *testing.T) {
 	wrapper, err := NewS3Wrapper(nil, config)
 	assert.Error(t, err)
 	assert.Nil(t, wrapper)
-	assert.Contains(t, err.Error(), "logger cannot be nil")
+	assert.ErrorIs(t, err, ErrNilLogger)
 }
 
 func TestS3WrapperInputValidation(t *testing.T) {
@@ -117,72 +117,72 @@ func TestS3WrapperInputValidation(t *testing.T) {
 		// Test empty key
 		err := wrapper.UploadParquetFile(ctx, "", []byte("test data"), nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "key cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyKey)
 
 		// Test empty data
 		err = wrapper.UploadParquetFile(ctx, "test-file", []byte{}, nil)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "data cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyData)
 
 		// Test nil context
 		err = wrapper.UploadParquetFile(nil, "test-file", []byte("test data"), nil) //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 
 	t.Run("DownloadParquetFile validation", func(t *testing.T) {
 		// Test empty key
 		_, _, err := wrapper.DownloadParquetFile(ctx, "")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "key cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyKey)
 
 		// Test nil context
 		_, _, err = wrapper.DownloadParquetFile(nil, "test-file") //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 
 	t.Run("DeleteParquetFile validation", func(t *testing.T) {
 		// Test empty key
 		err := wrapper.DeleteParquetFile(ctx, "")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "key cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyKey)
 
 		// Test nil context
 		err = wrapper.DeleteParquetFile(nil, "test-file") //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 
 	t.Run("FileExists validation", func(t *testing.T) {
 		// Test empty key
 		_, err := wrapper.FileExists(ctx, "")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "key cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyKey)
 
 		// Test nil context
 		_, err = wrapper.FileExists(nil, "test-file") //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 
 	t.Run("GetFileSize validation", func(t *testing.T) {
 		// Test empty key
 		_, err := wrapper.GetFileSize(ctx, "")
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "key cannot be empty")
+		assert.ErrorIs(t, err, ErrEmptyKey)
 
 		// Test nil context
 		_, err = wrapper.GetFileSize(nil, "test-file") //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 
 	t.Run("ListParquetFiles validation", func(t *testing.T) {
 		// Test nil context
 		_, err := wrapper.ListParquetFiles(nil, "prefix") //nolint:staticcheck
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "assert failed")
+		assert.ErrorIs(t, err, ErrNilContext)
 	})
 }
 

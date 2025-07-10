@@ -53,7 +53,7 @@ func TestNewParquetWrapper(t *testing.T) {
 	// Test with nil logger
 	_, err = NewParquetWrapper[UserEvent](nil, entity.ParquetConfig{})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "logger cannot be nil")
+	assert.ErrorIs(t, err, ErrNilLogger)
 }
 
 func TestDefaultParquetConfig(t *testing.T) {
@@ -289,12 +289,12 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 	emptyData := []UserEvent{}
 	_, err = wrapper.WriteStructsToParquet(emptyData)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "data slice cannot be empty")
+	assert.ErrorIs(t, err, ErrEmptyData)
 
 	// Test empty parquet data
 	_, err = wrapper.ReadStructsFromParquet([]byte{})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parquet data cannot be empty")
+	assert.ErrorIs(t, err, ErrEmptyParquetData)
 
 	// Test invalid parquet data (this will panic, so we need to handle it)
 	func() {
@@ -306,7 +306,7 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 		}()
 		_, err := wrapper.ReadStructsFromParquet([]byte("invalid parquet data"))
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid parquet data")
+		assert.ErrorIs(t, err, ErrFailedToReadData)
 	}()
 }
 
@@ -338,7 +338,7 @@ func TestGetParquetFileInfoUserEvents(t *testing.T) {
 	// Test with empty data
 	_, err = wrapper.GetParquetFileInfo([]byte{})
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parquet data cannot be empty")
+	assert.ErrorIs(t, err, ErrEmptyParquetData)
 }
 
 // Example usage function demonstrating different struct types
