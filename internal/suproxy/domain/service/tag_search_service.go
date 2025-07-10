@@ -1,25 +1,53 @@
 package service
 
 /*
-func FindKeysByTag(ctx, tag) → list of keys or error:
-    // 1. Get all Parquet file names (S3 keys) from the bucket
-    keys := s3.ListParquetFiles()
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"strings"
+	//datenbank-service
+)
 
-    // 2. Create an empty list for hits
-    matchingKeys := []
+type TagSearchService interface {
+	FindKeysByTag(ctx context.Context, tag string) ([]string, error)
+}
 
-    // 3. For every key:
-    for each key in keys:
-        // 3a. Load file metadata (e.g. tags)
-        data, metadata := s3.DownloadParquetFile(key)
+type tagSearchService struct {
+	logger slog.Logger
+	db     service.DatabaseService
+}
 
-        // 3b. If an error occurs during download → skip
-        if error → continue
+func NewTagSearchService(logger slog.Logger, db service.DatabaseService) TagSearchService {
+	return &tagSearchService{
+		logger: logger,
+		db:     db,
+	}
+}
 
-        // 3c. If the tag you are looking for appears in the key → add
-        if tag is part of key:
-            matchingKeys.add(key)
+func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]string, error) {
+	tag = strings.TrimSpace(tag)
+	if tag == "" {
+		t.logger.Debug("Received empty tag after trimming")
+		return nil, fmt.Errorf("tag is empty after trimming")
+	}
 
-    // 4. Return all keys found
-    return matchingKeys
+	allKeys, err := t.db.GetAllKeys(ctx)
+	if err != nil {
+		t.logger.Error("Failed to fetch keys from database", "error", err)
+		return nil, fmt.Errorf("failed to fetch keys: %w", err)
+	}
+
+	var matchingKeys []string
+	for _, key := range allKeys {
+		if strings.Contains(key, tag) {
+			t.logger.Debug("Matching key found", "key", key)
+			matchingKeys = append(matchingKeys, key)
+		}
+	}
+
+	t.logger.Info("Tag search completed", "tag", tag, "matches", len(matchingKeys))
+	return matchingKeys, nil
+}
+
 */
