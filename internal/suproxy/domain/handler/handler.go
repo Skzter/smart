@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -18,9 +19,10 @@ import (
 
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
-	logger *slog.Logger
-	config *config.Config
-	client *http.Client
+	logger    *slog.Logger
+	config    *config.Config
+	client    *http.Client
+	validator validator.Validator
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
@@ -30,9 +32,10 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyC
 	}
 
 	return &SuproxyController{
-		logger: logger,
-		config: config,
-		client: &http.Client{},
+		logger:    logger,
+		config:    config,
+		client:    &http.Client{},
+		validator: *validator.NewValidator(logger, config),
 	}, nil
 }
 
@@ -90,27 +93,35 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		return
 	}
 
-	var res []map[string]interface{}
-	if err := json.Unmarshal(body, &res); err != nil {
-		s.logger.Error("Failed to unmarshal response body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
-	// !TODO: REMOVE THIS - THIS IS FOR TESTING ONLY
-
-	supresp := entity.SupplierOfferResponse{
-		HTTPStatusCode: resp.StatusCode,
-		Data:           body,
-	}
-	go s.handleRequest(c, supresp)
+	go s.handleRequest(c, &body)
 
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }
 
-func (s *SuproxyController) handleRequest(ctx context.Context, data entity.SupplierOfferResponse) {
-	val := validator.NewValidator(s.logger, s.config)
-	if err := val.Validate(ctx, &data); err != nil {
+func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte) {
+	var mappedData map[string]any
+	if err := json.Unmarshal(*data, &mappedData); err != nil {
 		s.logger.Error(err.Error())
+		return
 	}
+
+	code := mappedData["httpstatuscode"].(float64)
+	items := mappedData["data"].(map[string]any)["items"].([]any)
+
+	offers := entity.SupplierOfferList{HTTPStatusCode: int(code)}
+	for i, offer := range items {
+		if i >= s.config.MaxItemsPerValidation {
+			break
+		}
+
+		mOffer, err := json.Marshal(offer)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("in offer %d: %v", i, err))
+			return
+		}
+		offers.Offers = append(offers.Offers, entity.SupplierOffer{Data: mOffer})
+	}
+
+	err := s.validator.Validate(ctx, &offers)
+	s.logger.Info(err.Error())
 }

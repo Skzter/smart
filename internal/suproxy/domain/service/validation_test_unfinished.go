@@ -31,7 +31,7 @@ func TestValidatorValidate(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		input           *entity.SupplierOfferResponse
+		input           *entity.SupplierOfferList
 		expectCall      bool
 		expectedContent string
 		mockResponse    string
@@ -45,22 +45,23 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "non-200 status",
-			input: &entity.SupplierOfferResponse{
+			input: &entity.SupplierOfferList{
 				HTTPStatusCode: 200,
-				Data:           []byte{},
+				Offers:         []entity.SupplierOffer{},
 			},
 			expectCall:  false,
 			expectError: true,
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
-			input: &entity.SupplierOfferResponse{
+			input: &entity.SupplierOfferList{
 				HTTPStatusCode: 200,
-				Data: []byte(`{
+				Offers: []entity.SupplierOffer{{Data: []byte(`{
 					"duration": 5,
 					"departuredate": "2025-07-01",
 					"returndate": "2025-07-10",
-					}`),
+					}`)},
+				},
 			},
 			expectCall:      true,
 			expectedContent: "duration\":5",
@@ -69,13 +70,14 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
-			input: &entity.SupplierOfferResponse{
+			input: &entity.SupplierOfferList{
 				HTTPStatusCode: 200,
-				Data: []byte(`{
+				Offers: []entity.SupplierOffer{{Data: []byte(`{
 						"duration": 7,
 						"departuredate": "2025-08-01",
 						"returndate": "2025-08-10"
-						}`),
+						}`)},
+				},
 			},
 			expectCall:      true,
 			expectedContent: "duration\":7",
@@ -84,13 +86,14 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
-			input: &entity.SupplierOfferResponse{
+			input: &entity.SupplierOfferList{
 				HTTPStatusCode: 200,
-				Data: []byte(`{
+				Offers: []entity.SupplierOffer{{Data: []byte(`{
 						"duration": 9,
 						"departuredate": "2025-09-01",
 						"returndate": "2025-09-10"
-					}`),
+					}`)},
+				},
 			},
 			expectCall:      true,
 			expectedContent: "duration\":9",

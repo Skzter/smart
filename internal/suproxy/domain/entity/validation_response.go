@@ -1,6 +1,10 @@
 package entity
 
-type SupplierOfferResponse struct {
-	HTTPStatusCode int    `json:"httpstatuscode"`
-	Data           []byte `json:"data"`
+type SupplierOfferList struct {
+	HTTPStatusCode int
+	Offers         []SupplierOffer
+}
+
+type SupplierOffer struct {
+	Data []byte
 }

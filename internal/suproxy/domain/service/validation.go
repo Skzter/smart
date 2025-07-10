@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	repository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -62,28 +62,22 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v *Validator) Validate(ctx context.Context, resp *entity.SupplierOfferResponse) error {
-	if err := assert.NotNil(ctx, resp); err != nil {
+func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferList) error {
+	if err := assert.NotNil(ctx, offers); err != nil {
 		return err
 	}
 
-	if len(resp.Data) == 0 {
-		v.Logger.Debug("Validation skipped: empty JSON string")
-		return errors.New("empty json string")
+	if len(offers.Offers) == 0 {
+		return errors.New("validation failed: no offers in provided list")
 	}
 
-	if resp.HTTPStatusCode != http.StatusOK {
+	if offers.HTTPStatusCode != http.StatusOK {
 		return errors.New("validation failed: given response is not 200")
 	}
 
-	v.Logger.Debug("Valid HTTP response. Forwarding to OpenAI...", "status", resp.HTTPStatusCode)
+	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	var mappedData []map[string]any
-	if err := json.Unmarshal(resp.Data, &mappedData); err != nil {
-		return err
-	}
-
-	for i, offer := range mappedData {
+	for i, offer := range offers.Offers {
 		mOffer, _ := json.Marshal(offer)
 		item := string(mOffer)
 
@@ -97,7 +91,7 @@ func (v *Validator) Validate(ctx context.Context, resp *entity.SupplierOfferResp
 			continue
 		}
 
-		req := sharedEntity.Request{
+		req := shared.Request{
 			Model:        v.Model,
 			Prompt:       item,
 			SystemPrompt: v.SystemPromptValidation,
@@ -126,6 +120,5 @@ func (v *Validator) Validate(ctx context.Context, resp *entity.SupplierOfferResp
 
 		v.Logger.Debug("OpenAI response received", "index", i, "response", result.Text)
 	}
-
 	return nil
 }
