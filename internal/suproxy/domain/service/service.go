@@ -16,7 +16,7 @@ type DatabaseService interface {
 	// GetAllKeys retrieves all keys from the database.
 	GetAllKeys(ctx context.Context) ([]string, error)
 	// GetKey retrieves a key based on the provided tags.
-	GetKeysForTags(ctx context.Context, tags []string) (string, error)
+	GetKeysForTags(ctx context.Context, tags []string) ([]string, error)
 }
 
 type databaseService struct {
@@ -54,17 +54,21 @@ func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 }
 
 // GetKey retrieves a key based on the provided tags.
-func (d *databaseService) GetKeysForTags(ctx context.Context, tags []string) (string, error) {
+func (d *databaseService) GetKeysForTags(ctx context.Context, tags []string) ([]string, error) {
 	keys, err := d.GetAllKeys(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to list keys: %w", err)
+		return nil, fmt.Errorf("failed to list keys: %w", err)
 	}
 
 	expectedTags := strings.Join(tags, "-") + "-"
+	var matchedKeys []string
 	for _, key := range keys {
 		if strings.HasPrefix(key, expectedTags) {
-			return key, nil
+			matchedKeys = append(matchedKeys, key)
 		}
 	}
-	return "", fmt.Errorf("no key found for tags: %v", tags)
+	if len(matchedKeys) == 0 {
+		return nil, fmt.Errorf("no key found for tags: %v", tags)
+	}
+	return matchedKeys, nil
 }

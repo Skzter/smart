@@ -164,8 +164,6 @@ func TestDatabaseServiceGetAllKeys(t *testing.T) {
 		})
 	}
 }
-
-// TestDatabaseServiceGetAllKeys tests the GetAllKeys method of the DatabaseService.
 func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	mockRepo := new(mockRepo)
@@ -182,7 +180,7 @@ func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 		tags      []string
 		mockKeys  []string
 		mockError error
-		expected  string
+		expected  []string
 		wantErr   bool
 	}{
 		{
@@ -190,7 +188,7 @@ func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 			tags:      []string{"mock", "test"},
 			mockKeys:  allKeys,
 			mockError: nil,
-			expected:  "mock-test-123456",
+			expected:  []string{"mock-test-123456"},
 			wantErr:   false,
 		},
 		{
@@ -198,7 +196,7 @@ func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 			tags:      []string{"not", "found"},
 			mockKeys:  allKeys,
 			mockError: nil,
-			expected:  "",
+			expected:  nil,
 			wantErr:   true,
 		},
 		{
@@ -206,7 +204,7 @@ func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 			tags:      []string{"anything"},
 			mockKeys:  nil,
 			mockError: assert.AnError,
-			expected:  "",
+			expected:  nil,
 			wantErr:   true,
 		},
 	}
@@ -216,14 +214,14 @@ func TestDatabaseServiceGetKeysForTags(t *testing.T) {
 			mockRepo.ExpectedCalls = nil
 			mockRepo.On("ListKeysFromFile", mock.Anything).Return(tt.mockKeys, tt.mockError)
 
-			key, err := svc.GetKeysForTags(context.Background(), tt.tags)
+			keys, err := svc.GetKeysForTags(context.Background(), tt.tags)
 
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Empty(t, key)
+				assert.Nil(t, keys)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, key)
+				assert.Equal(t, tt.expected, keys)
 			}
 
 			mockRepo.AssertExpectations(t)
