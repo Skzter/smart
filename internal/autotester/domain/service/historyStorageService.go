@@ -10,7 +10,7 @@ import (
 )
 
 type HistoryStorageService interface {
-	SaveHistory(ctx context.Context, summary entity.SessionSummary) error
+	SaveHistory(ctx context.Context, summary *entity.SessionSummary) error
 }
 type historyStorageService struct {
 	logger *slog.Logger
@@ -29,9 +29,9 @@ func NewHistoryStorageService(logger *slog.Logger, repo repository.SessionSummar
 }
 
 // Method called by the handler
-func (s *historyStorageService) SaveHistory(ctx context.Context, summary entity.SessionSummary) error {
-	if err := assert.NotNil(ctx, summary); err != nil {
+func (s *historyStorageService) SaveHistory(ctx context.Context, summary *entity.SessionSummary) error {
+	if err := assert.NotNil(ctx); err != nil {
 		return err
 	}
-	return s.repo.Create(ctx, &summary)
+	return s.repo.Create(ctx, summary)
 }
