@@ -1,4 +1,4 @@
-//nolint:gosec,dupl,gocyclo
+//nolint:gosec
 package assert
 
 import (
@@ -70,7 +70,7 @@ func convertToFloat64(value interface{}) (float64, bool) {
 	return 0, false
 }
 
-//nolint:funlen
+//nolint:funlen,gocyclo
 func checkNumber(value interface{}, minValue *interface{}, maxValue *interface{}, closedBoundaries bool) error {
 	switch (value).(type) {
 	case int, int8, int16, int32, int64:
