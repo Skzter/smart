@@ -13,10 +13,11 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository/mocks"
 )
 
-// nolint:dupl
+// nolint: dupl
 func TestNewHistoryStorageService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := &mocks.MockTestCaseStorageRepository{}
+
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
@@ -41,7 +42,15 @@ func TestNewHistoryStorageService(t *testing.T) {
 			repo:    nil,
 			wantErr: true,
 		},
+		{
+			name:    "both nil",
+			logger:  nil,
+			repo:    nil,
+			wantErr: true,
+		},
 	}
+
+	// Test with nil logger and repo
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			svc, err := NewTestcaseStorageService(test.logger, test.repo)
@@ -55,7 +64,7 @@ func TestNewHistoryStorageService(t *testing.T) {
 	}
 }
 
-// nolint:dupl
+// nolint: dupl
 func TestSaveHistoryTestCase(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()

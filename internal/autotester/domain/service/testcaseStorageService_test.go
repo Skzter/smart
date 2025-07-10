@@ -54,6 +54,7 @@ func TestNewTestcaseStorageService(t *testing.T) {
 	}
 }
 
+// nolint: dupl
 func TestSaveTestCase(t *testing.T) {
 	logger := slog.Default()
 
