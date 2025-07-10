@@ -13,6 +13,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository/mocks"
 )
 
+// nolint: dupl
 func TestNewTestcaseStorageService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := &mocks.MockTestCaseStorageRepository{}

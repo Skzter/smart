@@ -42,12 +42,6 @@ func TestNewHistoryStorageService(t *testing.T) {
 			repo:    nil,
 			wantErr: true,
 		},
-		{
-			name:    "both nil",
-			logger:  nil,
-			repo:    nil,
-			wantErr: true,
-		},
 	}
 
 	// Test with nil logger and repo
