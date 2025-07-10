@@ -2,12 +2,11 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 type HistoryStorageService interface {
@@ -18,26 +17,21 @@ type historyStorageService struct {
 	repo   repository.SessionSummaryStorageRepository
 }
 
-func NewHistoryStorageService(logger *slog.Logger, repo repository.SessionSummaryStorageRepository) HistoryStorageService {
-	if logger == nil {
-		logger = slog.Default()
+func NewHistoryStorageService(logger *slog.Logger, repo repository.SessionSummaryStorageRepository) (HistoryStorageService, error) {
+	if err := assert.NotNil(logger, repo); err != nil {
+		return nil, err
 	}
-	if repo == nil {
-		log.Fatal("SessionSummaryStorageRepository must not be nil")
-	}
+
 	return &historyStorageService{
 		logger: logger,
 		repo:   repo,
-	}
+	}, nil
 }
 
 // Method called by the handler
 func (s *historyStorageService) SaveHistory(ctx context.Context, summary entity.SessionSummary) error {
-	if context.Context. == nil {
-		return fmt.Errorf("SessionSummaryStorageRepository is not set")
-	}
-	if err := s.repo.Create(ctx, &summary); err != nil {
+	if err := assert.NotNil(ctx, summary); err != nil {
 		return err
 	}
-	return nil
+	return s.repo.Create(ctx, &summary)
 }
