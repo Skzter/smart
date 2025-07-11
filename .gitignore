@@ -32,6 +32,8 @@ go.work.sum
 
 # env file
 .env
+
+#generated Code
 *.pkl.go
 *.msgpack
 

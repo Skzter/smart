@@ -31,7 +31,7 @@ func Run() {
 
 	router := setupRouter(handler)
 
-	if err := router.Run("127.0.0.1:" + cfg.Port); err != nil {
+	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Error("failed to run server", "error", err)
 		return
 	}
