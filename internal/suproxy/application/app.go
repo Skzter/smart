@@ -3,8 +3,6 @@ package application
 import (
 	"log/slog"
 
-	"github.com/gin-gonic/gin"
-
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 )
@@ -29,22 +27,10 @@ func Run() {
 		return
 	}
 
-	router := setupRouter(handler)
+	router := handler.SetupRouter()
 
 	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Error("failed to run server", "error", err)
 		return
 	}
-}
-
-// setupRouter initializes the Gin router and sets up the routes for the API
-func setupRouter(h *handler.SuproxyController) *gin.Engine {
-	router := gin.Default()
-
-	api := router.Group("/api/v1")
-	{
-		api.POST("/Offerlist", h.PostOfferlist)
-	}
-
-	return router
 }

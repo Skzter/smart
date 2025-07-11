@@ -26,12 +26,11 @@ type SuproxyController struct {
 
 // NewSuproxyController creates a new instance of SuproxyController
 func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyController, error) {
-	if err := assert.NotNil(logger); err != nil {
+	if err := assert.NotNil(logger, config); err != nil {
 		return nil, err
 	}
 
 	val, err := validator.NewValidator(logger, config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +70,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		req.Header.Set(key, value)
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := s.client.Do(req)
 	if err != nil {
 		s.logger.Error("Failed to send request", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -98,12 +96,16 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		return
 	}
 
-	go s.handleRequest(c, &body)
+	done := make(chan any)
+	go s.handleRequest(c, &body, done)
+	defer func() { <-done }()
 
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }
 
-func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte) {
+func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte, done chan<- any) {
+	defer close(done)
+
 	var mappedData map[string]any
 	if err := json.Unmarshal(*data, &mappedData); err != nil {
 		s.logger.Error(err.Error())
@@ -121,6 +123,19 @@ func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte) {
 		return
 	}
 
-	err := s.validator.Validate(ctx, &entity.SupplierOfferList{HTTPStatusCode: int(code), Data: &dataSeg})
-	s.logger.Info(err.Error())
+	if err := s.validator.Validate(ctx, &entity.SupplierOfferList{HTTPStatusCode: int(code), Data: &dataSeg}); err != nil {
+		s.logger.Info(err.Error())
+	}
+}
+
+// setupRouter initializes the Gin router and sets up the routes for the API
+func (h *SuproxyController) SetupRouter() *gin.Engine {
+	router := gin.Default()
+
+	api := router.Group("/api/v1")
+	{
+		api.POST("/Offerlist", h.PostOfferlist)
+	}
+
+	return router
 }
