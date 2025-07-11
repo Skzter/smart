@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -105,23 +104,17 @@ func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte) {
 		return
 	}
 
-	code := mappedData["httpstatuscode"].(float64)
-	items := mappedData["data"].(map[string]any)["items"].([]any)
-
-	offers := entity.SupplierOfferList{HTTPStatusCode: int(code)}
-	for i, offer := range items {
-		if i >= s.config.MaxItemsPerValidation {
-			break
-		}
-
-		mOffer, err := json.Marshal(offer)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("in offer %d: %v", i, err))
-			return
-		}
-		offers.Offers = append(offers.Offers, entity.SupplierOffer{Data: mOffer})
+	code, ok := mappedData["httpstatuscode"].(float64)
+	if !ok {
+		s.logger.Error("invalid response format: httpstatuscode invalid")
+		return
+	}
+	dataSeg, ok := mappedData["data"].(map[string]any)
+	if !ok {
+		s.logger.Error("invalid response format: data segment invalid")
+		return
 	}
 
-	err := s.validator.Validate(ctx, &offers)
+	err := s.validator.Validate(ctx, &entity.SupplierOfferList{HTTPStatusCode: int(code), Data: &dataSeg})
 	s.logger.Info(err.Error())
 }

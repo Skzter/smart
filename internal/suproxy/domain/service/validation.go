@@ -67,7 +67,12 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 		return err
 	}
 
-	if len(offers.Offers) == 0 {
+	items, ok := (*offers.Data)["items"].([]any)
+	if !ok {
+		return errors.New("validation failed: items invalid or nil")
+	}
+
+	if len(items) == 0 {
 		return errors.New("validation failed: no offers in provided list")
 	}
 
@@ -77,7 +82,7 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	for i, offer := range offers.Offers {
+	for i, offer := range items {
 		mOffer, _ := json.Marshal(offer)
 		item := string(mOffer)
 
