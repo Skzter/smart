@@ -124,7 +124,7 @@ tasks:
   test-coverage:
     desc: "Run the tests with coverage"
     vars:
-      TESTCOVERAGE_THRESHOLD: 30
+      TESTCOVERAGE_THRESHOLD: 30 
     cmds:
       - echo "Running unit tests with coverage"
       - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
