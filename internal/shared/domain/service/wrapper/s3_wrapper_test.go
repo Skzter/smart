@@ -111,79 +111,68 @@ func TestS3WrapperInputValidation(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, wrapper)
 
-	ctx := context.Background()
+	testCases := []struct {
+		name          string
+		methodToTest  string
+		key           string
+		data          []byte
+		useNilContext bool
+		expectedError error
+	}{
+		// UploadParquetFile validation
+		{"UploadParquetFile with empty key", "UploadParquetFile", "", []byte("test data"), false, ErrEmptyKey},
+		{"UploadParquetFile with empty data", "UploadParquetFile", "test-file", []byte{}, false, ErrEmptyData},
+		{"UploadParquetFile with nil context", "UploadParquetFile", "test-file", []byte("test data"), true, ErrNilContext},
 
-	t.Run("UploadParquetFile validation", func(t *testing.T) {
-		// Test empty key
-		err := wrapper.UploadParquetFile(ctx, "", []byte("test data"), nil)
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyKey)
+		// DownloadParquetFile validation
+		{"DownloadParquetFile with empty key", "DownloadParquetFile", "", nil, false, ErrEmptyKey},
+		{"DownloadParquetFile with nil context", "DownloadParquetFile", "test-file", nil, true, ErrNilContext},
 
-		// Test empty data
-		err = wrapper.UploadParquetFile(ctx, "test-file", []byte{}, nil)
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyData)
+		// DeleteParquetFile validation
+		{"DeleteParquetFile with empty key", "DeleteParquetFile", "", nil, false, ErrEmptyKey},
+		{"DeleteParquetFile with nil context", "DeleteParquetFile", "test-file", nil, true, ErrNilContext},
 
-		// Test nil context
-		err = wrapper.UploadParquetFile(nil, "test-file", []byte("test data"), nil) //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
+		// FileExists validation
+		{"FileExists with empty key", "FileExists", "", nil, false, ErrEmptyKey},
+		{"FileExists with nil context", "FileExists", "test-file", nil, true, ErrNilContext},
 
-	t.Run("DownloadParquetFile validation", func(t *testing.T) {
-		// Test empty key
-		_, _, err := wrapper.DownloadParquetFile(ctx, "")
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyKey)
+		// GetFileSize validation
+		{"GetFileSize with empty key", "GetFileSize", "", nil, false, ErrEmptyKey},
+		{"GetFileSize with nil context", "GetFileSize", "test-file", nil, true, ErrNilContext},
 
-		// Test nil context
-		_, _, err = wrapper.DownloadParquetFile(nil, "test-file") //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
+		// ListParquetFiles validation
+		{"ListParquetFiles with nil context", "ListParquetFiles", "prefix", nil, true, ErrNilContext},
+	}
 
-	t.Run("DeleteParquetFile validation", func(t *testing.T) {
-		// Test empty key
-		err := wrapper.DeleteParquetFile(ctx, "")
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyKey)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+			ctx := context.Background()
+			if tc.useNilContext {
+				ctx = nil
+			}
 
-		// Test nil context
-		err = wrapper.DeleteParquetFile(nil, "test-file") //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
+			switch tc.methodToTest {
+			case "UploadParquetFile":
+				err = wrapper.UploadParquetFile(ctx, tc.key, tc.data, nil)
+			case "DownloadParquetFile":
+				_, _, err = wrapper.DownloadParquetFile(ctx, tc.key)
+			case "DeleteParquetFile":
+				err = wrapper.DeleteParquetFile(ctx, tc.key)
+			case "FileExists":
+				_, err = wrapper.FileExists(ctx, tc.key)
+			case "GetFileSize":
+				_, err = wrapper.GetFileSize(ctx, tc.key)
+			case "ListParquetFiles":
+				_, err = wrapper.ListParquetFiles(ctx, tc.key)
+			default:
+				t.Fatalf("Unknown method: %s", tc.methodToTest)
+			}
 
-	t.Run("FileExists validation", func(t *testing.T) {
-		// Test empty key
-		_, err := wrapper.FileExists(ctx, "")
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyKey)
-
-		// Test nil context
-		_, err = wrapper.FileExists(nil, "test-file") //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
-
-	t.Run("GetFileSize validation", func(t *testing.T) {
-		// Test empty key
-		_, err := wrapper.GetFileSize(ctx, "")
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrEmptyKey)
-
-		// Test nil context
-		_, err = wrapper.GetFileSize(nil, "test-file") //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
-
-	t.Run("ListParquetFiles validation", func(t *testing.T) {
-		// Test nil context
-		_, err := wrapper.ListParquetFiles(nil, "prefix") //nolint:staticcheck
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, ErrNilContext)
-	})
+			assert.Error(t, err)
+			assert.ErrorIs(t, err, tc.expectedError)
+		})
+	}
 }
 
 const (

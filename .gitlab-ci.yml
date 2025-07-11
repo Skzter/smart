@@ -115,6 +115,15 @@ unit_test_go:
   script:
     - ./bin/task test
 
+integration_test_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test-integration
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
 frontend_test:
   stage: code_analysis_and_testing
   extends: .pnpm_cache
