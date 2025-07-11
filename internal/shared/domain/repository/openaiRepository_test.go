@@ -149,29 +149,26 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 }
 
 // Test for creating a request to openai
-func TestOpenaiRepositoryCreateRequest(t *testing.T) {
-	tests := []struct {
-		name             string
-		ctx              context.Context
-		request          entity.Request
-		messages         []autotentity.Message
-		openaiRequest    openai.ChatCompletionRequest
-		openaiResponse   openai.ChatCompletionResponse
-		openaiError      error
-		expectedResponse *entity.Response
-		expectedError    bool
+// nolint:funlen
+func TestOpenaiReposCreateRequest(t *testing.T) {
+	model := openai.GPT4Dot1Nano20250414
+	logger := slog.New(slog.DiscardHandler)
+	timeout := 5
+
+	mockClient := mocks.NewMockOpenAIClient(t)
+
+	mockSetup := []struct {
+		name           string
+		ctx            context.Context
+		openaiRequest  openai.ChatCompletionRequest
+		openaiResponse openai.ChatCompletionResponse
+		openaiError    error
 	}{
 		{
-			name: "test correct CreateRequest call with no messages",
+			name: "correct request with correct response",
 			ctx:  context.TODO(),
-			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
-			},
 			openaiRequest: openai.ChatCompletionRequest{
-				Model: "nano",
+				Model: model,
 				Messages: []openai.ChatCompletionMessage{
 					{
 						Role:    openai.ChatMessageRoleSystem,
@@ -183,7 +180,6 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 					},
 				},
 			},
-			messages: []autotentity.Message{},
 			openaiResponse: openai.ChatCompletionResponse{
 				ID: "chatcmpl-mock123",
 				Choices: []openai.ChatCompletionChoice{
@@ -198,41 +194,157 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 				},
 			},
 			openaiError: nil,
-			expectedResponse: &entity.Response{
-				Text:      "korrekt",
-				SessionID: "123",
+		},
+		{
+			name: "correct request with message history",
+			ctx:  context.TODO(),
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "what is 3 + 2?",
+					},
+					{
+						Role:    openai.ChatMessageRoleAssistant,
+						Content: "3 + 2 is 5",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "who is the highest in the room?",
+					},
+					{
+						Role:    openai.ChatMessageRoleAssistant,
+						Content: "Travis Scott",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "user prompt",
+					},
+				},
 			},
-			expectedError: false,
+			openaiResponse: openai.ChatCompletionResponse{
+				ID: "chatcmpl-mock456",
+				Choices: []openai.ChatCompletionChoice{
+					{
+						Index: 0,
+						Message: openai.ChatCompletionMessage{
+							Role:    "assistant",
+							Content: "This is a mocked reply based on full history.",
+						},
+						FinishReason: "stop",
+					},
+				},
+			},
+			openaiError: nil,
 		},
 	}
 
-	logger := slog.New(slog.DiscardHandler)
-	timeout := 5
-
-	mockClient := mocks.NewMockOpenAIClient(t)
-	repo := openAI{
-		logger:   logger,
-		client:   mockClient,
-		timeout:  timeout,
-		messages: []autotentity.Message{},
+	tests := []struct {
+		name          string
+		ctx           context.Context
+		request       entity.Request
+		expectedError bool
+	}{
+		{
+			name: "correct context, correct entity",
+			ctx:  context.TODO(),
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "123",
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: false,
+		},
+		{
+			name: "correct context, correct entity",
+			ctx:  context.TODO(),
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "",
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: false,
+		},
+		{
+			name: "nil context, correct entity",
+			ctx:  nil,
+			request: entity.Request{
+				Prompt:       "user prompt",
+				SessionID:    "123",
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name:          "correct context, nil entity",
+			ctx:           context.TODO(),
+			request:       entity.Request{},
+			expectedError: true,
+		},
 	}
 
 	// set all mocks for testcases
-	// potentially own struct for what happens on y input and outputs x
-	// own struct for Responses
-	for _, test := range tests {
-		mockClient.On("CreateChatCompletion", mock.Anything, test.openaiRequest).Return(test.openaiResponse, test.openaiError).Once()
+	for _, mc := range mockSetup {
+		mockClient.On("CreateChatCompletion", mock.Anything, mc.openaiRequest).Return(mc.openaiResponse, mc.openaiError)
 	}
 
+	// Run tests on mocked function
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			resp, err := repo.CreateRequest(test.ctx, test.request)
+			// create Repos everytime for mock calls to be correct
+			repoEmpty := openAI{
+				logger:   logger,
+				client:   mockClient,
+				timeout:  timeout,
+				messages: []autotentity.Message{},
+			}
+
+			repoWithMsgs := openAI{
+				logger:  logger,
+				client:  mockClient,
+				timeout: timeout,
+				messages: []autotentity.Message{
+					{
+						Actor:       "user",
+						MessageBody: "what is 3 + 2?",
+					},
+					{
+						Actor:       "assistant",
+						MessageBody: "3 + 2 is 5",
+					},
+					{
+						Actor:       "user",
+						MessageBody: "who is the highest in the room?",
+					},
+					{
+						Actor:       "assistant",
+						MessageBody: "Travis Scott",
+					},
+				},
+			}
+			_, err := repoEmpty.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error but go nil")
-				} else if resp != test.expectedResponse {
-					t.Errorf("got %q, wanted %q", resp, test.expectedResponse)
+				}
+			} else if !test.expectedError {
+				if err != nil {
+					t.Errorf("did not expect error but go this: %q", err.Error())
+				}
+			}
+			_, err = repoWithMsgs.CreateRequest(test.ctx, test.request)
+			if test.expectedError {
+				if err == nil {
+					t.Errorf("expected error but go nil")
 				}
 			} else if !test.expectedError {
 				if err != nil {

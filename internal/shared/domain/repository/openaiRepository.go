@@ -87,12 +87,10 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		chatHistory = append(chatHistory, msg)
 	}
 
+	// returned ctx cannot not be nil, because it will always return a ctx
+	// only if ctx would be nil from the start it would panic but already asserted it wouldnt be nil
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(qa.timeout))
 	defer cancel()
-
-	if ctx == nil {
-		return nil, fmt.Errorf("failed to generate new context")
-	}
 
 	resp, err := qa.client.CreateChatCompletion(
 		ctx,
@@ -110,10 +108,16 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	if request.SessionID == "" {
 		request.SessionID = resp.ID
 	}
+
+	// check if there are responses from api
+	if len(resp.Choices) == 0 {
+		return nil, fmt.Errorf("openai api error: Response contains no message")
+	}
+
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, fmt.Errorf("openai api error: Response contains no message")
+		return nil, fmt.Errorf("openai api error: Response contains empty message")
 	}
 
 	// append response to message array of repo
