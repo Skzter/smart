@@ -1,6 +1,5 @@
 package service
 
-/*
 import (
 	"errors"
 	"log/slog"
@@ -282,7 +281,7 @@ func TestValidatorValidate(t *testing.T) {
 					Return(&shared.Response{Text: tt.mockResponse}, tt.mockResonseError)
 			}
 
-			validator := Validator{
+			validator := validator{
 				mockservice,
 				logger,
 				"",
@@ -299,4 +298,4 @@ func TestValidatorValidate(t *testing.T) {
 			mockservice.AssertExpectations(t)
 		})
 	}
-}*/
+}

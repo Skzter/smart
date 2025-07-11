@@ -21,5 +21,10 @@ packages:
     config:
       dir: './internal/shared/domain/mocks'
     interfaces:
-      OpenAIService:
+  OpenAIService:
+  gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service:
+    config:
+      dir: './internal/suproxy/domain/mocks'
+    interfaces:
+      Validator:
  

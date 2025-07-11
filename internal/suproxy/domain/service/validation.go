@@ -28,9 +28,13 @@ type OpenAIValidationResult struct {
 	Reason []string `json:"reason"`
 }
 
+type Validator interface {
+	Validate(ctx context.Context, offers *entity.SupplierOfferList) error
+}
+
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
-type Validator struct {
+type validator struct {
 	openAiService          service.OpenAIService
 	Logger                 *slog.Logger
 	SystemPromptValidation string
@@ -39,7 +43,7 @@ type Validator struct {
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config) (*Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Config) (Validator, error) {
 	if err := assert.NotNil(logger, cfg); err != nil {
 		return nil, err
 	}
@@ -49,7 +53,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) (*Validator, error) {
 		return nil, err
 	}
 
-	return &Validator{
+	return &validator{
 		openAiService:          openAiService,
 		Logger:                 logger,
 		SystemPromptValidation: cfg.Prompts.ValidationPrompt,
@@ -60,7 +64,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) (*Validator, error) {
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferList) error {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierOfferList) error {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ type SuproxyController struct {
 	logger    *slog.Logger
 	config    *config.Config
 	client    *http.Client
-	validator *validator.Validator
+	validator validator.Validator
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
