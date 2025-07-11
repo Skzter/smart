@@ -17,7 +17,7 @@ import (
 type AutotesterController struct {
 	config  *config.Config
 	logger  *slog.Logger
-	service *service.OpenAIService
+	service service.OpenAIService
 }
 
 // NewAutotesterController creates a new AutotesterController.

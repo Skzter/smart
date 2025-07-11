@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	repository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -23,11 +22,6 @@ var (
 	ErrEmptyOpenAIResult = errors.New("openai returned empty result")
 )
 
-// SetOpenAIService replaces the OpenAI service implementation – used for testing with mocks.
-func (v *Validator) SetOpenAIService(mock repository.OpenAI) {
-	v.openAiService = mock
-}
-
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
 type OpenAIValidationResult struct {
 	Valid  bool     `json:"valid"`
@@ -37,7 +31,7 @@ type OpenAIValidationResult struct {
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type Validator struct {
-	openAiService          repository.OpenAI
+	openAiService          service.OpenAIService
 	Logger                 *slog.Logger
 	SystemPromptValidation string
 	Model                  string
@@ -45,10 +39,14 @@ type Validator struct {
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
-	openAiService, err := repository.NewOpenAiRepository(logger, cfg.Timeout)
+func NewValidator(logger *slog.Logger, cfg *config.Config) (*Validator, error) {
+	if err := assert.NotNil(logger, cfg); err != nil {
+		return nil, err
+	}
+
+	openAiService, err := service.NewService(logger, cfg.Timeout)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &Validator{
@@ -57,7 +55,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) *Validator {
 		SystemPromptValidation: cfg.Prompts.ValidationPrompt,
 		Model:                  cfg.Model,
 		MaxItems:               cfg.MaxItemsPerValidation,
-	}
+	}, nil
 }
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
@@ -67,6 +65,10 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 		return err
 	}
 
+	if offers.HTTPStatusCode != http.StatusOK {
+		return errors.New("validation failed: given response is not 200")
+	}
+
 	items, ok := (*offers.Data)["items"].([]any)
 	if !ok {
 		return errors.New("validation failed: items invalid or nil")
@@ -74,10 +76,6 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 
 	if len(items) == 0 {
 		return errors.New("validation failed: no offers in provided list")
-	}
-
-	if offers.HTTPStatusCode != http.StatusOK {
-		return errors.New("validation failed: given response is not 200")
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
@@ -91,7 +89,7 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 		}
 
 		item = strings.TrimSpace(item)
-		if item == "" {
+		if item == "{}" {
 			v.Logger.Debug("Skipping empty item", "index", i)
 			continue
 		}
@@ -102,7 +100,7 @@ func (v *Validator) Validate(ctx context.Context, offers *entity.SupplierOfferLi
 			SystemPrompt: v.SystemPromptValidation,
 		}
 
-		result, err := v.openAiService.CreateRequest(ctx, req)
+		result, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return err
 		}

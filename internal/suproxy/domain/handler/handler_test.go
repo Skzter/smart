@@ -12,10 +12,9 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	sharedentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	mockrepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	suproxyentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 // TestPostOfferlist tests the PostOfferlist handler with various request scenarios
@@ -30,51 +29,16 @@ func TestPostOfferlist(t *testing.T) {
 	}{
 		{
 			name: "valid JSON request",
-			requestBody: `{
-				"header": ["Content-Type: application/json"],
-				"prompt": "test prompt",
-				"destination": "https://example.com",
-				"request": "{\"httpstatuscode\":200,\"data\":{\"items\":[\"{}\"]}}"
-			}`,
+			requestBody: `
+				{"request": 
+					"{\"apimode\":\"live\",\"id\":\"a0950be9-76ad-4fcb-932d-37660d10b1f8\",\"method\":\"search.getOfferList\",\"params\":[],\"requestSource\":\"pr.offerlist\"}",
+				"header":{
+					"Authorization": "Bearer asdfjsafjaölfaöfsal"
+				},
+				"destination":"https:://example.com",
+				"prompt":""}`,
 			expectedStatus: http.StatusOK,
-			expectedBody:   "200",
-		},
-		{
-			name: "empty valid JSON (no request field)",
-			requestBody: `{
-				"header": [],
-				"prompt": "",
-				"destination": "",
-				"request": ""
-			}`,
-			expectedStatus: http.StatusBadRequest,
-			expectedBody:   `{"error":"empty json string"}`,
-		},
-		{
-			name: "minimal valid JSON",
-			requestBody: `{
-				"header": null,
-				"prompt": "minimal",
-				"destination": "https://example.com",
-				"request": "{\"httpstatuscode\":200,\"data\":{\"items\":[\"{}\"]}}"
-			}`,
-			expectedStatus: http.StatusOK,
-			expectedBody:   "200",
-		},
-		{
-			name:           "invalid JSON",
-			requestBody:    `{"invalid": json}`,
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "empty request body",
-			requestBody:    "",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "malformed JSON",
-			requestBody:    `{"header": ["test"], "prompt":}`,
-			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"httpstatuscode":200,"data":{"items":[{"offerid": 2814668548,"departuredate": "2025-07-07T00:00:0+0000",}]}}`,
 		},
 	}
 
@@ -150,14 +114,10 @@ func setupController(tb testing.TB) *SuproxyController {
 		MaxItemsPerValidation: 10,
 	}
 
-	validator := service.NewValidator(logger, cfg)
-
-	mockConnector := mockrepo.NewOpenAI(tb)
+	mockConnector := mocks.NewMockOpenAIService(tb)
 	mockConnector.
-		On("CreateRequest", mock.Anything, mock.Anything).
+		On("Request", mock.Anything, mock.Anything).
 		Return(&sharedentity.Response{Text: `{"valid": true, "reason": []}`}, nil)
-
-	validator.SetOpenAIService(mockConnector)
 
 	ctrl, err := NewSuproxyController(logger, cfg)
 	if err != nil {

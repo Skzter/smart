@@ -10,13 +10,17 @@ import (
 )
 
 // OpenAIService handles requests to the OpenAI repository.
-type OpenAIService struct {
+type OpenAIService interface {
+	Request(ctx context.Context, request entity.Request) (*entity.Response, error)
+}
+
+type openAIService struct {
 	repo   repository.OpenAI
 	logger *slog.Logger
 }
 
 // NewService creates and returns a new OpenAIService instance.
-func NewService(logger *slog.Logger, timeout int) (*OpenAIService, error) {
+func NewService(logger *slog.Logger, timeout int) (OpenAIService, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
@@ -26,11 +30,11 @@ func NewService(logger *slog.Logger, timeout int) (*OpenAIService, error) {
 		return nil, err
 	}
 
-	return &OpenAIService{repo, logger}, nil
+	return &openAIService{repo, logger}, nil
 }
 
 // Request sends a request to the OpenAI repository and returns the response.
-func (c *OpenAIService) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
+func (c *openAIService) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		c.logger.Error(err.Error())
 		return nil, err

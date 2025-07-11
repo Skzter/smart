@@ -21,7 +21,7 @@ type SuproxyController struct {
 	logger    *slog.Logger
 	config    *config.Config
 	client    *http.Client
-	validator validator.Validator
+	validator *validator.Validator
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
@@ -30,11 +30,17 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyC
 		return nil, err
 	}
 
+	val, err := validator.NewValidator(logger, config)
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &SuproxyController{
 		logger:    logger,
 		config:    config,
 		client:    &http.Client{},
-		validator: *validator.NewValidator(logger, config),
+		validator: val,
 	}, nil
 }
 
