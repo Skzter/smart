@@ -53,7 +53,7 @@ func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 	return keys, nil
 }
 
-// GetKey retrieves a key based on the provided tags.
+// GetKeysForTags retrieves keys based on the provided tags.
 func (d *databaseService) GetKeysForTags(ctx context.Context, tags []string) ([]string, error) {
 	keys, err := d.GetAllKeys(ctx)
 	if err != nil {
