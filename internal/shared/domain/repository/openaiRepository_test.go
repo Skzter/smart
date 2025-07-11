@@ -1,13 +1,16 @@
 package repository
 
 import (
-	// "context"
+	"context"
 	"log/slog"
 	"testing"
 
+	openai "github.com/sashabaranov/go-openai"
+	"github.com/stretchr/testify/mock"
+
+	autotentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	// autotentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	// "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
 // Test for creating new OpenAiRepository
@@ -145,24 +148,21 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 	}
 }
 
-/*
 // Test for creating a request to openai
 func TestOpenaiRepositoryCreateRequest(t *testing.T) {
-	type openaiResponse struct {
-		method   string
-		response string
-	}
 	tests := []struct {
 		name             string
 		ctx              context.Context
 		request          entity.Request
-		messages	 []autotentity.Message
-		openaiResponse   openaiResponse
+		messages         []autotentity.Message
+		openaiRequest    openai.ChatCompletionRequest
+		openaiResponse   openai.ChatCompletionResponse
+		openaiError      error
 		expectedResponse *entity.Response
 		expectedError    bool
 	}{
 		{
-			name: "test correct CreateRequest call",
+			name: "test correct CreateRequest call with no messages",
 			ctx:  context.TODO(),
 			request: entity.Request{
 				Prompt:       "user prompt",
@@ -170,11 +170,34 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
-			messages: []autotentity.Message{},
-			openaiResponse: openaiResponse{
-				method: "CreateChatCompletion",
-				response: "korrekt",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: "nano",
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "user prompt",
+					},
+				},
 			},
+			messages: []autotentity.Message{},
+			openaiResponse: openai.ChatCompletionResponse{
+				ID: "chatcmpl-mock123",
+				Choices: []openai.ChatCompletionChoice{
+					{
+						Index: 0,
+						Message: openai.ChatCompletionMessage{
+							Role:    "assistant",
+							Content: "This is a mocked reply from the assistant.",
+						},
+						FinishReason: "stop",
+					},
+				},
+			},
+			openaiError: nil,
 			expectedResponse: &entity.Response{
 				Text:      "korrekt",
 				SessionID: "123",
@@ -193,9 +216,16 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 		timeout:  timeout,
 		messages: []autotentity.Message{},
 	}
+
+	// set all mocks for testcases
+	// potentially own struct for what happens on y input and outputs x
+	// own struct for Responses
+	for _, test := range tests {
+		mockClient.On("CreateChatCompletion", mock.Anything, test.openaiRequest).Return(test.openaiResponse, test.openaiError).Once()
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockClient.On(test.openaiResponse.method, test.ctx, test.request).Return(test.openaiResponse.response)
 			t.Parallel()
 			resp, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
@@ -212,4 +242,3 @@ func TestOpenaiRepositoryCreateRequest(t *testing.T) {
 		})
 	}
 }
-*/
