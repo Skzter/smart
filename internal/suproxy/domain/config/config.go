@@ -15,3 +15,7 @@ func LoadAppConfig() (*Config, error) {
 	err = pkl.Unmarshal(bytes, &cfg)
 	return &cfg, err
 }
+
+func ConfigProvider() (*Config, error) {
+	return LoadAppConfig()
+}

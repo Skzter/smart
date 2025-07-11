@@ -6,7 +6,7 @@ cmd = "go build -o ./tmp/app -ldflags \"-X ${VERSION_VAR}=${VERSION} -X ${OPENAI
 bin = "tmp/app"
 full_bin = "./tmp/app"
 include_ext = ["go","pkl"]
-exclude_dir = ["assets", "tmp", "vendor", ".git", "node_modules"]
+exclude_dir = ["assets", "tmp", "vendor", ".git", "node_modules", "web"]
 exclude_file = []
 stop_on_error = true
 send_interrupt = true

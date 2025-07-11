@@ -7,6 +7,8 @@ model: String ="gpt-4.1-nano-2025-04-14"
 
 port: String = "8080" 
 
+logLevel: String = "info"
+
 class Prompts {
     prompt1 : String = "hier kommen eure prompts hin"
     prompt2 : String = "und so weiter"
