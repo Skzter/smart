@@ -24,7 +24,7 @@ type DatabaseRepository interface {
 	// deletes a request from the database (access through key)
 	DeleteRequest(ctx context.Context, key string) error
 	// ListKeysFromFile lists all keys from the database
-	ListKeysFromFile(ctx context.Context) ([]string, error)
+	ListAllKeys(ctx context.Context) ([]string, error)
 }
 
 type databaseRepository struct {
@@ -64,7 +64,8 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	metadata := map[string]string{
-		"created": fmt.Sprintf("%d", time.Now().Unix())}
+		"created": fmt.Sprintf("%d", time.Now().Unix()),
+	}
 
 	key := generateKey(dbEntry.Tags, metadata["created"])
 
@@ -82,7 +83,7 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 		return nil, fmt.Errorf("key must not be empty: %w", err)
 	}
 
-	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
+	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
 	}
@@ -109,7 +110,7 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
 
-	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, key)
+	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+key)
 	if err != nil {
 		return fmt.Errorf("failed to download data: %w", err)
 	}
@@ -140,7 +141,7 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 		return fmt.Errorf("key must not be empty: %w", err)
 	}
 
-	err := dbR.s3Wrapper.DeleteParquetFile(ctx, key)
+	err := dbR.s3Wrapper.DeleteParquetFile(ctx, EntryPrefix+key)
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
@@ -205,7 +206,7 @@ func generateKey(tags []string, unixTimestamp string) string {
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }
 
-func (dbR *databaseRepository) ListKeysFromFile(ctx context.Context) ([]string, error) {
+func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
 	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, EntryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list parquet files: %w", err)

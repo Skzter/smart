@@ -34,6 +34,9 @@ func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository)
 
 // SaveDbEntry saves a database entry by calling the repository's CreateRequest method.
 func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.DatabaseEntry) error {
+	if ctx == nil {
+		return fmt.Errorf("context cannot be nil")
+	}
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
 		return fmt.Errorf("failed to save request: %w", err)
 	}
@@ -43,7 +46,10 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 
 // GetAllKeys retrieves all keys from the database.
 func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
-	keys, err := d.repo.ListKeysFromFile(ctx)
+	if ctx == nil {
+		return nil, fmt.Errorf("context cannot be nil")
+	}
+	keys, err := d.repo.ListAllKeys(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}

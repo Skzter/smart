@@ -24,7 +24,7 @@ func (m *mockRepo) CreateRequest(ctx context.Context, entry entity.DatabaseEntry
 }
 
 // ListKeysFromFile returns a list of keys from the mock repository.
-func (m *mockRepo) ListKeysFromFile(ctx context.Context) ([]string, error) {
+func (m *mockRepo) ListAllKeys(ctx context.Context) ([]string, error) {
 	args := m.Called(ctx)
 	return args.Get(0).([]string), args.Error(1)
 }
@@ -64,7 +64,7 @@ func TestNewDatabaseService(t *testing.T) {
 	assert.Nil(t, svcNilLogger)
 }
 
-// TestNewDatabaseServiceWithNilRepo tests the creation of a new DatabaseService with a nil repository.
+// TestDatabaseServiceSaveDbEntry tests the SaveDbEntry method of the DatabaseService.
 func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 	validLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	validRepo := new(mockRepo)
@@ -86,6 +86,7 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 	tests := []struct {
 		name      string
 		setupMock func()
+		ctx       context.Context
 		wantErr   bool
 	}{
 		{
@@ -93,6 +94,7 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 			setupMock: func() {
 				validRepo.On("CreateRequest", mock.Anything, entry).Return(nil)
 			},
+			ctx:     context.Background(),
 			wantErr: false,
 		},
 		{
@@ -100,7 +102,14 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 			setupMock: func() {
 				validRepo.On("CreateRequest", mock.Anything, entry).Return(assert.AnError)
 			},
+			ctx:     context.Background(),
 			wantErr: true,
+		},
+		{
+			name:      "nil context",
+			setupMock: func() {},
+			ctx:       nil,
+			wantErr:   true,
 		},
 	}
 
@@ -108,7 +117,7 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			validRepo.ExpectedCalls = nil // reset expectations
 			tt.setupMock()
-			err := svc.SaveDbEntry(context.Background(), entry)
+			err := svc.SaveDbEntry(tt.ctx, entry)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -130,27 +139,41 @@ func TestDatabaseServiceGetAllKeys(t *testing.T) {
 		mockKeys  []string
 		mockError error
 		wantErr   bool
+		ctx       context.Context
 	}{
 		{
 			name:      "success",
 			mockKeys:  []string{"tag1-tag2-123456", "mock-test-98765"},
 			mockError: nil,
 			wantErr:   false,
+			ctx:       context.Background(),
 		},
 		{
 			name:      "repo error",
 			mockKeys:  nil,
 			mockError: assert.AnError,
 			wantErr:   true,
+			ctx:       context.Background(),
+		},
+		{
+			name:      "nil context",
+			mockKeys:  nil,
+			mockError: nil,
+			wantErr:   true,
+			ctx:       nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo.ExpectedCalls = nil
-			mockRepo.On("ListKeysFromFile", mock.Anything).Return(tt.mockKeys, tt.mockError)
 
-			keys, err := svc.GetAllKeys(context.Background())
+			// Only set up mock if context is not nil, otherwise expect error from service
+			if tt.ctx != nil {
+				mockRepo.On("ListAllKeys", mock.Anything).Return(tt.mockKeys, tt.mockError)
+			}
+
+			keys, err := svc.GetAllKeys(tt.ctx)
 
 			if tt.wantErr {
 				assert.Error(t, err)

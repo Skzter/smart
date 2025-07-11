@@ -174,7 +174,7 @@ func TestReadRequest(t *testing.T) {
 			key := testKey
 			metadata := map[string]string{"created": "123456"}
 
-			mockS3.On("DownloadParquetFile", mock.Anything, key).Return(fakeData, metadata, tt.mockDownloadError)
+			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+key).Return(fakeData, metadata, tt.mockDownloadError)
 
 			if tt.mockDownloadError == nil {
 				mockParquet.On("ReadStructsFromParquet", fakeData).Return([]entity.DatabaseEntry{getValidEntry()}, tt.mockParquetReadError)
@@ -233,7 +233,7 @@ func TestUpdateRequest(t *testing.T) {
 			fakeData := []byte("parquet")
 			metadata := map[string]string{"created": "123456"}
 
-			mockS3.On("DownloadParquetFile", mock.Anything, key).Return(fakeData, metadata, tt.mockDownloadErr)
+			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+key).Return(fakeData, metadata, tt.mockDownloadErr)
 
 			if tt.mockDownloadErr == nil {
 				mockParquet.On("WriteStructToParquet", tt.entry).Return(fakeData, tt.mockParquetErr)
@@ -276,7 +276,7 @@ func TestDeleteRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo, mockS3, _ := setupMocks(t)
 			key := testKey
-			mockS3.On("DeleteParquetFile", mock.Anything, key).Return(tt.mockDeleteErr)
+			mockS3.On("DeleteParquetFile", mock.Anything, EntryPrefix+key).Return(tt.mockDeleteErr)
 
 			err := repo.DeleteRequest(context.Background(), key)
 
