@@ -63,11 +63,12 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
+	var timestamp = fmt.Sprintf("%d", time.Now().Unix())
 	metadata := map[string]string{
-		"created": fmt.Sprintf("%d", time.Now().Unix()),
+		"created": timestamp,
 	}
 
-	key := generateKey(dbEntry.Tags, metadata["created"])
+	key := generateKey(dbEntry.Tags, timestamp)
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+key, parquetData, metadata)
 	if err != nil {
@@ -122,9 +123,10 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
+	var timestamp = fmt.Sprintf("%d", time.Now().Unix())
 	metadata := map[string]string{
-		"created": string(oldmetadata["created"]),
-		"updated": fmt.Sprintf("%d", time.Now().Unix()),
+		"created": oldmetadata["created"],
+		"updated": timestamp,
 	}
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+key, parquetData, metadata)
@@ -149,6 +151,15 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 	dbR.logger.Debug("file deleted successfully", slog.String("key", key))
 
 	return nil
+}
+
+func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
+	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, EntryPrefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list parquet files: %w", err)
+	}
+
+	return keys, err
 }
 
 // validateDbEntry validates the database entry before processing it
@@ -204,13 +215,4 @@ func validateTags(t []string) error {
 // generateKey creates a unique key for the database entry based on its tags and a Unix timestamp
 func generateKey(tags []string, unixTimestamp string) string {
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
-}
-
-func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
-	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, EntryPrefix)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list parquet files: %w", err)
-	}
-
-	return keys, err
 }

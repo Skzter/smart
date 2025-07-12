@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
@@ -23,8 +24,11 @@ type databaseService struct {
 
 // NewDatabaseService creates a new instance of DatabaseService.
 func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository) (DatabaseService, error) {
-	if logger == nil || repo == nil {
-		return nil, fmt.Errorf("logger and repository cannot be nil")
+	if err := assert.NotNil(repo); err != nil {
+		return nil, fmt.Errorf("repo cannot be nil, %w", err)
+	}
+	if err := assert.NotNil(logger); err != nil {
+		return nil, fmt.Errorf("logger cannot be nil, %w", err)
 	}
 	return &databaseService{
 		logger: logger,
@@ -34,8 +38,8 @@ func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository)
 
 // SaveDbEntry saves a database entry by calling the repository's CreateRequest method.
 func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.DatabaseEntry) error {
-	if ctx == nil {
-		return fmt.Errorf("context cannot be nil")
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
 		return fmt.Errorf("failed to save request: %w", err)
@@ -46,7 +50,7 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 
 // GetAllKeys retrieves all keys from the database.
 func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
-	if ctx == nil {
+	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil")
 	}
 	keys, err := d.repo.ListAllKeys(ctx)
