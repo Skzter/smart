@@ -129,7 +129,9 @@ tasks:
       - echo "Running unit tests with coverage"
       - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
-      #- go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
+      - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
+      - ls -lah
+      - find . -name '*cobertura*.xml'
       - echo "Quality Gate checking test coverage is above threshold"
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
       - |
