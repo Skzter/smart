@@ -54,6 +54,14 @@ tasks:
       - cd web/ && pnpm install
       - task: lint-frontend
       - cd web/ && pnpm run build
+    sources:
+      - web/*
+
+  build-frontend-dev:
+    cmds:
+      - cd web/ && pnpm build
+    sources:
+      - web/*
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -102,6 +110,7 @@ tasks:
       AWS_SECRET_ACCESS_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
+      - task: build-frontend-dev
       - 'PATH=$LPATH; doppler run -- go tool air'
 
   compose-local:
