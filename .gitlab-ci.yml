@@ -119,7 +119,7 @@ unit_test_go:
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: cobertura-coverage.xml
+        path: go-cobertura-coverage.xml
       junit: junit.xml
     expire_in: 1 week
     
