@@ -1,10 +1,18 @@
 package service
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/mock"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
@@ -61,6 +69,88 @@ func TestNewValidatePromptService(t *testing.T) {
 			if !test.wantErr && repo == nil {
 				t.Errorf("NewValidatePromptService() returned nil service")
 			}
+		})
+	}
+}
+
+func TestValidatePrompt(t *testing.T) {
+	logger := slog.Default()
+	cfg := &config.Config{
+		Prompts: &config.Prompts{
+			ValidationPrompt: "validate system prompt",
+		},
+	}
+
+	tests := []struct {
+		name         string
+		mockSetup    func(s *mocks.MockOpenAIService, ctx context.Context)
+		wantErr      bool
+		errSubstring string
+	}{
+		{
+			name: "service error",
+			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+				s.On("Request", ctx, mock.Anything).
+					Return((*entity.Response)(nil), fmt.Errorf("network down"))
+			},
+			wantErr:      true,
+			errSubstring: "failed to send prompt validation request to OpenAI",
+		},
+		{
+			name: "valid prompt (true)",
+			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+				s.On("Request", ctx, mock.Anything).
+					Return(&entity.Response{Text: "true"}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid prompt (false)",
+			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+				s.On("Request", ctx, mock.Anything).
+					Return(&entity.Response{Text: "false"}, nil)
+			},
+			wantErr:      true,
+			errSubstring: "prompt does not contain required information",
+		},
+		{
+			name: "unexpected response",
+			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+				s.On("Request", ctx, mock.Anything).
+					Return(&entity.Response{Text: "oops"}, nil)
+			},
+			wantErr:      true,
+			errSubstring: `unexpected validation response: "oops"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			serviceMock := mocks.NewMockOpenAIService(t)
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+
+			tt.mockSetup(serviceMock, ctx)
+
+			svc := &ValidatePromptService{
+				service: serviceMock,
+				config:  cfg,
+				logger:  logger,
+			}
+			err := svc.ValidatePrompt(ctx, "some user prompt", "session-xyz")
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected an error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.errSubstring) {
+					t.Fatalf("error %q does not contain expected substring %q", err.Error(), tt.errSubstring)
+				}
+			} else if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+
+			serviceMock.AssertExpectations(t)
 		})
 	}
 }
