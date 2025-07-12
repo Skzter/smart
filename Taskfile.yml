@@ -58,8 +58,10 @@ tasks:
       - web/*
 
   build-frontend-dev:
+    desc: "Build the frontend"
+    dir: "web"
     cmds:
-      - cd web/ && pnpm build
+      - pnpm build
     sources:
       - web/*
 
@@ -167,6 +169,12 @@ tasks:
     desc: "Run the frontend formatter"
     cmds:
       - cd web/ && pnpm prettier --write .
+
+  test-frontend:
+    desc: "Run the frontend tests"
+    dir: "web"
+    cmds:
+      - pnpm test
 
   pre-commit:
     desc: "Run the pre-commit"

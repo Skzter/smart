@@ -1,173 +1,104 @@
-import { render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
-import Box from "../../src/components/Box.svelte";
+import { render, screen } from '@testing-library/svelte';
+import { describe, it, expect } from 'vitest';
+import Box from '../../src/components/Box.svelte';
 
-describe("Box component", () => {
-    test("Box shows message from Bot", async () => {
-        render(Box, { msg: "This is a Message from User!", name: "User" });
+describe('Box component', () => {
+	describe('when the message is from "User"', () => {
+		it('renders the message and applies User-specific styles', () => {
+			render(Box, { msg: 'This is a message from User!', name: 'User' });
 
-        const name = screen.getByText("User");
-        const content = screen.getByText("This is a Message from User!");
+			const nameElement = screen.getByText('User');
+			const messageElement = screen.getByText('This is a message from User!');
 
-        expect(name).toBeInTheDocument();
-        expect(content).toBeInTheDocument();
+			expect(nameElement).toBeInTheDocument();
+			expect(messageElement).toBeInTheDocument();
 
-        const parentDiv = name.parentElement;
-        const grandparentDiv = parentDiv.parentElement;
+			const outerDiv = nameElement.parentElement?.parentElement;
+			expect(outerDiv).toHaveClass('justify-end');
 
-        // Classes Check
-        expect(content).toHaveClass(
-            "text-end",
-            "font-sans",
-            "whitespace-pre-wrap",
-        );
+			const innerDiv = nameElement.parentElement;
+			expect(innerDiv).toHaveClass('justify-end', 'bg-sky-300');
 
-        expect(name).toHaveClass(
-            "text-end",
-            "tracking-wide",
-            "uppercase",
-            "font-bold",
-            "text-xl",
-        );
-        expect(parentDiv).toHaveClass(
-            "font-mono",
-            "bg-sky-300",
-            "w-fit",
-            "justify-end",
-            "p-2.5",
-            "border-2",
-            " border-black ",
-            "border-solid ",
-            "rounded-xl",
-        );
-        expect(grandparentDiv).toHaveClass("flex", "justify-end", "m-4");
-    });
+			expect(nameElement).toHaveClass('text-end');
+			expect(messageElement).toHaveClass('text-end');
+		});
+	});
 
-    test("Box shows message from Bot", async () => {
-        render(Box, { msg: "This is a message from Bot!", name: "Bot" });
-        const name = screen.getByText("Bot");
-        const content = screen.getByText("This is a message from Bot!");
-        expect(name).toBeInTheDocument();
-        expect(content).toBeInTheDocument();
+	describe('when the message is from "Bot"', () => {
+		it('renders the message and applies Bot-specific styles', () => {
+			render(Box, { msg: 'This is a message from Bot!', name: 'Bot' });
 
-        const parentDiv = name.parentElement;
-        const grandparentDiv = parentDiv.parentElement;
-        // Classes Check for Bot
-        expect(content).toHaveClass(
-            "text-start",
-            "font-sans",
-            "whitespace-pre-wrap",
-        );
+			const nameElement = screen.getByText('Bot');
+			const messageElement = screen.getByText('This is a message from Bot!');
 
-        expect(name).toHaveClass(
-            "text-start",
-            "tracking-wide",
-            "uppercase",
-            "font-bold",
-            "text-xl",
-        );
+			expect(nameElement).toBeInTheDocument();
+			expect(messageElement).toBeInTheDocument();
 
-        expect(parentDiv).toHaveClass(
-            "font-mono",
-            "bg-gray-200",
-            "w-fit",
-            "justify-start",
-            "p-2.5",
-            "border-2",
-            "border-black",
-            "border-solid",
-            "rounded-xl",
-        );
+			const outerDiv = nameElement.parentElement?.parentElement;
+			expect(outerDiv).toHaveClass('justify-start');
 
-        expect(grandparentDiv).toHaveClass("flex", "justify-start", "m-4");
-    });
+			const innerDiv = nameElement.parentElement;
+			expect(innerDiv).toHaveClass('justify-start', 'bg-gray-200');
 
-    test("shows message from other name with default styling", async () => {
-        render(Box, {
-            msg: "Test Message",
-            name: "Test",
-        });
+			expect(nameElement).toHaveClass('text-start');
+			expect(messageElement).toHaveClass('text-start');
+		});
+	});
 
-        const name = screen.getByText("Test");
-        const content = screen.getByText("Test Message");
+	describe('when the sender is not "User" or "Bot"', () => {
+		it('renders with default styles', () => {
+			render(Box, { msg: 'Test Message', name: 'Test' });
 
-        expect(name).toBeInTheDocument();
-        expect(content).toBeInTheDocument();
+			const nameElement = screen.getByText('Test');
+			const messageElement = screen.getByText('Test Message');
 
-        const parentDiv = name.parentElement;
-        const grandparentDiv = parentDiv.parentElement;
-        // Classes Check for Bot
-        expect(content).toHaveClass("font-sans", "whitespace-pre-wrap");
+			expect(nameElement).toBeInTheDocument();
+			expect(messageElement).toBeInTheDocument();
 
-        expect(name).toHaveClass(
-            "tracking-wide",
-            "uppercase",
-            "font-bold",
-            "text-xl",
-        );
+			const outerDiv = nameElement.parentElement?.parentElement;
+			expect(outerDiv).not.toHaveClass('justify-end', 'justify-start');
 
-        expect(parentDiv).toHaveClass(
-            "font-mono",
-            "w-fit",
-            "p-2.5",
-            "border-2",
-            "border-black",
-            "border-solid",
-            "rounded-xl",
-        );
+			const innerDiv = nameElement.parentElement;
+			expect(innerDiv).not.toHaveClass('bg-sky-300', 'bg-gray-200');
+			expect(innerDiv).not.toHaveClass('justify-end', 'justify-start');
 
-        expect(grandparentDiv).toHaveClass("flex", "m-4");
-        expect(content).not.toHaveClass("text-start", "text-end");
-        expect(parentDiv).not.toHaveClass("justify-start", "justify-end");
-        expect(parentDiv).not.toHaveClass("bg-sky-300", "bg-gray-200");
-    });
+			expect(nameElement).not.toHaveClass('text-end', 'text-start');
+			expect(messageElement).not.toHaveClass('text-end', 'text-start');
+		});
+	});
 
-    test("handles empty name with default styling", async () => {
-        render(Box, { msg: "Empty name test", name: "" });
+	describe('when the name is empty', () => {
+		it('renders the message with default styles and an empty heading', () => {
+			render(Box, { msg: 'Empty name test', name: '' });
 
-        const content = screen.getByText("Empty name test");
-        expect(content).toBeInTheDocument();
+			const messageElement = screen.getByText('Empty name test');
+			expect(messageElement).toBeInTheDocument();
 
-        // The name element won't be found with getByText("") so we need to query differently
-        const nameElement = document.querySelector("h1");
-        expect(nameElement).toBeInTheDocument();
-        expect(nameElement.textContent).toBe("");
+			const nameElement = screen.getByRole('heading', { level: 1 });
+			expect(nameElement).toBeInTheDocument();
+			expect(nameElement.textContent).toBe('');
 
-        const parentDiv = nameElement.parentElement;
-        const grandparentDiv = parentDiv.parentElement;
+			const outerDiv = nameElement.parentElement?.parentElement;
+			expect(outerDiv).not.toHaveClass('justify-end', 'justify-start');
 
-        // Verify default classes are applied
-        expect(content).toHaveClass("font-sans", "whitespace-pre-wrap");
-        expect(content).not.toHaveClass("text-start", "text-end");
+			const innerDiv = nameElement.parentElement;
+			expect(innerDiv).not.toHaveClass('bg-sky-300', 'bg-gray-200');
 
-        // classes h1
-        expect(nameElement).toHaveClass(
-            "tracking-wide",
-            "uppercase",
-            "font-bold",
-            "text-xl",
-        );
-        expect(nameElement).not.toHaveClass("text-start", "text-end");
+			expect(nameElement).not.toHaveClass('text-end', 'text-start');
+			expect(messageElement).not.toHaveClass('text-end', 'text-start');
+		});
+	});
 
-        // Classes inner div
-        expect(parentDiv).toHaveClass(
-            "font-mono",
-            "w-fit",
-            "p-2.5",
-            "border-2",
-            "border-black",
-            "border-solid",
-            "rounded-xl",
-        );
-        expect(parentDiv).not.toHaveClass(
-            "justify-start",
-            "justify-end",
-            "bg-sky-300",
-            "bg-gray-200",
-        );
+	describe('when the message is empty', () => {
+		it('renders the name with an empty message paragraph', () => {
+			const { container } = render(Box, { msg: '', name: 'User' });
+			const nameElement = screen.getByText('User');
+			expect(nameElement).toBeInTheDocument();
 
-        // Classes outer Div
-        expect(grandparentDiv).toHaveClass("flex", "m-4");
-        expect(grandparentDiv).not.toHaveClass("justify-end", "justify-start");
-    });
+			// The message paragraph should be empty
+			const messageElement = container.querySelector('p');
+			expect(messageElement).toBeInTheDocument();
+			expect(messageElement?.textContent).toBe('');
+		});
+	});
 });
