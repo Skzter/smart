@@ -6,7 +6,8 @@
   },
   "SourcePath": "./",
   "ExcludePaths": [
-    "vendor"
+    "vendor",
+    ".go"
   ],
   "Cleaner": {
     "ErrorIf": true,
