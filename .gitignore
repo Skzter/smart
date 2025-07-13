@@ -33,9 +33,13 @@ go.work.sum
 # env file
 .env
 
+# temp files
+tmp/
+
 #generated Code
 *.pkl.go
 *.msgpack
+*_gen.go
 
 # Editor/IDE
 .idea/

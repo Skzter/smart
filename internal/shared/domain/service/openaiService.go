@@ -16,13 +16,8 @@ type OpenAIService struct {
 }
 
 // NewService creates and returns a new OpenAIService instance.
-func NewService(logger *slog.Logger, timeout int) (*OpenAIService, error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, err
-	}
-
-	repo, err := repository.NewOpenAiRepository(logger, timeout)
-	if err != nil {
+func NewOpenAIService(logger *slog.Logger, repo repository.OpenAI) (*OpenAIService, error) {
+	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}
 

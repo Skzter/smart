@@ -48,19 +48,23 @@ components:
       type: object
       properties:
         header:
-          type: array
-          items:
-            type: string 
-            example: "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
+          type: object
+          additionalProperties:
+            type: string
+            example: "text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
+          required: true
         prompt:
           type: string
           example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
+          required: false
         destination:
           type: string
           example: "IP or Hostname"
+          required: true
         request:
           type: string
           example: "request json von supplier-d"
+          required: true
     OfferlistResponse:
       type: string
       example: "Response JSON from supplier"
