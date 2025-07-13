@@ -27,7 +27,7 @@ const testKey = "tag1-tag2-123456"
 func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
 		Request: entity.Request{
-			Header:      []string{"Content-Type: application/json"},
+			Header:      map[string]string{"Content-Type": "application/json"},
 			Prompt:      "prompt",
 			Destination: "http://example.com",
 			Request:     `{}`,
@@ -301,7 +301,7 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "valid entry",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      []string{"Content-Type: application/json"},
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Prompt:      "prompt",
 					Destination: "http://example.com",
 					Request:     "{}",
@@ -315,7 +315,7 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid request - empty header",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      []string{},
+					Header:      map[string]string{},
 					Prompt:      "prompt",
 					Destination: "http://example.com",
 					Request:     "{}",
@@ -330,7 +330,7 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid request - empty prompt",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      []string{"Content-Type: application/json"},
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Prompt:      "",
 					Destination: "http://example.com",
 					Request:     "{}",
@@ -345,7 +345,7 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid response - empty response",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      []string{"Content-Type: application/json"},
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Prompt:      "prompt",
 					Destination: "http://example.com",
 					Request:     "{}",
@@ -360,7 +360,7 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid tags - empty list",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      []string{"Content-Type: application/json"},
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Prompt:      "prompt",
 					Destination: "http://example.com",
 					Request:     "{}",
