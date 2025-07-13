@@ -258,3 +258,8 @@ tasks:
       - go tool wire ./cmd/suproxy
     sources:
       - cmd/suproxy/wire.go
+
+  bench:
+    desc: "Run the benchmark"
+    cmds:
+      - go run cmd/benchmark/main.go
