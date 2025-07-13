@@ -36,6 +36,9 @@ go.work.sum
 # temp files
 tmp/
 
+# logs
+*.log
+
 #generated Code
 *.pkl.go
 *.msgpack
