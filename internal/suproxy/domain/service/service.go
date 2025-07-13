@@ -24,11 +24,8 @@ type databaseService struct {
 
 // NewDatabaseService creates a new instance of DatabaseService.
 func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository) (DatabaseService, error) {
-	if err := assert.NotNil(repo); err != nil {
+	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, fmt.Errorf("repo cannot be nil, %w", err)
-	}
-	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger cannot be nil, %w", err)
 	}
 	return &databaseService{
 		logger: logger,

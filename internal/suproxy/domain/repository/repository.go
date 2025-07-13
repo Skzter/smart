@@ -52,6 +52,9 @@ func NewDatabaseRepository(
 
 // CreateRequest writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
+	}
 	if err := validateDbEntry(dbEntry); err != nil {
 		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
@@ -80,8 +83,8 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 // ReadRequest retrieves a request from the database by its key, downloading the Parquet file and reading its content.
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return nil, fmt.Errorf("key must not be empty: %w", err)
+	if err := assert.NotNil(ctx, key); err != nil {
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+key)
@@ -103,8 +106,8 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 
 // UpdateRequest updates an existing request in the database by downloading the Parquet file, modifying its content, and re-uploading it.
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty: %w", err)
+	if err := assert.NotNil(ctx, key); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	if err := validateDbEntry(dbEntry); err != nil {
@@ -123,7 +126,7 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
 
-	var timestamp = fmt.Sprintf("%d", time.Now().Unix())
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 	metadata := map[string]string{
 		"created": oldmetadata["created"],
 		"updated": timestamp,
@@ -139,8 +142,8 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 // DeleteRequest deletes a request from the database by removing the Parquet file associated with the given key.
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty: %w", err)
+	if err := assert.NotNil(ctx, key); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	err := dbR.s3Wrapper.DeleteParquetFile(ctx, EntryPrefix+key)
@@ -154,6 +157,9 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 }
 
 func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
+	}
 	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, EntryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list parquet files: %w", err)

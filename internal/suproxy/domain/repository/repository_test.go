@@ -387,6 +387,61 @@ func TestValidateDbEntry(t *testing.T) {
 	}
 }
 
+// TestListAllKeys tests the ListAllKeys method of the database repository
+func TestListAllKeys(t *testing.T) {
+	tests := []struct {
+		name         string
+		mockKeys     []string
+		mockErr      error
+		expectedKeys []string
+		expectErr    bool
+	}{
+		{
+			name:         "success",
+			mockKeys:     []string{"supplierData/tag1", "supplierData/tag2"},
+			mockErr:      nil,
+			expectedKeys: []string{"supplierData/tag1", "supplierData/tag2"},
+			expectErr:    false,
+		},
+		{
+			name:         "empty result",
+			mockKeys:     []string{},
+			mockErr:      nil,
+			expectedKeys: []string{},
+			expectErr:    false,
+		},
+		{
+			name:         "s3 failure",
+			mockKeys:     nil,
+			mockErr:      errors.New("s3 error"),
+			expectedKeys: nil,
+			expectErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo, mockS3, _ := setupMocks(t)
+
+			mockS3.On("ListParquetFiles", mock.Anything, EntryPrefix).
+				Return(tt.mockKeys, tt.mockErr).
+				Once()
+
+			keys, err := repo.ListAllKeys(context.Background())
+
+			if tt.expectErr {
+				assert.Error(t, err)
+				assert.Nil(t, keys)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedKeys, keys)
+			}
+
+			mockS3.AssertExpectations(t)
+		})
+	}
+}
+
 // setupMocks initializes the mocks for the database repository tests
 func setupMocks(t *testing.T) (
 	*databaseRepository,
