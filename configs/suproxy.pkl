@@ -7,7 +7,7 @@ model: String ="gpt-4.1-nano-2025-04-14"
 
 port: String = "8080" 
 
-max_items_per_validation: Int = 10
+maxItemsPerValidation: Int = 10
 
 class Prompts {
     validationPrompt : String = """

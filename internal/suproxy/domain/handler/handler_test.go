@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -102,161 +104,129 @@ func TestNewSuproxyController(t *testing.T) {
 	}
 }
 
+type supplierSetup struct {
+	code     int
+	response any // if nil, will use expected response
+}
+
+type validationSetup struct {
+	simulatedResult error
+	expectedResult  bool
+}
+
 //nolint:funlen
 func TestHandlerPostOfferlist(t *testing.T) {
 	header := map[string]string{
 		"Authorization": "Bearer asdfjsafjaölfaöfsal",
 	}
+
+	invalidRequestBody := struct {
+		Err string `json:"error"`
+	}{
+		Err: "invalid request body",
+	}
+
 	tests := []struct {
-		name                      string
-		request                   string
-		prompt                    string
-		useCorrectAdress          bool
-		useValidRequestEntity     bool
-		simulatedResponse         string // must contain unique testid whenever expectValidateCall is true
-		simulatedResponseCode     int
-		expectedResponse          string
-		expects200                bool
-		expectValidateCall        bool
-		expectsSupplierCall       bool
-		expectedValidationResult  bool
-		simulatedValidationResult error
+		name             string
+		request          *entity.Request // will use invalid request if nil
+		useCorrectAdress bool
+		vSetup           *validationSetup // only sets up validation mock if not nil, otherwise also assumes that error is logged before
+		sSetup           *supplierSetup   // only sets up server if not nil
+		expectedResponse any              // allows for unmarshal to fail
+		expects200       bool
 	}{
 		{
-			name:                  "valid",
-			request:               "{\"apimode\":\"live\",\"id\":\"a0950be9-76ad-4fcb-932d-37660d10b1f8\",\"params\":[]}",
-			prompt:                "",
-			useCorrectAdress:      true,
-			useValidRequestEntity: true,
-			simulatedResponse: `{
-				"httpstatuscode": 200,
-				"data": {
-					"items":[
-						{
-							"offerid": 0
-						}
-					]
-				}
-			}`,
-			simulatedResponseCode: 200,
-			expectedResponse: `{
-				"httpstatuscode": 200,
-				"data": {
-					"items":[
-						{
-							"offerid": 0
-						}
-					]
-				}
-			}`,
+			name: "valid",
+			request: &entity.Request{
+				Prompt:  "",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
 
-			expects200:                true,
-			expectValidateCall:        true,
-			expectsSupplierCall:       true,
-			expectedValidationResult:  true,
-			simulatedValidationResult: nil,
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			vSetup: &validationSetup{
+				simulatedResult: nil,
+				expectedResult:  true,
+			},
 		},
 		{
-			name:                     "invalid request body",
-			request:                  "invalid body",
-			prompt:                   "",
-			useValidRequestEntity:    false,
-			expectedResponse:         `{"error":"Invalid request body"}`,
-			expects200:               false,
-			expectValidateCall:       false,
-			expectsSupplierCall:      false,
-			expectedValidationResult: false,
+			name:             "invalid request body",
+			request:          nil,
+			expectedResponse: invalidRequestBody,
+			expects200:       false,
 		},
 		{
-			name:                     "invalid address",
-			request:                  "{\"apimode\":\"live\",\"id\":\"a0950be9-76ad-4fcb-932d-37660d10b1f8\",\"params\":[]}",
-			prompt:                   "",
-			useValidRequestEntity:    true,
-			expectedResponse:         `{"error":"Invalid request body"}`,
-			expects200:               false,
-			expectValidateCall:       false,
-			expectsSupplierCall:      false,
-			expectedValidationResult: false,
+			name: "invalid address",
+			request: &entity.Request{
+				Prompt:  "",
+				Request: `{}`,
+			},
+			useCorrectAdress: false,
+			expectedResponse: invalidRequestBody,
+			expects200:       false,
 		},
 		{
-			name:                     "supplier 400",
-			request:                  "{}",
-			prompt:                   "",
-			useCorrectAdress:         true,
-			useValidRequestEntity:    true,
-			simulatedResponse:        "",
-			simulatedResponseCode:    400,
-			expectedResponse:         "",
-			expects200:               true,
-			expectValidateCall:       false,
-			expectsSupplierCall:      true,
-			expectedValidationResult: false,
+			name:             "supplier 400",
+			request:          &entity.Request{},
+			useCorrectAdress: true,
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 0,
+			},
+			expects200: false,
+			sSetup: &supplierSetup{
+				code:     400,
+				response: nil,
+			},
 		},
 		{
-			name:                     "invalid supplier data",
-			request:                  "{}",
-			prompt:                   "",
-			useCorrectAdress:         true,
-			useValidRequestEntity:    true,
-			simulatedResponse:        "invalid response",
-			simulatedResponseCode:    200,
-			expectedResponse:         "invalid response",
-			expects200:               true,
-			expectValidateCall:       false,
-			expectsSupplierCall:      true,
-			expectedValidationResult: false,
+			name: "invalid supplier data",
+			request: &entity.Request{
+				Prompt:  "",
+				Request: "{}",
+			},
+			useCorrectAdress: true,
+			expectedResponse: "invalid",
+			expects200:       true,
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
 		},
 		{
-			name:                  "invalid httpstatuscode in supplierdata",
-			request:               "{}",
-			prompt:                "",
-			useCorrectAdress:      true,
-			useValidRequestEntity: true,
-			simulatedResponse: `{
-				"httpstatuscode": "No Number",
-				"data": {
-					"items":[
-						{
-							"offerid": 5
-						}
-					]
-				}
-			}`,
-			simulatedResponseCode: 200,
-			expectedResponse: `{
-				"httpstatuscode": "No Number",
-				"data": {
-					"items":[
-						{
-							"offerid": 5
-						}
-					]
-				}
-			}`,
-			expects200:               true,
-			expectValidateCall:       false,
-			expectsSupplierCall:      true,
-			expectedValidationResult: false,
-		},
-		{
-			name:                  "invalid data in supplierdata",
-			request:               "{}",
-			prompt:                "",
-			useCorrectAdress:      true,
-			useValidRequestEntity: true,
-			simulatedResponse: `{
-				"httpstatuscode": 200,
-				"data": "not a map"
-			}`,
-			simulatedResponseCode: 200,
-			expectedResponse: `{
-				"httpstatuscode": 200,
-				"data": "not a map"
-			}`,
-			expects200:               true,
-			expectValidateCall:       false,
-			expectsSupplierCall:      true,
-			expectedValidationResult: false,
+			name: "validation error",
+			request: &entity.Request{
+				Prompt:  "",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			vSetup: &validationSetup{
+				simulatedResult: errors.New("error"),
+				expectedResult:  false,
+			},
 		},
 	}
 
@@ -271,16 +241,20 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	}
 	router := SetupRouter(&h)
 
-	for pos, tt := range tests {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writer.Clear()
 			w := httptest.NewRecorder()
 
 			var server *httptest.Server
-			if tt.expectsSupplierCall {
+			if tt.sSetup != nil {
 				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(tt.simulatedResponseCode)
-					_, err := w.Write([]byte(tt.simulatedResponse))
+					w.WriteHeader(tt.sSetup.code)
+					if tt.sSetup.response == nil {
+						tt.sSetup.response = tt.expectedResponse
+					}
+					body, _ := json.Marshal(tt.sSetup.response)
+					_, err := w.Write(body)
 					if err != nil {
 						panic(err)
 					}
@@ -288,52 +262,90 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				defer server.Close()
 			}
 
-			if tt.expectValidateCall {
-				mockValidator.On("Validate", mock.Anything, mock.MatchedBy(func(list *entity.SupplierResponse) bool {
-					var data map[string]any
-					if err := json.Unmarshal(list.Data.Items[0], &data); err != nil {
-						panic(err)
-					}
-					return int(data["offerid"].(float64)) == pos
-				})).Return(tt.simulatedValidationResult)
+			if tt.vSetup != nil {
+				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vSetup.simulatedResult)
 			}
 			h.validator = mockValidator
+			defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
 
+			// use correct header and destintation if request is not nil
 			var reqstring []byte
-			if tt.useValidRequestEntity {
+			if tt.request != nil {
 				var dest string
 				if tt.useCorrectAdress {
 					dest = server.URL
 				} else {
 					dest = ""
 				}
-
-				reqEnt := entity.Request{
-					Header:      header,
-					Prompt:      tt.prompt,
-					Destination: dest,
-					Request:     tt.request,
-				}
-				reqstring, _ = json.Marshal(reqEnt)
+				tt.request.Header = header
+				tt.request.Destination = dest
+				reqstring, _ = json.Marshal(tt.request)
 			} else {
-				reqstring = []byte(tt.request)
+				reqstring = []byte("invalid")
 			}
 
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
 			router.ServeHTTP(w, req)
 
 			bytes, _ := io.ReadAll(w.Body)
+			expectedBytes, _ := json.Marshal(tt.expectedResponse)
 
 			valid := true
 			for i := range writer.len() {
 				if strings.Contains(string(writer.Read(i)), "ERROR") {
 					valid = false
 				}
+				t.Log(string(writer.Read(i)))
 			}
 
-			assert.Equal(t, tt.expectedValidationResult, valid)
+			assert.Equal(t, tt.vSetup != nil && tt.vSetup.expectedResult, valid)
 			assert.Equal(t, tt.expects200, w.Code == http.StatusOK)
-			assert.Equal(t, tt.expectedResponse, string(bytes))
+			assert.Equal(t, string(expectedBytes), string(bytes))
 		})
+	}
+}
+
+func BenchmarkPostOfferList(b *testing.B) {
+	discardValidator := mocks.NewMockValidator(b)
+	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil)
+
+	ctrl := SuproxyController{
+		logger:    slog.New(slog.DiscardHandler),
+		config:    &config.Config{},
+		client:    &http.Client{},
+		validator: discardValidator,
+	}
+	router := SetupRouter(&ctrl)
+
+	response := entity.SupplierResponse{
+		HTTPStatusCode: 200,
+		Data: entity.SupplierOfferList{
+			Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+		},
+	}
+	mResponse, _ := json.Marshal(response)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write(mResponse); err != nil {
+			panic(err)
+		}
+	}))
+
+	requestBody, _ := json.Marshal(entity.Request{
+		Header:      map[string]string{"Content-Type": "application/json"},
+		Prompt:      "",
+		Destination: server.URL,
+		Request:     `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
+	})
+
+	for b.Loop() {
+		request, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(requestBody))
+
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, request)
+
+		if w.Code != http.StatusOK {
+			b.Fatalf("Unexpected status code: got %d", w.Code)
+		}
 	}
 }

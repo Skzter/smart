@@ -49,28 +49,32 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 
 	if err := c.BindJSON(&request); err != nil {
 		s.logger.Error("Failed to bind JSON", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	body, err := s.fetchOffers(request)
+	body, code, err := s.fetchOffers(request)
 	if err != nil {
 		s.logger.Error("Failed to bind JSON", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
-	done := make(chan any)
-	go s.handleRequest(c, &request, body, done)
-	defer func() { <-done }()
+	if code == http.StatusOK {
+		done := make(chan any)
+		go s.handleRequest(c, &request, body, done)
+		defer func() { <-done }()
+	} else {
+		s.logger.Error("supplier request failed", "code", code)
+	}
 
-	c.Data(200, "application/json", *body)
+	c.Data(code, "application/json", *body)
 }
 
-func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, error) {
+func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, error) {
 	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	defer func() {
@@ -86,7 +90,7 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, error)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		s.logger.Error("Failed to send request", "error", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	defer func() {
@@ -97,10 +101,10 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, error)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return &body, nil
+	return &body, resp.StatusCode, nil
 }
 
 func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Request, respData *[]byte, done chan<- any) {
@@ -117,14 +121,16 @@ func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Reque
 		return
 	}
 
-	if err := s.store(req, &list); err != nil {
+	tags := []string{}
+
+	if err := s.store(req, &list, tags); err != nil {
 		s.logger.Error(err.Error())
 		return
 	}
 }
 
 //nolint:unparam
-func (s *SuproxyController) store(req *entity.Request, resp *entity.SupplierResponse) error {
+func (s *SuproxyController) store(req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
 	// speichern
 
 	return nil
