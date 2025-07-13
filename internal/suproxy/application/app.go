@@ -20,14 +20,14 @@ func Run() {
 		panic(err)
 	}
 
-	handler, err := handler.NewSuproxyController(logger, cfg)
+	cntrl, err := handler.NewSuproxyController(logger, cfg)
 
 	if err != nil {
 		logger.Error("failed to create handler", "error", err)
 		return
 	}
 
-	router := handler.SetupRouter()
+	router := handler.SetupRouter(cntrl)
 
 	if err := router.Run(":" + cfg.Port); err != nil {
 		logger.Error("failed to run server", "error", err)

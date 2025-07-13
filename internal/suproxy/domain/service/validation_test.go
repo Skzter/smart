@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -86,7 +87,7 @@ func TestNewValidator(t *testing.T) {
 func TestValidatorValidate(t *testing.T) {
 	tests := []struct {
 		name             string
-		input            *entity.SupplierOfferList
+		input            *entity.SupplierResponse
 		expectCall       bool
 		expectedContent  string
 		mockResponse     string
@@ -101,24 +102,22 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "non-200 status",
-			input: &entity.SupplierOfferList{
-				HTTPStatusCode: 200,
-				Data:           &map[string]any{},
+			input: &entity.SupplierResponse{
+				HTTPStatusCode: 400,
+				Data:           entity.SupplierOfferList{},
 			},
 			expectCall:  false,
 			expectError: true,
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"duration":      5,
-							"departuredate": "2025-01-01",
-							"returndate":    "2025-01-10",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"duration": 7,
+						"departuredate": "2025-01-01",
+						"returndate":    "2025-01-10"}`),
 					},
 				},
 			},
@@ -129,15 +128,13 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"duration":      7,
-							"departuredate": "2025-02-01",
-							"returndate":    "2025-02-10",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"duration": 7,
+						"departuredate": "2025-02-01",
+						"returndate":    "2025-02-10"}`),
 					},
 				},
 			},
@@ -148,15 +145,13 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"duration":      9,
-							"departuredate": "2025-03-01",
-							"returndate":    "2025-03-10",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"duration": 7,
+						"departuredate": "2025-03-01",
+						"returndate":    "2025-03-10"}`),
 					},
 				},
 			},
@@ -166,20 +161,11 @@ func TestValidatorValidate(t *testing.T) {
 			expectError:     true,
 		},
 		{
-			name: "valid 400 response",
-			input: &entity.SupplierOfferList{
-				HTTPStatusCode: 400,
-				Data:           &map[string]any{},
-			},
-			expectCall:  false,
-			expectError: true,
-		},
-		{
 			name: "valid 200 response with empty offers",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{},
 				},
 			},
 			expectCall:  false,
@@ -187,28 +173,16 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "exceeding maximum request,",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
-						map[string]any{
-							"departuredate": "2025-05-01",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
+						json.RawMessage(`{"departuredate": "2025-05-01"}`),
 					},
 				},
 			},
@@ -219,11 +193,11 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "valid 200 response with single empty offer",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(""),
 					},
 				},
 			},
@@ -232,13 +206,13 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "openai service error",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"departuredate": "2025-06-01",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"duration": 7,
+						"departuredate": "2025-06-01",
+						"returndate":    "2025-06-10"}`),
 					},
 				},
 			},
@@ -250,13 +224,13 @@ func TestValidatorValidate(t *testing.T) {
 		},
 		{
 			name: "empty openai response",
-			input: &entity.SupplierOfferList{
+			input: &entity.SupplierResponse{
 				HTTPStatusCode: 200,
-				Data: &map[string]any{
-					"items": []any{
-						map[string]any{
-							"departuredate": "2025-07-01",
-						},
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{
+						json.RawMessage(`{"duration": 7,
+						"departuredate": "2025-07-01",
+						"returndate":    "2025-07-10"}`),
 					},
 				},
 			},

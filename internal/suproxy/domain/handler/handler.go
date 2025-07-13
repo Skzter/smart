@@ -53,16 +53,29 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
+	body, err := s.fetchOffers(request)
 	if err != nil {
-		s.logger.Error("Failed to create request", "error", err)
+		s.logger.Error("Failed to bind JSON", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
+	done := make(chan any)
+	go s.handleRequest(c, &request, body, done)
+	defer func() { <-done }()
+
+	c.Data(200, "application/json", *body)
+}
+
+func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, error) {
+	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
+	if err != nil {
+		return nil, err
+	}
+
 	defer func() {
 		if err := req.Body.Close(); err != nil {
-			s.logger.Error("Failed to close response body", "error", err)
+			panic(err)
 		}
 	}()
 
@@ -73,8 +86,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	resp, err := s.client.Do(req)
 	if err != nil {
 		s.logger.Error("Failed to send request", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
+		return nil, err
 	}
 
 	defer func() {
@@ -83,53 +95,43 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		}
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Error("Failed to send request", "error", resp.StatusCode)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
-		return
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		s.logger.Error("Failed to read response body", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Internal"})
-		return
+		return nil, err
 	}
 
-	done := make(chan any)
-	go s.handleRequest(c, &body, done)
-	defer func() { <-done }()
-
-	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+	return &body, nil
 }
 
-func (s *SuproxyController) handleRequest(ctx context.Context, data *[]byte, done chan<- any) {
+func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Request, respData *[]byte, done chan<- any) {
 	defer close(done)
 
-	var mappedData map[string]any
-	if err := json.Unmarshal(*data, &mappedData); err != nil {
+	var list entity.SupplierResponse
+	if err := json.Unmarshal(*respData, &list); err != nil {
 		s.logger.Error(err.Error())
 		return
 	}
 
-	code, ok := mappedData["httpstatuscode"].(float64)
-	if !ok {
-		s.logger.Error("invalid response format: httpstatuscode invalid")
-		return
-	}
-	dataSeg, ok := mappedData["data"].(map[string]any)
-	if !ok {
-		s.logger.Error("invalid response format: data segment invalid")
+	if err := s.validator.Validate(ctx, &list); err != nil {
+		s.logger.Error(err.Error())
 		return
 	}
 
-	if err := s.validator.Validate(ctx, &entity.SupplierOfferList{HTTPStatusCode: int(code), Data: &dataSeg}); err != nil {
-		s.logger.Info(err.Error())
+	if err := s.store(req, &list); err != nil {
+		s.logger.Error(err.Error())
+		return
 	}
 }
 
+//nolint:unparam
+func (s *SuproxyController) store(req *entity.Request, resp *entity.SupplierResponse) error {
+	// speichern
+
+	return nil
+}
+
 // setupRouter initializes the Gin router and sets up the routes for the API
-func (h *SuproxyController) SetupRouter() *gin.Engine {
+func SetupRouter(h *SuproxyController) *gin.Engine {
 	router := gin.Default()
 
 	api := router.Group("/api/v1")

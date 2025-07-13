@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -96,7 +95,6 @@ func TestNewSuproxyController(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			controller, err := NewSuproxyController(tt.logger, tt.cfg)
-			t.Log(controller, err)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -133,10 +131,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			simulatedResponse: `{
 				"httpstatuscode": 200,
 				"data": {
-					"testid": 0,
 					"items":[
 						{
-							"offerid": 3225601839
+							"offerid": 0
 						}
 					]
 				}
@@ -145,10 +142,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			expectedResponse: `{
 				"httpstatuscode": 200,
 				"data": {
-					"testid": 0,
 					"items":[
 						{
-							"offerid": 3225601839
+							"offerid": 0
 						}
 					]
 				}
@@ -158,7 +154,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			expectValidateCall:        true,
 			expectsSupplierCall:       true,
 			expectedValidationResult:  true,
-			simulatedValidationResult: errors.New("err"),
+			simulatedValidationResult: nil,
 		},
 		{
 			name:                     "invalid request body",
@@ -190,8 +186,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			useValidRequestEntity:    true,
 			simulatedResponse:        "",
 			simulatedResponseCode:    400,
-			expectedResponse:         `{"error":"Invalid request body"}`,
-			expects200:               false,
+			expectedResponse:         "",
+			expects200:               true,
 			expectValidateCall:       false,
 			expectsSupplierCall:      true,
 			expectedValidationResult: false,
@@ -221,7 +217,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				"data": {
 					"items":[
 						{
-							"offerid": 3225601839
+							"offerid": 5
 						}
 					]
 				}
@@ -232,7 +228,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				"data": {
 					"items":[
 						{
-							"offerid": 3225601839
+							"offerid": 5
 						}
 					]
 				}
@@ -273,7 +269,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		client:    &http.Client{},
 		validator: mockValidator,
 	}
-	router := h.SetupRouter()
+	router := SetupRouter(&h)
 
 	for pos, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -293,8 +289,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			}
 
 			if tt.expectValidateCall {
-				mockValidator.On("Validate", mock.Anything, mock.MatchedBy(func(list *entity.SupplierOfferList) bool {
-					return int((*list.Data)["testid"].(float64)) == pos
+				mockValidator.On("Validate", mock.Anything, mock.MatchedBy(func(list *entity.SupplierResponse) bool {
+					var data map[string]any
+					if err := json.Unmarshal(list.Data.Items[0], &data); err != nil {
+						panic(err)
+					}
+					return int(data["offerid"].(float64)) == pos
 				})).Return(tt.simulatedValidationResult)
 			}
 			h.validator = mockValidator
@@ -325,12 +325,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			bytes, _ := io.ReadAll(w.Body)
 
 			valid := true
-			for i := 0; i < writer.len(); i++ {
-				v := map[string]any{}
-				if err := json.Unmarshal(writer.Read(i), &v); err != nil {
-					panic(err)
-				}
-				if v["level"] == "ERROR" {
+			for i := range writer.len() {
+				if strings.Contains(string(writer.Read(i)), "ERROR") {
 					valid = false
 				}
 			}

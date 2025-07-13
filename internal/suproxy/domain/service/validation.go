@@ -29,7 +29,7 @@ type OpenAIValidationResult struct {
 }
 
 type Validator interface {
-	Validate(ctx context.Context, offers *entity.SupplierOfferList) error
+	Validate(ctx context.Context, offers *entity.SupplierResponse) error
 }
 
 // Validator encapsulates the logic for validating supplier offer responses
@@ -64,7 +64,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config) (Validator, error) {
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierOfferList) error {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) error {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return err
 	}
@@ -73,27 +73,21 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierOfferLis
 		return errors.New("validation failed: given response is not 200")
 	}
 
-	items, ok := (*offers.Data)["items"].([]any)
-	if !ok {
-		return errors.New("validation failed: items invalid or nil")
-	}
-
-	if len(items) == 0 {
+	if len(offers.Data.Items) == 0 {
 		return errors.New("validation failed: no offers in provided list")
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	for i, offer := range items {
-		mOffer, _ := json.Marshal(offer)
-		item := string(mOffer)
-
+	for i, offer := range offers.Data.Items {
 		if i >= v.MaxItems {
 			break
 		}
 
+		item := string(offer)
+
 		item = strings.TrimSpace(item)
-		if item == "{}" {
+		if item == "" {
 			v.Logger.Debug("Skipping empty item", "index", i)
 			continue
 		}

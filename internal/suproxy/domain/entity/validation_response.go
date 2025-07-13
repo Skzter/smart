@@ -1,6 +1,12 @@
 package entity
 
+import "encoding/json"
+
+type SupplierResponse struct {
+	HTTPStatusCode int               `json:"httpstatuscode"`
+	Data           SupplierOfferList `json:"data"`
+}
+
 type SupplierOfferList struct {
-	HTTPStatusCode int
-	Data           *map[string]any
+	Items []json.RawMessage `json:"items"`
 }

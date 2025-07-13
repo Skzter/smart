@@ -39,7 +39,7 @@ func (_m *MockValidator) EXPECT() *MockValidator_Expecter {
 }
 
 // Validate provides a mock function for the type MockValidator
-func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierOfferList) error {
+func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) error {
 	ret := _mock.Called(ctx, offers)
 
 	if len(ret) == 0 {
@@ -47,7 +47,7 @@ func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.Supplie
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierOfferList) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) error); ok {
 		r0 = returnFunc(ctx, offers)
 	} else {
 		r0 = ret.Error(0)
@@ -67,15 +67,15 @@ func (_e *MockValidator_Expecter) Validate(ctx interface{}, offers interface{}) 
 	return &MockValidator_Validate_Call{Call: _e.mock.On("Validate", ctx, offers)}
 }
 
-func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers *entity.SupplierOfferList)) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers *entity.SupplierResponse)) *MockValidator_Validate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *entity.SupplierOfferList
+		var arg1 *entity.SupplierResponse
 		if args[1] != nil {
-			arg1 = args[1].(*entity.SupplierOfferList)
+			arg1 = args[1].(*entity.SupplierResponse)
 		}
 		run(
 			arg0,
@@ -90,7 +90,7 @@ func (_c *MockValidator_Validate_Call) Return(err error) *MockValidator_Validate
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierOfferList) error) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) error) *MockValidator_Validate_Call {
 	_c.Call.Return(run)
 	return _c
 }
