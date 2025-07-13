@@ -14,7 +14,7 @@ type OpenAI interface {
 	Request(ctx context.Context, request entity.Request) (*entity.Response, error)
 }
 
-type openAIService struct {
+type openAI struct {
 	repo   repository.OpenAI
 	logger *slog.Logger
 }
@@ -25,11 +25,11 @@ func NewOpenAIService(logger *slog.Logger, repo repository.OpenAI) (OpenAI, erro
 		return nil, err
 	}
 
-	return &openAIService{repo, logger}, nil
+	return &openAI{repo, logger}, nil
 }
 
 // Request sends a request to the OpenAI repository and returns the response.
-func (c *openAIService) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
+func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		c.logger.Error(err.Error())
 		return nil, err
