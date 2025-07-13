@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 )
@@ -30,7 +31,7 @@ func TestPostOfferlist(t *testing.T) {
 		{
 			name: "valid JSON request",
 			requestBody: `{
-                "header": ["Content-Type: application/json"],
+                "header": {"Content-Type": "application/json"},
                 "prompt": "test prompt",
                 "destination": "https://example.com",
                 "request": "{\"some\": \"data\"}"
@@ -41,7 +42,7 @@ func TestPostOfferlist(t *testing.T) {
 		{
 			name: "empty valid JSON",
 			requestBody: `{
-                "header": [],
+                "header": {},
                 "prompt": "",
                 "destination": "",
                 "request": ""
@@ -52,7 +53,7 @@ func TestPostOfferlist(t *testing.T) {
 		{
 			name: "minimal valid JSON",
 			requestBody: `{
-                "header": null,
+                "header": {},
                 "prompt": "minimal",
                 "destination": "https://test.com",
                 "request": "{}"
@@ -114,7 +115,7 @@ func BenchmarkPostOfferlist(b *testing.B) {
 	}
 
 	requestBody := entity.Request{
-		Header:      []string{"Content-Type: application/json"},
+		Header:      map[string]string{"Content-Type": "application/json"},
 		Prompt:      "Benchmarking offers",
 		Destination: "https://example.com/api/offers",
 		Request:     `"offers"`,
@@ -144,9 +145,13 @@ func BenchmarkPostOfferlist(b *testing.B) {
 
 // setupController initializes the SuproxyController for testing
 func setupController() (*handler.SuproxyController, error) {
+	cfg, err := config.LoadAppConfig()
+	if err != nil {
+		return nil, err
+	}
 	gin.SetMode(gin.TestMode)
 	logger := slog.Default()
-	ctrl, err := handler.NewSuproxyController(logger)
+	ctrl, err := handler.NewSuproxyController(logger, cfg)
 	if err != nil {
 		return nil, err
 	}

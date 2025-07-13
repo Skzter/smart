@@ -10,7 +10,7 @@ branch_name=$(git rev-parse --abbrev-ref HEAD)
 issue_number=$(echo "$branch_name" | sed -n 's/^\([0-9]\+\)-.*/\1/p')
 
 # Skip validation for main branches, merge commits, or if no issue number found
-if [ "$branch_name" = "main" ] || [ -z "$issue_number" ] || echo "$commit_msg" | grep -qE "^Merge branch"; then
+if [ "$branch_name" = "main" ] || [ -z "$issue_number" ] || echo "$commit_msg" | grep -qE "^Merge branch" || echo "$commit_msg" | grep -qE "^Merge remote-tracking branch"; then
 	echo "✅ Skipping commit message validation for branch '$branch_name', merge commits, or no issue number found."
     exit 0
 fi
