@@ -1,4 +1,4 @@
-package lib
+package logger
 
 import (
 	"log/slog"
@@ -9,7 +9,7 @@ import (
 
 // NewLogger creates a new logger with the given log level.
 func NewLogger(logLevel string) *slog.Logger {
-	level := slog.LevelInfo
+	var level slog.Level
 
 	switch logLevel {
 	case "debug":
@@ -19,6 +19,9 @@ func NewLogger(logLevel string) *slog.Logger {
 	case "warn":
 		level = slog.LevelWarn
 	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelWarn
 	}
 
 	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{

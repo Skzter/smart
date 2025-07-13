@@ -18,7 +18,7 @@ import (
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 )
 
 // InitializeApp initializes the application.
@@ -36,7 +36,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 
 // LoggerProvider provides a new logger.
 func LoggerProvider(cfg *config.Config) *slog.Logger {
-	return lib.NewLogger(cfg.LogLevel)
+	return logger.NewLogger(cfg.LogLevel)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
