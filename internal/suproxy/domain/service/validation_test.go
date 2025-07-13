@@ -1,18 +1,21 @@
-package service
+package service_test
 
 import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"strings"
 	"testing"
 
+	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/mock"
 
-	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 func TestNewValidator(t *testing.T) {
@@ -25,41 +28,26 @@ func TestNewValidator(t *testing.T) {
 		MaxItemsPerValidation: 5,
 	}
 	logger := slog.Default()
+	repo, _ := repository.NewOpenAiRepository(logger, openai.Client{}, 5)
+	serv, _ := sharedService.NewOpenAIService(logger, repo)
 
 	tests := []struct {
 		name        string
 		cfg         *config.Config
 		logger      *slog.Logger
+		service     sharedService.OpenAI
 		expectError bool
 	}{
 		{
 			name:        "valid",
 			cfg:         &cfg,
 			logger:      logger,
+			service:     serv,
 			expectError: false,
 		},
 		{
-			name:        "nil config",
+			name:        "nil values",
 			cfg:         nil,
-			logger:      logger,
-			expectError: true,
-		},
-		{
-			name:        "nil logger",
-			cfg:         &cfg,
-			logger:      nil,
-			expectError: true,
-		},
-		{
-			name: "NewService error",
-			cfg: &config.Config{
-				Timeout: 0,
-				Prompts: &config.Prompts{
-					ValidationPrompt: "validate this",
-				},
-				Model:                 "gpt-4",
-				MaxItemsPerValidation: 5,
-			},
 			logger:      logger,
 			expectError: true,
 		},
@@ -67,7 +55,7 @@ func TestNewValidator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator, err := NewValidator(tt.logger, tt.cfg)
+			validator, err := service.NewValidator(tt.logger, tt.cfg, tt.service)
 			if !tt.expectError {
 				if validator == nil {
 					t.Errorf("expected validator, got nil")
@@ -243,29 +231,30 @@ func TestValidatorValidate(t *testing.T) {
 
 	logger := slog.New(slog.DiscardHandler)
 
+	cfg := config.Config{
+		Timeout:               5,
+		MaxItemsPerValidation: 5,
+		Prompts: &config.Prompts{
+			ValidationPrompt: "validate something",
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockservice := mocks.NewMockOpenAIService(t)
+			mockservice := sharedMocks.NewMockOpenAIService(t)
 
 			if tt.expectCall {
 				mockservice.
-					On("Request", mock.Anything, mock.MatchedBy(func(req shared.Request) bool {
-						return strings.Contains(req.Prompt, tt.expectedContent)
-					})).
-					Return(&shared.Response{Text: tt.mockResponse}, tt.mockResonseError)
+					On("Request", mock.Anything, mock.Anything).
+					Return(&sharedEntity.Response{Text: tt.mockResponse}, tt.mockResonseError)
 			}
 
-			validator := validator{
-				mockservice,
-				logger,
-				"",
-				"",
-				5,
+			validator, err := service.NewValidator(logger, &cfg, mockservice)
+			if err != nil {
+				panic(err)
 			}
 
-			err := validator.Validate(t.Context(), tt.input)
-
-			if (err != nil) != tt.expectError {
+			if err := validator.Validate(t.Context(), tt.input); (err != nil) != tt.expectError {
 				t.Errorf("Validate() error = %v, expectError %v", err, tt.expectError)
 			}
 

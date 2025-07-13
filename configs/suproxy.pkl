@@ -9,6 +9,8 @@ port: String = "8080"
 
 maxItemsPerValidation: Int = 10
 
+logLevel: String = "info"
+
 class Prompts {
     validationPrompt : String = """
     You are a strict, technically experienced mock-data tester. Your task is to determine whether a given HTTP Response is logically and semantically consistent with its corresponding HTTP Request in the context of travel offers. 

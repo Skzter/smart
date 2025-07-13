@@ -35,30 +35,21 @@ type Validator interface {
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type validator struct {
-	openAiService          service.OpenAIService
-	Logger                 *slog.Logger
-	SystemPromptValidation string
-	Model                  string
-	MaxItems               int
+	openAiService service.OpenAI
+	Logger        *slog.Logger
+	cfg           *config.Config
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config) (Validator, error) {
-	if err := assert.NotNil(logger, cfg); err != nil {
-		return nil, err
-	}
-
-	openAiService, err := service.NewService(logger, cfg.Timeout)
-	if err != nil {
+func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenAI) (Validator, error) {
+	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}
 
 	return &validator{
-		openAiService:          openAiService,
-		Logger:                 logger,
-		SystemPromptValidation: cfg.Prompts.ValidationPrompt,
-		Model:                  cfg.Model,
-		MaxItems:               cfg.MaxItemsPerValidation,
+		openAiService: service,
+		Logger:        logger,
+		cfg:           cfg,
 	}, nil
 }
 
@@ -80,7 +71,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
 	for i, offer := range offers.Data.Items {
-		if i >= v.MaxItems {
+		if i >= v.cfg.MaxItemsPerValidation {
 			break
 		}
 
@@ -93,9 +84,9 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 
 		req := shared.Request{
-			Model:        v.Model,
+			Model:        v.cfg.Model,
 			Prompt:       item,
-			SystemPrompt: v.SystemPromptValidation,
+			SystemPrompt: v.cfg.Prompts.ValidationPrompt,
 		}
 
 		result, err := v.openAiService.Request(ctx, req)

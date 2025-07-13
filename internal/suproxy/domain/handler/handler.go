@@ -25,20 +25,15 @@ type SuproxyController struct {
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config); err != nil {
-		return nil, err
-	}
-
-	val, err := validator.NewValidator(logger, config)
-	if err != nil {
+func NewSuproxyController(logger *slog.Logger, config *config.Config, val validator.Validator, client *http.Client) (*SuproxyController, error) {
+	if err := assert.NotNil(logger, config, val, client); err != nil {
 		return nil, err
 	}
 
 	return &SuproxyController{
 		logger:    logger,
 		config:    config,
-		client:    &http.Client{},
+		client:    client,
 		validator: val,
 	}, nil
 }
@@ -95,7 +90,7 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			s.logger.Error("Failed to close response body", "error", err)
+			panic(err)
 		}
 	}()
 
@@ -134,16 +129,4 @@ func (s *SuproxyController) store(req *entity.Request, resp *entity.SupplierResp
 	// speichern
 
 	return nil
-}
-
-// setupRouter initializes the Gin router and sets up the routes for the API
-func SetupRouter(h *SuproxyController) *gin.Engine {
-	router := gin.Default()
-
-	api := router.Group("/api/v1")
-	{
-		api.POST("/Offerlist", h.PostOfferlist)
-	}
-
-	return router
 }

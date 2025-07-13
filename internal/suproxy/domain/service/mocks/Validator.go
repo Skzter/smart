@@ -62,7 +62,7 @@ type MockValidator_Validate_Call struct {
 
 // Validate is a helper method to define mock.On call
 //   - ctx context.Context
-//   - offers *entity.SupplierOfferList
+//   - offers *entity.SupplierResponse
 func (_e *MockValidator_Expecter) Validate(ctx interface{}, offers interface{}) *MockValidator_Validate_Call {
 	return &MockValidator_Validate_Call{Call: _e.mock.On("Validate", ctx, offers)}
 }

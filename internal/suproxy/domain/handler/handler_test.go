@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"bytes"
@@ -11,12 +11,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service/mocks"
 )
 
 type slicewriter struct {
@@ -40,63 +43,42 @@ func (s *slicewriter) len() int {
 	return len(s.data)
 }
 
+func DiscardValidator(t testing.TB) service.Validator {
+	discardValidator := mocks.NewMockValidator(t)
+	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil).Maybe()
+	return discardValidator
+}
+
 func TestNewSuproxyController(t *testing.T) {
 	tests := []struct {
-		name   string
-		logger *slog.Logger
-		cfg    *config.Config
-		err    bool
+		name string
+		log  *slog.Logger
+		cfg  *config.Config
+		val  service.Validator
+		clt  *http.Client
+		err  bool
 	}{
 		{
-			name:   "valid",
-			logger: slog.Default(),
-			cfg: &config.Config{
-				Model:                 "gpt",
-				Timeout:               10,
-				MaxItemsPerValidation: 15,
-				Prompts: &config.Prompts{
-					ValidationPrompt: "validate this",
-				},
-			},
-			err: false,
+			name: "valid",
+			cfg:  &config.Config{},
+			log:  slog.Default(),
+			val:  DiscardValidator(t),
+			clt:  &http.Client{},
+			err:  false,
 		},
 		{
-			name:   "config nil",
-			logger: slog.Default(),
-			cfg:    nil,
-			err:    true,
-		},
-		{
-			name:   "logger nil",
-			logger: nil,
-			cfg: &config.Config{
-				Model:                 "gpt",
-				Timeout:               10,
-				MaxItemsPerValidation: 15,
-				Prompts: &config.Prompts{
-					ValidationPrompt: "validate this",
-				},
-			},
-			err: true,
-		},
-		{
-			name:   "validator error",
-			logger: slog.Default(),
-			cfg: &config.Config{
-				Model:                 "gpt",
-				Timeout:               0,
-				MaxItemsPerValidation: 15,
-				Prompts: &config.Prompts{
-					ValidationPrompt: "validate this",
-				},
-			},
-			err: true,
+			name: "params nil",
+			log:  nil,
+			cfg:  nil,
+			val:  nil,
+			clt:  nil,
+			err:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := NewSuproxyController(tt.logger, tt.cfg)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -233,13 +215,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockValidator := mocks.NewMockValidator(t)
 	var writer slicewriter
 
-	h := SuproxyController{
-		logger:    slog.New(slog.NewJSONHandler(&writer, nil)),
-		config:    &config.Config{},
-		client:    &http.Client{},
-		validator: mockValidator,
-	}
-	router := SetupRouter(&h)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{})
+
+	router := SetupRouter(h)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -264,9 +242,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 
 			if tt.vSetup != nil {
 				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vSetup.simulatedResult)
+				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
 			}
-			h.validator = mockValidator
-			defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
 
 			// use correct header and destintation if request is not nil
 			var reqstring []byte
@@ -301,21 +278,21 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			assert.Equal(t, tt.vSetup != nil && tt.vSetup.expectedResult, valid)
 			assert.Equal(t, tt.expects200, w.Code == http.StatusOK)
 			assert.Equal(t, string(expectedBytes), string(bytes))
+
+			mockValidator.AssertExpectations(t)
 		})
 	}
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
-	discardValidator := mocks.NewMockValidator(b)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil)
+	ctrl, _ := handler.NewSuproxyController(
+		slog.New(slog.DiscardHandler),
+		&config.Config{},
+		DiscardValidator(b),
+		&http.Client{},
+	)
 
-	ctrl := SuproxyController{
-		logger:    slog.New(slog.DiscardHandler),
-		config:    &config.Config{},
-		client:    &http.Client{},
-		validator: discardValidator,
-	}
-	router := SetupRouter(&ctrl)
+	router := SetupRouter(ctrl)
 
 	response := entity.SupplierResponse{
 		HTTPStatusCode: 200,
@@ -348,4 +325,16 @@ func BenchmarkPostOfferList(b *testing.B) {
 			b.Fatalf("Unexpected status code: got %d", w.Code)
 		}
 	}
+}
+
+// setupRouter initializes the Gin router and sets up the routes for the API
+func SetupRouter(h *handler.SuproxyController) *gin.Engine {
+	router := gin.Default()
+
+	api := router.Group("/api/v1")
+	{
+		api.POST("/Offerlist", h.PostOfferlist)
+	}
+
+	return router
 }
