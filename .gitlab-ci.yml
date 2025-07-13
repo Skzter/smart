@@ -113,6 +113,12 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
+  - echo "Runner $CI_RUNNER_DESCRIPTION"
+  - echo "Go version $(go version)"
+  - echo "Go env GOCACHE $(go env GOCACHE)"
+  - echo "Go env GOPATH $(go env GOPATH)"
+  - go clean -cache
+  - go clean -modcache
     - ./bin/task test-coverage
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
