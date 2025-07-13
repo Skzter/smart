@@ -17,16 +17,20 @@ packages:
     interfaces:
       S3StorageWrapper:
       ParquetFileWrapper:
+
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service:
     config:
       dir: './internal/shared/domain/service/mocks'
     interfaces:
-     OpenAIService:
+     OpenAI:
+
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service:
     config:
       dir: './internal/suproxy/domain/service/mocks'
     interfaces:
       Validator:
+      DatabaseService:
+
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository:
     config:
       dir: './internal/autotester/domain/repository/mocks'

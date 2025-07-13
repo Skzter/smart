@@ -215,3 +215,12 @@ tasks:
       - go tool wire ./cmd/suproxy
     sources:
       - cmd/suproxy/wire.go
+
+  generate-force:
+    desc: force rerun of all generate tasks
+    cmds: 
+      - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
+      - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
+      - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
+      - go tool wire ./cmd/autotester
+      - go tool wire ./cmd/suproxy

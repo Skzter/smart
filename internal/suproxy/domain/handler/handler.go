@@ -13,7 +13,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	validator "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 // SuproxyController handles the HTTP requests for the Suproxy service
@@ -21,12 +21,13 @@ type SuproxyController struct {
 	logger    *slog.Logger
 	config    *config.Config
 	client    *http.Client
-	validator validator.Validator
+	validator service.Validator
+	db        service.DatabaseService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config, val validator.Validator, client *http.Client) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client); err != nil {
+func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService) (*SuproxyController, error) {
+	if err := assert.NotNil(logger, config, val, client, db); err != nil {
 		return nil, err
 	}
 
@@ -35,6 +36,7 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config, val valida
 		config:    config,
 		client:    client,
 		validator: val,
+		db:        db,
 	}, nil
 }
 
@@ -118,15 +120,26 @@ func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Reque
 
 	tags := []string{}
 
-	if err := s.store(req, &list, tags); err != nil {
+	if err := s.store(ctx, req, &list, tags); err != nil {
 		s.logger.Error(err.Error())
 		return
 	}
 }
 
-//nolint:unparam
-func (s *SuproxyController) store(req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
-	// speichern
+func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
+	mresp, err := json.Marshal(resp)
 
-	return nil
+	if err != nil {
+		return err
+	}
+
+	dbentry := entity.DatabaseEntry{
+		Request: *req,
+		Response: entity.Response{
+			Response: string(mresp),
+		},
+		Tags: tags,
+	}
+
+	return s.db.SaveDbEntry(ctx, dbentry)
 }
