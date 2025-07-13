@@ -126,9 +126,12 @@ tasks:
     vars:
       TESTCOVERAGE_THRESHOLD: 30 
     cmds:
+      - go version
+      - go env
+      - echo "COVERPKG $(go list ./... | tr '\n' ',')"
+      - find . -name '*.go' | sort
       - echo "Running unit tests with coverage"
-      - export COVERPKG=$(go list ./... | tr '\n' ',')
-      - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count -coverpkg=$COVERPKG ./...
+      - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"
