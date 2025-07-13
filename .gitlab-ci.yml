@@ -116,6 +116,9 @@ unit_test_go:
     - ./bin/task test
 
 integration_test_go:
+  image: docker:dind
+  tags:
+    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:

@@ -125,7 +125,6 @@ tasks:
     desc: "Run the tests with coverage"
     cmds:
       - go tool gotestsum -- -coverprofile=coverage.out ./...
-      - go tool cover -html=coverage.out
 
   test-integration:
     desc: "Run the integration tests"
