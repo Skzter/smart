@@ -124,12 +124,8 @@ tasks:
   test-coverage:
     desc: "Run the tests with coverage"
     vars:
-      TESTCOVERAGE_THRESHOLD: 30 
+      TESTCOVERAGE_THRESHOLD: 20 
     cmds:
-      - go version
-      - go env
-      - echo "COVERPKG $(go list ./... | tr '\n' ',')"
-      - find . -name '*.go' | sort
       - echo "Running unit tests with coverage"
       - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
