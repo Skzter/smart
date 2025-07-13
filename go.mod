@@ -11,7 +11,6 @@ require (
 	github.com/parquet-go/parquet-go v0.25.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/gin-gonic/gin v1.10.1
 )
 
 require (
@@ -139,6 +138,8 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/google/subcommands v1.2.0 // indirect
+	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gookit/color v1.5.4 // indirect
@@ -182,6 +183,7 @@ require (
 	github.com/ldez/usetesting v0.4.3 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/leonklingele/grouper v1.1.2 // indirect
+	github.com/lmittmann/tint v1.1.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/macabu/inamedparam v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -263,7 +265,6 @@ require (
 	github.com/ultraware/whitespace v0.2.0 // indirect
 	github.com/uudashr/gocognit v1.2.0 // indirect
 	github.com/uudashr/iface v1.3.1 // indirect
-	github.com/vektra/mockery v1.1.2 // indirect
 	github.com/vektra/mockery/v3 v3.5.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
@@ -322,6 +323,7 @@ tool (
 	github.com/air-verse/air
 	github.com/apple/pkl-go/cmd/pkl-gen-go
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+	github.com/google/wire/cmd/wire
 	github.com/securego/gosec/v2/cmd/gosec
 	github.com/vektra/mockery/v3
 	gotest.tools/gotestsum

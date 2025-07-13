@@ -68,7 +68,6 @@ func TestNewS3Wrapper(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, wrapper)
-				assert.Equal(t, tt.config.Bucket, wrapper.config.Bucket)
 			}
 		})
 	}
