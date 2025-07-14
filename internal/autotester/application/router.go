@@ -16,15 +16,27 @@ import (
 func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *gin.Engine {
 	router := gin.Default()
 
-	router.POST("/api/v1/chat", controller.HandleChatRequest)
+	apiV1 := router.Group("/v1")
+	{
+		apiV1.POST("/chat", controller.HandleChatRequest)
+	}
 
-	staticFS, err := fs.Sub(web.DistFS, "dist")
+	router.GET("/auth_config.json", func(c *gin.Context) {
+		c.FileFromFS("/auth_config.json", http.FS(web.Auth0Config))
+	})
+
+	assetsFS, err := fs.Sub(web.DistFS, "dist/assets")
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
 	}
+	router.StaticFS("/assets", http.FS(assetsFS))
 
-	router.StaticFS("/", http.FS(staticFS))
+	router.LoadHTMLFiles("web/dist/index.html")
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
+	})
 
+	logger.Info("Router initialized")
 	return router
 }

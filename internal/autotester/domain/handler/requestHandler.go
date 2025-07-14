@@ -18,12 +18,12 @@ import (
 type AutotesterController struct {
 	config  *config.Config
 	logger  *slog.Logger
-	service *service.OpenAIService
+	service service.OpenAI
 }
 
 // NewAutotesterController creates a new AutotesterController.
 // Returns an initialized controller or an error.
-func NewAutotesterController(logger *slog.Logger, config *config.Config, service *service.OpenAIService) (*AutotesterController, error) {
+func NewAutotesterController(logger *slog.Logger, config *config.Config, service service.OpenAI) (*AutotesterController, error) {
 	if err := assert.NotNil(logger, config, service); err != nil {
 		return nil, err
 	}

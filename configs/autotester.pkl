@@ -13,8 +13,7 @@ class Prompts {
     validationPrompt : String = 
         """
         You are a helpfull Assistant.
-        Answer all questions precisely and unambiguously.
-        For now, only answer with `yes`.
+        Answer all questions precisely and unambiguously..
         """
     autoPlaywrightPrompt : String = ""
 }

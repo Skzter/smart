@@ -115,7 +115,7 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test-coverage
+    - ./bin/task test-ci
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
     reports:
@@ -124,7 +124,19 @@ unit_test_go:
         path: ./go-cobertura-coverage.xml
       junit: junit.xml
     expire_in: 1 week
-    
+
+integration_test_go:
+  image: docker:dind
+  tags:
+    - fdit
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test-integration
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
 frontend_test:
   stage: code_analysis_and_testing
   extends: .pnpm_cache

@@ -54,6 +54,16 @@ tasks:
       - cd web/ && pnpm install
       - task: lint-frontend
       - cd web/ && pnpm run build
+    sources:
+      - web/*
+
+  build-frontend-dev:
+    desc: "Build the frontend"
+    dir: "web"
+    cmds:
+      - pnpm build
+    sources:
+      - web/*
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -102,6 +112,7 @@ tasks:
       AWS_SECRET_ACCESS_KEY:
         sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
+      - task: build-frontend-dev
       - 'PATH=$LPATH; doppler run -- go tool air'
 
   compose-local:
@@ -121,6 +132,11 @@ tasks:
     desc: "Run the tests"
     cmds:
       - go tool gotestsum ./...
+  
+  test-coverage:
+    desc: "Run the tests with coverage"
+    cmds:
+      - go tool gotestsum -- -coverprofile=coverage.out ./...
 
   test-coverage:
     desc: "Run the tests with coverage"
@@ -151,7 +167,7 @@ tasks:
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
     cmds:
-      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
+      - go tool gotestsum -- -tags=integration -- -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
 
   lint:
@@ -179,6 +195,12 @@ tasks:
     desc: "Run the frontend formatter"
     cmds:
       - cd web/ && pnpm prettier --write .
+
+  test-frontend:
+    desc: "Run the frontend tests"
+    dir: "web"
+    cmds:
+      - pnpm test
 
   pre-commit:
     desc: "Run the pre-commit"
