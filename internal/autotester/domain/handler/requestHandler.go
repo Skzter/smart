@@ -10,6 +10,7 @@ import (
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	repoEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // AutotesterController is the controller for autotesting requests.
@@ -22,9 +23,8 @@ type AutotesterController struct {
 
 // NewAutotesterController creates a new AutotesterController.
 // Returns an initialized controller or an error.
-func NewAutotesterController(logger *slog.Logger, config *config.Config) (a *AutotesterController, err error) {
-	service, err := service.NewService(logger, config.Timeout)
-	if err != nil {
+func NewAutotesterController(logger *slog.Logger, config *config.Config, service service.OpenAI) (*AutotesterController, error) {
+	if err := assert.NotNil(logger, config, service); err != nil {
 		return nil, err
 	}
 

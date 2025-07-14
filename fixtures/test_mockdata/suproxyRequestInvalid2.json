@@ -1,0 +1,8 @@
+{
+    "request": "invalid",
+    "header":{
+        "Authorization": "Bearer asdfjsafjaölfaöfsal"
+    },
+    "destination":"",
+    "prompt":""
+}

@@ -68,6 +68,8 @@ go_generate_code:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
       - internal/build/configs
+      - cmd/autotester/wire_gen.go
+      - cmd/suproxy/wire_gen.go
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -114,6 +116,18 @@ unit_test_go:
   extends: .go_cache
   script:
     - ./bin/task test
+
+integration_test_go:
+  image: docker:dind
+  tags:
+    - fdit
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test-integration
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
 
 frontend_test:
   stage: code_analysis_and_testing
@@ -171,6 +185,9 @@ build_go_artifacts:
 build_go_no_artifacts:
   stage: build
   extends: .go_cache
+  needs:
+    - job: go_generate_code
+      artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH != "main"
       when: on_success
