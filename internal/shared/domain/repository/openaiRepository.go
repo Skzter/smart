@@ -36,8 +36,8 @@ type openAI struct {
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
-	if err := assert.NotNil(logger); err != nil {
+func NewOpenAiRepository(logger *slog.Logger, client openai.Client, timeout int) (OpenAI, error) {
+	if err := assert.NotNil(logger, client); err != nil {
 		return nil, err
 	}
 
@@ -47,7 +47,7 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 
 	return &openAI{
 		logger:   logger,
-		client:   openai.NewClient(build.OpenAIKey),
+		client:   client,
 		messages: []autoentity.Message{},
 		timeout:  timeout,
 	}, nil
