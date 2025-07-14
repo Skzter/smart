@@ -7,7 +7,7 @@
   "SourcePath": "./",
   "ExcludePaths": [
     "vendor",
-    ".go"
+    ".go/pkg/mod"
   ],
   "Cleaner": {
     "ErrorIf": true,
