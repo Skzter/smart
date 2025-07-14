@@ -59,7 +59,7 @@ go_mod_download:
 
 go_generate_code:
   stage: prepare
-  extends: .go_cache 
+  extends: .go_cache
   script:
     - ./bin/task generate
   artifacts:
@@ -125,7 +125,8 @@ unit_test_go:
     - coverage.out
 
 integration_test_go:
-  image: docker:dind
+  services:
+    - docker:dind
   tags:
     - fdit
   stage: code_analysis_and_testing
