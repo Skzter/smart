@@ -10,6 +10,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
+// DatabaseService defines an interface for database operations.
 type DatabaseService interface {
 	// SaveDbEntry saves a database entry.
 	SaveDbEntry(context.Context, entity.DatabaseEntry) error
@@ -17,6 +18,7 @@ type DatabaseService interface {
 	GetAllKeys(ctx context.Context) ([]string, error)
 }
 
+// databaseService provides access to the database through the configured repository.
 type databaseService struct {
 	logger *slog.Logger
 	repo   repository.DatabaseRepository

@@ -16,6 +16,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
+// Common validation errors returned by the Validator.
 var (
 	ErrResponseNil       = errors.New("response is nil")
 	ErrInvalidHTTPStatus = errors.New("invalid HTTP status")
@@ -28,6 +29,8 @@ type OpenAIValidationResult struct {
 	Reason []string `json:"reason"`
 }
 
+// Validator defines an interface for validating a SupplierResponse.
+// Implementations should provide specific validation logic.
 type Validator interface {
 	Validate(ctx context.Context, offers *entity.SupplierResponse) error
 }
