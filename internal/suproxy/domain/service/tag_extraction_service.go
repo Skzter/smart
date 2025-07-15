@@ -1,5 +1,6 @@
 package service
 
+/*
 import (
 	"errors"
 	"fmt"
@@ -46,3 +47,4 @@ func (k *tagExtractionService) KeywordTagExtractor(prompt string) ([]string, err
 	return extractedTags, nil
 }
 
+*/
