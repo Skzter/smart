@@ -132,7 +132,7 @@ func TestValidatePrompt(t *testing.T) {
 
 			tt.mockSetup((*mocks.MockOpenAI)(serviceMock), ctx)
 
-			svc := &ValidatePromptService{
+			svc := &validatePrompt{
 				service: serviceMock,
 				config:  cfg,
 				logger:  logger,

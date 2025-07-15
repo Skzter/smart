@@ -111,7 +111,7 @@ func TestGeneratePrompt(t *testing.T) {
 					Return(&entity.Response{Text: tt.wantText}, nil)
 			}
 
-			svc := &GeneratePromptService{
+			svc := &generatePrompt{
 				service: service,
 				config:  &cfg,
 				logger:  logger,

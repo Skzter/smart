@@ -15,8 +15,8 @@ type GeneratePrompt interface {
 	GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error)
 }
 
-// GeneratePromptService provides functionality to generate test prompts using OpenAI.
-type GeneratePromptService struct {
+// generatePrompt provides functionality to generate test prompts using OpenAI.
+type generatePrompt struct {
 	service service.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
@@ -24,16 +24,16 @@ type GeneratePromptService struct {
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewGeneratePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (*GeneratePromptService, error) {
+func NewGeneratePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
-	return &GeneratePromptService{service, config, logger}, nil
+	return &generatePrompt{service, config, logger}, nil
 }
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the configured AutoPlaywrightPrompt as system prompt and gpt-4-1106-preview as model.
-func (s *GeneratePromptService) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
