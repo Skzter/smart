@@ -26,12 +26,11 @@ linters:
     - unparam
     - unused
     - whitespace
-    #- revive
+  #  - revive
   settings:
     #revive:
     #  rules:
     #    - name: exported
-    #     message: "exported function or variable should have comment or be unexported"
     funlen:
       lines: 100
       statements: 50
