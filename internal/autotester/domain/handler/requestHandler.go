@@ -70,8 +70,9 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 }
 
 // serviceHandler calls the OpenAI service and prepares the response for the frontend.
-// Returns a ResponseForUserDTO or an error.
-
+// It takes a gin.Context and UserRequest as input parameters.
+// First validates the user prompt through validationService, then generates a response through generationService.
+// Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
 	err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
