@@ -59,7 +59,7 @@ go_mod_download:
 
 go_generate_code:
   stage: prepare
-  extends: .go_cache 
+  extends: .go_cache
   script:
     - ./bin/task generate
   artifacts:
@@ -68,6 +68,8 @@ go_generate_code:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
       - internal/build/configs
+      - cmd/autotester/wire_gen.go
+      - cmd/suproxy/wire_gen.go
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -92,6 +94,8 @@ static_analysis_go:
 
 sonarqube-check:
   stage: code_analysis_and_testing
+  tags:
+    - fdit
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -105,6 +109,9 @@ sonarqube-check:
   script:
     - sonar-scanner
   allow_failure: true
+  needs:
+    - unit_test_go
+    - frontend_test
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -113,7 +120,24 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test
+    - go tool gotestsum -- -coverprofile=coverage.out ./...
+  artifacts:
+    name: go_coverage
+    paths:
+    - coverage.out
+
+integration_test_go:
+  services:
+    - docker:dind
+  tags:
+    - fdit
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test-integration
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
 
 frontend_test:
   stage: code_analysis_and_testing
@@ -122,12 +146,15 @@ frontend_test:
     - pnpm run test:coverage
   coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
   artifacts:
-    reports: 
+    name: frontend_coverage
+    paths:
+      - web/coverage/lcov.info
+    reports:
       coverage_report:
         coverage_format: cobertura
         path: web/coverage/cobertura-coverage.xml
-      junit: web/coverage/junit.xml 
-    
+      junit: web/coverage/junit.xml
+
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
@@ -171,6 +198,9 @@ build_go_artifacts:
 build_go_no_artifacts:
   stage: build
   extends: .go_cache
+  needs:
+    - job: go_generate_code
+      artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH != "main"
       when: on_success

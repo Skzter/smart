@@ -15,15 +15,23 @@ services:
     networks:
       - default
 
-  postgres:
-    image: postgres:alpine
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+  frontend-mock:
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/frontend-mock
     networks:
       - default
+    ports:
+      - "8082:8082"
+    environment:
+      - SUPPLIER_URL=http://suproxy:8080
+      - API_URL=http://frontend-mock:8082
+      - NODE_ENV=production
+
+  supplier-mock:
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/supplier-mock
+    networks:
+      - default
+    ports:
+      - "8083:8083"
 
   redis:
     image: valkey/valkey:alpine
