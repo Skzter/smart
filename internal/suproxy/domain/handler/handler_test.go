@@ -303,7 +303,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				}()
 			}
 
-			h.HandleRequest(t.Context(), &entity.Request{}, &tt.respData)
+			h.HandleRequest(t.Context(), entity.Request{}, &tt.respData)
 
 			err := false
 			for i := range writer.len() {

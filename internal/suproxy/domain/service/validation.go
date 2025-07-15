@@ -82,7 +82,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		item = strings.TrimSpace(item)
 		if item == "" {
-			*tags = append(*tags, "emptyOffer")
+			addTag(tags, "emptyOffer")
 			continue
 		}
 
@@ -111,9 +111,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		if !validationResult.Valid {
 			for _, tag := range validationResult.Reason {
-				if !slices.Contains(*tags, tag) {
-					*tags = append(*tags, tag)
-				}
+				addTag(tags, tag)
 			}
 		}
 	}
@@ -122,4 +120,10 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		return &[]string{"valid"}, nil
 	}
 	return tags, nil
+}
+
+func addTag(tags *[]string, tag string) {
+	if !slices.Contains(*tags, tag) {
+		*tags = append(*tags, tag)
+	}
 }

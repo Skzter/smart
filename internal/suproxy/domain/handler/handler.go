@@ -52,13 +52,13 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 
 	body, code, err := s.fetchOffers(request)
 	if err != nil {
-		s.logger.Error("Failed to bind JSON", "error", err)
+		s.logger.Error("Failed to fetch offers", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
 	if code == http.StatusOK {
-		go s.HandleRequest(c.Copy(), &request, body)
+		go s.HandleRequest(c.Copy(), request, body)
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
 	}
@@ -84,7 +84,6 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		s.logger.Error("Failed to send request", "error", err)
 		return nil, 0, err
 	}
 
@@ -102,7 +101,7 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 	return &body, resp.StatusCode, nil
 }
 
-func (s *SuproxyController) HandleRequest(ctx context.Context, req *entity.Request, respData *[]byte) {
+func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Request, respData *[]byte) {
 	var list entity.SupplierResponse
 	if err := json.Unmarshal(*respData, &list); err != nil {
 		s.logger.Error(err.Error())
@@ -115,7 +114,7 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req *entity.Reque
 		return
 	}
 
-	if err := s.store(ctx, req, &list, tags); err != nil {
+	if err := s.store(ctx, &req, &list, tags); err != nil {
 		s.logger.Error(err.Error())
 		return
 	}
