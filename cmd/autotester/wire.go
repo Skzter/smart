@@ -4,6 +4,7 @@
 package main
 
 import (
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedOpenAIService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 )
@@ -27,6 +29,8 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
+		ValidatePromptServiceProvider,
+		GeneratePromptServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
 	)
@@ -52,4 +56,14 @@ func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
 func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
+}
+
+// ValidatePromptServiceProvider provides a new validate prompt service.
+func ValidatePromptServiceProvider(openai sharedOpenAIService.OpenAI, cfg *config.Config, logger *slog.Logger) (service.ValidatePrompt, error) {
+	return service.NewValidatePromptService(openai, cfg, logger)
+}
+
+// GeneratePromptServiceProvider provides a new generate prompt service.
+func GeneratePromptServiceProvider(openai sharedOpenAIService.OpenAI, cfg *config.Config, logger *slog.Logger) (service.GeneratePrompt, error) {
+	return service.NewGeneratePromptService(openai, cfg, logger)
 }
