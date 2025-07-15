@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Assert that a file exists
+// FileExits checks if the file exists
 func FileExists(filename string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return errors.New(fmt.Sprintf("file %s doesnt exist: %s", filename, err))

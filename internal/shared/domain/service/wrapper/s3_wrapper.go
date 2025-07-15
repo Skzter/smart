@@ -21,18 +21,38 @@ import (
 const parquetFileExtension = ".parquet"
 
 var (
-	ErrNilLogger               = errors.New("logger cannot be nil")
-	ErrNilContext              = errors.New("context cannot be nil")
-	ErrEmptyKey                = errors.New("key cannot be empty")
-	ErrEmptyData               = errors.New("data cannot be empty")
-	ErrEmptyBucket             = errors.New("bucket cannot be empty")
-	ErrEmptyRegion             = errors.New("region cannot be empty")
-	ErrEmptyAccessKey          = errors.New("access key cannot be empty")
-	ErrEmptySecretKey          = errors.New("secret key cannot be empty")
-	ErrFailedToLoadAWSConfig   = errors.New("failed to load AWS config")
+	// ErrNilLogger indicates that a required logger instance is nil.
+	ErrNilLogger = errors.New("logger cannot be nil")
+
+	// ErrNilContext indicates that a required context is nil.
+	ErrNilContext = errors.New("context cannot be nil")
+
+	// ErrEmptyKey indicates that a required key is empty.
+	ErrEmptyKey = errors.New("key cannot be empty")
+
+	// ErrEmptyData indicates that provided data is empty.
+	ErrEmptyData = errors.New("data cannot be empty")
+
+	// ErrEmptyBucket indicates that a required bucket name is empty.
+	ErrEmptyBucket = errors.New("bucket cannot be empty")
+
+	// ErrEmptyRegion indicates that a required region is empty.
+	ErrEmptyRegion = errors.New("region cannot be empty")
+
+	// ErrEmptyAccessKey indicates that the AWS access key is empty.
+	ErrEmptyAccessKey = errors.New("access key cannot be empty")
+
+	// ErrEmptySecretKey indicates that the AWS secret key is empty.
+	ErrEmptySecretKey = errors.New("secret key cannot be empty")
+
+	// ErrFailedToLoadAWSConfig indicates that loading the AWS configuration failed.
+	ErrFailedToLoadAWSConfig = errors.New("failed to load AWS config")
+
+	// ErrFailedToGetFileMetadata indicates that retrieving file metadata failed.
 	ErrFailedToGetFileMetadata = errors.New("failed to get file metadata")
 )
 
+// S3StorageWrapper defines an interface for storing, retrieving and managing Parquet files in an S3-compatible storage service.
 type S3StorageWrapper interface {
 	// UploadParquetFile uploads a Parquet file to the given key with optional metadata.
 	UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
