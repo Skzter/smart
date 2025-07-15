@@ -58,7 +58,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if code == http.StatusOK {
-		go s.handleRequest(c.Copy(), &request, body)
+		go s.HandleRequest(c.Copy(), &request, body)
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
 	}
@@ -102,7 +102,7 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 	return &body, resp.StatusCode, nil
 }
 
-func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Request, respData *[]byte) {
+func (s *SuproxyController) HandleRequest(ctx context.Context, req *entity.Request, respData *[]byte) {
 	var list entity.SupplierResponse
 	if err := json.Unmarshal(*respData, &list); err != nil {
 		s.logger.Error(err.Error())
@@ -123,7 +123,6 @@ func (s *SuproxyController) handleRequest(ctx context.Context, req *entity.Reque
 
 func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags *[]string) error {
 	mresp, err := json.Marshal(resp)
-
 	if err != nil {
 		return err
 	}
