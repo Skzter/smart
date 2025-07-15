@@ -17,14 +17,28 @@ import (
 )
 
 var (
-	ErrEmptyParquetData    = errors.New("parquet data cannot be empty")
-	ErrFailedToWriteData   = errors.New("failed to write data to parquet")
+	// ErrEmptyParquetData indicates that the provided Parquet data is empty
+	// when data was expected.
+	ErrEmptyParquetData = errors.New("parquet data cannot be empty")
+
+	// ErrFailedToWriteData indicates that writing data to a Parquet file or buffer failed.
+	ErrFailedToWriteData = errors.New("failed to write data to parquet")
+
+	// ErrFailedToCloseWriter indicates that closing the Parquet writer failed.
 	ErrFailedToCloseWriter = errors.New("failed to close parquet writer")
-	ErrFailedToReadData    = errors.New("failed to read parquet data")
+
+	// ErrFailedToReadData indicates that reading data from a Parquet source failed.
+	ErrFailedToReadData = errors.New("failed to read parquet data")
+
+	// ErrFailedToCloseReader indicates that closing the Parquet reader failed.
 	ErrFailedToCloseReader = errors.New("failed to close parquet reader")
-	ErrInvalidStructType   = errors.New("data must be a struct, got %s")
+
+	// ErrInvalidStructType indicates that the provided data is not a struct type.
+	// The error message includes the actual type.
+	ErrInvalidStructType = errors.New("data must be a struct, got %s")
 )
 
+// ParquetFileWrapper defines an interface for working with Parquet serialization and deserialization for a generic struct type T.
 type ParquetFileWrapper[T any] interface {
 	// WriteStructsToParquet serializes a slice of structs into a Parquet-encoded byte slice.
 	WriteStructsToParquet(data []T) ([]byte, error)

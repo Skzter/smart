@@ -16,7 +16,7 @@ var SharedProviderSet = wire.NewSet(
 	service.NewOpenAIService,
 )
 
-// openAiClientProvider provides a new OpenAI client.
+// OpenAiClientProvider provides a new OpenAI client.
 func OpenAiClientProvider() (openai.Client, error) {
 	return openai.NewClient(
 		option.WithAPIKey(build.OpenAIKey),
