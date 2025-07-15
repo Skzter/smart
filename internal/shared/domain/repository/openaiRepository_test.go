@@ -1,7 +1,5 @@
 package repository
 
-/*
-
 import (
 	"context"
 	"log/slog"
@@ -17,7 +15,6 @@ import (
 
 // Test for creating new OpenAiRepository
 func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
-	t.Skip("skipping for now")
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		name            string
@@ -55,10 +52,12 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 		},
 	}
 
+	mockClient := mocks.NewMockOpenAIClient(t)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := NewOpenAiRepository(test.logger, test.timeout)
+			repo, err := NewOpenAiRepository(test.logger, mockClient, test.timeout)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")
@@ -77,7 +76,6 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 }
 
 func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
-	t.Skip("skipping for now")
 	tests := []struct {
 		name          string
 		request       entity.Request
@@ -155,7 +153,6 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 // Test for creating a request to openai
 // nolint:funlen
 func TestOpenaiReposCreateRequest(t *testing.T) {
-	t.Skip("skipping for now")
 	model := openai.GPT4Dot1Nano20250414
 	logger := slog.New(slog.DiscardHandler)
 	timeout := 5
@@ -359,4 +356,3 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		})
 	}
 }
-*/
