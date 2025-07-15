@@ -1,12 +1,10 @@
 package service
 
-/*
 import (
 	"context"
 	"fmt"
 	"log/slog"
 	"strings"
-	//datenbank-service
 )
 
 type TagSearchService interface {
@@ -15,10 +13,10 @@ type TagSearchService interface {
 
 type tagSearchService struct {
 	logger slog.Logger
-	db     service.DatabaseService
+	db     DatabaseService
 }
 
-func NewTagSearchService(logger slog.Logger, db service.DatabaseService) TagSearchService {
+func NewTagSearchService(logger slog.Logger, db DatabaseService) TagSearchService {
 	return &tagSearchService{
 		logger: logger,
 		db:     db,
@@ -49,5 +47,3 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 	t.logger.Info("Tag search completed", "tag", tag, "matches", len(matchingKeys))
 	return matchingKeys, nil
 }
-
-*/
