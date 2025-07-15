@@ -298,7 +298,10 @@ func TestHandlerPostOfferlist(t *testing.T) {
 					err = nil
 				}
 				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(err)
-				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
+				defer func() {
+					mockValidator.AssertExpectations(t)
+					mockValidator.ExpectedCalls = []*mock.Call{}
+				}()
 			}
 
 			if tt.dbError != nil {
@@ -307,7 +310,10 @@ func TestHandlerPostOfferlist(t *testing.T) {
 					err = nil
 				}
 				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(err)
-				defer func() { mockDB.ExpectedCalls = []*mock.Call{} }()
+				defer func() {
+					mockDB.AssertExpectations(t)
+					mockDB.ExpectedCalls = []*mock.Call{}
+				}()
 			}
 
 			// use correct header and destintation if request is not nil
