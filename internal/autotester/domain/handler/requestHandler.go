@@ -23,15 +23,20 @@ type AutotesterController struct {
 
 // NewAutotesterController creates a new AutotesterController.
 // Returns an initialized controller or an error.
-func NewAutotesterController(logger *slog.Logger, config *config.Config, validationSerice service.ValidatePrompt, generationService service.GeneratePrompt) (*AutotesterController, error) {
-	if err := assert.NotNil(logger, config, validationSerice); err != nil {
+func NewAutotesterController(
+	logger *slog.Logger,
+	config *config.Config,
+	validationService service.ValidatePrompt,
+	generationService service.GeneratePrompt,
+) (*AutotesterController, error) {
+	if err := assert.NotNil(logger, config, validationService); err != nil {
 		return nil, err
 	}
 
 	return &AutotesterController{
 		logger:            logger,
 		config:            config,
-		validationService: validationSerice,
+		validationService: validationService,
 		generationService: generationService,
 	}, nil
 }
