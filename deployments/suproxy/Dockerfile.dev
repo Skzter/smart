@@ -21,7 +21,18 @@ RUN go test ./...
 # -ldflags="-s -w" reduces binary size by stripping debug information
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/suproxy ./cmd/suproxy
 
-FROM scratch
+FROM alpine:latest AS security_provider
+RUN addgroup -g 1001 -S nonroot && \
+    adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
+
+FROM scratch AS production
+
+# Copy user configuration from security_provider stage
+COPY --from=security_provider /etc/passwd /etc/passwd
+COPY --from=security_provider /etc/group /etc/group
+
+# Set non-root user before copying binary
+USER nonroot
 
 COPY --from=builder /app/bin/suproxy /bin/suproxy
 
