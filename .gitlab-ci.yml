@@ -120,11 +120,18 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - go tool gotestsum -- -coverprofile=coverage.out ./...
+    - ./bin/task test-ci
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
     name: go_coverage
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: ./go-cobertura-coverage.xml
+      junit: junit.xml
     paths:
     - coverage.out
+    expire_in: 1 week
 
 integration_test_go:
   services:

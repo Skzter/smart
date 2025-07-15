@@ -1,0 +1,20 @@
+{
+  "OutputFormat": "cobertura",
+  "Complexity": {
+    "Active": true,
+    "Type": "cognitive"
+  },
+  "SourcePath": "./",
+  "ExcludePaths": [
+    "vendor",
+    ".go/pkg/mod"
+  ],
+  "Cleaner": {
+    "ErrorIf": true,
+    "NoneCodeLines": true,
+    "Generated": true,
+    "CustomIf": [
+      "debug"
+    ]
+  }
+}
