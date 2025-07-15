@@ -28,7 +28,7 @@ linters:
     - whitespace
   #  - revive
   settings:
-    #revive:
+   # revive:
     #  rules:
     #    - name: exported
     funlen:
