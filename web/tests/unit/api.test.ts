@@ -36,7 +36,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "/userInfo",
-                baseURL: "/api/v1",
+                baseURL: "/v1",
                 data: mockUserParams,
             });
             expect(result.data).toEqual(mockResponseData);
@@ -64,7 +64,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "/chat",
-                baseURL: "/api/v1",
+                baseURL: "/v1",
                 data: mockChatParams,
             });
             expect(result.data).toEqual(mockResponseData);

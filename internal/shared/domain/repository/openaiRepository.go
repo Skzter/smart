@@ -7,11 +7,9 @@ import (
 	"time"
 
 	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/packages/param"
 	"github.com/openai/openai-go/responses"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -32,8 +30,8 @@ type openAI struct {
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
-	if err := assert.NotNil(logger); err != nil {
+func NewOpenAiRepository(logger *slog.Logger, client openai.Client, timeout int) (OpenAI, error) {
+	if err := assert.NotNil(logger, client); err != nil {
 		return nil, err
 	}
 
@@ -42,10 +40,8 @@ func NewOpenAiRepository(logger *slog.Logger, timeout int) (OpenAI, error) {
 	}
 
 	return &openAI{
-		logger: logger,
-		client: openai.NewClient(
-			option.WithAPIKey(build.OpenAIKey),
-		),
+		logger:  logger,
+		client:  client,
 		timeout: timeout,
 	}, nil
 }

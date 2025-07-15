@@ -6,7 +6,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 )
 
-func LoadAppConfig() (*Config, error) {
+func LoadConfig() (*Config, error) {
 	var cfg Config
 	bytes, err := build.AutotesterEmbedConfigs.ReadFile("configs/autotester.msgpack")
 	if err != nil {

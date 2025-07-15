@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && touch dist/.gitkeep",
+    "build": "vite build && touch dist/assets/.gitkeep",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest",
@@ -41,6 +41,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@auth0/auth0-spa-js": "^2.2.0",
     "axios": "^1.9.0",
     "flowbite": "^3.1.2",
     "flowbite-svelte": "^1.5.4",

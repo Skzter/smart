@@ -1,10 +1,12 @@
-//nolint:dupl,goconst,gocritic
+//nolint:dupl
 package assert
 
 import (
 	"reflect"
 	"testing"
 )
+
+const valueString = "hello"
 
 // TestCheckInt tests the checkNumber function with various int types.
 // It verifies correct error handling for different value, min, and max combinations.
@@ -78,7 +80,6 @@ func TestCheckInt(t *testing.T) {
 	}
 
 	// non integer
-	valueString := "hello"
 	var minValue interface{} = 1
 	var maxValue interface{} = 10
 
@@ -172,7 +173,6 @@ func TestCheckUInt(t *testing.T) {
 	}
 
 	// non integer
-	valueString := "hello"
 	var minValue interface{} = uint(1)
 	var maxValue interface{} = uint(10)
 
@@ -236,7 +236,6 @@ func TestCheckFloat(t *testing.T) {
 	}
 
 	// non float
-	valueString := "hello"
 	var minValue interface{} = float64(1)
 	var maxValue interface{} = float64(10)
 
@@ -286,7 +285,6 @@ func TestCheckClosedBoundaries(t *testing.T) {
 	}
 
 	// non float
-	valueString := "hello"
 	var minValue interface{} = float64(1)
 	var maxValue interface{} = float64(10)
 
@@ -363,11 +361,12 @@ func TestArrayLength(t *testing.T) {
 
 	for _, test := range tests {
 		length, err := arrayLength(test.value)
-		if test.error == true && err == nil {
+		switch {
+		case test.error == true && err == nil:
 			t.Errorf("Got nil, expected error (test id: %d, value type: %s, lenght: %d)", test.id, reflect.TypeOf(test.value).Kind(), length)
-		} else if test.error == false && err != nil {
+		case test.error == false && err != nil:
 			t.Errorf("Got error '%s', expected nil (test id: %d, value type: %s, length: %d)", err, test.id, reflect.TypeOf(test.value).Kind(), length)
-		} else if test.length != length {
+		case test.length != length:
 			t.Errorf("Got wrong length %d, expected %d", length, test.length)
 		}
 	}
@@ -428,11 +427,12 @@ func TestMapLength(t *testing.T) {
 
 	for _, test := range tests {
 		length, err := arrayLength(test.value)
-		if test.error == true && err == nil {
+		switch {
+		case test.error == true && err == nil:
 			t.Errorf("Got nil, expected error (test id: %d, value type: %s, lenght: %d)", test.id, reflect.TypeOf(test.value).Kind(), length)
-		} else if test.error == false && err != nil {
+		case test.error == false && err != nil:
 			t.Errorf("Got error '%s', expected nil (test id: %d, value type: %s, length: %d)", err, test.id, reflect.TypeOf(test.value).Kind(), length)
-		} else if test.length != length {
+		case test.length != length:
 			t.Errorf("Got wrong length %d, expected %d", length, test.length)
 		}
 	}
