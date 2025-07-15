@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+
+	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 )
 
 type TagSearchService interface {
@@ -13,13 +15,13 @@ type TagSearchService interface {
 
 type tagSearchService struct {
 	logger slog.Logger
-	db     DatabaseService
+	s3     wrapper.S3StorageWrapper
 }
 
-func NewTagSearchService(logger slog.Logger, db DatabaseService) TagSearchService {
+func NewTagSearchService(logger slog.Logger, s3 wrapper.S3StorageWrapper) TagSearchService {
 	return &tagSearchService{
 		logger: logger,
-		db:     db,
+		s3:     s3,
 	}
 }
 
@@ -30,14 +32,14 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 		return nil, fmt.Errorf("tag is empty after trimming")
 	}
 
-	allKeys, err := t.db.GetAllKeys(ctx)
+	keys, err := t.s3.ListParquetFiles(ctx, "")
 	if err != nil {
-		t.logger.Error("Failed to fetch keys from database", "error", err)
+		t.logger.Error("Failed to fetch keys from S3", "error", err)
 		return nil, fmt.Errorf("failed to fetch keys: %w", err)
 	}
 
 	var matchingKeys []string
-	for _, key := range allKeys {
+	for _, key := range keys {
 		if strings.Contains(key, tag) {
 			t.logger.Debug("Matching key found", "key", key)
 			matchingKeys = append(matchingKeys, key)
