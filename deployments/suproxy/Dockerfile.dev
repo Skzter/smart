@@ -2,11 +2,16 @@ FROM golang:latest AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum* ./
+COPY go.mod ./
+COPY go.sum ./
 
 RUN go mod download
 
-COPY . .
+COPY cmd/suproxy/ ./cmd/suproxy/
+COPY internal/suproxy/ ./internal/suproxy/
+COPY internal/shared/ ./internal/shared/
+COPY internal/build/ ./internal/build/
+COPY configs/ ./configs/
 
 RUN go tool golangci-lint run
 
