@@ -9,15 +9,18 @@ import (
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 )
 
+// TagSearchService defines the interface for searching S3 file keys by a given tag
 type TagSearchService interface {
 	FindKeysByTag(ctx context.Context, tag string) ([]string, error)
 }
 
+// tagSearchService is the concrete implementation of TagSearchService
 type tagSearchService struct {
 	logger slog.Logger
 	s3     wrapper.S3StorageWrapper
 }
 
+// NewTagSearchService creates a new TagSearchService instance with injected logger and S3 wrapper
 func NewTagSearchService(logger slog.Logger, s3 wrapper.S3StorageWrapper) TagSearchService {
 	return &tagSearchService{
 		logger: logger,
@@ -25,6 +28,8 @@ func NewTagSearchService(logger slog.Logger, s3 wrapper.S3StorageWrapper) TagSea
 	}
 }
 
+// FindKeysByTag searches for all S3 file keys that contain the given tag string
+// It trims whitespace, validates the tag, retrieves all keys from S3, and filters matching ones
 func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]string, error) {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
