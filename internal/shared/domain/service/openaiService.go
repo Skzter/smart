@@ -19,7 +19,8 @@ type openAI struct {
 	logger *slog.Logger
 }
 
-// NewServiceAI creates and returns a new OpenAIService instance.
+// NewOpenAIService creates a new OpenAI service instance.
+// It initializes the service with the provided logger and repository.
 func NewOpenAIService(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err

@@ -2,7 +2,8 @@ package entity
 
 import "encoding/json"
 
-// SupplierResponse
+// SupplierResponse represents the response from a supplier.
+// It contains the HTTP status code and a list of supplier offers.
 type SupplierResponse struct {
 	HTTPStatusCode int               `json:"httpstatuscode"`
 	Data           SupplierOfferList `json:"data"`
