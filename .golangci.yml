@@ -26,20 +26,11 @@ linters:
     - unparam
     - unused
     - whitespace
-<<<<<<< Updated upstream
   #  - revive
   settings:
     #revive:
     #  rules:
     #    - name: exported
-=======
-    - revive
-  settings:
-    revive:
-      rules:
-        - name: exported
-          message: "exported function or variable should have comment or be unexported"
->>>>>>> Stashed changes
     funlen:
       lines: 100
       statements: 50
