@@ -10,6 +10,11 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+// GeneratePrompt defines the interface for prompt generation
+type GeneratePrompt interface {
+	GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error)
+}
+
 // GeneratePromptService provides functionality to generate test prompts using OpenAI.
 type GeneratePromptService struct {
 	service service.OpenAI
@@ -17,7 +22,7 @@ type GeneratePromptService struct {
 	logger  *slog.Logger
 }
 
-// NewGeneratePromptService creates a new GeneratePromptService instance.
+// NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
 func NewGeneratePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (*GeneratePromptService, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {

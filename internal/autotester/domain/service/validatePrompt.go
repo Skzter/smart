@@ -12,6 +12,11 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+// PromptValidator defines an interface for prompt validation
+type PromptValidator interface {
+	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) error
+}
+
 // ValidatePromptService provides functionality to validate user prompts using OpenAI.
 type ValidatePromptService struct {
 	service service.OpenAI
@@ -19,7 +24,7 @@ type ValidatePromptService struct {
 	logger  *slog.Logger
 }
 
-// NewValidatePromptService creates a new ValidatePromptService instance.
+// NewValidatePromptService creates a new validatePromptService instance.
 // Returns an error if any required dependencies are nil.
 func NewValidatePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (*ValidatePromptService, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
