@@ -9,7 +9,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	autoentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -36,7 +35,7 @@ type openAI struct {
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, client openai.Client, timeout int) (OpenAI, error) {
+func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) (OpenAI, error) {
 	if err := assert.NotNil(logger, client); err != nil {
 		return nil, err
 	}

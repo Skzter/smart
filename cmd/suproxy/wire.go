@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"github.com/openai/openai-go"
 
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
@@ -34,6 +33,6 @@ func LoggerProvider(cfg *config.Config) *slog.Logger {
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(logger *slog.Logger, client openai.Client, cfg *config.Config) (sharedRepo.OpenAI, error) {
+func OpenAiRepositoryProvider(logger *slog.Logger, client sharedRepo.OpenAIClient, cfg *config.Config) (sharedRepo.OpenAI, error) {
 	return sharedRepo.NewOpenAiRepository(logger, client, cfg.Timeout)
 }
