@@ -4,10 +4,19 @@ WORKDIR /app
 
 COPY build/suproxy bin/suproxy
 
+# Create a stage for setting up non-root user
+FROM alpine:latest AS security_provider
+
+RUN addgroup -g 1001 -S nonroot && \
+    adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
+
 FROM scratch
 
 COPY --from=builder /app/bin/suproxy /bin/suproxy
-
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=security_provider /etc/passwd /etc/passwd
+COPY --from=security_provider /etc/group /etc/group
+
+USER nonroot
 
 ENTRYPOINT ["/bin/suproxy"]
