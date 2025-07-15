@@ -129,6 +129,8 @@ unit_test_go:
         coverage_format: cobertura
         path: ./go-cobertura-coverage.xml
       junit: junit.xml
+    paths:
+    - coverage.out
     expire_in: 1 week
 
 integration_test_go:
