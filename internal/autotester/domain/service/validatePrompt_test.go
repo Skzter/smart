@@ -19,13 +19,13 @@ import (
 
 //nolint:dupl
 func TestNewValidatePromptService(t *testing.T) {
-	service := &mocks.MockOpenAIService{}
+	service := mocks.NewMockOpenAIService(t)
 	logger := slog.Default()
 	cfg := config.Config{}
 
 	tests := []struct {
 		name    string
-		service srv.OpenAIService
+		service srv.OpenAI
 		config  *config.Config
 		logger  *slog.Logger
 		wantErr bool
@@ -83,13 +83,13 @@ func TestValidatePrompt(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		mockSetup    func(s *mocks.MockOpenAIService, ctx context.Context)
+		mockSetup    func(s *mocks.MockOpenAI, ctx context.Context)
 		wantErr      bool
 		errSubstring string
 	}{
 		{
 			name: "service error",
-			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
 				s.On("Request", ctx, mock.Anything).
 					Return((*entity.Response)(nil), fmt.Errorf("network down"))
 			},
@@ -98,7 +98,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name: "valid prompt (true)",
-			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "true"}, nil)
 			},
@@ -106,7 +106,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name: "invalid prompt (false)",
-			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "false"}, nil)
 			},
@@ -115,7 +115,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name: "unexpected response",
-			mockSetup: func(s *mocks.MockOpenAIService, ctx context.Context) {
+			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "oops"}, nil)
 			},
@@ -130,7 +130,7 @@ func TestValidatePrompt(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 
-			tt.mockSetup(serviceMock, ctx)
+			tt.mockSetup((*mocks.MockOpenAI)(serviceMock), ctx)
 
 			svc := &ValidatePromptService{
 				service: serviceMock,
