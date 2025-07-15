@@ -39,20 +39,31 @@ func (_m *MockValidator) EXPECT() *MockValidator_Expecter {
 }
 
 // Validate provides a mock function for the type MockValidator
-func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) error {
+func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error) {
 	ret := _mock.Called(ctx, offers)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Validate")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) error); ok {
+	var r0 *[]string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) (*[]string, error)); ok {
+		return returnFunc(ctx, offers)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) *[]string); ok {
 		r0 = returnFunc(ctx, offers)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]string)
+		}
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SupplierResponse) error); ok {
+		r1 = returnFunc(ctx, offers)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockValidator_Validate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Validate'
@@ -85,12 +96,12 @@ func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers 
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) Return(err error) *MockValidator_Validate_Call {
-	_c.Call.Return(err)
+func (_c *MockValidator_Validate_Call) Return(strings *[]string, err error) *MockValidator_Validate_Call {
+	_c.Call.Return(strings, err)
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) error) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error)) *MockValidator_Validate_Call {
 	_c.Call.Return(run)
 	return _c
 }

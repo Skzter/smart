@@ -13,7 +13,7 @@ import (
 
 // Initializes the HTTP server, sets up API routes and serves static files.
 // Registers endpointa and serves frontend assets from the embedded dist directory.
-func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *gin.Engine {
+func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*gin.Engine, error) {
 	router := gin.Default()
 
 	apiV1 := router.Group("/v1")
@@ -27,8 +27,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 
 	assetsFS, err := fs.Sub(web.DistFS, "dist/assets")
 	if err != nil {
-		logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
 	router.StaticFS("/assets", http.FS(assetsFS))
 
@@ -38,5 +37,5 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 	})
 
 	logger.Info("Router initialized")
-	return router
+	return router, nil
 }

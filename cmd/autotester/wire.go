@@ -23,15 +23,13 @@ import (
 
 // InitializeApp initializes the application.
 func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
-	wire.Build(
+	panic(wire.Build(
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
-	)
-
-	return nil, nil
+	))
 }
 
 // LoggerProvider provides a new logger.
