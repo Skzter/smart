@@ -19,7 +19,7 @@ func TestNewTagSearchService(t *testing.T) {
 	mockS3 := mockWrapper.NewMockS3StorageWrapper(t)
 
 	// Dereference logger pointer to pass slog.Logger value
-	svc := NewTagSearchService(*logger, mockS3)
+	svc := NewTagSearchService(logger, mockS3)
 
 	assert.NotNil(t, svc)
 }
@@ -73,7 +73,7 @@ func TestFindKeysByTag(t *testing.T) {
 
 			// Dereference logger pointer to pass slog.Logger value
 			svc := &tagSearchService{
-				logger: *logger,
+				logger: logger,
 				s3:     mockS3,
 			}
 
