@@ -141,10 +141,10 @@ tasks:
   test-ci:
     desc: "Run the tests with coverage"
     vars:
-      TESTCOVERAGE_THRESHOLD: 35 
+      TESTCOVERAGE_THRESHOLD: 60
     cmds:
       - echo "Running unit tests with coverage"
-      - go tool gotestsum --junitfile junit.xml -- -coverprofile=coverage.out -covermode=count $(go list ./... | grep -v '/mocks')
+      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
       - go tool cover -func=coverage.out
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"

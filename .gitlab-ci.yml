@@ -8,7 +8,8 @@ variables:
   GO_VERSION: 1.24
 
 default:
-  image: golang:$GO_VERSION
+  image:
+    name: golang:$GO_VERSION
 
 workflow:
   rules:
@@ -18,7 +19,8 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 .pnpm_cache:
-  image: node:latest
+  image:
+    name: node:latest
   variables:
     PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
   rules:
@@ -110,13 +112,26 @@ sonarqube-check:
     - sonar-scanner
   allow_failure: true
   needs:
-    - unit_test_go
+    - integration_test_go
     - frontend_test
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
 
 unit_test_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+
+integration_test_go:
+  services:
+    - docker:dind
+  tags:
+    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
@@ -130,20 +145,10 @@ unit_test_go:
         path: ./go-cobertura-coverage.xml
       junit: junit.xml
     paths:
-    - coverage.out
+      - coverage.out
     expire_in: 1 week
-
-integration_test_go:
-  services:
-    - docker:dind
-  tags:
-    - fdit
-  stage: code_analysis_and_testing
-  extends: .go_cache
-  script:
-    - ./bin/task test-integration
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
 frontend_test:
@@ -215,7 +220,8 @@ build_go_no_artifacts:
     - ./bin/task build-pipeline
 
 .docker_build:
-  image: docker:dind
+  image:
+    name: docker:dind
   tags:
     - fdit
   rules:
@@ -251,7 +257,8 @@ build_autotester_go_container:
     - docker push $IMAGE_TAG
 
 deploy_htwk:
-  image: alpine:latest
+  image:
+    name: alpine:latest
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
