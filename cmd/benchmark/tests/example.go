@@ -17,17 +17,17 @@ func init() {
 		password: "Autotester123",
 		url:      "http://localhost:8081",
 		//nolint:lll
-		TestInput: `Erzeuge Playwright-Tests via Autoplaywright für Check24.  
-Base-URL: https://urlaub.check24.de.  
-Szenario: Nutzer-Login.  
-Ablauf: Der Nutzer klickt auf 'Anmelden', sieht das Eingabefeld für E-Mail mit Platzhalter 'E-Mail-Adresse' und ein Passwortfeld, gibt gültige Zugangsdaten ein (ENV-Variablen TEST_USER/TEST_PASS) und klickt auf 'Login'.  
-Assertions: Nach erfolgreichem Login wird die Dashboard-Seite geladen, die URL enthält '/dashboard' und der Text 'Willkommen' erscheint.  
+		TestInput: `Erzeuge Playwright-Tests via Autoplaywright für Check24.
+Base-URL: https://staging.check24.de.
+Szenario: Nutzer-Login.
+Ablauf: Der Nutzer klickt auf 'Anmelden', sieht das Eingabefeld für E-Mail mit Platzhalter 'E-Mail-Adresse' und ein Passwortfeld, gibt gültige Zugangsdaten ein (ENV-Variablen TEST_USER/TEST_PASS) und klickt auf 'Login'.
+Assertions: Nach erfolgreichem Login wird die Dashboard-Seite geladen, die URL enthält '/dashboard' und der Text 'Willkommen' erscheint.
 Testdaten/Setup: Stelle sicher, dass der Testuser existiert; Teardown: Logout und Session-Bereinigung.`,
 		ExpectedResponse: "true",
 	})
 }
 
-// struct for integration test
+// ExampleTest struct with test parameters
 type ExampleTest struct {
 	testName         string
 	email            string
@@ -37,19 +37,18 @@ type ExampleTest struct {
 	ExpectedResponse string
 }
 
-// returns name of given test
+// Name returns name of given test
 func (e *ExampleTest) Name() string {
 	return e.testName
 }
 
-// struct for result
+// ExampleResult for time tracking and similarity from answers
 type ExampleResult struct {
 	Duration   time.Duration
 	Similarity float64
 }
 
-// func for running playwright test
-// runs integration test login, prompting
+// Run runs playwright test => integration test so login, prompting
 func (e *ExampleTest) Run(page playwright.Page) (interface{}, error) {
 	start := time.Now()
 	if _, err := page.Goto(e.url); err != nil {

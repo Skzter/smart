@@ -2,17 +2,17 @@ package tests
 
 import "github.com/playwright-community/playwright-go"
 
-// Interface for Benchmark Tests
+// BenchmarkTest interface for structered tests
 type BenchmarkTest interface {
 	Name() string
 	Run(page playwright.Page) (interface{}, error)
 }
 
-// Array of all Benchmark Tests which gets accessed by Benchmark
+// Tests global array with all tests for Benchmark
 // nolint:gochecknoglobals
 var Tests []BenchmarkTest
 
-// Function for registering single test to benchmarks
+// Register adds single test to benchmarks
 func Register(test BenchmarkTest) {
 	Tests = append(Tests, test)
 }

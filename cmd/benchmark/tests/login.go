@@ -19,7 +19,7 @@ func init() {
 	*/
 }
 
-// struct for login test
+// LoginTest struct with parameters for test
 type LoginTest struct {
 	testName string
 	email    string
@@ -27,23 +27,22 @@ type LoginTest struct {
 	url      string
 }
 
-// return new test with given name
+// NewTest makes test with given name
 func NewTest(name string) LoginTest {
 	return LoginTest{testName: name}
 }
 
-// return name of given test
+// Name return name of given test
 func (lt *LoginTest) Name() string {
 	return lt.testName
 }
 
-// struct for result
+// LoginResult for time tracking
 type LoginResult struct {
 	Duration time.Duration
 }
 
-// func for running playwright test
-// runs login test
+// Run runs playwright test => login test
 func (lt *LoginTest) Run(page playwright.Page) (interface{}, error) {
 	start := time.Now()
 	if _, err := page.Goto(lt.url); err != nil {
