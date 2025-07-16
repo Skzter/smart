@@ -39,23 +39,23 @@ func (_m *MockValidator) EXPECT() *MockValidator_Expecter {
 }
 
 // Validate provides a mock function for the type MockValidator
-func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error) {
+func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error) {
 	ret := _mock.Called(ctx, offers)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Validate")
 	}
 
-	var r0 *[]string
+	var r0 []string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) (*[]string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) ([]string, error)); ok {
 		return returnFunc(ctx, offers)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) *[]string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) []string); ok {
 		r0 = returnFunc(ctx, offers)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*[]string)
+			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SupplierResponse) error); ok {
@@ -96,12 +96,12 @@ func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers 
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) Return(strings *[]string, err error) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) Return(strings []string, err error) *MockValidator_Validate_Call {
 	_c.Call.Return(strings, err)
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error)) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) ([]string, error)) *MockValidator_Validate_Call {
 	_c.Call.Return(run)
 	return _c
 }

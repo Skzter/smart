@@ -121,7 +121,7 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 	}
 }
 
-func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags *[]string) error {
+func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
 	mresp, err := json.Marshal(resp)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp
 		Response: entity.Response{
 			Response: string(mresp),
 		},
-		Tags: *tags,
+		Tags: tags,
 	}
 
 	return s.db.SaveDbEntry(ctx, dbentry)

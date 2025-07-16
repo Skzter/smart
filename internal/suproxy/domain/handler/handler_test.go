@@ -227,7 +227,7 @@ type dbSetup struct {
 
 type validationSetup struct {
 	err  error
-	tags *[]string
+	tags []string
 }
 
 func TestHandlerHandleRequest(t *testing.T) {
@@ -255,7 +255,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: &[]string{"valid"},
+				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: nil},
 			expectLoggedError: false,
@@ -265,7 +265,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: &[]string{"valid"},
+				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: errors.New("Storage error")},
 			expectLoggedError: true,

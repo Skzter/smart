@@ -263,7 +263,7 @@ func TestValidatorValidate(t *testing.T) {
 				assert.Nil(t, tags)
 			} else {
 				assert.NotNil(t, tags)
-				assert.Equal(t, tt.expectedTags, *tags)
+				assert.Equal(t, tt.expectedTags, tags)
 			}
 
 			mockservice.AssertExpectations(t)

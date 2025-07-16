@@ -28,7 +28,7 @@ import (
 
 // InitializeApp initializes the application.
 func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
-	panic(wire.Build(
+	wire.Build(
 		LoggerProvider,
 		application.NewRouter,
 		handler.NewSuproxyController,
@@ -41,7 +41,9 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		repository.NewDatabaseRepository,
 		ParquetWrapperProvider,
 		S3WrapperProvider,
-	))
+	)
+
+	return nil, nil
 }
 
 // LoggerProvider provides a new logger.

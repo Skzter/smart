@@ -33,7 +33,7 @@ type OpenAIValidationResult struct {
 // Validator defines an interface for validating a SupplierResponse.
 // Implementations should provide specific validation logic.
 type Validator interface {
-	Validate(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error)
+	Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error)
 }
 
 // Validator encapsulates the logic for validating supplier offer responses
@@ -59,22 +59,22 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenA
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*[]string, error) {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}
 
 	if offers.HTTPStatusCode != http.StatusOK {
-		return &[]string{"non200"}, nil
+		return []string{"non200"}, nil
 	}
 
 	if len(offers.Data.Items) == 0 {
-		return &[]string{"noOffer"}, nil
+		return []string{"noOffer"}, nil
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	tags := &[]string{}
+	tags := []string{}
 
 	for i, offer := range offers.Data.Items {
 		if i >= v.cfg.MaxItemsPerValidation {
@@ -85,7 +85,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		item = strings.TrimSpace(item)
 		if item == "" {
-			addTag(tags, "emptyOffer")
+			addTag(&tags, "emptyOffer")
 			continue
 		}
 
@@ -114,13 +114,13 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		if !validationResult.Valid {
 			for _, tag := range validationResult.Reason {
-				addTag(tags, tag)
+				addTag(&tags, tag)
 			}
 		}
 	}
 
-	if len(*tags) == 0 {
-		return &[]string{"valid"}, nil
+	if len(tags) == 0 {
+		return []string{"valid"}, nil
 	}
 	return tags, nil
 }
