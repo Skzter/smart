@@ -25,16 +25,21 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 		c.FileFromFS("/auth_config.json", http.FS(web.Auth0Config))
 	})
 
-	assetsFS, err := fs.Sub(web.DistFS, "dist/assets")
+	staticFS, err := fs.Sub(web.DistFS, "dist")
+	if err != nil {
+		logger.Error(err.Error())
+		return nil
+	}
+
+	assetsFS, err := fs.Sub(staticFS, "assets")
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
 	}
 	router.StaticFS("/assets", http.FS(assetsFS))
 
-	router.LoadHTMLFiles("web/dist/index.html")
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
+		c.FileFromFS("dist/index.html", http.FS(staticFS))
 	})
 
 	logger.Info("Router initialized")
