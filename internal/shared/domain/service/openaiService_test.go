@@ -42,10 +42,8 @@ func TestNewService(t *testing.T) {
 				if service != nil {
 					t.Error("WARNING: expected server has to be nil, but received service")
 				}
-			} else if !test.expectedError {
-				if err != nil {
-					t.Errorf("WARNING: expected no error, but received error")
-				}
+			} else if err != nil {
+				t.Errorf("WARNING: expected no error, but received error")
 			}
 		})
 	}

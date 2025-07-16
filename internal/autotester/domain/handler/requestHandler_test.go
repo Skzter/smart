@@ -54,7 +54,7 @@ func TestNewAutoTesterController(t *testing.T) {
 				if controller != nil {
 					t.Errorf("Expected nil controller, got %+v", controller)
 				}
-			} else if !test.expectedError {
+			} else {
 				if err != nil {
 					t.Errorf("Unexpected error: %v", err)
 				}

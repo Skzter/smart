@@ -64,7 +64,7 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 				} else if repo != test.expectedOutcome {
 					t.Errorf("wanted: %q, got: %q", test.expectedOutcome, repo)
 				}
-			} else if !test.expectedError {
+			} else {
 				if err != nil {
 					t.Errorf("did not expect error but go this: %q", err.Error())
 				} else if repo == nil {
@@ -141,7 +141,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 				if err == nil {
 					t.Errorf("expected error, but got nil")
 				}
-			} else if !test.expectedError {
+			} else {
 				if err != nil {
 					t.Errorf("did not expect error but go this: %q", err.Error())
 				}
@@ -161,14 +161,12 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 
 	mockSetup := []struct {
 		name           string
-		ctx            context.Context
 		openaiRequest  openai.ChatCompletionRequest
 		openaiResponse openai.ChatCompletionResponse
 		openaiError    error
 	}{
 		{
 			name: "correct request with correct response",
-			ctx:  context.TODO(),
 			openaiRequest: openai.ChatCompletionRequest{
 				Model: model,
 				Messages: []openai.ChatCompletionMessage{
@@ -199,7 +197,6 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		},
 		{
 			name: "correct request with message history",
-			ctx:  context.TODO(),
 			openaiRequest: openai.ChatCompletionRequest{
 				Model: model,
 				Messages: []openai.ChatCompletionMessage{
@@ -338,7 +335,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 				if err == nil {
 					t.Errorf("expected error but go nil")
 				}
-			} else if !test.expectedError {
+			} else {
 				if err != nil {
 					t.Errorf("did not expect error but go this: %q", err.Error())
 				}
@@ -348,7 +345,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 				if err == nil {
 					t.Errorf("expected error but go nil")
 				}
-			} else if !test.expectedError {
+			} else {
 				if err != nil {
 					t.Errorf("did not expect error but go this: %q", err.Error())
 				}
