@@ -1,6 +1,5 @@
 package service
 
-/*
 import (
 	"context"
 	"fmt"
@@ -17,33 +16,23 @@ func TestNewService(t *testing.T) {
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
-		timeout       int
 		expectedError bool
 	}{
 		{
 			testName:      "Invalid Logger",
 			logger:        nil,
-			timeout:       5,
-			expectedError: true,
-		},
-		{
-
-			testName:      "Invalid Timeout for Repository",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
-			timeout:       0,
 			expectedError: true,
 		},
 		{
 			testName:      "Valid Parameter",
 			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
-			timeout:       5,
 			expectedError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			service, err := NewService(test.logger, test.timeout)
+			service, err := NewOpenAIService(test.logger, &mocks.MockOpenAI{})
 
 			if test.expectedError {
 				if err == nil {
@@ -53,8 +42,10 @@ func TestNewService(t *testing.T) {
 				if service != nil {
 					t.Error("WARNING: expected server has to be nil, but received service")
 				}
-			} else if err != nil {
-				t.Errorf("WARNING: unexpected Error")
+			} else if !test.expectedError {
+				if err != nil {
+					t.Errorf("WARNING: expected no error, but received error")
+				}
 			}
 		})
 	}
@@ -102,7 +93,11 @@ func TestRequest(t *testing.T) {
 				mockOpenAiRepo.On("CreateRequest", test.content, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
 			}
 
-			service := OpenAIService{repo: mockOpenAiRepo, logger: logger}
+			service, err := NewOpenAIService(logger, mockOpenAiRepo)
+
+			if err != nil {
+				t.Errorf("WARNING: Failed to create openAIService")
+			}
 
 			resp, err := service.Request(test.content, test.request)
 
@@ -124,4 +119,3 @@ func TestRequest(t *testing.T) {
 		})
 	}
 }
-*/
