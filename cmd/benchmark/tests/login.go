@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/adrg/strutil"
-	"github.com/adrg/strutil/metrics"
 	"github.com/playwright-community/playwright-go"
 )
 
@@ -14,29 +12,41 @@ func init() {
 	/*
 		Register(&LoginTest{
 			testName:         "Login test",
+			email: "test@autotester.com",
+			password: "Autotester123",
+			url: "http://localhost:8081",
 		})
 	*/
 }
 
+// struct for login test
 type LoginTest struct {
 	testName string
+	email    string
+	password string
+	url      string
 }
 
+// return new test with given name
 func NewTest(name string) LoginTest {
 	return LoginTest{testName: name}
 }
 
+// return name of given test
 func (lt *LoginTest) Name() string {
 	return lt.testName
 }
 
+// struct for result
 type LoginResult struct {
 	Duration time.Duration
 }
 
+// func for running playwright test
+// runs login test
 func (lt *LoginTest) Run(page playwright.Page) (interface{}, error) {
 	start := time.Now()
-	if _, err := page.Goto("http://localhost:8081"); err != nil {
+	if _, err := page.Goto(lt.url); err != nil {
 		return nil, fmt.Errorf("could not goto: %w", err)
 	}
 
@@ -48,10 +58,10 @@ func (lt *LoginTest) Run(page playwright.Page) (interface{}, error) {
 	}
 
 	// Fill in credentials
-	if err := page.Locator("#username").Fill("test@autotester.com"); err != nil {
+	if err := page.Locator("#username").Fill(lt.email); err != nil {
 		return nil, fmt.Errorf("could not fill email input: %w", err)
 	}
-	if err := page.Locator("#password").Fill("Autotester123"); err != nil {
+	if err := page.Locator("#password").Fill(lt.password); err != nil {
 		return nil, fmt.Errorf("could not fill password input: %w", err)
 	}
 
@@ -63,36 +73,12 @@ func (lt *LoginTest) Run(page playwright.Page) (interface{}, error) {
 		return nil, fmt.Errorf("could not click second login button: %w", err)
 	}
 
-	fmt.Println("Wir sind drinnen")
 	// Wait for navigation after login, assuming it goes to a new page
 	if err := page.WaitForLoadState(playwright.PageWaitForLoadStateOptions{
 		State: playwright.LoadStateNetworkidle,
 	}); err != nil {
 		return nil, fmt.Errorf("error waiting for navigation after login: %w", err)
 	}
-
-	// auskommentieren bis unten vor benchmark
-	// Testing Prompt
-	if err := page.Locator(`[placeholder="Prompt"]`).Fill("input test"); err != nil {
-		return nil, fmt.Errorf("could not fill prompt input: %w", err)
-	}
-	if err := page.Locator(`button:has-text("Send")`).Click(); err != nil {
-		return nil, fmt.Errorf("could not click Send button: %w", err)
-	}
-	if err := page.WaitForLoadState(playwright.PageWaitForLoadStateOptions{
-		State: playwright.LoadStateNetworkidle,
-	}); err != nil {
-		return nil, fmt.Errorf("error waiting for response after sending prompt: %w", err)
-	}
-
-	// Capture and compare the response
-	actualResponse, err := page.Locator(`div:has(h1:has-text("Bot")) p`).Nth(1).TextContent()
-	if err != nil {
-		return nil, fmt.Errorf("could not get bot response: %w", err)
-	}
-
-	similarity := strutil.Similarity(actualResponse, "yes", metrics.NewLevenshtein())
-	fmt.Println("similarity:", similarity)
 
 	return &LoginResult{
 		Duration: time.Since(start),

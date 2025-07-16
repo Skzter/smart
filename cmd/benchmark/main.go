@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	iterationsPerTest  = 100
+	// for whole integration 15
+	// login 90
+	iterationsPerTest  = 15
 	defaultParallelism = 4
 )
 
