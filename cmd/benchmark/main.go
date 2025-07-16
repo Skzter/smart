@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -101,6 +102,17 @@ func runJobCmd(pw *playwright.Playwright, j job) tea.Cmd {
 				log.Printf("could not close browser: %v", err)
 			}
 		}()
+
+		/*
+			context, _ := browser.NewContext()
+			context.AddCookies([]playwright.OptionalCookie{
+				{
+					Name: "auth0.hWxkFufP46LyYSZD4apALF8qmhmxZYln.is.authenticated",
+					Value: "true",
+					URL: playwright.String("http://localhost:8081"),
+				},
+			})
+		*/
 
 		page, err := browser.NewPage()
 		if err != nil {
@@ -361,4 +373,10 @@ func main() {
 		log.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1) //nolint:gocritic
 	}
+	// resets terminal when completing
+	cmd := exec.Command("reset")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	_ = cmd.Run()
 }

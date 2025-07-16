@@ -11,24 +11,45 @@ import (
 
 // nolint:gochecknoinits
 func init() {
-	Register(&ExampleTest{
+	Register(&IntegrationTest{
 		testName: "Full Integration Test",
 		email:    "test@autotester.com",
 		password: "Autotester123",
 		url:      "http://localhost:8081",
 		//nolint:lll
-		TestInput: `Erzeuge Playwright-Tests via Autoplaywright für Check24.
-Base-URL: https://staging.check24.de.
-Szenario: Nutzer-Login.
-Ablauf: Der Nutzer klickt auf 'Anmelden', sieht das Eingabefeld für E-Mail mit Platzhalter 'E-Mail-Adresse' und ein Passwortfeld, gibt gültige Zugangsdaten ein (ENV-Variablen TEST_USER/TEST_PASS) und klickt auf 'Login'.
-Assertions: Nach erfolgreichem Login wird die Dashboard-Seite geladen, die URL enthält '/dashboard' und der Text 'Willkommen' erscheint.
-Testdaten/Setup: Stelle sicher, dass der Testuser existiert; Teardown: Logout und Session-Bereinigung.`,
-		ExpectedResponse: "true",
+		TestInput: `
+Autoplaywright soll einen Test generieren für Check24 Reisesparte.  
+Base-URL: https://urlaub.check24.de/reise.  
+Szenario: Flugsuche München nach Barcelona im August.  
+Ablauf: Auf der Startseite wählt der Nutzer 'Flug suchen', gibt im Eingabefeld für Abflugort 'München' ein, im Feld Zielort 'Barcelona', wählt Datum über Kalender-Widget (August), klickt auf Button 'Suchen'.  
+Assertions: Die URL enthält '/reise/flug', die Liste der Flüge ist sichtbar und enthält mindestens einen Eintrag.  
+Testdaten/Setup: Beispiel-Flugdaten aus Fixture-Datei; Teardown: Browser schließen.
+`,
+		//nolint:lll
+		ExpectedResponse: `
+import { test, expect } from "@playwright/test";
+import { auto } from "auto-playwright";
+
+test("Flugsuche München nach Barcelona im August", async ({ page }) => {
+  await page.goto("https://urlaub.check24.de/reise");
+  await auto("Klicke auf 'Flug suchen'", { page, test });
+  await auto("Gib im Eingabefeld für Abflugort 'München' ein", { page, test });
+  await auto("Gib im Eingabefeld für Zielort 'Barcelona' ein", { page, test });
+  await auto("Wähle im Kalender-Widget einen Termin im August", { page, test });
+  await auto("Klicke auf den Button 'Suchen'", { page, test });
+
+  const urlCorrect = await auto("Ist '/reise/flug' in der URL enthalten?", { page, test });
+  expect(urlCorrect).toBe(true);
+
+  const flightsVisible = await auto("Ist eine Liste von Flügen sichtbar mit mindestens einem Eintrag?", { page, test });
+  expect(flightsVisible).toBe(true);
+});
+`,
 	})
 }
 
-// ExampleTest struct with test parameters
-type ExampleTest struct {
+// IntegrationTest struct with test parameters
+type IntegrationTest struct {
 	testName         string
 	email            string
 	password         string
@@ -38,7 +59,7 @@ type ExampleTest struct {
 }
 
 // Name returns name of given test
-func (e *ExampleTest) Name() string {
+func (e *IntegrationTest) Name() string {
 	return e.testName
 }
 
@@ -49,7 +70,7 @@ type ExampleResult struct {
 }
 
 // Run runs playwright test => integration test so login, prompting
-func (e *ExampleTest) Run(page playwright.Page) (interface{}, error) {
+func (e *IntegrationTest) Run(page playwright.Page) (interface{}, error) {
 	start := time.Now()
 	if _, err := page.Goto(e.url); err != nil {
 		return nil, fmt.Errorf("could not goto: %w", err)
