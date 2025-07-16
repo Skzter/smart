@@ -63,8 +63,8 @@ func (e *IntegrationTest) Name() string {
 	return e.testName
 }
 
-// ExampleResult for time tracking and similarity from answers
-type ExampleResult struct {
+// IntegrationResult for time tracking and similarity from answers
+type IntegrationResult struct {
 	Duration   time.Duration
 	Similarity float64
 }
@@ -127,9 +127,9 @@ func (e *IntegrationTest) Run(page playwright.Page) (interface{}, error) {
 		return nil, fmt.Errorf("could not get bot response: %w", err)
 	}
 
-	similarity := strutil.Similarity(actualResponse, e.ExpectedResponse, metrics.NewLevenshtein())
+	similarity := strutil.Similarity(actualResponse, e.ExpectedResponse, metrics.NewJaroWinkler())
 
-	return &ExampleResult{
+	return &IntegrationResult{
 		Duration:   time.Since(start),
 		Similarity: similarity,
 	}, nil

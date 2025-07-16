@@ -270,9 +270,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.errorMsg = r.err.Error()
 			log.Printf("Job failed: test '%s', iteration %d, error: %v", testName, msg.iteration+1, r.err)
 			return m, nil
-		case *tests.LoginResult:
-			newResult = fmt.Sprintf("Test: %s, Iteration: %d, Duration: %s", testName, msg.iteration+1, r.Duration)
-		case *tests.ExampleResult:
+		case *tests.IntegrationResult:
 			newResult = fmt.Sprintf("Test: %s, Iteration: %d, Duration: %s, Similarity: %.2f%%", testName, msg.iteration+1, r.Duration, r.Similarity*100)
 		}
 		m.results = append(m.results, newResult)
