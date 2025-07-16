@@ -20,6 +20,39 @@ import (
 
 const parquetFileExtension = ".parquet"
 
+var (
+	// ErrNilLogger indicates that a required logger instance is nil.
+	ErrNilLogger = errors.New("logger cannot be nil")
+
+	// ErrNilContext indicates that a required context is nil.
+	ErrNilContext = errors.New("context cannot be nil")
+
+	// ErrEmptyKey indicates that a required key is empty.
+	ErrEmptyKey = errors.New("key cannot be empty")
+
+	// ErrEmptyData indicates that provided data is empty.
+	ErrEmptyData = errors.New("data cannot be empty")
+
+	// ErrEmptyBucket indicates that a required bucket name is empty.
+	ErrEmptyBucket = errors.New("bucket cannot be empty")
+
+	// ErrEmptyRegion indicates that a required region is empty.
+	ErrEmptyRegion = errors.New("region cannot be empty")
+
+	// ErrEmptyAccessKey indicates that the AWS access key is empty.
+	ErrEmptyAccessKey = errors.New("access key cannot be empty")
+
+	// ErrEmptySecretKey indicates that the AWS secret key is empty.
+	ErrEmptySecretKey = errors.New("secret key cannot be empty")
+
+	// ErrFailedToLoadAWSConfig indicates that loading the AWS configuration failed.
+	ErrFailedToLoadAWSConfig = errors.New("failed to load AWS config")
+
+	// ErrFailedToGetFileMetadata indicates that retrieving file metadata failed.
+	ErrFailedToGetFileMetadata = errors.New("failed to get file metadata")
+)
+
+// S3StorageWrapper defines an interface for storing, retrieving and managing Parquet files in an S3-compatible storage service.
 type S3StorageWrapper interface {
 	// UploadParquetFile uploads a Parquet file to the given key with optional metadata.
 	UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
@@ -50,11 +83,11 @@ type S3Wrapper struct {
 // NewS3Wrapper creates a new S3Wrapper instance
 func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper, error) {
 	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger cannot be nil: %w", err)
+		return nil, ErrNilLogger
 	}
 
 	if config.Bucket == "" {
-		return nil, fmt.Errorf("bucket name is required")
+		return nil, ErrEmptyBucket
 	}
 
 	if config.Region == "" {
@@ -84,7 +117,7 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+		return nil, ErrFailedToLoadAWSConfig
 	}
 
 	// Create S3 client with custom endpoint if provided (for S3-compatible services)
@@ -116,16 +149,15 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper
 // UploadParquetFile uploads a parquet file to S3
 func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return err
+		return ErrNilContext
 	}
 
 	if key == "" {
-		return fmt.Errorf("key cannot be empty")
+		return ErrEmptyKey
 	}
 
 	if len(data) == 0 {
-		return fmt.Errorf("data cannot be empty")
+		return ErrEmptyData
 	}
 
 	// Ensure key ends with .parquet
@@ -177,12 +209,11 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 // DownloadParquetFile downloads a parquet file from S3
 func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte, map[string]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return nil, nil, err
+		return nil, nil, ErrNilContext
 	}
 
 	if key == "" {
-		return nil, nil, fmt.Errorf("key cannot be empty")
+		return nil, nil, ErrEmptyKey
 	}
 
 	s.logger.Info("Downloading parquet file from S3",
@@ -236,8 +267,7 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 // ListParquetFiles lists all parquet files in the bucket with optional prefix
 func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return nil, err
+		return nil, ErrNilContext
 	}
 
 	s.logger.Info("Listing parquet files",
@@ -286,12 +316,11 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 // DeleteParquetFile deletes a parquet file from S3
 func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return err
+		return ErrNilContext
 	}
 
 	if key == "" {
-		return fmt.Errorf("key cannot be empty")
+		return ErrEmptyKey
 	}
 
 	s.logger.Info("Deleting parquet file from S3",
@@ -325,12 +354,11 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 // FileExists checks if a parquet file exists in S3
 func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return false, err
+		return false, ErrNilContext
 	}
 
 	if key == "" {
-		return false, fmt.Errorf("key cannot be empty")
+		return false, ErrEmptyKey
 	}
 
 	input := &s3.HeadObjectInput{
@@ -353,12 +381,11 @@ func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
 // GetFileSize returns the size of a parquet file in S3
 func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error("context cannot be nil", slog.String("error", err.Error()))
-		return 0, err
+		return 0, ErrNilContext
 	}
 
 	if key == "" {
-		return 0, fmt.Errorf("key cannot be empty")
+		return 0, ErrEmptyKey
 	}
 
 	input := &s3.HeadObjectInput{
@@ -368,7 +395,7 @@ func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) 
 
 	result, err := s.client.HeadObject(ctx, input)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get file metadata: %w", err)
+		return 0, ErrFailedToGetFileMetadata
 	}
 
 	return aws.ToInt64(result.ContentLength), nil

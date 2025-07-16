@@ -6,6 +6,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 )
 
+// LoadAppConfig loads application config
 func LoadAppConfig() (*Config, error) {
 	var cfg Config
 	bytes, err := build.SuproxyEmbedConfigs.ReadFile("configs/suproxy.msgpack")

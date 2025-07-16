@@ -1,4 +1,10 @@
-import "@testing-library/jest-dom";
+/// <reference types="vitest/globals" />
+
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { expect } from 'vitest';
+
+expect.extend(matchers);
+
 Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query) => ({

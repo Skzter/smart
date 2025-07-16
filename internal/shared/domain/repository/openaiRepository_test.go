@@ -136,7 +136,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := ValidateRequestEntity(test.request)
+			err := validateRequestEntity(test.request)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")

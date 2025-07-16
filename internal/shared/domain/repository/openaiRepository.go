@@ -21,8 +21,8 @@ type OpenAI interface {
 	CreateRequest(context.Context, entity.Request) (*entity.Response, error)
 }
 
+// OpenAIClient provides function we use on the client
 type OpenAIClient interface {
-	// function we use on the client
 	CreateChatCompletion(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
 }
 
@@ -59,7 +59,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, err
 	}
 
-	if err := ValidateRequestEntity(request); err != nil {
+	if err := validateRequestEntity(request); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +131,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	}, nil
 }
 
-func ValidateRequestEntity(request entity.Request) error {
+func validateRequestEntity(request entity.Request) error {
 	switch {
 	case request.Prompt == "":
 		return fmt.Errorf("request without user prompt")

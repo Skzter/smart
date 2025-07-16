@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,6 +16,29 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+var (
+	// ErrEmptyParquetData indicates that the provided Parquet data is empty
+	// when data was expected.
+	ErrEmptyParquetData = errors.New("parquet data cannot be empty")
+
+	// ErrFailedToWriteData indicates that writing data to a Parquet file or buffer failed.
+	ErrFailedToWriteData = errors.New("failed to write data to parquet")
+
+	// ErrFailedToCloseWriter indicates that closing the Parquet writer failed.
+	ErrFailedToCloseWriter = errors.New("failed to close parquet writer")
+
+	// ErrFailedToReadData indicates that reading data from a Parquet source failed.
+	ErrFailedToReadData = errors.New("failed to read parquet data")
+
+	// ErrFailedToCloseReader indicates that closing the Parquet reader failed.
+	ErrFailedToCloseReader = errors.New("failed to close parquet reader")
+
+	// ErrInvalidStructType indicates that the provided data is not a struct type.
+	// The error message includes the actual type.
+	ErrInvalidStructType = errors.New("data must be a struct, got %s")
+)
+
+// ParquetFileWrapper defines an interface for working with Parquet serialization and deserialization for a generic struct type T.
 type ParquetFileWrapper[T any] interface {
 	// WriteStructsToParquet serializes a slice of structs into a Parquet-encoded byte slice.
 	WriteStructsToParquet(data []T) ([]byte, error)
@@ -53,7 +77,7 @@ func DefaultParquetConfig() entity.ParquetConfig {
 // NewParquetWrapper creates a new ParquetWrapper instance
 func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig) (ParquetFileWrapper[T], error) {
 	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger cannot be nil: %w", err)
+		return nil, ErrNilLogger
 	}
 
 	wrapper := &ParquetWrapper[T]{
@@ -88,7 +112,7 @@ func getCompressionOptions(codec string) []parquet.WriterOption {
 // WriteStructsToParquet converts a slice of structs to parquet format
 func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 	if len(data) == 0 {
-		return nil, fmt.Errorf("data slice cannot be empty")
+		return nil, ErrEmptyData
 	}
 
 	// Get the type of the struct
@@ -119,7 +143,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 			slog.String("type", structType.Name()),
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("failed to write data to parquet: %w", err)
+		return nil, ErrFailedToWriteData
 	}
 
 	// Close the writer to finalize the file
@@ -128,7 +152,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 		p.logger.Error("Failed to close parquet writer",
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("failed to close parquet writer: %w", err)
+		return nil, ErrFailedToCloseWriter
 	}
 
 	parquetData := buf.Bytes()
@@ -145,7 +169,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 // ReadStructsFromParquet reads parquet data and converts it to a slice of structs
 func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, error) {
 	if len(parquetData) == 0 {
-		return nil, fmt.Errorf("parquet data cannot be empty")
+		return nil, ErrEmptyParquetData
 	}
 
 	// Get the type of the struct for logging
@@ -176,7 +200,7 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, err
 				slog.String("type", structType.Name()),
 				slog.String("error", err.Error()),
 			)
-			return nil, fmt.Errorf("failed to read parquet data: %w", err)
+			return nil, ErrFailedToReadData
 		}
 
 		if n > 0 {
@@ -194,7 +218,7 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, err
 		p.logger.Error("Failed to close parquet reader",
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("failed to close parquet reader: %w", err)
+		return nil, ErrFailedToCloseReader
 	}
 
 	p.logger.Info("Successfully read structs from parquet",
@@ -225,7 +249,7 @@ func (p *ParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
 	schema := writer.Schema()
 	err := writer.Close()
 	if err != nil {
-		return nil, fmt.Errorf("failed to close parquet writer: %w", err)
+		return nil, ErrFailedToCloseWriter
 	}
 
 	p.logger.Info("Generated parquet schema",
@@ -244,7 +268,7 @@ func (p *ParquetWrapper[T]) ValidateStruct(data T) error {
 	}
 
 	if structType.Kind() != reflect.Struct {
-		return fmt.Errorf("data must be a struct, got %s", structType.Kind())
+		return ErrInvalidStructType
 	}
 
 	p.logger.Debug("Validating struct for parquet compatibility",
@@ -263,7 +287,7 @@ func (p *ParquetWrapper[T]) ValidateStruct(data T) error {
 	}
 
 	if !hasExportedFields {
-		return fmt.Errorf("struct must have at least one exported field")
+		return ErrInvalidStructType
 	}
 
 	return nil
@@ -272,7 +296,7 @@ func (p *ParquetWrapper[T]) ValidateStruct(data T) error {
 // GetParquetFileInfo extracts information from parquet data without fully reading it
 func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.ParquetFileInfo, error) {
 	if len(parquetData) == 0 {
-		return nil, fmt.Errorf("parquet data cannot be empty")
+		return nil, ErrEmptyParquetData
 	}
 
 	reader := bytes.NewReader(parquetData)

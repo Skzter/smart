@@ -7,31 +7,37 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	repoEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // AutotesterController is the controller for autotesting requests.
 // It encapsulates logging and access to the OpenAI service.
 type AutotesterController struct {
-	config  *config.Config
-	logger  *slog.Logger
-	service service.OpenAIService
+	config            *config.Config
+	logger            *slog.Logger
+	validationService service.ValidatePrompt
+	generationService service.GeneratePrompt
 }
 
 // NewAutotesterController creates a new AutotesterController.
 // Returns an initialized controller or an error.
-func NewAutotesterController(logger *slog.Logger, config *config.Config, service service.OpenAIService) (*AutotesterController, error) {
-	if err := assert.NotNil(logger, config, service); err != nil {
+func NewAutotesterController(
+	logger *slog.Logger,
+	config *config.Config,
+	validationService service.ValidatePrompt,
+	generationService service.GeneratePrompt,
+) (*AutotesterController, error) {
+	if err := assert.NotNil(logger, config, validationService, generationService); err != nil {
 		return nil, err
 	}
 
 	return &AutotesterController{
-		logger:  logger,
-		service: service,
-		config:  config,
+		logger:            logger,
+		config:            config,
+		validationService: validationService,
+		generationService: generationService,
 	}, nil
 }
 
@@ -69,28 +75,22 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 }
 
 // serviceHandler calls the OpenAI service and prepares the response for the frontend.
-// Returns a ResponseForUserDTO or an error.
-
+// It takes a gin.Context and UserRequest as input parameters.
+// First validates the user prompt through validationService, then generates a response through generationService.
+// Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	resp, err := a.service.Request(c, repoEntity.Request{
-		Prompt:       userRequest.Message.MessageBody,
-		SessionID:    userRequest.SessionId,
-		SystemPrompt: a.config.Prompts.ValidationPrompt,
-		Model:        a.config.Model},
-	)
-
+	err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
-	text := entity.Message{MessageBody: resp.Text, Actor: "system"}
-	newLogStamp, err := entity.NewLogStamp(text.Actor)
+	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
 	return &entity.ResponseForUser{
-		Message:   text,
-		UserId:    "",
-		SessionId: resp.SessionID,
-		LogStamp:  newLogStamp,
+		Message:   entity.Message{MessageBody: genText},
+		UserId:    userRequest.UserId,
+		SessionId: userRequest.SessionId,
+		LogStamp:  userRequest.LogStamp,
 	}, nil
 }

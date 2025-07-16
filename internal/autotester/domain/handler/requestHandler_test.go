@@ -3,11 +3,10 @@ package handler
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -15,79 +14,38 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	autoMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
 		config        *config.Config
-		service       service.OpenAIService
 		expectedError bool
 	}{
 		{
-			testName: "valid Service",
-			logger:   slog.New(slog.NewTextHandler(os.Stdout, nil)),
-			config: &config.Config{
-				Model: "gpt-4",
-				Port:  "8081",
-				Prompts: &config.Prompts{
-					ValidationPrompt:     "Bitte überprüfe die Eingabe auf Vollständigkeit.",
-					AutoPlaywrightPrompt: "Erstelle automatisch ein Playwright-Skript für den folgenden Use Case.",
-				},
-				Timeout: 30,
-				Region:  "us-central1",
-				Bucket:  "my-app-bucket",
-			},
-			service:       &mocks.MockOpenAIService{},
+			testName:      "valid parameters",
+			logger:        logger,
+			config:        cfg,
 			expectedError: false,
 		}, {
-			testName: "logger nil",
-			logger:   nil,
-			config: &config.Config{
-				Model: "gpt-4",
-				Port:  "8081",
-				Prompts: &config.Prompts{
-					ValidationPrompt:     "Bitte überprüfe die Eingabe auf Vollständigkeit.",
-					AutoPlaywrightPrompt: "Erstelle automatisch ein Playwright-Skript für den folgenden Use Case.",
-				},
-				Timeout: 30,
-				Region:  "us-central1",
-				Bucket:  "my-app-bucket",
-			},
-			service:       &mocks.MockOpenAIService{},
-			expectedError: true,
-		}, {
-			testName:      "config nil",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
-			config:        nil,
-			expectedError: true,
-			service:       &mocks.MockOpenAIService{},
-		}, {
-			testName: "service nil",
-			logger:   slog.New(slog.NewTextHandler(os.Stdout, nil)),
-			config: &config.Config{
-				Model: "gpt-4",
-				Port:  "8081",
-				Prompts: &config.Prompts{
-					ValidationPrompt:     "Bitte überprüfe die Eingabe auf Vollständigkeit.",
-					AutoPlaywrightPrompt: "Erstelle automatisch ein Playwright-Skript für den folgenden Use Case.",
-				},
-				Timeout: 30,
-				Region:  "us-central1",
-				Bucket:  "my-app-bucket",
-			},
-			service:       nil,
+			testName:      "invalid parameters => logger nil",
+			logger:        nil,
+			config:        cfg,
 			expectedError: true,
 		},
 	}
 
+	// only two version because we shouldnt be testing the functionality of the assert
+	// if it works once, it should work all the time
+	mockGenServ := autoMocks.NewMockGeneratePrompt(t)
+	mockValServ := autoMocks.NewMockValidatePrompt(t)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			controller, err := NewAutotesterController(test.logger, test.config, test.service)
+			controller, err := NewAutotesterController(test.logger, test.config, mockValServ, mockGenServ)
 
 			if test.expectedError {
 				if err == nil {
@@ -110,83 +68,97 @@ func TestNewAutoTesterController(t *testing.T) {
 
 // nolint:funlen
 func TestHandleChatRequest(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+
+	// context with mock.Anything
+	validPrompt := "this is a valid prompt"
+	invalidPrompt := "this is a invalid prompt"
+	sessionid := "2"
+
+	mockSetup := []struct {
+		function         string
+		userPrompt       string
+		sessionID        string
+		expectedResponse string
+		ResponseError    error
+		expectedError    bool
+	}{
+		{
+			function:         "ValidatePrompt",
+			userPrompt:       validPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "true",
+			ResponseError:    nil,
+			expectedError:    false,
+		},
+		{
+			function:         "ValidatePrompt",
+			userPrompt:       invalidPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "false",
+			ResponseError:    errors.New("prompt does not contain required information for test generation"),
+			expectedError:    true,
+		},
+		{
+			function:         "GeneratePrompt",
+			userPrompt:       validPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "This is a generated Prompt",
+			ResponseError:    nil,
+			expectedError:    false,
+		},
+	}
 	tests := []struct {
 		TestName       string
 		RequestBody    string
 		ExpectedStatus int
-		config         *config.Config
 	}{
 		{
-			TestName: "Valid JSON",
+			TestName:       "Invalid JSON",
+			RequestBody:    `{"invalid":it ad json}`,
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		// testing correct requests
+		{
+			TestName: "valid request",
 			RequestBody: `{
 				"message": {
-					"data":  "Hello, how can I help you?",
+					"data":  "this is a valid prompt",
 					"agent": "user"
 				},
 				"userId":         "2",
 				"conversationId": "2"
 			}`,
 			ExpectedStatus: http.StatusOK,
-			config: &config.Config{
-				Model:    "gpt-4.1-nano-2025-04-14",
-				Port:     "8081",
-				LogLevel: "info",
-				Timeout:  20,
-				Region:   "eu-central-1",
-				Bucket:   "smart-autotester",
-				Prompts: &config.Prompts{
-					ValidationPrompt: `You are a helpful Assistant.
-				Answer all questions precisely and unambiguously.
-				For now, only answer with 'yes'.`,
-					AutoPlaywrightPrompt: "",
-				},
-			},
 		},
 		{
-			TestName:       "Invalid JSON",
-			RequestBody:    `{"invalid":it ad json}`,
-			ExpectedStatus: http.StatusBadRequest,
-			config: &config.Config{
-				Model:    "gpt-4.1-nano-2025-04-14",
-				Port:     "8081",
-				LogLevel: "info",
-				Timeout:  20,
-				Region:   "eu-central-1",
-				Bucket:   "smart-autotester",
-				Prompts: &config.Prompts{
-					ValidationPrompt: `You are a helpful Assistant.
-				Answer all questions precisely and unambiguously.
-				For now, only answer with 'yes'.`,
-					AutoPlaywrightPrompt: "",
-				},
-			},
-		}, {
-			TestName: "failed servicehandler",
+			TestName: "invalid request => invalid prompt",
 			RequestBody: `{
 				"message": {
-					"data":  "Hello, how can I help you?",
+					"data":  "this is a invalid prompt",
 					"agent": "user"
 				},
 				"userId":         "2",
 				"conversationId": "2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
-			config: &config.Config{
-				Model:    "gpt-4.1-nano-2025-04-14",
-				Port:     "8081",
-				LogLevel: "info",
-				Timeout:  20,
-				Region:   "eu-central-1",
-				Bucket:   "smart-autotester",
-				Prompts: &config.Prompts{
-					ValidationPrompt: `You are a helpful Assistant.
-				Answer all questions precisely and unambiguously.
-				For now, only answer with 'yes'.`,
-					AutoPlaywrightPrompt: "",
-				},
-			},
 		},
 	}
+
+	mockGenServ := autoMocks.NewMockGeneratePrompt(t)
+	mockValServ := autoMocks.NewMockValidatePrompt(t)
+
+	// setup mocks
+	for _, mc := range mockSetup {
+		if mc.function == "ValidatePrompt" {
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.ResponseError)
+		}
+		if mc.function == "GeneratePrompt" {
+			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
+		}
+	}
+
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, "/api/v1/chat", bytes.NewBufferString(test.RequestBody))
@@ -200,20 +172,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-			mockOpenAiService := &mocks.MockOpenAIService{}
-
-			if test.ExpectedStatus == http.StatusOK {
-				mockOpenAiService.On("Request", ctx, mock.Anything).Return(&shared.Response{
-					Text:      "Richtig",
-					SessionID: "1234",
-				}, nil)
-			} else {
-				mockOpenAiService.On("Request", ctx, mock.Anything).Return(nil, fmt.Errorf("MockError"))
-			}
-
-			controller, err := NewAutotesterController(logger, test.config, mockOpenAiService)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -228,6 +187,8 @@ func TestHandleChatRequest(t *testing.T) {
 }
 
 func TestHandleUserInfoRequest(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		TestName        string
 		UserRequestBody string
@@ -261,20 +222,8 @@ func TestHandleUserInfoRequest(t *testing.T) {
 		},
 	}
 
-	config := &config.Config{
-		Model:    "gpt-4.1-nano-2025-04-14",
-		Port:     "8081",
-		LogLevel: "info",
-		Timeout:  20,
-		Region:   "eu-central-1",
-		Bucket:   "smart-autotester",
-		Prompts: &config.Prompts{
-			ValidationPrompt: `You are a helpful Assistant.
-		Answer all questions precisely and unambiguously.
-		For now, only answer with 'yes'.`,
-			AutoPlaywrightPrompt: "",
-		},
-	}
+	mockGenServ := autoMocks.NewMockGeneratePrompt(t)
+	mockValServ := autoMocks.NewMockValidatePrompt(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -289,20 +238,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-			mockOpenAiService := &mocks.MockOpenAIService{}
-
-			if test.ExpectedStatus == http.StatusOK {
-				mockOpenAiService.On("Request", ctx, mock.Anything).Return(&shared.Response{
-					Text:      "Richtig",
-					SessionID: "1234",
-				}, nil)
-			} else {
-				mockOpenAiService.On("Request", ctx, mock.Anything).Return(nil, fmt.Errorf("MockError"))
-			}
-
-			controller, err := NewAutotesterController(logger, config, mockOpenAiService)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ)
 
 			if err != nil {
 				t.Errorf("build failed")
