@@ -51,7 +51,7 @@ func TestFindKeysByTag(t *testing.T) {
 			name:         "no matches",
 			tag:          "2025",
 			mockKeys:     []string{"file1.parquet", "something.txt"},
-			expectedKeys: []string{},
+			expectedKeys: []string(nil),
 		},
 		{
 			name:         "some matches",
