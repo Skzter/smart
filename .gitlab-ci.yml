@@ -10,7 +10,6 @@ variables:
 default:
   image:
     name: golang:$GO_VERSION
-    pull_policy: if-not-present
 
 workflow:
   rules:
@@ -22,7 +21,6 @@ workflow:
 .pnpm_cache:
   image:
     name: node:latest
-    pull_policy: if-not-present
   variables:
     PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
   rules:
@@ -224,7 +222,6 @@ build_go_no_artifacts:
 .docker_build:
   image:
     name: docker:dind
-    pull_policy: if-not-present
   tags:
     - fdit
   rules:
@@ -262,7 +259,6 @@ build_autotester_go_container:
 deploy_htwk:
   image:
     name: alpine:latest
-    pull_policy: if-not-present
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
