@@ -18,7 +18,7 @@ func TestNewTagSearchService(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	mockS3 := mockWrapper.NewMockS3StorageWrapper(t)
 
-	svc := NewTagSearchService(logger, mockS3)
+	svc := NewTagSearchService(*logger, mockS3)
 
 	assert.NotNil(t, svc)
 }
