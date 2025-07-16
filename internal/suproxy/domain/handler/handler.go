@@ -23,10 +23,13 @@ type SuproxyController struct {
 	client    *http.Client
 	validator service.Validator
 	db        service.DatabaseService
+	tagSearch service.TagSearchService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService) (*SuproxyController, error) {
+//
+//nolint:lll
+func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService, tagSearch service.TagSearchService) (*SuproxyController, error) {
 	if err := assert.NotNil(logger, config, val, client, db); err != nil {
 		return nil, err
 	}
@@ -37,6 +40,7 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config, val servic
 		client:    client,
 		validator: val,
 		db:        db,
+		tagSearch: tagSearch,
 	}, nil
 }
 
@@ -48,6 +52,16 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		s.logger.Error("Failed to bind JSON", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
+	}
+
+	matchingKeys, err := s.tagSearch.FindKeysByTag(c.Request.Context(), request.Prompt)
+	switch {
+	case err != nil:
+		s.logger.Error("Tag-based search failed", "error", err)
+	case len(matchingKeys) == 0:
+		s.logger.Error("No keys found in prompt", "error", err)
+	default:
+		s.logger.Info("Matching keys found", "keys", matchingKeys)
 	}
 
 	body, code, err := s.fetchOffers(request)

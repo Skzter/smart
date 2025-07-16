@@ -33,6 +33,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		application.NewRouter,
 		handler.NewSuproxyController,
 		service.NewValidator,
+		service.NewTagSearchService,
 		HTTPClientProvider,
 		sharedService.NewOpenAIService,
 		OpenAiRepositoryProvider,

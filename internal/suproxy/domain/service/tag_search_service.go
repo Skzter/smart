@@ -16,12 +16,12 @@ type TagSearchService interface {
 
 // tagSearchService is the concrete implementation of TagSearchService
 type tagSearchService struct {
-	logger slog.Logger
+	logger *slog.Logger
 	s3     wrapper.S3StorageWrapper
 }
 
 // NewTagSearchService creates a new TagSearchService instance with injected logger and S3 wrapper
-func NewTagSearchService(logger slog.Logger, s3 wrapper.S3StorageWrapper) TagSearchService {
+func NewTagSearchService(logger *slog.Logger, s3 wrapper.S3StorageWrapper) TagSearchService {
 	return &tagSearchService{
 		logger: logger,
 		s3:     s3,

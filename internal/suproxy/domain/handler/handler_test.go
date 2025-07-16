@@ -50,6 +50,7 @@ func RejectValidator(t testing.TB) service.Validator {
 }
 
 func TestNewSuproxyController(t *testing.T) {
+	tagSearch := mocks.NewTagSearchService(t)
 	tests := []struct {
 		name string
 		log  *slog.Logger
@@ -81,7 +82,7 @@ func TestNewSuproxyController(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tagSearch)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -265,9 +266,13 @@ func TestHandlerPostOfferlist(t *testing.T) {
 
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
+	mockTagSearch := mocks.NewTagSearchService(t)
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB)
+	mockTagSearch.On("FindKeysByTag", mock.Anything, mock.AnythingOfType("string")).
+		Return([]string{"file1.parquet", "file2.parquet"}, nil)
+
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockTagSearch)
 
 	router := SetupRouter(h)
 
@@ -345,17 +350,28 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			assert.Equal(t, string(expectedBytes), string(bytes))
 
 			mockValidator.AssertExpectations(t)
+			mockTagSearch.AssertExpectations(t)
 		})
 	}
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
+	// Setup Mocks
+	mockValidator := RejectValidator(b)
+	mockDB := mocks.NewMockDatabaseService(b)
+	mockTagSearch := mocks.NewTagSearchService(b)
+
+	mockTagSearch.
+		On("FindKeysByTag", mock.Anything, mock.AnythingOfType("string")).
+		Return([]string{"file1.parquet", "file2.parquet"}, nil)
+
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Config{},
-		RejectValidator(b),
+		mockValidator,
 		&http.Client{},
-		mocks.NewMockDatabaseService(b),
+		mockDB,
+		mockTagSearch,
 	)
 
 	router := SetupRouter(ctrl)
@@ -373,6 +389,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 			panic(err)
 		}
 	}))
+	defer server.Close()
 
 	requestBody, _ := json.Marshal(entity.Request{
 		Header:      map[string]string{"Content-Type": "application/json"},
@@ -381,9 +398,9 @@ func BenchmarkPostOfferList(b *testing.B) {
 		Request:     `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
 	})
 
-	for b.Loop() {
+	// Benchmark Loop
+	for b.ResetTimer(); b.N > 0; b.N-- {
 		request, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(requestBody))
-
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, request)
 
