@@ -12,8 +12,10 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
+// EntryPrefix is the prefix used for database entries in the S3 storage.
 const EntryPrefix = "supplierData/"
 
+// DatabaseRepository defines the interface for database operations related to supplier data.
 type DatabaseRepository interface {
 	// creates a request into the database
 	CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error

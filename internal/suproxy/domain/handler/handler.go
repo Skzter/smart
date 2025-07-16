@@ -101,6 +101,7 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 	return &body, resp.StatusCode, nil
 }
 
+// HandleRequest validates given response data and stores it combined with request
 func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Request, respData *[]byte) {
 	var list entity.SupplierResponse
 	if err := json.Unmarshal(*respData, &list); err != nil {
