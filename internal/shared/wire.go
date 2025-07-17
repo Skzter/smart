@@ -2,10 +2,10 @@ package shared
 
 import (
 	"github.com/google/wire"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
+	"github.com/sashabaranov/go-openai"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 )
 
@@ -17,8 +17,6 @@ var SharedProviderSet = wire.NewSet(
 )
 
 // OpenAiClientProvider provides a new OpenAI client.
-func OpenAiClientProvider() (openai.Client, error) {
-	return openai.NewClient(
-		option.WithAPIKey(build.OpenAIKey),
-	), nil
+func OpenAiClientProvider() (repository.OpenAIClient, error) {
+	return openai.NewClient(build.OpenAIKey), nil
 }

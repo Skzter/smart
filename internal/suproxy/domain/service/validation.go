@@ -38,13 +38,13 @@ type Validator interface {
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type validator struct {
-	openAiService service.OpenAI
+	openAiService service.OpenAIService
 	Logger        *slog.Logger
 	cfg           *config.Config
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenAI) (Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenAIService) (Validator, error) {
 	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		service srv.OpenAI
+		service srv.OpenAIService
 		config  *config.Config
 		logger  *slog.Logger
 		wantErr bool

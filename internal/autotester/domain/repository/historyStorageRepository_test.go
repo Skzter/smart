@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
@@ -74,7 +75,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
@@ -90,7 +91,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
@@ -112,7 +113,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{nil},
+				Messages:  []*sharedEntity.Message{nil},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
@@ -123,7 +124,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			writeStructErr: errors.New("parquet error"),
 			expectError:    true,
@@ -133,7 +134,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      errors.New("upload error"),
@@ -211,7 +212,7 @@ func historyReadTestCaseProvider() []struct {
 			key:             "valid-key",
 			downloadRet:     []byte("parquet"),
 			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.SessionSummary{{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}}},
+			readStructsRet:  []entity.SessionSummary{{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}}},
 			expectError:     false,
 			expectNilResult: false,
 		},
@@ -325,7 +326,7 @@ func historyUpdateTestCaseProvider() []struct {
 	}{
 		{
 			name:           "happy path",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -345,27 +346,27 @@ func historyUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:        "empty key",
-			obj:         &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:         &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:         "",
 			expectError: true,
 		},
 		{
 			name:          "file exists check error",
-			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:           "valid-key",
 			fileExistsErr: errors.New("exists error"),
 			expectError:   true,
 		},
 		{
 			name:          "file does not exist",
-			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:           "valid-key",
 			fileExistsRet: false,
 			expectError:   true,
 		},
 		{
 			name:           "parquet write fails",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructErr: errors.New("parquet error"),
@@ -373,7 +374,7 @@ func historyUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:           "s3 upload fails",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*entity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -453,7 +454,7 @@ func TestValidateHistoryData(t *testing.T) {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			wantErr: false,
 		},
@@ -467,7 +468,7 @@ func TestValidateHistoryData(t *testing.T) {
 			obj: &entity.SessionSummary{
 				Summary:   "",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 			},
 			wantErr: true,
 		},
@@ -485,7 +486,7 @@ func TestValidateHistoryData(t *testing.T) {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*entity.Message{nil},
+				Messages:  []*sharedEntity.Message{nil},
 			},
 			wantErr: true,
 		},
@@ -547,12 +548,12 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 	validSummary := entity.SessionSummary{
 		Summary:   "valid",
 		CreatedAt: now,
-		Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+		Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 	}
 	invalidSummary := entity.SessionSummary{
 		Summary:   "",
 		CreatedAt: now,
-		Messages:  []*entity.Message{{Actor: "user", MessageBody: "msg"}},
+		Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
 	}
 
 	return []struct {
