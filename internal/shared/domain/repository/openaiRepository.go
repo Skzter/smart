@@ -8,7 +8,6 @@ import (
 
 	openai "github.com/sashabaranov/go-openai"
 
-	autoentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -30,7 +29,7 @@ type OpenAIClient interface {
 type openAI struct {
 	logger   *slog.Logger // logger for Errors and Responses
 	client   OpenAIClient
-	messages []autoentity.Message
+	messages []entity.Message
 	timeout  int // timeout in seconds
 }
 
@@ -47,7 +46,7 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 	return &openAI{
 		logger:   logger,
 		client:   client,
-		messages: []autoentity.Message{},
+		messages: []entity.Message{},
 		timeout:  timeout,
 	}, nil
 }
@@ -64,7 +63,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	}
 
 	// add Request from user to messages of repo
-	qa.messages = append(qa.messages, autoentity.Message{
+	qa.messages = append(qa.messages, entity.Message{
 		Actor:       openai.ChatMessageRoleUser,
 		MessageBody: request.Prompt,
 	})
@@ -120,7 +119,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	}
 
 	// append response to message array of repo
-	qa.messages = append(qa.messages, autoentity.Message{
+	qa.messages = append(qa.messages, entity.Message{
 		Actor:       openai.ChatMessageRoleAssistant,
 		MessageBody: text,
 	})

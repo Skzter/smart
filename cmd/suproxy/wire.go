@@ -9,12 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	openai "github.com/sashabaranov/go-openai"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
-	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/application"
@@ -33,9 +32,8 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		handler.NewSuproxyController,
 		service.NewValidator,
 		HTTPClientProvider,
-		sharedService.NewOpenAIService,
+		shared.SharedProviderSet,		
 		OpenAiRepositoryProvider,
-		OpenAIClientProvider,
 		service.NewDatabaseService,
 		repository.NewDatabaseRepository,
 		ParquetWrapperProvider,
@@ -57,10 +55,6 @@ func OpenAiRepositoryProvider(logger *slog.Logger, client sharedRepo.OpenAIClien
 
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
-}
-
-func OpenAIClientProvider() sharedRepo.OpenAIClient {
-	return openai.NewClient(build.OpenAIKey)
 }
 
 func ParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {

@@ -8,7 +8,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
 
-	autotentity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
@@ -304,14 +303,14 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 				logger:   logger,
 				client:   mockClient,
 				timeout:  timeout,
-				messages: []autotentity.Message{},
+				messages: []entity.Message{},
 			}
 
 			repoWithMsgs := openAI{
 				logger:  logger,
 				client:  mockClient,
 				timeout: timeout,
-				messages: []autotentity.Message{
+				messages: []entity.Message{
 					{
 						Actor:       "user",
 						MessageBody: "what is 3 + 2?",
