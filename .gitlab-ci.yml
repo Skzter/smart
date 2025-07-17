@@ -272,7 +272,7 @@ deploy_htwk:
     - chmod 600 ~/.ssh/ssh_password.txt
     - ssh-keyscan -H $HTWK_IP >> ~/.ssh/known_hosts
     - sshpass -f ~/.ssh/ssh_password.txt scp deployments/compose.prod.yml stud@$HTWK_IP:/home/stud
-    - sshpass -f ~/.ssh/ssh_password.txt scp deployments/nginx stud@$HTWK_IP:/home/stud
+    - sshpass -f ~/.ssh/ssh_password.txt scp -r deployments/nginx stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt ssh stud@$HTWK_IP "
         export CI_REGISTRY_USER=$CI_REGISTRY_USER;
         export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
