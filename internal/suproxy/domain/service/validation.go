@@ -24,6 +24,14 @@ var (
 	ErrEmptyOpenAIResult = errors.New("openai returned empty result")
 )
 
+// staticly generated tags
+const (
+	emptyOffer         = "emptyOffer"
+	NoOffersInResponse = "noOffer"
+	ReponseNot200      = "non200"
+	ValidOffer         = "valid"
+)
+
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
 type OpenAIValidationResult struct {
 	Valid  bool     `json:"valid"`
@@ -65,16 +73,16 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	}
 
 	if offers.HTTPStatusCode != http.StatusOK {
-		return []string{"non200"}, nil
+		return []string{ReponseNot200}, nil
 	}
 
 	if len(offers.Data.Items) == 0 {
-		return []string{"noOffer"}, nil
+		return []string{NoOffersInResponse}, nil
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	tags := []string{}
+	tags := make([]string, 0, 10)
 
 	for i, offer := range offers.Data.Items {
 		if i >= v.cfg.MaxItemsPerValidation {
@@ -85,7 +93,9 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		item = strings.TrimSpace(item)
 		if item == "" {
-			addTag(&tags, "emptyOffer")
+			if !slices.Contains(tags, emptyOffer) {
+				tags = append(tags, emptyOffer)
+			}
 			continue
 		}
 
@@ -114,19 +124,15 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		if !validationResult.Valid {
 			for _, tag := range validationResult.Reason {
-				addTag(&tags, tag)
+				if !slices.Contains(tags, tag) {
+					tags = append(tags, tag)
+				}
 			}
 		}
 	}
 
 	if len(tags) == 0 {
-		return []string{"valid"}, nil
+		return []string{ValidOffer}, nil
 	}
 	return tags, nil
-}
-
-func addTag(tags *[]string, tag string) {
-	if !slices.Contains(*tags, tag) {
-		*tags = append(*tags, tag)
-	}
 }
