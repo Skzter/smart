@@ -19,14 +19,14 @@ type ValidatePrompt interface {
 
 // validatePrompt provides functionality to validate user prompts using OpenAI.
 type validatePrompt struct {
-	service service.OpenAI
+	service service.OpenAIService
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewValidatePromptService creates a new validatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewValidatePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (ValidatePrompt, error) {
+func NewValidatePromptService(service service.OpenAIService, config *config.Config, logger *slog.Logger) (ValidatePrompt, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
-		Model:        "gpt-4.1-nano-2025-04-14",
+		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
 

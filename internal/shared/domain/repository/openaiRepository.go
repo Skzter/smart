@@ -6,9 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/packages/param"
-	"github.com/openai/openai-go/responses"
+	openai "github.com/sashabaranov/go-openai"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -22,15 +20,21 @@ type OpenAI interface {
 	CreateRequest(context.Context, entity.Request) (*entity.Response, error)
 }
 
+// OpenAIClient provides function we use on the client
+type OpenAIClient interface {
+	CreateChatCompletion(context.Context, openai.ChatCompletionRequest) (openai.ChatCompletionResponse, error)
+}
+
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
-	logger  *slog.Logger // logger for Errors and Responses
-	client  openai.Client
-	timeout int // timeout in seconds
+	logger   *slog.Logger // logger for Errors and Responses
+	client   OpenAIClient
+	messages []entity.Message
+	timeout  int // timeout in seconds
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, client openai.Client, timeout int) (OpenAI, error) {
+func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) (OpenAI, error) {
 	if err := assert.NotNil(logger, client); err != nil {
 		return nil, err
 	}
@@ -40,9 +44,10 @@ func NewOpenAiRepository(logger *slog.Logger, client openai.Client, timeout int)
 	}
 
 	return &openAI{
-		logger:  logger,
-		client:  client,
-		timeout: timeout,
+		logger:   logger,
+		client:   client,
+		messages: []entity.Message{},
+		timeout:  timeout,
 	}, nil
 }
 
@@ -53,52 +58,87 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		return nil, err
 	}
 
-	switch {
-	case request.Prompt == "":
-		return nil, fmt.Errorf("creating request without invalid Data: Prompt is empty")
-	case request.SystemPrompt == "":
-		return nil, fmt.Errorf("creating request without system prompt")
-	case request.Model == "":
-		return nil, fmt.Errorf("creating request without model")
+	if err := validateRequestEntity(request); err != nil {
+		return nil, err
 	}
 
-	openaiRequest := responses.ResponseNewParams{
-		Input: responses.ResponseNewParamsInputUnion{
-			OfString: param.NewOpt(request.Prompt),
+	// add Request from user to messages of repo
+	qa.messages = append(qa.messages, entity.Message{
+		Actor:       openai.ChatMessageRoleUser,
+		MessageBody: request.Prompt,
+	})
+
+	// create history with sys prompt
+	chatHistory := []openai.ChatCompletionMessage{
+		{
+			Role:    openai.ChatMessageRoleSystem,
+			Content: request.SystemPrompt,
 		},
-		Instructions: param.NewOpt(request.SystemPrompt),
-		Model:        request.Model,
-	}
-	if request.SessionID != "" {
-		openaiRequest.PreviousResponseID = param.NewOpt(request.SessionID)
 	}
 
+	// add all messages to history for conversation state
+	for _, message := range qa.messages {
+		msg := openai.ChatCompletionMessage{
+			Role:    message.Actor,
+			Content: message.MessageBody,
+		}
+		chatHistory = append(chatHistory, msg)
+	}
+
+	// returned ctx cannot not be nil, because it will always return a ctx
+	// only if ctx would be nil from the start it would panic but already asserted it wouldnt be nil
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(qa.timeout))
 	defer cancel()
 
-	if ctx == nil {
-		return nil, fmt.Errorf("failed to generate new context")
-	}
-
-	resp, err := qa.client.Responses.New(ctx, openaiRequest)
+	resp, err := qa.client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model:    request.Model,
+			Messages: chatHistory,
+		})
 
 	if err != nil {
 		err := fmt.Errorf("openai request: %w", err)
 		qa.logger.Error(err.Error())
 		return nil, err
 	}
-	if resp.Error.Message != "" {
-		err := fmt.Errorf("openai api error: %s", resp.Error.Message)
-		qa.logger.Error(err.Error())
-		return nil, err
+
+	if request.SessionID == "" {
+		request.SessionID = resp.ID
 	}
-	text := resp.OutputText()
-	if text == "" {
+
+	// check if there are responses from api
+	if len(resp.Choices) == 0 {
 		return nil, fmt.Errorf("openai api error: Response contains no message")
 	}
 
+	// first choice of all responses
+	text := resp.Choices[0].Message.Content
+	if text == "" {
+		return nil, fmt.Errorf("openai api error: Response contains empty message")
+	}
+
+	// append response to message array of repo
+	qa.messages = append(qa.messages, entity.Message{
+		Actor:       openai.ChatMessageRoleAssistant,
+		MessageBody: text,
+	})
+
 	return &entity.Response{
-		Text:      resp.OutputText(),
-		SessionID: resp.ID,
+		Text:      text,
+		SessionID: request.SessionID,
 	}, nil
+}
+
+func validateRequestEntity(request entity.Request) error {
+	switch {
+	case request.Prompt == "":
+		return fmt.Errorf("request without user prompt")
+	case request.SystemPrompt == "":
+		return fmt.Errorf("request without system prompt")
+	case request.Model == "":
+		return fmt.Errorf("request without model")
+	default:
+		return nil
+	}
 }

@@ -6,11 +6,9 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/mock"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -28,14 +26,13 @@ func TestNewValidator(t *testing.T) {
 		MaxItemsPerValidation: 5,
 	}
 	logger := slog.Default()
-	repo, _ := repository.NewOpenAiRepository(logger, openai.Client{}, 5)
-	serv, _ := sharedService.NewOpenAIService(logger, repo)
+	serv := sharedMocks.NewMockOpenAIService(t)
 
 	tests := []struct {
 		name        string
 		cfg         *config.Config
 		logger      *slog.Logger
-		service     sharedService.OpenAI
+		service     sharedService.OpenAIService
 		expectError bool
 	}{
 		{

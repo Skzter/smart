@@ -39,8 +39,8 @@ func (_m *MockOpenAIService) EXPECT() *MockOpenAIService_Expecter {
 }
 
 // Request provides a mock function for the type MockOpenAIService
-func (_mock *MockOpenAIService) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
-	ret := _mock.Called(ctx, request)
+func (_mock *MockOpenAIService) Request(context1 context.Context, request entity.Request) (*entity.Response, error) {
+	ret := _mock.Called(context1, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Request")
@@ -49,17 +49,17 @@ func (_mock *MockOpenAIService) Request(ctx context.Context, request entity.Requ
 	var r0 *entity.Response
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) (*entity.Response, error)); ok {
-		return returnFunc(ctx, request)
+		return returnFunc(context1, request)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) *entity.Response); ok {
-		r0 = returnFunc(ctx, request)
+		r0 = returnFunc(context1, request)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.Response)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Request) error); ok {
-		r1 = returnFunc(ctx, request)
+		r1 = returnFunc(context1, request)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -72,13 +72,13 @@ type MockOpenAIService_Request_Call struct {
 }
 
 // Request is a helper method to define mock.On call
-//   - ctx context.Context
+//   - context1 context.Context
 //   - request entity.Request
-func (_e *MockOpenAIService_Expecter) Request(ctx interface{}, request interface{}) *MockOpenAIService_Request_Call {
-	return &MockOpenAIService_Request_Call{Call: _e.mock.On("Request", ctx, request)}
+func (_e *MockOpenAIService_Expecter) Request(context1 interface{}, request interface{}) *MockOpenAIService_Request_Call {
+	return &MockOpenAIService_Request_Call{Call: _e.mock.On("Request", context1, request)}
 }
 
-func (_c *MockOpenAIService_Request_Call) Run(run func(ctx context.Context, request entity.Request)) *MockOpenAIService_Request_Call {
+func (_c *MockOpenAIService_Request_Call) Run(run func(context1 context.Context, request entity.Request)) *MockOpenAIService_Request_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -101,7 +101,7 @@ func (_c *MockOpenAIService_Request_Call) Return(response *entity.Response, err 
 	return _c
 }
 
-func (_c *MockOpenAIService_Request_Call) RunAndReturn(run func(ctx context.Context, request entity.Request) (*entity.Response, error)) *MockOpenAIService_Request_Call {
+func (_c *MockOpenAIService_Request_Call) RunAndReturn(run func(context1 context.Context, request entity.Request) (*entity.Response, error)) *MockOpenAIService_Request_Call {
 	_c.Call.Return(run)
 	return _c
 }
