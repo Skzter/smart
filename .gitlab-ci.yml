@@ -1,268 +1,268 @@
 stages:
-#  - prepare
-#  - code_analysis_and_testing
-#  - build
+  - prepare
+  - code_analysis_and_testing
+  - build
   - deploy
-#
-#variables:
-#  GO_VERSION: 1.24
-#
-#default:
-#  image:
-#    name: golang:$GO_VERSION
-#
-#workflow:
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
-#      when: never
-#    - if: $CI_COMMIT_BRANCH
-#
-#.pnpm_cache:
-#  image:
-#    name: node:latest
-#  variables:
-#    PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
-#  rules:
-#    - if: $GITLAB_CI == "false"
-#      when: never
-#    - when: on_success
-#  before_script:
-#    - corepack enable
-#    - corepack prepare pnpm@latest --activate
-#    - pnpm config set store-dir $PNPM_HOME
-#    - cd web
-#    - pnpm install
-#  cache:
-#    key: $CI_COMMIT_REF_SLUG
-#    paths:
-#      - .pnpm-store
-#      - node_modules
-#
-#.go_cache:
-#  variables:
-#    GOPATH: $CI_PROJECT_DIR/.go
-#  rules:
-#    - if: $GITLAB_CI == "false"
-#      when: never
-#    - when: on_success
-#  cache:
-#    key: $CI_COMMIT_REF_SLUG
-#    fallback_keys:
-#      - $CI_DEFAULT_BRANCH
-#    paths:
-#      - .go/pkg/mod/
-#
-#go_mod_download:
-#  stage: prepare
-#  extends: .go_cache
-#  script:
-#    - go mod download
-#
-#go_generate_code:
-#  stage: prepare
-#  extends: .go_cache
-#  script:
-#    - ./bin/task generate
-#  artifacts:
-#    name: Generated_Go_Code
-#    paths:
-#      - internal/autotester/domain/config
-#      - internal/suproxy/domain/config
-#      - internal/build/configs
-#      - cmd/autotester/wire_gen.go
-#      - cmd/suproxy/wire_gen.go
-#
-#lint_frontend:
-#  stage: code_analysis_and_testing
-#  extends: .pnpm_cache
-#  script:
-#    - pnpm eslint .
-#
-#lint_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task lint
-#
-#static_analysis_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task static-analysis
-#  rules:
-#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#      when: on_success
-#
-#sonarqube-check:
-#  stage: code_analysis_and_testing
-#  tags:
-#    - fdit
-#  image:
-#    name: sonarsource/sonar-scanner-cli:latest
-#    entrypoint: [""]
-#  variables:
-#    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-#    GIT_DEPTH: "0"
-#  cache:
-#    key: "${CI_JOB_NAME}"
-#    paths:
-#      - .sonar/cache
-#  script:
-#    - sonar-scanner
-#  allow_failure: true
-#  needs:
-#    - integration_test_go
-#    - frontend_test
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
-#
-#unit_test_go:
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task test
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
-#      when: on_success
-#
-#integration_test_go:
-#  services:
-#    - docker:dind
-#  tags:
-#    - fdit
-#  stage: code_analysis_and_testing
-#  extends: .go_cache
-#  script:
-#    - ./bin/task test-ci
-#  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
-#  artifacts:
-#    name: go_coverage
-#    reports:
-#      coverage_report:
-#        coverage_format: cobertura
-#        path: ./go-cobertura-coverage.xml
-#      junit: junit.xml
-#    paths:
-#      - coverage.out
-#    expire_in: 1 week
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"
-#      when: on_success
-#
-#frontend_test:
-#  stage: code_analysis_and_testing
-#  extends: .pnpm_cache
-#  script:
-#    - pnpm run test:coverage
-#  coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
-#  artifacts:
-#    name: frontend_coverage
-#    paths:
-#      - web/coverage/lcov.info
-#    reports:
-#      coverage_report:
-#        coverage_format: cobertura
-#        path: web/coverage/cobertura-coverage.xml
-#      junit: web/coverage/junit.xml
 
-#build_frontend_artifacts:
-#  stage: build
-#  extends: .pnpm_cache
-##  rules:
-##    - if: $CI_COMMIT_BRANCH == "main"
-##      when: on_success
-#  script:
-#    - pnpm build
-#  artifacts:
-#    name: Frontend_Build
-#    paths:
-#      - web/dist/
+variables:
+  GO_VERSION: 1.24
 
-#build_frontend_no_artifacts:
-#  stage: build
-#  extends: .pnpm_cache
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main"
-#      when: on_success
-#  script:
-#    - pnpm build
+default:
+  image:
+    name: golang:$GO_VERSION
 
-#build_go_artifacts:
-#  stage: build
-#  extends: .go_cache
-#  needs:
-#    - job: build_frontend_artifacts
-#      artifacts: true
-#    - job: go_generate_code
-#      artifacts: true
-##  rules:
-##    - if: $CI_COMMIT_BRANCH == "main"
-##      when: on_success
-#  script:
-#    - ./bin/task build-pipeline
-#  artifacts:
-#    name: Go_Bin
-#    paths:
-#      - build/
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
 
-#build_go_no_artifacts:
-#  stage: build
-#  extends: .go_cache
-#  needs:
-#    - job: go_generate_code
-#      artifacts: true
-#  rules:
-#    - if: $CI_COMMIT_BRANCH != "main"
-#      when: on_success
-#  script:
-#    - ./bin/task build-pipeline
+.pnpm_cache:
+  image:
+    name: node:latest
+  variables:
+    PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
+  rules:
+    - if: $GITLAB_CI == "false"
+      when: never
+    - when: on_success
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - pnpm config set store-dir $PNPM_HOME
+    - cd web
+    - pnpm install
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - .pnpm-store
+      - node_modules
 
-#.docker_build:
-#  image:
-#    name: docker:dind
-#  tags:
-#    - fdit
-##  rules:
-##    - if: $CI_COMMIT_BRANCH == "main"
-##      when: on_success
-#  before_script:
-#    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+.go_cache:
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+  rules:
+    - if: $GITLAB_CI == "false"
+      when: never
+    - when: on_success
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    fallback_keys:
+      - $CI_DEFAULT_BRANCH
+    paths:
+      - .go/pkg/mod/
 
-#build_suproxy_go_container:
-#  stage: build
-#  extends: .docker_build
-#  interruptible: true
-#  needs:
-#    - job: build_go_artifacts
-#      artifacts: true
-#  variables:
-#    IMAGE_TAG: $CI_REGISTRY_IMAGE/suproxy:latest
-#  script:
-#    - docker build -f deployments/suproxy/Dockerfile.prod -t $IMAGE_TAG .
-#    - docker push $IMAGE_TAG
+go_mod_download:
+  stage: prepare
+  extends: .go_cache
+  script:
+    - go mod download
 
-#build_autotester_go_container:
-#  stage: build
-#  extends: .docker_build
-#  interruptible: true
-#  needs:
-#    - job: build_go_artifacts
-#      artifacts: true
-#  variables:
-#    IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
-#  script:
-#    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
-#    - docker push $IMAGE_TAG
+go_generate_code:
+  stage: prepare
+  extends: .go_cache
+  script:
+    - ./bin/task generate
+  artifacts:
+    name: Generated_Go_Code
+    paths:
+      - internal/autotester/domain/config
+      - internal/suproxy/domain/config
+      - internal/build/configs
+      - cmd/autotester/wire_gen.go
+      - cmd/suproxy/wire_gen.go
+
+lint_frontend:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - pnpm eslint .
+
+lint_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task lint
+
+static_analysis_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task static-analysis
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+
+sonarqube-check:
+  stage: code_analysis_and_testing
+  tags:
+    - fdit
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  variables:
+    SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+    GIT_DEPTH: "0"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+  script:
+    - sonar-scanner
+  allow_failure: true
+  needs:
+    - integration_test_go
+    - frontend_test
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+
+unit_test_go:
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
+
+integration_test_go:
+  services:
+    - docker:dind
+  tags:
+    - fdit
+  stage: code_analysis_and_testing
+  extends: .go_cache
+  script:
+    - ./bin/task test-ci
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    name: go_coverage
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: ./go-cobertura-coverage.xml
+      junit: junit.xml
+    paths:
+      - coverage.out
+    expire_in: 1 week
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: on_success
+
+frontend_test:
+  stage: code_analysis_and_testing
+  extends: .pnpm_cache
+  script:
+    - pnpm run test:coverage
+  coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
+  artifacts:
+    name: frontend_coverage
+    paths:
+      - web/coverage/lcov.info
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: web/coverage/cobertura-coverage.xml
+      junit: web/coverage/junit.xml
+
+build_frontend_artifacts:
+  stage: build
+  extends: .pnpm_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  script:
+    - pnpm build
+  artifacts:
+    name: Frontend_Build
+    paths:
+      - web/dist/
+
+build_frontend_no_artifacts:
+  stage: build
+  extends: .pnpm_cache
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
+  script:
+    - pnpm build
+
+build_go_artifacts:
+  stage: build
+  extends: .go_cache
+  needs:
+    - job: build_frontend_artifacts
+      artifacts: true
+    - job: go_generate_code
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  script:
+    - ./bin/task build-pipeline
+  artifacts:
+    name: Go_Bin
+    paths:
+      - build/
+
+build_go_no_artifacts:
+  stage: build
+  extends: .go_cache
+  needs:
+    - job: go_generate_code
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"
+      when: on_success
+  script:
+    - ./bin/task build-pipeline
+
+.docker_build:
+  image:
+    name: docker:dind
+  tags:
+    - fdit
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+build_suproxy_go_container:
+  stage: build
+  extends: .docker_build
+  interruptible: true
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/suproxy:latest
+  script:
+    - docker build -f deployments/suproxy/Dockerfile.prod -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+
+build_autotester_go_container:
+  stage: build
+  extends: .docker_build
+  interruptible: true
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
+  script:
+    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
 
 deploy_htwk:
   image:
     name: alpine:latest
   stage: deploy
-#  rules:
-#    - if: $CI_COMMIT_BRANCH == "main"
-#      when: on_success
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
   interruptible: true
   resource_group: production
   script:

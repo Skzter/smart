@@ -33,6 +33,12 @@ services:
     ports:
       - "8083:8083"
 
+  redis:
+    image: valkey/valkey:alpine
+    restart: always
+    networks:
+      - default
+
   nginx:
     image: nginx:alpine
     restart: always
