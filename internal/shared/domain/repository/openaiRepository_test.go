@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
 // Test for creating new OpenAiRepository
@@ -244,13 +244,13 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		ctx           context.Context
 		request       entity.Request
+		ctx           context.Context
 		expectedError bool
 	}{
 		{
-			name: "correct context, correct entity",
-			ctx:  context.TODO(),
+			name: "valid",
+			ctx:  t.Context(),
 			request: entity.Request{
 				Prompt:       "user prompt",
 				SessionID:    "123",
@@ -260,8 +260,8 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "correct context, correct entity",
-			ctx:  context.TODO(),
+			name: "valid, storing new respid",
+			ctx:  t.Context(),
 			request: entity.Request{
 				Prompt:       "user prompt",
 				SessionID:    "",
@@ -271,21 +271,21 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "nil context, correct entity",
-			ctx:  nil,
+			name:          "nil entity",
+			request:       entity.Request{},
+			expectedError: true,
+			ctx:           t.Context(),
+		},
+		{
+			name: "nil context",
 			request: entity.Request{
 				Prompt:       "user prompt",
-				SessionID:    "123",
+				SessionID:    "",
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
 			expectedError: true,
-		},
-		{
-			name:          "correct context, nil entity",
-			ctx:           context.TODO(),
-			request:       entity.Request{},
-			expectedError: true,
+			ctx:           nil,
 		},
 	}
 

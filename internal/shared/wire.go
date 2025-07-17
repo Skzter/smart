@@ -13,7 +13,7 @@ import (
 // nolint:gochecknoglobals
 var SharedProviderSet = wire.NewSet(
 	OpenAiClientProvider,
-	service.NewOpenAIService,
+	service.NewOpenAI,
 )
 
 // OpenAiClientProvider provides a new OpenAI client.

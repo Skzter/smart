@@ -1,14 +1,15 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	repo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
 // Test for Service
@@ -32,7 +33,7 @@ func TestNewService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			service, err := NewOpenAIService(test.logger, &mocks.MockOpenAI{})
+			service, err := NewOpenAI(test.logger, repo.NewMockOpenAI(t))
 
 			if test.expectedError {
 				if err == nil {
@@ -53,13 +54,11 @@ func TestNewService(t *testing.T) {
 func TestRequest(t *testing.T) {
 	tests := []struct {
 		testName      string
-		content       context.Context
 		request       entity.Request
 		expectedError bool
 	}{
 		{
 			testName: "Nil-Content",
-			content:  nil,
 			request: entity.Request{
 				Prompt:       "Test",
 				SessionID:    "123",
@@ -70,7 +69,6 @@ func TestRequest(t *testing.T) {
 		},
 		{
 			testName: "Valid Request",
-			content:  context.Background(),
 			request: entity.Request{
 				Prompt:       "Test",
 				SessionID:    "123",
@@ -84,20 +82,20 @@ func TestRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			mockOpenAiRepo := &mocks.MockOpenAI{}
+			mockOpenAiRepo := repo.NewMockOpenAI(t)
 			if test.expectedError {
-				mockOpenAiRepo.On("CreateRequest", test.content, test.request).Return(nil, fmt.Errorf("Expected Error"))
+				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(nil, fmt.Errorf("Expected Error"))
 			} else {
-				mockOpenAiRepo.On("CreateRequest", test.content, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
+				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
 			}
 
-			service, err := NewOpenAIService(logger, mockOpenAiRepo)
+			service, err := NewOpenAI(logger, mockOpenAiRepo)
 
 			if err != nil {
 				t.Errorf("WARNING: Failed to create openAIService")
 			}
 
-			resp, err := service.Request(test.content, test.request)
+			resp, err := service.Request(t.Context(), test.request)
 
 			if test.expectedError {
 				if err == nil {
