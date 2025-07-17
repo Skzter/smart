@@ -9,6 +9,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -88,7 +89,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 		return nil, err
 	}
 	return &entity.ResponseForUser{
-		Message:   entity.Message{MessageBody: genText},
+		Message:   sharedEntity.Message{MessageBody: genText},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,
