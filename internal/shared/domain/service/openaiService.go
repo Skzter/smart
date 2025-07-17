@@ -9,8 +9,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// OpenAIService handles requests to the OpenAI repository.
-type OpenAIService interface {
+// OpenAI handles requests to the OpenAI repository.
+type OpenAI interface {
 	Request(context.Context, entity.Request) (*entity.Response, error)
 }
 
@@ -20,8 +20,8 @@ type openAI struct {
 	logger *slog.Logger
 }
 
-// NewOpenAIService creates and returns a new OpenAIService instance.
-func NewOpenAIService(logger *slog.Logger, repo repository.OpenAI) (OpenAIService, error) {
+// NewOpenAI creates and returns a new OpenAIService instance.
+func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}

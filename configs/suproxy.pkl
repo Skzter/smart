@@ -141,8 +141,8 @@ class Prompts {
     You must return a JSON object with the following structure: 
 
     { 
-      valid: true|false, 
-      reason: [tag1, tag2, ...] 
+      "valid": true|false, 
+      "reason": [tag1, tag2, ...] 
     } 
 
     If valid is true, reason must be an empty array. 
@@ -153,15 +153,15 @@ class Prompts {
     Your output must always strictly follow this schema: 
 
     { 
-      valid: true, 
-      reason: [] 
+      "valid": true, 
+      "reason": [] 
     } 
 
     or 
 
     { 
-      valid: false, 
-      reason: [tag1, tag2] 
+      "valid": false, 
+      "reason": [tag1, tag2] 
     }
     """
     prompt2 : String = "und so weiter"

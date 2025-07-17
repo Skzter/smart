@@ -45,7 +45,7 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(errors.New("reject")).Maybe()
+	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
 
@@ -113,9 +113,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		sSetup           *supplierSetup // only sets up server if not nil
 		expectedResponse any            // allows for unmarshal to fail
 		expects200       bool
-		dbError          *struct{ bool }
-		validationError  *struct{ bool }
-		loggedError      bool
 	}{
 		{
 			name: "valid",
@@ -137,66 +134,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{false},
-			loggedError:     false,
-		},
-		{
-			name: "valid with malformed list entry",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{true},
-			loggedError:     true,
-		},
-		{
-			name: "valid with storage failure",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{true},
-			loggedError:     true,
 		},
 		{
 			name:             "invalid request body",
 			request:          nil,
 			expectedResponse: invalidRequestBody,
 			expects200:       false,
-			loggedError:      true,
 		},
 		{
 			name: "invalid address",
@@ -207,7 +150,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			useCorrectAdress: false,
 			expectedResponse: invalidRequestBody,
 			expects200:       false,
-			loggedError:      true,
 		},
 		{
 			name:             "supplier 400",
@@ -221,59 +163,18 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     400,
 				response: nil,
 			},
-			loggedError: true,
-		},
-		{
-			name: "invalid supplier data",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: "{}",
-			},
-			useCorrectAdress: true,
-			expectedResponse: "invalid",
-			expects200:       true,
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			loggedError: true,
-		},
-		{
-			name: "validation error",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			validationError: &struct{ bool }{true},
-			loggedError:     true,
 		},
 	}
 
-	mockValidator := mocks.NewMockValidator(t)
+	validator := RejectValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
-	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB)
+	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB)
 
 	router := SetupRouter(h)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			writer.Clear()
 			w := httptest.NewRecorder()
 
 			var server *httptest.Server
@@ -290,24 +191,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 					}
 				}))
 				defer server.Close()
-			}
-
-			if tt.validationError != nil {
-				err := errors.New("error")
-				if !tt.validationError.bool {
-					err = nil
-				}
-				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(err)
-				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
-			}
-
-			if tt.dbError != nil {
-				err := errors.New("error")
-				if !tt.dbError.bool {
-					err = nil
-				}
-				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(err)
-				defer func() { mockDB.ExpectedCalls = []*mock.Call{} }()
 			}
 
 			// use correct header and destintation if request is not nil
@@ -332,19 +215,105 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			bytes, _ := io.ReadAll(w.Body)
 			expectedBytes, _ := json.Marshal(tt.expectedResponse)
 
-			valid := true
-			for i := range writer.len() {
-				if strings.Contains(string(writer.Read(i)), "ERROR") {
-					valid = false
-				}
-				t.Log(string(writer.Read(i)))
-			}
-
-			assert.Equal(t, tt.loggedError, !valid)
 			assert.Equal(t, tt.expects200, w.Code == http.StatusOK)
 			assert.Equal(t, string(expectedBytes), string(bytes))
+		})
+	}
+}
 
-			mockValidator.AssertExpectations(t)
+type dbSetup struct {
+	err error
+}
+
+type validationSetup struct {
+	err  error
+	tags []string
+}
+
+func TestHandlerHandleRequest(t *testing.T) {
+	validRespData, err := json.Marshal(entity.SupplierResponse{
+		HTTPStatusCode: 200,
+		Data: entity.SupplierOfferList{
+			Items: []json.RawMessage{
+				[]byte(`{"offerid":223213}`),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	tests := []struct {
+		name              string
+		respData          []byte
+		dbSetup           *dbSetup
+		vsetup            *validationSetup
+		expectLoggedError bool
+	}{
+		{
+			name:     "valid, sucessful storage",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: nil},
+			expectLoggedError: false,
+		},
+		{
+			name:     "valid, storage error",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: errors.New("Storage error")},
+			expectLoggedError: true,
+		},
+		{
+			name:              "invalid resp data",
+			respData:          []byte("invalid"),
+			expectLoggedError: true,
+		},
+	}
+
+	mockValidator := mocks.NewMockValidator(t)
+	mockDB := mocks.NewMockDatabaseService(t)
+	var writer slicewriter
+
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer.Clear()
+
+			if tt.vsetup != nil {
+				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
+				defer func() {
+					mockValidator.AssertExpectations(t)
+					mockValidator.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			if tt.dbSetup != nil {
+				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(tt.dbSetup.err)
+				defer func() {
+					mockDB.AssertExpectations(t)
+					mockDB.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			h.HandleRequest(t.Context(), entity.Request{}, &tt.respData)
+
+			err := false
+			for i := range writer.len() {
+				if strings.Contains(string(writer.Read(i)), "ERROR") {
+					err = true
+				}
+				t.Log("ERROR: ", string(writer.Read(i)))
+			}
+
+			assert.Equal(t, tt.expectLoggedError, err)
 		})
 	}
 }

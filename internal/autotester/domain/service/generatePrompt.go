@@ -17,14 +17,14 @@ type GeneratePrompt interface {
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
 type generatePrompt struct {
-	service service.OpenAIService
+	service service.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewGeneratePromptService(service service.OpenAIService, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
+func NewGeneratePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}

@@ -20,15 +20,15 @@ packages:
       ParquetFileWrapper:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository:
     config:
-      dir: './internal/shared/domain/mocks'
+      dir: './internal/shared/domain/repository/mocks'
     interfaces:
       OpenAI:
       OpenAIClient:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service:
     config:
-      dir: './internal/shared/domain/mocks'
+      dir: './internal/shared/domain/service/mocks'
     interfaces:
-      OpenAIService:
+      OpenAI:
 
   # SUPROXY
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service:
@@ -47,7 +47,7 @@ packages:
       TestCaseStorageRepository:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service:
     config:
-      dir: './internal/autotester/domain/mocks'
+      dir: './internal/autotester/domain/service/mocks'
     interfaces:
       GeneratePrompt:
       ValidatePrompt:
