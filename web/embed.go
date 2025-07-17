@@ -7,7 +7,7 @@ import (
 // DistFS is an embedded filesystem containing the static assets for the web application.
 // It is used to serve the frontend assets at runtime.
 //
-//go:embed all:dist/assets
+//go:embed all:dist
 var DistFS embed.FS
 
 // Auth0Config is an embedded filesystem containing the Auth0 configuration file.

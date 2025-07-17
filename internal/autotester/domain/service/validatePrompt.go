@@ -40,7 +40,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
-		Model:        "gpt-4.1-nano-2025-04-14",
+		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
 

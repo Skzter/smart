@@ -37,7 +37,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
-		Model:        "gpt-4-1106-preview",
+		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.AutoPlaywrightPrompt,
 	}
 

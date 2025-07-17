@@ -31,9 +31,14 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 	}
 	router.StaticFS("/assets", http.FS(assetsFS))
 
-	router.LoadHTMLFiles("web/dist/index.html")
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
+		indexHTML, err := web.DistFS.ReadFile("dist/index.html")
+		if err != nil {
+			logger.Error("Failed to read embedded index.html", "error", err)
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
 
 	logger.Info("Router initialized")

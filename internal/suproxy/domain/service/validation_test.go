@@ -6,12 +6,10 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/openai/openai-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -29,8 +27,7 @@ func TestNewValidator(t *testing.T) {
 		MaxItemsPerValidation: 5,
 	}
 	logger := slog.Default()
-	repo, _ := repository.NewOpenAiRepository(logger, openai.Client{}, 5)
-	serv, _ := sharedService.NewOpenAIService(logger, repo)
+	serv := sharedMocks.NewMockOpenAI(t)
 
 	tests := []struct {
 		name        string
@@ -243,7 +240,7 @@ func TestValidatorValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockservice := sharedMocks.NewMockOpenAIService(t)
+			mockservice := sharedMocks.NewMockOpenAI(t)
 
 			if tt.expectCall {
 				mockservice.
