@@ -25,13 +25,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 		c.FileFromFS("/auth_config.json", http.FS(web.Auth0Config))
 	})
 
-	staticFS, err := fs.Sub(web.DistFS, "dist")
-	if err != nil {
-		logger.Error(err.Error())
-		return nil
-	}
-
-	assetsFS, err := fs.Sub(staticFS, "assets")
+	assetsFS, err := fs.Sub(web.DistFS, "dist/assets")
 	if err != nil {
 		logger.Error(err.Error())
 		return nil
@@ -39,7 +33,13 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 	router.StaticFS("/assets", http.FS(assetsFS))
 
 	router.GET("/", func(c *gin.Context) {
-		c.FileFromFS("dist/index.html", http.FS(staticFS))
+		indexHTML, err := web.DistFS.ReadFile("dist/index.html")
+		if err != nil {
+			logger.Error("Failed to read embedded index.html", "error", err)
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
 
 	logger.Info("Router initialized")
