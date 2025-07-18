@@ -72,7 +72,7 @@
         }
     }
 
-    let container: HTMLElement;
+    let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes
     $effect(() => {
         if (container && (isLoading || convo.length > 0)) {
@@ -82,7 +82,7 @@
                     top: container.scrollHeight,
                     behavior: "smooth",
                 });
-            }, 0);
+            }, 50);
         }
     });
 </script>

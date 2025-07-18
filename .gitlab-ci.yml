@@ -63,7 +63,7 @@ go_generate_code:
   stage: prepare
   extends: .go_cache
   script:
-    - ./bin/task generate
+    - go tool task generate
   artifacts:
     name: Generated_Go_Code
     paths:
@@ -83,13 +83,13 @@ lint_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task lint
+    - go tool task lint
 
 static_analysis_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task static-analysis
+    - go tool task static-analysis
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
@@ -122,7 +122,7 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test
+    - go tool task test
   rules:
     - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
       when: on_success
@@ -135,7 +135,7 @@ integration_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test-ci
+    - go tool task test-ci
   coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
   artifacts:
     name: go_coverage
@@ -201,7 +201,7 @@ build_go_artifacts:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
   script:
-    - ./bin/task build-pipeline
+    - go tool task build-pipeline
   artifacts:
     name: Go_Bin
     paths:
@@ -217,7 +217,7 @@ build_go_no_artifacts:
     - if: $CI_COMMIT_BRANCH != "main"
       when: on_success
   script:
-    - ./bin/task build-pipeline
+    - go tool task build-pipeline
 
 .docker_build:
   image:

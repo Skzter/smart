@@ -25,6 +25,7 @@ coverage.*
 profile.cov
 .gitlab-ci-local
 .task/
+*.xml
 
 # Go workspace file
 go.work
@@ -35,6 +36,9 @@ go.work.sum
 
 # temp files
 tmp/
+
+# logs
+*.log
 
 #generated Code
 *.pkl.go
