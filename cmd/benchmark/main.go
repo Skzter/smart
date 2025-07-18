@@ -56,6 +56,12 @@ type totalJobsMsg struct {
 
 type benchmarkFinishedMsg struct{}
 
+type tickMsg struct{}
+
+type nextJobTimeMsg struct{ T time.Time }
+
+type jobDispatchedMsg struct{}
+
 type model struct {
 	program       *tea.Program
 	running       bool
@@ -67,6 +73,8 @@ type model struct {
 	currentAction string
 	totalJobs     int
 	completedJobs int
+	nextJobTime   time.Time
+	countdown     time.Duration
 	// Parameters for benchmark
 	parallelism    int
 	iterations     int
@@ -172,7 +180,9 @@ func calculateAverageResults(results []*tests.IntegrationResult) string {
 
 	var result strings.Builder
 	result.WriteString(fmt.Sprintf("Total tests: %d, Successful tests: %d\n", len(results), successfulTests))
+	log.Printf("Total tests: %d, Successful tests: %d", len(results), successfulTests)
 	result.WriteString(fmt.Sprintf("Overall Average Duration: %s, Overall Average Similarity: %.2f%%\n\n", averageDuration, averageSimilarity*100))
+	log.Printf("Overall Average Duration: %s, Overall Average Similarity: %.2f%%", averageDuration, averageSimilarity*100)
 
 	result.WriteString("Averages per test:\n")
 	for name, count := range testCounts {
@@ -182,6 +192,12 @@ func calculateAverageResults(results []*tests.IntegrationResult) string {
 	}
 
 	return result.String()
+}
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second, func(_ time.Time) tea.Msg {
+		return tickMsg{}
+	})
 }
 
 // nolint:funlen,gocognit,cyclop
@@ -201,6 +217,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.errorMsg = ""
 		m.currentAction = "Benchmark started..."
 		go runBenchmark(m.program, m.parallelism, m.iterations, m.testsPerMinute)
+		cmds = append(cmds, tickCmd())
 
 	case tea.WindowSizeMsg:
 		m.progress.Width = msg.Width - 4
@@ -217,6 +234,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case benchmarkFinishedMsg:
 		m.running = false
+		m.nextJobTime = time.Time{}
 		m.currentAction = "All jobs finished."
 		log.Println("All jobs finished.")
 
@@ -247,6 +265,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	switch msg := msg.(type) {
+	case tickMsg:
+		if m.running {
+			if !m.nextJobTime.IsZero() {
+				m.countdown = time.Until(m.nextJobTime)
+				if m.countdown < 0 {
+					m.countdown = 0
+				}
+			}
+			cmds = append(cmds, tickCmd())
+		}
+	case nextJobTimeMsg:
+		m.nextJobTime = msg.T
+	case jobDispatchedMsg:
+		m.nextJobTime = time.Time{}
+		m.countdown = 0
+	}
+
 	var spinnerCmd tea.Cmd
 	if m.running && m.errorMsg == "" {
 		m.spinner, spinnerCmd = m.spinner.Update(msg)
@@ -274,15 +310,21 @@ func (m *model) View() string {
 	if m.running {
 		percent := float64(m.completedJobs) / float64(m.totalJobs)
 
-		var recentResults strings.Builder
+		var extraInfo []string
+		if m.countdown > 0 {
+			extraInfo = append(extraInfo, fmt.Sprintf("Next test in ~%ds", int(m.countdown.Seconds())))
+		}
+
 		if len(m.results) > 0 {
 			start := 0
 			if len(m.results) > 5 {
 				start = len(m.results) - 5
 			}
+			var recentResults strings.Builder
 			for _, res := range m.results[start:] {
 				recentResults.WriteString(fmt.Sprintf("Test: %s, Duration: %s, Similarity: %.2f%%\n", res.TestName, res.Duration, res.Similarity*100))
 			}
+			extraInfo = append(extraInfo, recentResults.String())
 		}
 
 		debugInfo := ""
@@ -295,7 +337,7 @@ func (m *model) View() string {
 			m.completedJobs,
 			m.totalJobs,
 			m.progress.ViewAs(percent),
-			recentResults.String(),
+			strings.Join(extraInfo, "\n"),
 			debugInfo,
 		)
 		return s + runningView
@@ -362,8 +404,11 @@ func runBenchmark(p *tea.Program, parallelism int, iterations int, testsPerMinut
 
 		// This loop will dispatch a job and then wait for the delay.
 		for _, currentJob := range jobList {
+			p.Send(jobDispatchedMsg{})
 			jobs <- currentJob
 			if jobDelay > 0 {
+				next := time.Now().Add(jobDelay)
+				p.Send(nextJobTimeMsg{T: next})
 				time.Sleep(jobDelay)
 			}
 		}
