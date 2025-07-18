@@ -38,12 +38,12 @@ func (_m *MockOpenAI) EXPECT() *MockOpenAI_Expecter {
 	return &MockOpenAI_Expecter{mock: &_m.Mock}
 }
 
-// Request provides a mock function for the type MockOpenAI
-func (_mock *MockOpenAI) Request(context1 context.Context, request entity.Request) (*entity.Response, error) {
+// CreateRequest provides a mock function for the type MockOpenAI
+func (_mock *MockOpenAI) CreateRequest(context1 context.Context, request entity.Request) (*entity.Response, error) {
 	ret := _mock.Called(context1, request)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Request")
+		panic("no return value specified for CreateRequest")
 	}
 
 	var r0 *entity.Response
@@ -66,19 +66,19 @@ func (_mock *MockOpenAI) Request(context1 context.Context, request entity.Reques
 	return r0, r1
 }
 
-// MockOpenAI_Request_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Request'
-type MockOpenAI_Request_Call struct {
+// MockOpenAI_CreateRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateRequest'
+type MockOpenAI_CreateRequest_Call struct {
 	*mock.Call
 }
 
-// Request is a helper method to define mock.On call
+// CreateRequest is a helper method to define mock.On call
 //   - context1 context.Context
 //   - request entity.Request
-func (_e *MockOpenAI_Expecter) Request(context1 interface{}, request interface{}) *MockOpenAI_Request_Call {
-	return &MockOpenAI_Request_Call{Call: _e.mock.On("Request", context1, request)}
+func (_e *MockOpenAI_Expecter) CreateRequest(context1 interface{}, request interface{}) *MockOpenAI_CreateRequest_Call {
+	return &MockOpenAI_CreateRequest_Call{Call: _e.mock.On("CreateRequest", context1, request)}
 }
 
-func (_c *MockOpenAI_Request_Call) Run(run func(context1 context.Context, request entity.Request)) *MockOpenAI_Request_Call {
+func (_c *MockOpenAI_CreateRequest_Call) Run(run func(context1 context.Context, request entity.Request)) *MockOpenAI_CreateRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -96,12 +96,12 @@ func (_c *MockOpenAI_Request_Call) Run(run func(context1 context.Context, reques
 	return _c
 }
 
-func (_c *MockOpenAI_Request_Call) Return(response *entity.Response, err error) *MockOpenAI_Request_Call {
+func (_c *MockOpenAI_CreateRequest_Call) Return(response *entity.Response, err error) *MockOpenAI_CreateRequest_Call {
 	_c.Call.Return(response, err)
 	return _c
 }
 
-func (_c *MockOpenAI_Request_Call) RunAndReturn(run func(context1 context.Context, request entity.Request) (*entity.Response, error)) *MockOpenAI_Request_Call {
+func (_c *MockOpenAI_CreateRequest_Call) RunAndReturn(run func(context1 context.Context, request entity.Request) (*entity.Response, error)) *MockOpenAI_CreateRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }

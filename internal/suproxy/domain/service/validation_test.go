@@ -6,11 +6,10 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/openai/openai-go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -28,8 +27,7 @@ func TestNewValidator(t *testing.T) {
 		MaxItemsPerValidation: 5,
 	}
 	logger := slog.Default()
-	repo, _ := repository.NewOpenAiRepository(logger, openai.Client{}, 5)
-	serv, _ := sharedService.NewOpenAIService(logger, repo)
+	serv := sharedMocks.NewMockOpenAI(t)
 
 	tests := []struct {
 		name        string
@@ -81,9 +79,10 @@ func TestValidatorValidate(t *testing.T) {
 		mockResponse     string
 		mockResonseError error
 		expectError      bool
+		expectedTags     []string
 	}{
 		{
-			name:        "empty JSON string",
+			name:        "empty input",
 			input:       nil,
 			expectCall:  false,
 			expectError: true,
@@ -94,8 +93,8 @@ func TestValidatorValidate(t *testing.T) {
 				HTTPStatusCode: 400,
 				Data:           entity.SupplierOfferList{},
 			},
-			expectCall:  false,
-			expectError: true,
+			expectCall:   false,
+			expectedTags: []string{"non200"},
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
@@ -112,7 +111,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-01-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectError:     false,
+			expectedTags:    []string{"valid"},
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
@@ -129,7 +128,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-02-01",
 			mockResponse:    `{"valid":false,"reason":["missing_hotelid"]}`,
-			expectError:     true,
+			expectedTags:    []string{"missing_hotelid"},
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
@@ -156,8 +155,8 @@ func TestValidatorValidate(t *testing.T) {
 					Items: []json.RawMessage{},
 				},
 			},
-			expectCall:  false,
-			expectError: true,
+			expectCall:   false,
+			expectedTags: []string{"noOffer"},
 		},
 		{
 			name: "exceeding maximum request,",
@@ -177,7 +176,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-05-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectError:     false,
+			expectedTags:    []string{"valid"},
 		},
 		{
 			name: "valid 200 response with single empty offer",
@@ -189,8 +188,8 @@ func TestValidatorValidate(t *testing.T) {
 					},
 				},
 			},
-			expectCall:  false,
-			expectError: false,
+			expectCall:   false,
+			expectedTags: []string{"emptyOffer"},
 		},
 		{
 			name: "openai service error",
@@ -241,7 +240,7 @@ func TestValidatorValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockservice := sharedMocks.NewMockOpenAIService(t)
+			mockservice := sharedMocks.NewMockOpenAI(t)
 
 			if tt.expectCall {
 				mockservice.
@@ -254,8 +253,14 @@ func TestValidatorValidate(t *testing.T) {
 				panic(err)
 			}
 
-			if err := validator.Validate(t.Context(), tt.input); (err != nil) != tt.expectError {
-				t.Errorf("Validate() error = %v, expectError %v", err, tt.expectError)
+			tags, err := validator.Validate(t.Context(), tt.input)
+
+			assert.Equal(t, tt.expectError, err != nil)
+			if err != nil {
+				assert.Nil(t, tags)
+			} else {
+				assert.NotNil(t, tags)
+				assert.Equal(t, tt.expectedTags, tags)
 			}
 
 			mockservice.AssertExpectations(t)

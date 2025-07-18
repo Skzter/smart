@@ -11,9 +11,9 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/web"
 )
 
-// Initializes the HTTP server, sets up API routes and serves static files.
+// NewRouter initializes the HTTP server, sets up API routes and serves static files.
 // Registers endpointa and serves frontend assets from the embedded dist directory.
-func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *gin.Engine {
+func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*gin.Engine, error) {
 	router := gin.Default()
 
 	apiV1 := router.Group("/v1")
@@ -27,16 +27,20 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) *g
 
 	assetsFS, err := fs.Sub(web.DistFS, "dist/assets")
 	if err != nil {
-		logger.Error(err.Error())
-		return nil
+		return nil, err
 	}
 	router.StaticFS("/assets", http.FS(assetsFS))
 
-	router.LoadHTMLFiles("web/dist/index.html")
 	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", nil)
+		indexHTML, err := web.DistFS.ReadFile("dist/index.html")
+		if err != nil {
+			logger.Error("Failed to read embedded index.html", "error", err)
+			c.String(http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
 
 	logger.Info("Router initialized")
-	return router
+	return router, nil
 }

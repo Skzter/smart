@@ -4,5 +4,5 @@
         "Authorization": "Bearer asdfjsafjaölfaöfsal"
     },
     "destination":"http://127.0.0.1:8083/api/v1/offers",
-    "prompt":""
+    "prompt":"offers for beach houses"
 }

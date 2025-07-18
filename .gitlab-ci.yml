@@ -8,7 +8,8 @@ variables:
   GO_VERSION: 1.24
 
 default:
-  image: golang:$GO_VERSION
+  image:
+    name: golang:$GO_VERSION
 
 workflow:
   rules:
@@ -18,7 +19,8 @@ workflow:
     - if: $CI_COMMIT_BRANCH
 
 .pnpm_cache:
-  image: node:latest
+  image:
+    name: node:latest
   variables:
     PNPM_HOME: $CI_PROJECT_DIR/.pnpm-store
   rules:
@@ -53,7 +55,7 @@ workflow:
 
 go_mod_download:
   stage: prepare
-  extends: .go_cache 
+  extends: .go_cache
   script:
     - go mod download
 
@@ -110,7 +112,7 @@ sonarqube-check:
     - sonar-scanner
   allow_failure: true
   needs:
-    - unit_test_go
+    - integration_test_go
     - frontend_test
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -120,11 +122,10 @@ unit_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - go tool gotestsum -- -coverprofile=coverage.out ./...
-  artifacts:
-    name: go_coverage
-    paths:
-    - coverage.out
+    - ./bin/task test
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
+      when: on_success
 
 integration_test_go:
   services:
@@ -134,9 +135,20 @@ integration_test_go:
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
-    - ./bin/task test-integration
+    - ./bin/task test-ci
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    name: go_coverage
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: ./go-cobertura-coverage.xml
+      junit: junit.xml
+    paths:
+      - coverage.out
+    expire_in: 1 week
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
 frontend_test:
@@ -208,7 +220,8 @@ build_go_no_artifacts:
     - ./bin/task build-pipeline
 
 .docker_build:
-  image: docker:dind
+  image:
+    name: docker:dind
   tags:
     - fdit
   rules:
@@ -244,7 +257,8 @@ build_autotester_go_container:
     - docker push $IMAGE_TAG
 
 deploy_htwk:
-  image: alpine:latest
+  image:
+    name: alpine:latest
   stage: deploy
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -258,6 +272,7 @@ deploy_htwk:
     - chmod 600 ~/.ssh/ssh_password.txt
     - ssh-keyscan -H $HTWK_IP >> ~/.ssh/known_hosts
     - sshpass -f ~/.ssh/ssh_password.txt scp deployments/compose.prod.yml stud@$HTWK_IP:/home/stud
+    - sshpass -f ~/.ssh/ssh_password.txt scp -r deployments/nginx stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt ssh stud@$HTWK_IP "
         export CI_REGISTRY_USER=$CI_REGISTRY_USER;
         export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;

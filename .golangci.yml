@@ -26,7 +26,11 @@ linters:
     - unparam
     - unused
     - whitespace
+    - revive
   settings:
+    revive:
+      rules:
+        - name: exported
     funlen:
       lines: 100
       statements: 50
