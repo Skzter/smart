@@ -23,7 +23,7 @@ func init() {
 			url:      "http://localhost:8081",
 			//nolint:lll
 			TestInput: `
-Autoplaywright soll einen Test generieren für Check24 Reisesparte.  
+Autoplaywright soll einen Test generieren für Check24 Reise.  
 Base-URL: https://urlaub.check24.de/reise.  
 Szenario: Flugsuche München nach Barcelona im August.  
 Ablauf: Auf der Startseite wählt der Nutzer 'Flug suchen', gibt im Eingabefeld für Abflugort 'München' ein, im Feld Zielort 'Barcelona', wählt Datum über Kalender-Widget (August), klickt auf Button 'Suchen'.  

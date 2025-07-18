@@ -23,7 +23,7 @@ func init() {
 			url:      "http://localhost:8081",
 			//nolint:lll
 			TestInput: `
-Autoplaywright soll einen Test generieren für Check24 Reisesparte.
+Autoplaywright soll einen Test generieren für Check24 Reise.
 Base-URL: https://urlaub.check24.de
 Szenario: Pauschalreisesuche nach Kreta im September.
 Ablauf: Auf der Startseite wählt der Nutzer 'Pauschalreisen', gibt im Eingabefeld für 'Reiseziel oder Hotel' 'Kreta' ein, wählt Anreise im September über ein Kalender-Widget, eine Reisedauer von 1 Woche und 2 Erwachsene, und klickt auf den Button 'suchen'.

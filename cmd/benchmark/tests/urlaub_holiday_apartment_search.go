@@ -23,7 +23,7 @@ func init() {
 			url:      "http://localhost:8081",
 			//nolint:lll
 			TestInput: `
-Autoplaywright soll einen Test generieren für Check24 Reisesparte.
+Autoplaywright soll einen Test generieren für Check24 Reise.
 Base-URL: https://urlaub.check24.de
 Szenario: Ferienwohnungssuche an der Ostsee im August.
 Ablauf: Auf der Startseite wählt der Nutzer 'Ferienwohnung', gibt im Eingabefeld für 'Reiseziel, Region oder Ort' 'Ostsee' ein, wählt Anreise und Abreise im August über ein Kalender-Widget, und klickt auf den Button 'Unterkünfte finden'.

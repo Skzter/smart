@@ -9,15 +9,15 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-type rentalCarSearchTest struct {
+type packageTourSearchWithSpecificAirportsTest struct {
 	*IntegrationTest
 }
 
 // nolint:gochecknoinits
 func init() {
-	Register(&rentalCarSearchTest{
+	Register(&packageTourSearchWithSpecificAirportsTest{
 		IntegrationTest: &IntegrationTest{
-			testName: "Rental Car Search Test",
+			testName: "Package Tour Search with Specific Airports Test",
 			email:    "test@autotester.com",
 			password: "Autotester123",
 			url:      "http://localhost:8081",
@@ -25,9 +25,9 @@ func init() {
 			TestInput: `
 Autoplaywright soll einen Test generieren für Check24 Reise.
 Base-URL: https://urlaub.check24.de
-Szenario: Mietwagensuche in Lissabon im Oktober.
-Ablauf: Auf der Startseite wählt der Nutzer 'Mietwagen', gibt im Eingabefeld für 'Abholort' 'Lissabon' ein, wählt Datum für Abholung und Rückgabe im Oktober über ein Kalender-Widget, und klickt auf den Button 'Mietwagen finden'.
-Assertions: Die URL enthält '/mietwagen'. Die Liste der Mietwagen ist sichtbar und enthält mindestens einen Eintrag.
+Szenario: Pauschalreisesuche mit Abflughäfen Berlin, Bremen und Köln.
+Ablauf: Auf der Startseite wählt der Nutzer 'Pauschalreisen', gibt das Reiseziel an, wählt einen Reisezeitraum, fügt die Abflughäfen Berlin, Bremen und Köln hinzu und klickt auf 'suchen'.
+Assertions: Die URL enthält 'airport=BER,BRE,CGN'. Die Liste der Angebote ist sichtbar und enthält mindestens einen Eintrag.
 Testdaten/Setup: Keine besonderen Testdaten benötigt; Teardown: Browser schließen.
 `,
 			//nolint:lll
@@ -35,17 +35,21 @@ Testdaten/Setup: Keine besonderen Testdaten benötigt; Teardown: Browser schlie�
 import { test, expect } from "@playwright/test";
 import { auto } from "auto-playwright";
 
-test("Mietwagensuche in Lissabon im Oktober", async ({ page }) => {
-  await page.goto("https://urlaub.check24.de");
-  await auto("Wähle 'Mietwagen'", { page, test });
-  await auto("Gib im Eingabefeld für 'Abholort' 'Lissabon' ein", { page, test });
-  await auto("Wähle Datum für Abholung und Rückgabe im Oktober über ein Kalender-Widget", { page, test });
-  await auto("Klicke auf den Button 'Mietwagen finden'", { page, test });
 
-  const urlContains = await auto("Enthält die URL '/mietwagen'?", { page, test });
+test("Pauschalreisesuche mit Abflughäfen Berlin, Bremen und Köln", async ({ page }) => {
+  await page.goto("https://urlaub.check24.de");
+  await auto("Wähle 'Pauschalreisen'", { page, test });
+  await auto("Gib das Reiseziel an", { page, test });
+  await auto("Wähle einen Reisezeitraum", { page, test });
+  await auto("Füge die Abflughäfen Berlin, Bremen und Köln hinzu", { page, test });
+  await auto("Klicke auf 'suchen'", { page, test });
+
+
+  const urlContains = await auto("Enthält die URL 'airport=BER,BRE,CGN'?", { page, test });
   expect(urlContains).toBe(true);
 
-  const listVisible = await auto("Ist die Liste der Mietwagen sichtbar und enthält mindestens einen Eintrag?", { page, test });
+
+  const listVisible = await auto("Ist die Liste der Angebote sichtbar und enthält mindestens einen Eintrag?", { page, test });
   expect(listVisible).toBe(true);
 });
 `,
@@ -54,7 +58,7 @@ test("Mietwagensuche in Lissabon im Oktober", async ({ page }) => {
 }
 
 // Run runs playwright test => integration test so login, prompting
-func (e *rentalCarSearchTest) Run(page playwright.Page, test *IntegrationTest) (interface{}, error) {
+func (e *packageTourSearchWithSpecificAirportsTest) Run(page playwright.Page, test *IntegrationTest) (interface{}, error) {
 	start := time.Now()
 	if err := Login(page, test); err != nil {
 		return nil, fmt.Errorf("could not login: %w", err)

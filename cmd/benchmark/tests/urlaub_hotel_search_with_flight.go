@@ -9,15 +9,15 @@ import (
 	"github.com/playwright-community/playwright-go"
 )
 
-type hotelSearchTest struct {
+type hotelSearchWithFlightTest struct {
 	*IntegrationTest
 }
 
 // nolint:gochecknoinits
 func init() {
-	Register(&hotelSearchTest{
+	Register(&hotelSearchWithFlightTest{
 		IntegrationTest: &IntegrationTest{
-			testName: "Hotel Search Test",
+			testName: "Hotel Search Test with Flight",
 			email:    "test@autotester.com",
 			password: "Autotester123",
 			url:      "http://localhost:8081",
@@ -25,9 +25,9 @@ func init() {
 			TestInput: `
 Autoplaywright soll einen Test generieren für Check24 Reise.
 Base-URL: https://urlaub.check24.de
-Szenario: Hotelsuche auf Mallorca im Juli.
-Ablauf: Auf der Startseite wählt der Nutzer 'Nur Hotel', gibt im Eingabefeld für 'Reiseziel / Hotel' 'Mallorca' ein, wählt Anreise im Juli über ein Kalender-Widget und eine Reisedauer von 1 Woche, und klickt auf den Button 'suchen'.
-Assertions: Die URL enthält '/hotel'. Die Liste der Hotels ist sichtbar und enthält mindestens einen Eintrag.
+Szenario: Hotelsuche auf Mallorca im August für 1 Woche mit Flug.
+Ablauf: Auf der Startseite wählt der Nutzer 'Nur Hotel', gibt im Eingabefeld für 'Reiseziel / Hotel' 'Mallorca' ein, wählt Anreise im August über ein Kalender-Widget, eine Reisedauer von 1 Woche, wählt als Transportmittel 'Flug' und klickt auf den Button 'suchen'.
+Assertions: Die URL enthält 'transportType=flight'. Die Liste der Hotels ist sichtbar und enthält mindestens einen Eintrag.
 Testdaten/Setup: Keine besonderen Testdaten benötigt; Teardown: Browser schließen.
 `,
 			//nolint:lll
@@ -35,16 +35,17 @@ Testdaten/Setup: Keine besonderen Testdaten benötigt; Teardown: Browser schlie�
 import { test, expect } from "@playwright/test";
 import { auto } from "auto-playwright";
 
-test("Hotelsuche auf Mallorca im Juli", async ({ page }) => {
+test("Hotelsuche auf Mallorca im August für 1 Woche mit Flug", async ({ page }) => {
   await page.goto("https://urlaub.check24.de");
   await auto("Wähle 'Nur Hotel'", { page, test });
   await auto("Gib im Eingabefeld für 'Reiseziel / Hotel' 'Mallorca' ein", { page, test });
-  await auto("Wähle Anreise im Juli über ein Kalender-Widget", { page, test });
+  await auto("Wähle Anreise im August über ein Kalender-Widget", { page, test });
   await auto("Wähle eine Reisedauer von 1 Woche", { page, test });
+  await auto("Wähle als Transportmittel 'Flug'", { page, test });
   await auto("Klicke auf den Button 'suchen'", { page, test });
 
-  const urlContains = await auto("Enthält die URL '/hotel'?", { page, test });
-  expect(urlContains).toBe(true);
+  const url = page.url();
+  expect(url).toContain("transportType=flight");
 
   const listVisible = await auto("Ist die Liste der Hotels sichtbar und enthält mindestens einen Eintrag?", { page, test });
   expect(listVisible).toBe(true);
@@ -55,7 +56,7 @@ test("Hotelsuche auf Mallorca im Juli", async ({ page }) => {
 }
 
 // Run runs playwright test => integration test so login, prompting
-func (e *hotelSearchTest) Run(page playwright.Page, test *IntegrationTest) (interface{}, error) {
+func (e *hotelSearchWithFlightTest) Run(page playwright.Page, test *IntegrationTest) (interface{}, error) {
 	start := time.Now()
 	if err := Login(page, test); err != nil {
 		return nil, fmt.Errorf("could not login: %w", err)
