@@ -297,4 +297,4 @@ tasks:
   bench-setup:
     desc: "Setup the benchmark dependencies"
     cmds:
-      - go tool playwright install-deps
+      - go tool playwright install

@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -22,8 +21,8 @@ import (
 const (
 	// for whole integration 15
 	// login 90
-	iterationsPerTest  = 15
-	defaultParallelism = 4
+	iterationsPerTest  = 100
+	defaultParallelism = 5
 )
 
 // nolint:gochecknoglobals
@@ -51,16 +50,18 @@ type startBenchmarkMsg struct{}
 
 type model struct {
 	pw            *playwright.Playwright
+	browser       playwright.Browser
 	running       bool
 	spinner       spinner.Model
 	progress      progress.Model
-	results       []string
+	results       []*tests.IntegrationResult
 	errorMsg      string
 	debug         bool
 	currentAction string
 	parallelism   int
 	jobs          chan job
 	totalJobs     int
+	completedJobs int
 	iterations    int
 }
 
@@ -85,36 +86,28 @@ func (m model) Init() tea.Cmd {
 	)
 }
 
-func runJobCmd(pw *playwright.Playwright, j job) tea.Cmd {
+func runJobCmd(browser playwright.Browser, j job) tea.Cmd {
 	return func() tea.Msg {
 		test := tests.Tests[j.testIndex]
 		log.Printf("Starting job: test '%s', iteration %d", test.Name(), j.iteration+1)
-		browser, err := pw.Chromium.Launch()
+
+		context, err := browser.NewContext(playwright.BrowserNewContextOptions{
+			BaseURL: playwright.String("http://localhost:8081"),
+		})
 		if err != nil {
 			return testResultMsg{
 				testIndex: j.testIndex,
 				iteration: j.iteration,
-				result:    errMsg{fmt.Errorf("could not launch browser: %w", err)},
+				result:    errMsg{fmt.Errorf("could not create browser context: %w", err)},
 			}
 		}
 		defer func() {
-			if err := browser.Close(); err != nil {
-				log.Printf("could not close browser: %v", err)
+			if err := context.Close(); err != nil {
+				log.Printf("could not close browser context: %v", err)
 			}
 		}()
 
-		/*
-			context, _ := browser.NewContext()
-			context.AddCookies([]playwright.OptionalCookie{
-				{
-					Name: "auth0.hWxkFufP46LyYSZD4apALF8qmhmxZYln.is.authenticated",
-					Value: "true",
-					URL: playwright.String("http://localhost:8081"),
-				},
-			})
-		*/
-
-		page, err := browser.NewPage()
+		page, err := context.NewPage()
 		if err != nil {
 			return testResultMsg{
 				testIndex: j.testIndex,
@@ -123,7 +116,10 @@ func runJobCmd(pw *playwright.Playwright, j job) tea.Cmd {
 			}
 		}
 
-		result, err := test.Run(page)
+		page.SetDefaultTimeout(120000)
+		page.SetDefaultNavigationTimeout(120000)
+
+		result, err := test.Run(page, test.GetIntegrationTest())
 		if err != nil {
 			return testResultMsg{
 				testIndex: j.testIndex,
@@ -136,64 +132,50 @@ func runJobCmd(pw *playwright.Playwright, j job) tea.Cmd {
 	}
 }
 
-func calculateAverageResults(results []string) string {
+func calculateAverageResults(results []*tests.IntegrationResult) string {
 	if len(results) == 0 {
 		return "No results yet"
 	}
 
 	totalDuration := time.Duration(0)
 	totalSimilarity := 0.0
-	totalIterations := 0
-	hasSimilarity := false
+	successfulTests := 0
+	testDurations := make(map[string]time.Duration)
+	testSimilarities := make(map[string]float64)
+	testCounts := make(map[string]int)
 
 	for _, result := range results {
-		parts := strings.Split(result, ", ")
-		var duration time.Duration
-		var similarity float64
-		var err error
+		totalDuration += result.Duration
+		totalSimilarity += result.Similarity
+		successfulTests++
 
-		// Try to find duration and similarity in the result string
-		for _, part := range parts {
-			if strings.HasPrefix(part, "Duration: ") {
-				durationStr := strings.TrimPrefix(part, "Duration: ")
-				duration, err = time.ParseDuration(durationStr)
-				if err != nil {
-					continue
-				}
-				totalDuration += duration
-			} else if strings.HasPrefix(part, "Similarity: ") {
-				simStr := strings.TrimPrefix(part, "Similarity: ")
-				simStr = strings.TrimSuffix(simStr, "%")
-				simStr = strings.TrimSpace(simStr)
-				sim, err := fmt.Sscanf(simStr, "%f", &similarity)
-				if err != nil || sim != 1 {
-					// fallback: try ParseFloat
-					similarity, err = strconv.ParseFloat(simStr, 64)
-					if err != nil {
-						continue
-					}
-				}
-				totalSimilarity += similarity
-				hasSimilarity = true
-			}
-		}
-		totalIterations++
+		testDurations[result.TestName] += result.Duration
+		testSimilarities[result.TestName] += result.Similarity
+		testCounts[result.TestName]++
 	}
 
-	if totalIterations == 0 {
-		return "No valid results to average"
+	if successfulTests == 0 {
+		return "No successful tests to average."
 	}
 
-	averageDuration := totalDuration / time.Duration(totalIterations)
-	var averageSimilarity float64
-	if hasSimilarity {
-		averageSimilarity = totalSimilarity / float64(totalIterations)
-		return fmt.Sprintf("Average duration: %s, Average similarity: %.2f%%", averageDuration, averageSimilarity)
+	averageDuration := totalDuration / time.Duration(successfulTests)
+	averageSimilarity := totalSimilarity / float64(successfulTests)
+
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("Total tests: %d, Successful tests: %d\n", len(results), successfulTests))
+	result.WriteString(fmt.Sprintf("Overall Average Duration: %s, Overall Average Similarity: %.2f%%\n\n", averageDuration, averageSimilarity*100))
+
+	result.WriteString("Averages per test:\n")
+	for name, count := range testCounts {
+		avgDuration := testDurations[name] / time.Duration(count)
+		avgSimilarity := (testSimilarities[name] / float64(count)) * 100
+		result.WriteString(fmt.Sprintf("- %s: Average Duration: %s, Average Similarity: %.2f%%\n", name, avgDuration, avgSimilarity))
 	}
-	return fmt.Sprintf("Average duration: %s", averageDuration)
+
+	return result.String()
 }
 
-// nolint:funlen
+// nolint:funlen,gocognit,cyclop
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -214,6 +196,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.pw = pw
 
+		browser, err := m.pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+			Headless: playwright.Bool(true),
+		})
+		if err != nil {
+			m.errorMsg = fmt.Sprintf("could not launch browser: %v", err)
+			m.running = false
+			return m, tea.Quit
+		}
+		m.browser = browser
+
 		var jobList []job
 		for testIdx := range tests.Tests {
 			for i := 0; i < m.iterations; i++ {
@@ -230,7 +222,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmds []tea.Cmd
 		for i := 0; i < m.parallelism; i++ {
 			if j, ok := <-m.jobs; ok {
-				cmds = append(cmds, runJobCmd(m.pw, j))
+				cmds = append(cmds, runJobCmd(m.browser, j))
 			}
 		}
 		m.currentAction = fmt.Sprintf("Starting %d workers...", len(cmds))
@@ -261,22 +253,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case testResultMsg:
-		var newResult string
+		m.completedJobs++
 		testName := tests.Tests[msg.testIndex].Name()
 
 		switch r := msg.result.(type) {
 		case errMsg:
-			m.running = false
-			m.errorMsg = r.err.Error()
 			log.Printf("Job failed: test '%s', iteration %d, error: %v", testName, msg.iteration+1, r.err)
-			return m, nil
 		case *tests.IntegrationResult:
-			newResult = fmt.Sprintf("Test: %s, Iteration: %d, Duration: %s, Similarity: %.2f%%", testName, msg.iteration+1, r.Duration, r.Similarity*100)
+			r.TestName = testName
+			m.results = append(m.results, r)
+			log.Printf("Job finished: Test: %s, Iteration: %d, Duration: %s, Similarity: %.2f%%",
+				r.TestName, msg.iteration+1, r.Duration, r.Similarity*100)
+			if m.debug {
+				log.Printf("Actual Response for Test '%s', Iteration %d:\n%s", r.TestName, msg.iteration+1, r.ActualResponse)
+			}
 		}
-		m.results = append(m.results, newResult)
-		log.Printf("Job finished: %s", newResult)
 
-		if len(m.results) == m.totalJobs {
+		if m.completedJobs >= m.totalJobs {
 			m.running = false
 			log.Println("All jobs finished.")
 			return m, nil
@@ -284,7 +277,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if j, ok := <-m.jobs; ok {
 			m.currentAction = fmt.Sprintf("Running test: %s", tests.Tests[j.testIndex].Name())
-			return m, runJobCmd(m.pw, j)
+			return m, runJobCmd(m.browser, j)
 		}
 		// No more jobs to start, just wait for others to finish
 		m.currentAction = "Waiting for remaining jobs to finish..."
@@ -310,15 +303,17 @@ func (m model) View() string {
 	}
 
 	if m.running {
-		percent := float64(len(m.results)) / float64(m.totalJobs)
+		percent := float64(m.completedJobs) / float64(m.totalJobs)
 
-		var recentResults string
+		var recentResults strings.Builder
 		if len(m.results) > 0 {
 			start := 0
 			if len(m.results) > 5 {
 				start = len(m.results) - 5
 			}
-			recentResults = strings.Join(m.results[start:], "\n")
+			for _, res := range m.results[start:] {
+				recentResults.WriteString(fmt.Sprintf("Test: %s, Duration: %s, Similarity: %.2f%%\n", res.TestName, res.Duration, res.Similarity*100))
+			}
 		}
 
 		debugInfo := ""
@@ -328,10 +323,10 @@ func (m model) View() string {
 
 		runningView := fmt.Sprintf("%s Running benchmarks... (%d/%d)\n\n%s\n\n%s%s",
 			m.spinner.View(),
-			len(m.results),
+			m.completedJobs,
 			m.totalJobs,
 			m.progress.ViewAs(percent),
-			recentResults,
+			recentResults.String(),
 			debugInfo,
 		)
 		return s + runningView
@@ -347,7 +342,12 @@ func main() {
 	iterations := flag.Int("i", iterationsPerTest, "number of iterations per test")
 	flag.Parse()
 
-	f, err := tea.LogToFile("benchmark.log", "benchmark")
+	const logfileName = "benchmark.log"
+	// We remove the logfile on each start to ensure a clean log.
+	// We ignore the error, as the file may not exist on the first run.
+	_ = os.Remove(logfileName)
+
+	f, err := tea.LogToFile(logfileName, "benchmark")
 	if err != nil {
 		fmt.Println("could not create log file:", err)
 		os.Exit(1)
@@ -362,9 +362,16 @@ func main() {
 
 	p := tea.NewProgram(initialModel(*debug, *parallelism, *iterations))
 	m, err := p.Run()
-	if finalModel, ok := m.(model); ok && finalModel.pw != nil {
-		if err := finalModel.pw.Stop(); err != nil {
-			log.Printf("could not stop Playwright: %v", err)
+	if finalModel, ok := m.(model); ok {
+		if finalModel.browser != nil {
+			if err := finalModel.browser.Close(); err != nil {
+				log.Printf("could not close browser: %v", err)
+			}
+		}
+		if finalModel.pw != nil {
+			if err := finalModel.pw.Stop(); err != nil {
+				log.Printf("could not stop Playwright: %v", err)
+			}
 		}
 	}
 	if err != nil {
