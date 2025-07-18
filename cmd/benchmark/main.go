@@ -339,18 +339,7 @@ func runBenchmark(p *tea.Program, parallelism int, iterations int, testsPerMinut
 	}
 	p.Send(totalJobsMsg{total: len(jobList)})
 
-	jobs := make(chan job, len(jobList))
-	for _, j := range jobList {
-		jobs <- j
-	}
-	close(jobs)
-
-	var jobDelay time.Duration
-	if testsPerMinute > 0 {
-		jobDelay = time.Minute / time.Duration(testsPerMinute)
-	}
-	nextJobStartTime := time.Now()
-	var mu sync.Mutex
+	jobs := make(chan job, parallelism)
 
 	var wg sync.WaitGroup
 	wg.Add(parallelism)
@@ -359,22 +348,27 @@ func runBenchmark(p *tea.Program, parallelism int, iterations int, testsPerMinut
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				mu.Lock()
-				now := time.Now()
-				var delay time.Duration
-				if now.Before(nextJobStartTime) {
-					delay = nextJobStartTime.Sub(now)
-				}
-				nextJobStartTime = nextJobStartTime.Add(jobDelay)
-				mu.Unlock()
-
-				time.Sleep(delay)
-
 				result := runJob(browser, j)
 				p.Send(result)
 			}
 		}()
 	}
+
+	go func() {
+		var jobDelay time.Duration
+		if testsPerMinute > 0 {
+			jobDelay = time.Minute / time.Duration(testsPerMinute)
+		}
+
+		// This loop will dispatch a job and then wait for the delay.
+		for _, currentJob := range jobList {
+			jobs <- currentJob
+			if jobDelay > 0 {
+				time.Sleep(jobDelay)
+			}
+		}
+		close(jobs)
+	}()
 
 	wg.Wait()
 	p.Send(benchmarkFinishedMsg{})

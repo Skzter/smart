@@ -25,30 +25,33 @@ func init() {
 			TestInput: `
 Autoplaywright soll einen Test generieren für Check24 Reise.
 Base-URL: https://urlaub.check24.de
-Szenario: Hotelsuche auf Mallorca im August für 1 Woche, sortiert nach Bewertung.
-Ablauf: Auf der Startseite wählt der Nutzer 'Nur Hotel', gibt im Eingabefeld für 'Reiseziel / Hotel' 'Mallorca' ein, wählt Anreise im August über ein Kalender-Widget, eine Reisedauer von 1 Woche und klickt auf den Button 'suchen'. Auf der Ergebnisseite wählt der Nutzer die Sortierung 'Bewertung'.
-Assertions: Die URL enthält 'offerSort=relevance'. Die Liste der Hotels ist sichtbar und enthält mindestens einen Eintrag.
-Testdaten/Setup: Keine besonderen Testdaten benötigt; Teardown: Browser schließen.
+Szenario: Hotelsuche auf Mallorca im August für 1 Woche für 2 Erwachsene, sortiert nach bester Bewertung.
+Ablauf: Auf der Startseite wählt der Nutzer den Reiter 'Nur Hotel', gibt im Eingabefeld 'Reiseziel / Hotel' den Ort 'Mallorca' ein, öffnet das Kalender-Widget und wählt einen beliebigen Tag im August als Anreisedatum, wählt aus dem Dropdown für die Reisedauer '1 Woche' aus, öffnet die Reisenden-Auswahl und stellt die Anzahl der Erwachsenen auf '2' ein, und klickt auf den Button mit der Beschriftung 'suchen'. Auf der Ergebnisseite wählt der Nutzer in der Sortierungs-Dropdown-Liste die Option 'Bewertung' aus.
+Assertions: Die URL der Ergebnisseite muss den Parameter 'offerSort=rating' enthalten. Die Liste der gefundenen Hotels muss sichtbar sein und mindestens ein Hotel enthalten.
+Testdaten/Setup: Es sind keine spezifischen Testdaten erforderlich. Der Browser sollte nach dem Test geschlossen werden.
 `,
 			//nolint:lll
 			ExpectedResponse: `
 import { test, expect } from "@playwright/test";
 import { auto } from "auto-playwright";
 
-test("Hotelsuche auf Mallorca im August für 1 Woche, sortiert nach Bewertung", async ({ page }) => {
+test("Hotelsuche auf Mallorca im August für 1 Woche für 2 Erwachsene, sortiert nach bester Bewertung", async ({ page }) => {
   await page.goto("https://urlaub.check24.de");
-  await auto("Wähle 'Nur Hotel'", { page, test });
-  await auto("Gib im Eingabefeld für 'Reiseziel / Hotel' 'Mallorca' ein", { page, test });
-  await auto("Wähle Anreise im August über ein Kalender-Widget", { page, test });
-  await auto("Wähle eine Reisedauer von 1 Woche", { page, test });
-  await auto("Klicke auf den Button 'suchen'", { page, test });
-  await auto("Wähle die Sortierung 'Bewertung'", { page, test });
+  await auto("Wähle den Reiter 'Nur Hotel'", { page, test });
+  await auto("Gib 'Mallorca' in das Eingabefeld 'Reiseziel / Hotel' ein", { page, test });
+  await auto("Öffne das Kalender-Widget und wähle einen beliebigen Tag im August als Anreisedatum", { page, test });
+  await auto("Wähle aus dem Dropdown für die Reisedauer '1 Woche' aus", { page, test });
+  await auto("Öffne die Reisenden-Auswahl und stelle die Anzahl der Erwachsenen auf '2' ein", { page, test });
+  await auto("Klicke auf den Button mit der Beschriftung 'suchen'", { page, test });
+  await auto("Wähle in der Sortierungs-Dropdown-Liste die Option 'Bewertung' aus", { page, test });
 
-  const url = page.url();
-  expect(url).toContain("offerSort=relevance");
+  expect(page.url()).toContain("offerSort=rating");
 
-  const listVisible = await auto("Ist die Liste der Hotels sichtbar und enthält mindestens einen Eintrag?", { page, test });
-  expect(listVisible).toBe(true);
+  const visible = await auto("Ist die Liste der gefundenen Hotels sichtbar?", { page, test });
+  expect(visible).toBe(true);
+
+  const hotelCount = await auto("Zähle die Anzahl der gefundenen Hotels", { page, test });
+  expect(hotelCount).toBeGreaterThan(0);
 });
 `,
 		},
