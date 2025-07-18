@@ -14,8 +14,20 @@ vars:
   AWS_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsAccessKey"
   AWS_SECRET_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsSecretAccessKey"
   VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
+  OPENAI_KEY:
+    sh: PATH=$LPATH; doppler secrets get OPENAI_KEY --plain
+  AWS_ACCESS_KEY:
+    sh: PATH=$LPATH; doppler secrets get AWS_ACCESS_KEY_ID --plain
+  AWS_SECRET_ACCESS_KEY:
+    sh: PATH=$LPATH; doppler secrets get AWS_SECRET_ACCESS_KEY --plain
+  BASE_LDFLAGS: "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'"
+  PROD_LDFLAGS: "-s -w {{.BASE_LDFLAGS}}"
+  TESTCOVERAGE_THRESHOLD: 60
 
 tasks:
+  # --------------------------------------------------------------------------------
+  # Setup
+  # --------------------------------------------------------------------------------
   setup:
     desc: "Setup the project"
     cmds:
@@ -24,46 +36,60 @@ tasks:
       - PATH=$LPATH; doppler login
       - PATH=$LPATH; doppler setup -c dev -p htwk-projekt
 
+  # --------------------------------------------------------------------------------
+  # Build
+  # --------------------------------------------------------------------------------
+  clean:
+    desc: "Remove build artifacts"
+    cmds:
+      - rm -rf build
+      - find . -name "coverage.out" -delete
+
   build:
     desc: "Build the project"
     deps: [generate]
-    vars:
-      OPENAI_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
-      AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
-      AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - cmd: go build -o build/suproxy -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/suproxy/
+      - cmd: go build -o build/suproxy -ldflags "{{.BASE_LDFLAGS}}" ./cmd/suproxy/
         platforms: [linux, darwin]
       - echo "building autotester with version {{.VERSION}}"
-      - cmd: go build -o build/autotester -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/autotester/
+      - cmd: go build -o build/autotester -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
-      - cmd: go build -o build/suproxy.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/suproxy/
+      - cmd: go build -o build/suproxy.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/suproxy/
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
-      - cmd: go build -o build/autotester.exe -ldflags "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/autotester/
+      - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [windows/amd64]
     silent: true
   
-  build-frontend:
+  install-frontend-deps:
+    desc: "Install frontend dependencies"
+    dir: web
     cmds:
-      - cd web/ && pnpm install
-      - task: lint-frontend
-      - cd web/ && pnpm run build
+      - pnpm install
     sources:
-      - web/*
+      - pnpm-lock.yaml
+    generates:
+      - node_modules
+
+  build-frontend:
+    dir: web
+    deps: [install-frontend-deps]
+    cmds:
+      - task: lint-frontend
+      - pnpm run build
+    sources:
+      - "**/*"
 
   build-frontend-dev:
     desc: "Build the frontend"
     dir: "web"
+    deps: [install-frontend-deps]
     cmds:
       - pnpm build
     sources:
-      - web/*
+      - "**/*"
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -73,47 +99,40 @@ tasks:
       BUILD_DATE:
         sh: date +"%Y-%m-%d-%H:%M:%S"
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
-      OPENAI_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
-      AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
-      AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - CGO_ENABLED=0 go build -o build/suproxy -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/suproxy/
+      - CGO_ENABLED=0 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
       - echo "building autotester with version {{.VERSION}}"
-      - CGO_ENABLED=0 go build -o build/autotester -ldflags "-s -w -X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'" ./cmd/autotester/
+      - CGO_ENABLED=0 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
     silent: true
 
-  run-suproxy:
-    desc: "Run the project"
-    deps: [generate-config-suproxy, di-generate-suproxy]
+  # --------------------------------------------------------------------------------
+  # Local Development
+  # --------------------------------------------------------------------------------
+  .run-app:
+    internal: true
     env:
-      APP_CMD: "./cmd/suproxy"
+      APP_CMD: "./cmd/{{.APP_NAME}}"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
-      AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
-      AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
     cmds:
       - "PATH=$LPATH; doppler run -- go tool air"
 
-  run-autotester:
-    desc: "Run the project"
-    deps: [generate-config-autotester, di-generate-autotester]
-    env:
-      APP_CMD: "./cmd/autotester"
-      OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
-      VERSION_VAR: "{{.VERSION_VAR}}"
-      AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
-      AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
+  run-suproxy:
+    desc: "Run the suproxy service"
+    deps: [generate-config-suproxy, di-generate-suproxy]
     cmds:
-      - task: build-frontend-dev
-      - 'PATH=$LPATH; doppler run -- go tool air'
+      - task: .run-app
+        vars:
+          APP_NAME: suproxy
+
+  run-autotester:
+    desc: "Run the autotester service"
+    deps: [generate-config-autotester, di-generate-autotester, build-frontend-dev]
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: autotester
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -128,6 +147,9 @@ tasks:
     cmds:
       - docker compose -f compose.dev.yml down
 
+  # --------------------------------------------------------------------------------
+  # Testing
+  # --------------------------------------------------------------------------------
   test:
     desc: "Run the tests"
     cmds:
@@ -140,8 +162,6 @@ tasks:
 
   test-ci:
     desc: "Run the tests with coverage"
-    vars:
-      TESTCOVERAGE_THRESHOLD: 60
     cmds:
       - echo "Running unit tests with coverage"
       - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
@@ -149,15 +169,8 @@ tasks:
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
-      - |
-        totalCoverage=$(go tool cover -func=coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+')
-        echo "Current test coverage: $totalCoverage %"
-        if (( $(echo "$totalCoverage {{.TESTCOVERAGE_THRESHOLD}}" | awk '{print ($1 > $2)}') )); then
-            echo "Coverage check passed"
-        else
-            echo "Current test coverage is below threshold."
-            exit 1
-        fi
+      - ./scripts/check-coverage.sh {{.TESTCOVERAGE_THRESHOLD}} coverage.out
+    silent: true
 
   test-integration:
     desc: "Run the integration tests"
@@ -170,6 +183,16 @@ tasks:
       - go tool gotestsum -- -tags=integration -- -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
 
+  test-frontend:
+    desc: "Run the frontend tests"
+    dir: "web"
+    deps: [install-frontend-deps]
+    cmds:
+      - pnpm test
+
+  # --------------------------------------------------------------------------------
+  # Code Quality & Linting
+  # --------------------------------------------------------------------------------
   lint:
     desc: "Run the lint"
     cmds:
@@ -188,20 +211,21 @@ tasks:
 
   lint-frontend:
     desc: "Run the frontend lint"
+    dir: web
+    deps: [install-frontend-deps]
     cmds:
-      - cd web/ && pnpm eslint .  
+      - pnpm eslint .
 
   format-frontend:
     desc: "Run the frontend formatter"
+    dir: web
+    deps: [install-frontend-deps]
     cmds:
-      - cd web/ && pnpm prettier --write .
+      - pnpm prettier --write .
 
-  test-frontend:
-    desc: "Run the frontend tests"
-    dir: "web"
-    cmds:
-      - pnpm test
-
+  # --------------------------------------------------------------------------------
+  # Git Hooks
+  # --------------------------------------------------------------------------------
   pre-commit:
     desc: "Run the pre-commit"
     deps: [generate]
@@ -209,6 +233,9 @@ tasks:
       - task: lint
       - task: test
 
+  # --------------------------------------------------------------------------------
+  # Code Generation
+  # --------------------------------------------------------------------------------
   generate:
     desc: "generate code"
     cmds:
@@ -259,7 +286,15 @@ tasks:
     sources:
       - cmd/suproxy/wire.go
 
+  # --------------------------------------------------------------------------------
+  # Benchmarking
+  # --------------------------------------------------------------------------------
   bench:
     desc: "Run the benchmark"
     cmds:
       - go run cmd/benchmark/main.go
+
+  bench-setup:
+    desc: "Setup the benchmark dependencies"
+    cmds:
+      - go tool playwright install-deps
