@@ -269,11 +269,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockTagSearch := mocks.NewTagSearchService(t)
 	var writer slicewriter
 
-	mockTagSearch.On("FindKeysByTag", mock.Anything, mock.AnythingOfType("string")).
-		Return([]string{"file1.parquet", "file2.parquet"}, nil)
-
 	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockTagSearch)
-
 	router := SetupRouter(h)
 
 	for _, tt := range tests {
@@ -327,6 +323,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				tt.request.Header = header
 				tt.request.Destination = dest
 				reqstring, _ = json.Marshal(tt.request)
+
+				// Only set expectation if prompt is not empty
+				if strings.TrimSpace(tt.request.Prompt) != "" {
+					mockTagSearch.On("FindKeysByTag", mock.Anything, tt.request.Prompt).
+						Return([]string{"file1.parquet", "file2.parquet"}, nil).Once()
+				}
 			} else {
 				reqstring = []byte("invalid")
 			}
