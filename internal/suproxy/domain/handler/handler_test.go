@@ -45,11 +45,12 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
+	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(errors.New("reject")).Maybe()
 	return discardValidator
 }
 
 func TestNewSuproxyController(t *testing.T) {
+	tagSearch := mocks.NewTagSearchService(t)
 	tests := []struct {
 		name string
 		log  *slog.Logger
@@ -57,23 +58,34 @@ func TestNewSuproxyController(t *testing.T) {
 		val  service.Validator
 		clt  *http.Client
 		db   service.DatabaseService
-		tag  service.TagSearchService
 		err  bool
 	}{
-		{name: "valid", log: slog.Default(), cfg: &config.Config{}, val: RejectValidator(t), clt: &http.Client{}, db: mocks.NewMockDatabaseService(t), tag: tagSearch, err: false},
-		{name: "params nil", log: nil, cfg: nil, val: nil, clt: nil, db: nil, tag: nil, err: true},
+		{
+			name: "valid",
+			cfg:  &config.Config{},
+			log:  slog.Default(),
+			val:  RejectValidator(t),
+			clt:  &http.Client{},
+			db:   mocks.NewMockDatabaseService(t),
+			err:  false,
+		},
+		{
+			name: "params nil",
+			log:  nil,
+			cfg:  nil,
+			val:  nil,
+			clt:  nil,
+			db:   nil,
+			err:  true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctrl, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.tag)
-			if tt.err {
-				assert.Error(t, err)
-				assert.Nil(t, ctrl)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, ctrl)
-			}
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tagSearch)
+
+			assert.Equal(t, tt.err, controller == nil)
+			assert.Equal(t, tt.err, err != nil)
 		})
 	}
 }
