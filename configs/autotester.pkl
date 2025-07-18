@@ -3,7 +3,7 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-model: String = "gpt-4.1-nano-2025-04-14"
+model: String = "gpt-4.1-mini-2025-04-14"
 
 port: String = "8081" 
 
@@ -86,30 +86,31 @@ class Prompts {
     3. Code Structure Requirements Ensure each generated test includes:
        1. **Imports & Setup**
 
-    ts
           import { test, expect } from "@playwright/test";
           import { auto } from "auto-playwright";
 
        2. **Test Definition**
 
-    ts
           test("<Title>", async ({ page }) => { ... });
 
        3. **Navigation/Base URL**
 
-    ts
           await page.goto("<URL>");
 
        4. **Actions & Queries**
+          - Each distinct user action from the prompt's `Ablauf` (flow) must be converted into a separate `await auto(...)` call. For example, if the flow is "click button, then enter text", you must generate two `auto` calls.
 
-    ts
-          await auto("<natural-language instruction>", { page, test });
+          await auto("<single, clear natural-language instruction>", { page, test });
 
        5. **Assertions**
-
-    ts
-          const result = await auto("<assertion instruction>", { page, test });
-          expect(result).toBe(true);
+          - Translate assertion instructions from the prompt into Playwright `expect` statements.
+          - A single assertion sentence from the prompt may need to be broken down into multiple `expect` statements.
+          - For simple visibility or state checks, use an `auto` query that returns a boolean:
+            `const isVisible = await auto("Is the 'Submit' button visible?", { page, test }); expect(isVisible).toBe(true);`
+          - For URL checks, use `expect(page.url())` directly for higher precision:
+            `expect(page.url()).toContain("/dashboard");`
+          - For counting elements, use an `auto` query that returns a number and assert against it:
+            `const itemCount = await auto("Count the number of items in the cart", { page, test }); expect(itemCount).toBeGreaterThan(0);`
 
        6. **Teardown (optional)** Any cleanup steps like logout.
 
@@ -125,12 +126,11 @@ class Prompts {
 
     **Repeat:** Your response may only contain the valid TypeScript test code. No other text.
 
-    `
+    
     ## Example Outputs
 
     ### Example 1: Price Filter ≤ 100€ per night
 
-    ts
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
 
@@ -143,10 +143,9 @@ class Prompts {
       expect(priceOk).toBe(true);
     });
 
-    `
+    
     ### Example 2: Sort by Lowest Price First
 
-    ts
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
 
@@ -160,7 +159,6 @@ class Prompts {
 
     ### Example 3: Combo Filter: Price ≤100€, Apartment, Balcony & Pet-Friendly
 
-    ts
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
 

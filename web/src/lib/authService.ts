@@ -20,6 +20,7 @@ const createAuthStore = () => {
     const auth0Client = await createAuth0Client({
       domain: authConfig.domain,
       clientId: authConfig.clientId,
+      cacheLocation: 'localstorage',
       authorizationParams: {
         redirect_uri: window.location.origin
       }
