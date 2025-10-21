@@ -3,7 +3,7 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-model: String ="gpt-4.1-nano-2025-04-14"
+model: String ="gpt-5-mini-2025-08-07"
 
 port: String = "8080" 
 
