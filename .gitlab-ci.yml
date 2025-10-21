@@ -28,6 +28,7 @@ workflow:
       when: never
     - when: on_success
   before_script:
+    - npm install -g corepack
     - corepack enable
     - corepack prepare pnpm@latest --activate
     - pnpm config set store-dir $PNPM_HOME
