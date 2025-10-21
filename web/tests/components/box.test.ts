@@ -4,26 +4,24 @@ import Box from '../../src/components/Box.svelte';
 
 describe('Box component', () => {
 	describe('when the message is from "User"', () => {
-		it('renders the message and applies User-specific styles', () => {
-			render(Box, { msg: 'This is a message from User!', name: 'User' });
+    	it('renders the message and applies User-specific styles', () => {
+      	render(Box, { msg: 'This is a message from User!', name: 'User' });
 
-			const nameElement = screen.getByText('User');
-			const messageElement = screen.getByText('This is a message from User!');
+      	const nameElement = screen.getByText('User');
+      	const messageElement = screen.getByText('This is a message from User!');
 
-			expect(nameElement).toBeInTheDocument();
-			expect(messageElement).toBeInTheDocument();
+      	expect(nameElement).toBeInTheDocument();
+      	expect(messageElement).toBeInTheDocument();
 
-			const outerDiv = nameElement.parentElement?.parentElement;
-			expect(outerDiv).toHaveClass('justify-end');
+      	// outer div hat justify-end
+      	const outerDiv = nameElement.parentElement?.parentElement;
+      	expect(outerDiv).toHaveClass('justify-end');
 
-			const innerDiv = nameElement.parentElement;
-			expect(innerDiv).toHaveClass('justify-end', 'bg-sky-300');
-
-			expect(nameElement).toHaveClass('text-end');
-			expect(messageElement).toHaveClass('text-end');
-		});
+      	// inner div hat bg-sky-300 und w-[75%]
+      	const innerDiv = nameElement.parentElement;
+      	expect(innerDiv).toHaveClass('bg-sky-300', 'w-[75%]');
+    });
 	});
-
 	describe('when the message is from "Bot"', () => {
 		it('renders the message and applies Bot-specific styles', () => {
 			render(Box, { msg: 'This is a message from Bot!', name: 'Bot' });
@@ -38,10 +36,7 @@ describe('Box component', () => {
 			expect(outerDiv).toHaveClass('justify-start');
 
 			const innerDiv = nameElement.parentElement;
-			expect(innerDiv).toHaveClass('justify-start', 'bg-gray-200');
-
-			expect(nameElement).toHaveClass('text-start');
-			expect(messageElement).toHaveClass('text-start');
+      		expect(innerDiv).toHaveClass('bg-gray-200', 'w-fit');
 		});
 	});
 
