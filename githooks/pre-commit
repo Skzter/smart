@@ -2,7 +2,7 @@
 
 # Determine the correct task binary to use
 if command -v task </dev/null 2>&1; then
-    exec "$TASK_BIN" pre-commit
+    exec task pre-commit
 fi
 
 exec go tool task pre-commit
