@@ -14,18 +14,10 @@
         class:bg-sky-300={name === "User"}
         class:bg-gray-200={name === "Bot"}
     >
-        <h1
-            class="tracking-wide uppercase font-bold text-xl"
-            class:text-end={name === "User"}
-            class:text-start={name === "Bot"}
-        >
+        <h1 class="tracking-wide uppercase font-bold text-xl">
             {name}
         </h1>
-        <p
-            class="font-sans whitespace-pre-wrap"
-            class:text-end={name === "User"}
-            class:text-start={name === "Bot"}
-        >
+        <p class="font-sans whitespace-pre-wrap">
             {msg}
         </p>
     </div>
