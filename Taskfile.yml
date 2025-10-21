@@ -128,7 +128,7 @@ tasks:
 
   run-suproxy:
     desc: "Run the suproxy service"
-    deps: [generate-config-suproxy, di-generate-suproxy]
+    deps: [generate-config-suproxy, generate-config-embedded, di-generate-suproxy]
     cmds:
       - task: .run-app
         vars:
@@ -136,7 +136,7 @@ tasks:
 
   run-autotester:
     desc: "Run the autotester service"
-    deps: [generate-config-autotester, di-generate-autotester, build-frontend-dev]
+    deps: [generate-config-autotester,generate-config-embedded, di-generate-autotester, build-frontend-dev]
     cmds:
       - task: .run-app
         vars:

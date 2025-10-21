@@ -164,12 +164,10 @@ class Prompts {
       "reason": [tag1, tag2] 
     }
     """
-    prompt2 : String = "und so weiter"
-    tollerPromp : String = "namen können beliebig gewählt werden"
 }
 prompts : Prompts
 
-timeout: Int = 20
+timeout: Int = 60
 
 region: String = "eu-central-1"
 

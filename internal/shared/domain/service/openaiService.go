@@ -32,9 +32,7 @@ func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 // Request sends a request to the OpenAI repository and returns the response.
 func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		c.logger.Error(err.Error())
 		return nil, err
 	}
-
 	return c.repo.CreateRequest(ctx, request)
 }
