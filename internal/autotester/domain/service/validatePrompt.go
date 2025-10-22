@@ -8,8 +8,15 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
+)
+
+var (
+	errOpenAIValidation     = errors.New("failed to send prompt validation request to OpenAI")
+	errNotEnoughInformation = errors.New("prompt does not contain required information for test generation")
+	errUnexpectedResponse   = errors.New("unexpected validation response, please try again")
 )
 
 // ValidatePrompt defines an interface for prompt validation
@@ -19,14 +26,14 @@ type ValidatePrompt interface {
 
 // validatePrompt provides functionality to validate user prompts using OpenAI.
 type validatePrompt struct {
-	service service.OpenAI
+	service sharedService.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewValidatePromptService creates a new validatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewValidatePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (ValidatePrompt, error) {
+func NewValidatePromptService(service sharedService.OpenAI, config *config.Config, logger *slog.Logger) (ValidatePrompt, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
@@ -46,15 +53,30 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return errors.New("failed to send prompt validation request to OpenAI")
+		var repoError *repository.Error
+		if errors.As(err, &repoError) {
+			switch repoError.Type {
+			case repository.Private:
+				s.logger.Error(fmt.Sprintf("SERVICE: validation: %v", err.Error()))
+				return errOpenAIValidation
+			case repository.Public:
+				return repoError
+			}
+		} else if errors.Is(err, sharedService.ErrNilContext) {
+			s.logger.Error(fmt.Sprintf("SERVICE: validation: %v", err.Error()))
+			return errOpenAIValidation
+		}
+		s.logger.Error(fmt.Sprintf("SERVICE: validation: unexpected error: %s", err.Error()))
+		return errUnexpected
 	}
 
 	switch resp.Text {
 	case "true":
 		return nil
 	case "false":
-		return errors.New("prompt does not contain required information for test generation")
+		return errNotEnoughInformation
 	default:
-		return fmt.Errorf("unexpected validation response: %q", resp.Text)
+		s.logger.Error(fmt.Sprintf("SERVICE: validation: no binary decision in validation: %s", resp.Text))
+		return errUnexpectedResponse
 	}
 }

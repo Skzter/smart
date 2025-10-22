@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http/httptest"
@@ -80,18 +81,21 @@ func TestGeneratePrompt(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		wantText string
-		wantErr  bool
+		name        string
+		wantText    string
+		wantErr     bool
+		expectedErr error
 	}{
 		{
-			name:     "success",
-			wantText: "openai says hello",
-			wantErr:  false,
+			name:        "success",
+			wantText:    "openai says hello",
+			wantErr:     false,
+			expectedErr: nil,
 		},
 		{
-			name:    "service error",
-			wantErr: true,
+			name:        "service error",
+			wantErr:     true,
+			expectedErr: errUnexpected,
 		},
 	}
 
@@ -122,6 +126,9 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 			if !tt.wantErr && got != tt.wantText {
 				t.Errorf("GeneratePrompt() = %q, want %q", got, tt.wantText)
+			}
+			if !errors.Is(err, tt.expectedErr) {
+				t.Errorf("GeneratePrompt() error = %v, expected = %v", err, tt.expectedErr)
 			}
 
 			service.AssertExpectations(t)
