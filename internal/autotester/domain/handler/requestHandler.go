@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -53,10 +54,11 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
+	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "OpenAI service failed"})
-		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error(fmt.Sprintf("HANDLER (autotester): HandleChatrequest: serviceHandler: %v", err.Error()))
 		return
 	}
 
