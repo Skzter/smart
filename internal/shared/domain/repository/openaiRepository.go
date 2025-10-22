@@ -87,7 +87,6 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	// returned ctx cannot not be nil, because it will always return a ctx
 	// only if ctx would be nil from the start it would panic but already asserted it wouldnt be nil
-
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(qa.timeout))
 	defer cancel()
 
@@ -100,6 +99,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	if err != nil {
 		err := fmt.Errorf("openai request: %w", err)
+		qa.logger.Error(err.Error())
 		return nil, err
 	}
 
