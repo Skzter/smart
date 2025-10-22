@@ -80,7 +80,8 @@ tasks:
       - task: lint-frontend
       - pnpm run build
     sources:
-      - "**/*"
+      - "*"
+      - "src/**/*"
 
   build-frontend-dev:
     desc: "Build the frontend"
@@ -89,7 +90,8 @@ tasks:
     cmds:
       - pnpm build
     sources:
-      - "**/*"
+      - "*"
+      - "src/**/*"
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
