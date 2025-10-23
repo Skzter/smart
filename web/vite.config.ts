@@ -18,14 +18,18 @@ export default defineConfig({
             provider: "v8",
             reporter: ["text", "cobertura", "lcov"],
             include: ["src/{lib,components}/**/*.{ts,js,svelte}"],
-            exclude: ["src/**/*.test.{ts}", "src/**/*.d.ts", "src/lib/authService.ts"],
-            reportsDirectory: './coverage',
-            thresholds:{
+            exclude: [
+                "src/**/*.test.{ts}",
+                "src/**/*.d.ts",
+                "src/lib/authService.ts",
+            ],
+            reportsDirectory: "./coverage",
+            thresholds: {
                 statements: 80,
                 branches: 80,
                 functions: 80,
                 lines: 80,
-            }
+            },
         },
     },
 });
