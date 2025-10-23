@@ -8,7 +8,7 @@
     class:justify-start={name === "Bot"}
 >
     <div
-        class="font-mono p-2.5 border-2 border-black border-solid rounded-xl break-words"
+        class="font-mono p-2.5 border-2 border-black border-solid rounded-xl"
         class:w-[75%]={name === "User"}
         class:w-fit={name === "Bot"}
         class:bg-sky-300={name === "User"}
