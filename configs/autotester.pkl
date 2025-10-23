@@ -181,7 +181,4 @@ region: String = "eu-central-1"
 
 bucket: String = "smart-autotester"
 
-
-
-
-
+template: String = "test-template"
