@@ -13,11 +13,9 @@ describe('Box component', () => {
       	expect(nameElement).toBeInTheDocument();
       	expect(messageElement).toBeInTheDocument();
 
-      	// outer div hat justify-end
       	const outerDiv = nameElement.parentElement?.parentElement;
       	expect(outerDiv).toHaveClass('justify-end');
 
-      	// inner div hat bg-sky-300 und w-[75%]
       	const innerDiv = nameElement.parentElement;
       	expect(innerDiv).toHaveClass('bg-sky-300', 'w-[75%]');
     });
