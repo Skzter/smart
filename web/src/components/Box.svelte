@@ -8,7 +8,7 @@
     class:justify-start={name === "Bot"}
 >
     <div
-        class="font-mono w-fit p-2.5 border-2 border-black border-solid rounded-xl"
+        class="font-mono w-full p-2.5 border-2 border-black border-solid rounded-xl"
         class:justify-end={name === "User"}
         class:justify-start={name === "Bot"}
         class:bg-sky-300={name === "User"}
@@ -22,7 +22,7 @@
             {name}
         </h1>
         <p
-            class="font-sans whitespace-pre-wrap"
+            class="font-sans wrap-break-word whitespace-pre-wrap"
             class:text-end={name === "User"}
             class:text-start={name === "Bot"}
         >
