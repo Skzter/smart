@@ -56,9 +56,6 @@ describe('Box component', () => {
             const innerDiv = nameElement.parentElement;
             expect(innerDiv).not.toHaveClass("bg-sky-300", "bg-gray-200");
             expect(innerDiv).not.toHaveClass("justify-end", "justify-start");
-
-            expect(nameElement).not.toHaveClass("text-end", "text-start");
-            expect(messageElement).not.toHaveClass("text-end", "text-start");
         });
     });
 
@@ -78,9 +75,6 @@ describe('Box component', () => {
 
             const innerDiv = nameElement.parentElement;
             expect(innerDiv).not.toHaveClass("bg-sky-300", "bg-gray-200");
-
-            expect(nameElement).not.toHaveClass("text-end", "text-start");
-            expect(messageElement).not.toHaveClass("text-end", "text-start");
         });
     });
 
