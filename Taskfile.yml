@@ -130,7 +130,6 @@ tasks:
 
   run-suproxy:
     desc: "Run the suproxy service"
-    #deps: [generate-config-suproxy, generate-config-embedded, di-generate-suproxy] | uneccessary when generate task is executed by wire
     cmds:
       - task: .run-app
         vars:
@@ -138,7 +137,6 @@ tasks:
 
   run-autotester:
     desc: "Run the autotester service"
-    #deps: [generate-config-autotester,generate-config-embedded, di-generate-autotester, build-frontend-dev] | uneccessary when generate task is executed by wire
     deps: [build-frontend-dev]
     cmds:
       - task: .run-app
