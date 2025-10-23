@@ -10,7 +10,7 @@
 
     let prompt = $state("");
     let convo = $state<{ id: number; question: string; answer: string }[]>([]);
-    
+
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
     var conversationId = localStorage.getItem("conversationId") || "";
@@ -58,7 +58,8 @@
             setConversationId(answer.data.conversationId);
         } catch (err) {
             console.error("api call failed", err);
-            convo[convo.length - 1].answer = "Interner Server Error - Bitte nochmal versuchen!";
+            convo[convo.length - 1].answer =
+                "Interner Server Error - Bitte nochmal versuchen!";
         } finally {
             isLoading = false;
         }
@@ -113,7 +114,9 @@
         <Prompt bind:input={prompt} {onclick} />
     </footer>
 {:else}
-    <main class="flex h-screen w-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+    <main
+        class="flex h-screen w-screen items-center justify-center bg-gray-100 dark:bg-gray-900"
+    >
         <div
             class="w-full max-w-sm rounded-lg bg-white p-8 text-center shadow-xl dark:bg-gray-800"
         >
