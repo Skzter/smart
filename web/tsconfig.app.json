@@ -19,6 +19,11 @@
         "moduleDetection": "force",
         "strict": true
     },
-    "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "tests/**/*.ts"],
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.js",
+        "src/**/*.svelte",
+        "tests/**/*.ts"
+    ],
     "exclude": ["node_modules/*"]
 }
