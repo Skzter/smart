@@ -17,7 +17,7 @@ type TestcaseLocalStorageRepository interface {
 	// ReadLatest returns the most recent TestCase matching testId for the
 	// provided user and session. Returns an error when not found or on IO
 	// failure.
-	ReadLatest(testId string, userId string, sessionId string) (entity.TestCase, error)
+	Read(testId string, userId string, sessionId string) (entity.TestCase, error)
 
 	// ReadAllBySession returns all TestCases for the given user within the
 	// specified session. The returned slice may be empty if no entries exist.
@@ -31,11 +31,6 @@ type TestcaseLocalStorageRepository interface {
 	// user and session. Implementations should return nil when the file did
 	// not exist (idempotent delete) or an error for IO failures.
 	Delete(testId string, userId string, sessionId string) error
-
-	// GetAll returns all TestCases for the given user and optional session.
-	// If sessionId is empty, results across all sessions for the user are
-	// returned.
-	GetAll(userId string, sessionId string) ([]entity.TestCase, error)
 }
 
 type testcaseLocalStorageRepository struct {
@@ -66,14 +61,10 @@ func (r *testcaseLocalStorageRepository) ReadAllByUser(userId string) ([]entity.
 	panic("unimplemented")
 }
 
-func (r *testcaseLocalStorageRepository) ReadLatest(testId string, userId string, sessionId string) (entity.TestCase, error) {
+func (r *testcaseLocalStorageRepository) Read(testId string, userId string, sessionId string) (entity.TestCase, error) {
 	panic("unimplemented")
 }
 
 func (r *testcaseLocalStorageRepository) Delete(testId string, userId string, sessionId string) error {
-	panic("unimplmented")
-}
-
-func (r *testcaseLocalStorageRepository) GetAll(userId string, sessionId string) ([]entity.TestCase, error) {
 	panic("unimplmented")
 }
