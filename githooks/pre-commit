@@ -1,21 +1,10 @@
 #!/bin/sh
 
-# Detect operating system and architecture
-OS=$(uname -s)
-ARCH=$(uname -m)
-
 # Determine the correct task binary to use
 if command -v task </dev/null 2>&1; then
-    TASK_BIN="task"
-elif [ "$ARCH" = "arm64" ]; then
-    TASK_BIN="./bin/arm/task"
-elif [ "$OS" = "Linux" ]; then
-    TASK_BIN="./bin/task"
-elif echo "$OS" | grep -q "MINGW\|MSYS\|CYGWIN"; then
-    TASK_BIN="./bin/win/task.exe"
+    CMD="task pre-commit"
 else
-    echo "Warning: Unknown platform ($OS $ARCH), using default task binary"
-    TASK_BIN="./bin/task"
+    CMD="go tool task pre-commit"
 fi
 
-exec "$TASK_BIN" pre-commit
+bash -c "$CMD" 
