@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# Detect operating system and architecture
-OS=$(uname -s)
-ARCH=$(uname -m)
-
 # Determine the correct task binary to use
 if command -v task </dev/null 2>&1; then
     CMD="task pre-commit"
