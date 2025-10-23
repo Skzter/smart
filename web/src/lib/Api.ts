@@ -30,3 +30,12 @@ export async function getUserInfo(params: object, url: string) {
     });
     return response;
 }
+
+export async function getTemplate(url: string) {
+    const response = await axios({
+        method: "post",
+        url: url,
+        baseURL: baseURL,
+    });
+    return response;
+}

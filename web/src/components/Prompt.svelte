@@ -1,5 +1,6 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
+    import { getTemplate } from "../lib/Api.ts";
     let { input = $bindable(""), onclick } = $props();
 
     function handleKeyPress(e: KeyboardEvent) {
@@ -8,6 +9,13 @@
             input = "";
             e.preventDefault();
         }
+    }
+    async function loadTemplate(){
+        let response = await getTemplate("/template")
+        if (response.status != 200){
+            alert("NO TEMPLATE FOUND!");
+        }
+        input = response.data.template;
     }
 </script>
 
@@ -26,4 +34,9 @@
         {onclick}
         disabled={!input.trim()}>Send</Button
     >
+    <Button
+        color="purple"
+        class="w-1/10 h-1/3"
+        onclick={loadTemplate}
+    >Template</Button>
 </div>
