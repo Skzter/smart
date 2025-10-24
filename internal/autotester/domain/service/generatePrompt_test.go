@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +11,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -95,7 +95,7 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:        "service error",
 			wantErr:     true,
-			expectedErr: errUnexpected,
+			expectedErr: repository.ErrOpenAI,
 		},
 	}
 
@@ -108,7 +108,7 @@ func TestGeneratePrompt(t *testing.T) {
 			if tt.wantErr {
 				service.
 					On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), fmt.Errorf("service failure"))
+					Return((*entity.Response)(nil), repository.ErrOpenAI)
 			} else {
 				service.
 					On("Request", ctx, mock.Anything).

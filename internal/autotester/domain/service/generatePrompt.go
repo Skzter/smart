@@ -2,19 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
-
-var errOpenAIGeneration = errors.New("generation of code failed")
-var errUnexpected = errors.New("encounterd unexpected error")
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
@@ -49,21 +43,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		var repoError *repository.Error
-		if errors.As(err, &repoError) {
-			switch repoError.Type {
-			case repository.Private:
-				s.logger.Error(fmt.Sprintf("SERVICE: generate: %v", err.Error()))
-				return "", errOpenAIGeneration
-			case repository.Public:
-				return "", repoError
-			}
-		} else if errors.Is(err, sharedService.ErrNilContext) {
-			s.logger.Error(fmt.Sprintf("SERVICE: generate: %v", err.Error()))
-			return "", errOpenAIValidation
-		}
-		s.logger.Error(fmt.Sprintf("SERVICE: generate: unexpected error: %s", err.Error()))
-		return "", errUnexpected
+		return "", err
 	}
 	return resp.Text, nil
 }

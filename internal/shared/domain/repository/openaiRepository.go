@@ -28,18 +28,17 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("repository error: %v", e.ErrorString)
+	return e.ErrorString
 }
 
 // errors for different repo failures
 var (
-	ErrNilUserPrompt      = &Error{Type: Private, ErrorString: "REPO entity validation: request without user prompt"}
-	ErrNilSystemPrompt    = &Error{Type: Private, ErrorString: "REPO entity validation: request without system prompt"}
-	ErrNilModel           = &Error{Type: Private, ErrorString: "REPO entity validation: request without model"}
-	ErrNilContext         = &Error{Type: Private, ErrorString: "REPO assert: request with nil context"}
-	ErrEmptyResponseArray = &Error{Type: Private, ErrorString: "REPO openai api error: response contains no messages to choose from"}
-	ErrEmptyResponse      = &Error{Type: Private, ErrorString: "REPO openai api error: message is empty"}
-	ErrOpenAI             = &Error{Type: Private, ErrorString: "REPO openai api error: request to the server failed"}
+	ErrNilUserPrompt      = &Error{Type: Private, ErrorString: "request without user prompt"}
+	ErrNilSystemPrompt    = &Error{Type: Private, ErrorString: "request without system prompt"}
+	ErrNilModel           = &Error{Type: Private, ErrorString: "request without model"}
+	ErrEmptyResponseArray = &Error{Type: Private, ErrorString: "REPO openai error: response contains no messages to choose from"}
+	ErrEmptyResponse      = &Error{Type: Private, ErrorString: "REPO openai error: chosen response message is empty"}
+	ErrOpenAI             = &Error{Type: Private, ErrorString: "REPO openai error: request to the server failed"}
 )
 
 // OpenAI defines methods for interacting with OpenAI API.
@@ -85,13 +84,12 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		qa.logger.Error(fmt.Sprintf("REPO: assertion ctx: %v", err.Error()))
-		return nil, ErrNilContext
+		return nil, fmt.Errorf("REPO: ctx => %w", err)
 	}
 
 	// func validates request entity and returns custom error
 	if err := validateRequestEntity(request); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("REPO entity validation: %w", err)
 	}
 
 	// add Request from user to messages of repo

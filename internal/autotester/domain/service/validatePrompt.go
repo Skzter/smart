@@ -8,15 +8,28 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+// Error is custom error type for validation service
+type Error struct {
+	underlying error
+	message    string
+}
+
+func (e *Error) Error() string {
+	return e.message
+}
+
+func (e *Error) Unwrap() error {
+	return e.underlying
+}
+
+// Errors which the llm validation can return
 var (
-	errOpenAIValidation     = errors.New("failed to send prompt validation request to OpenAI")
-	errNotEnoughInformation = errors.New("prompt does not contain required information for test generation")
-	errUnexpectedResponse   = errors.New("unexpected validation response, please try again")
+	ErrNotEnoughInformation = errors.New("prompt does not contain required information for test generation")
+	ErrUnexpectedResponse   = errors.New("unexpected validation response, please try again")
 )
 
 // ValidatePrompt defines an interface for prompt validation
@@ -53,30 +66,21 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		var repoError *repository.Error
-		if errors.As(err, &repoError) {
-			switch repoError.Type {
-			case repository.Private:
-				s.logger.Error(fmt.Sprintf("SERVICE: validation: %v", err.Error()))
-				return errOpenAIValidation
-			case repository.Public:
-				return repoError
-			}
-		} else if errors.Is(err, sharedService.ErrNilContext) {
-			s.logger.Error(fmt.Sprintf("SERVICE: validation: %v", err.Error()))
-			return errOpenAIValidation
-		}
-		s.logger.Error(fmt.Sprintf("SERVICE: validation: unexpected error: %s", err.Error()))
-		return errUnexpected
+		return err
 	}
 
 	switch resp.Text {
 	case "true":
 		return nil
 	case "false":
-		return errNotEnoughInformation
+		return &Error{
+			underlying: ErrNotEnoughInformation,
+			message:    fmt.Sprintf("SERVICE: ValidatePrompt() => %v", ErrNotEnoughInformation.Error()),
+		}
 	default:
-		s.logger.Error(fmt.Sprintf("SERVICE: validation: no binary decision in validation: %s", resp.Text))
-		return errUnexpectedResponse
+		return &Error{
+			underlying: ErrUnexpectedResponse,
+			message:    fmt.Sprintf("SERVICE: ValidatePrompt(): no binary decision in validation => %s", resp.Text),
+		}
 	}
 }

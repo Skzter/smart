@@ -95,7 +95,7 @@ func TestValidatePrompt(t *testing.T) {
 					Return((*entity.Response)(nil), repository.ErrOpenAI)
 			},
 			wantErr:     true,
-			expectedErr: errOpenAIValidation,
+			expectedErr: repository.ErrOpenAI,
 		},
 		{
 			name: "valid prompt (true)",
@@ -113,7 +113,7 @@ func TestValidatePrompt(t *testing.T) {
 					Return(&entity.Response{Text: "false"}, nil)
 			},
 			wantErr:     true,
-			expectedErr: errNotEnoughInformation,
+			expectedErr: ErrNotEnoughInformation,
 		},
 		{
 			name: "unexpected response",
@@ -122,7 +122,7 @@ func TestValidatePrompt(t *testing.T) {
 					Return(&entity.Response{Text: "oops"}, nil)
 			},
 			wantErr:     true,
-			expectedErr: errUnexpectedResponse,
+			expectedErr: ErrUnexpectedResponse,
 		},
 	}
 
