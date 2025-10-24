@@ -4,6 +4,11 @@ import { expect, test } from "vitest";
 import { vi } from "vitest";
 import Prompt from "../../src/components/Prompt.svelte";
 
+const getTemplate = vi.fn();
+vi.mock("../../src/lib/Api.ts", () => ({
+  getTemplate,
+}));
+
 describe("Prompt Component", () => {
     test("renders textarea and button", () => {
         render(Prompt);
@@ -104,5 +109,51 @@ describe("Prompt Component", () => {
         await user.keyboard("[Enter]");
 
         expect(mockFn).not.toHaveBeenCalled();
+    });
+
+    test("clicking Template calls getTemplate and fills textarea on success", async () => {
+        const user = userEvent.setup();
+        const templateString = "This is a loaded template";
+        // mock success response
+        getTemplate.mockResolvedValue({ status: 200, data: { template: templateString } });
+
+        render(Prompt, { input: "" });
+
+        const templateButton = screen.getByText("Template");
+        await user.click(templateButton);
+
+        // wait for async update to the component's textarea value
+        await waitFor(() => {
+          expect(screen.getByPlaceholderText("Prompt")).toHaveValue(templateString);
+        });
+
+        expect(getTemplate).toHaveBeenCalledTimes(1);
+        expect(getTemplate).toHaveBeenCalledWith("/template");
+    });
+
+    test("clicking Template shows alert on non-200 response and doesn't change textarea", async () => {
+        const user = userEvent.setup();
+        // mock failure response
+        getTemplate.mockResolvedValue({ status: 404 });
+        const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+        // initial input set to something to ensure it doesn't get overwritten on failure
+        const initial = "initial value";
+        render(Prompt, { input: initial });
+
+        const templateButton = screen.getByText("Template");
+        await user.click(templateButton);
+
+        await waitFor(() => {
+          expect(alertSpy).toHaveBeenCalledWith("NO TEMPLATE FOUND!");
+        });
+
+        // textarea should remain unchanged
+        expect(screen.getByPlaceholderText("Prompt")).toHaveValue(initial);
+
+        expect(getTemplate).toHaveBeenCalledTimes(1);
+        expect(getTemplate).toHaveBeenCalledWith("/template");
+
+        alertSpy.mockRestore();
     });
 });

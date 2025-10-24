@@ -97,4 +97,29 @@ describe("API Functions", () => {
             ).rejects.toThrow("Chat service unavailable");
         });
     });
+
+    describe("getTemplate", () => {
+        it("should make a GET request to /template and return data", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue({ data: mockResponseData });
+
+            const result = await getTemplate("/template");
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/template",
+                baseURL: "/v1",
+            });
+            expect(result.data).toEqual(mockResponseData);
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockRejectedValue(new Error("Template not found"));
+
+            await expect(getTemplate("/template")).rejects.toThrow(
+                "Template not found",
+            );
+        });
+    });
 });
