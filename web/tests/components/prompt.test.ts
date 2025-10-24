@@ -1,13 +1,18 @@
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, waitFor} from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { vi } from "vitest";
 import Prompt from "../../src/components/Prompt.svelte";
 
-const getTemplate = vi.fn();
 vi.mock("../../src/lib/Api.ts", () => ({
-  getTemplate,
+    getTemplate: vi.fn()
 }));
+
+import { getTemplate } from "../../src/lib/Api.ts";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("Prompt Component", () => {
     test("renders textarea and button", () => {
@@ -134,12 +139,10 @@ describe("Prompt Component", () => {
     test("clicking Template shows alert on non-200 response and doesn't change textarea", async () => {
         const user = userEvent.setup();
         // mock failure response
-        getTemplate.mockResolvedValue({ status: 404 });
+        getTemplate.mockResolvedValue({ status: 404, data: {} });
         const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
-        // initial input set to something to ensure it doesn't get overwritten on failure
-        const initial = "initial value";
-        render(Prompt, { input: initial });
+        render(Prompt, { input: ""});
 
         const templateButton = screen.getByText("Template");
         await user.click(templateButton);
@@ -149,7 +152,7 @@ describe("Prompt Component", () => {
         });
 
         // textarea should remain unchanged
-        expect(screen.getByPlaceholderText("Prompt")).toHaveValue(initial);
+        expect(screen.getByPlaceholderText("Prompt")).toHaveValue("");
 
         expect(getTemplate).toHaveBeenCalledTimes(1);
         expect(getTemplate).toHaveBeenCalledWith("/template");

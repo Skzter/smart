@@ -33,7 +33,7 @@ export async function getUserInfo(params: object, url: string) {
 
 export async function getTemplate(url: string) {
     const response = await axios({
-        method: "post",
+        method: "get",
         url: url,
         baseURL: baseURL,
     });

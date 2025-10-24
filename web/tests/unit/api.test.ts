@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import axios from "axios";
-import { getChatResponse, getUserInfo } from "../../src/lib/Api.ts";
+import { getChatResponse, getUserInfo, getTemplate } from "../../src/lib/Api.ts";
 
 // Mock axios
 vi.mock("axios");
