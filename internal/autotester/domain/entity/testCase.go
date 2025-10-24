@@ -10,5 +10,6 @@ type TestCase struct {
 
 // TestCode contains the code to be executed for a test case.
 type TestCode struct {
-	Code string
+	Code     string
+	Language string
 }
