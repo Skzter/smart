@@ -14,23 +14,23 @@ import (
 type TestcaseLocalStorageService interface {
 	// Save stores the given TestCase for the provided user and session.
 	// Returns an error when validation or storage fails.
-	Save(testcase *entity.TestCase, userId string, sessionId string) error
+	Save(testcase *entity.TestCase, userId, sessionId string) error
 
 	// ReadLatest returns the latest TestCase for the given testId within the
 	// specified user and session. The returned TestCase is the most recent
 	// one for that test identifier.
-	Read(testId string, userId string, sessionId string) (entity.TestCase, error)
+	Read(testId, lang, userId, sessionId string) (*entity.TestCase, error)
 
 	// ReadAllBySession returns all TestCases that belong to the given user
 	// and session. The slice may be empty when no testcases are found.
-	ReadAllBySession(userId string, sessionId string) ([]entity.TestCase, error)
+	ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error)
 
 	// ReadAllByUser returns all TestCases that belong to the given user
 	// across all sessions. The slice may be empty when no testcases exist.
-	ReadAllByUser(userId string) ([]entity.TestCase, error)
+	ReadAllByUser(userId string) (map[string][]*entity.TestCase, error)
 
 	// Delete removes a testcase identified by testId for the given user and session.
-	Delete(testId string, userId string, sessionId string) error
+	Delete(testId, lang, userId, sessionId string) error
 }
 
 type testcaseLocalStorageService struct {
@@ -52,22 +52,22 @@ func NewTestcaseLocalStorageService(logger *slog.Logger, repo repository.Testcas
 	}, nil
 }
 
-func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId string, sessionId string) error {
+func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, sessionId string) error {
 	return s.repo.Save(testcase, userId, sessionId)
 }
 
-func (s *testcaseLocalStorageService) Read(testId string, userId string, sessionId string) (entity.TestCase, error) {
-	return s.repo.Read(testId, userId, sessionId)
+func (s *testcaseLocalStorageService) Read(testId, lang, userId, sessionId string) (*entity.TestCase, error) {
+	return s.repo.Read(testId, lang, userId, sessionId)
 }
 
-func (s *testcaseLocalStorageService) ReadAllBySession(userId string, sessionId string) ([]entity.TestCase, error) {
+func (s *testcaseLocalStorageService) ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error) {
 	return s.repo.ReadAllBySession(userId, sessionId)
 }
 
-func (s *testcaseLocalStorageService) ReadAllByUser(userId string) ([]entity.TestCase, error) {
+func (s *testcaseLocalStorageService) ReadAllByUser(userId string) (map[string][]*entity.TestCase, error) {
 	return s.repo.ReadAllByUser(userId)
 }
 
-func (s *testcaseLocalStorageService) Delete(testId string, userId string, sessionId string) error {
-	return s.repo.Delete(testId, userId, sessionId)
+func (s *testcaseLocalStorageService) Delete(testId, lang, userId, sessionId string) error {
+	return s.repo.Delete(testId, lang, userId, sessionId)
 }
