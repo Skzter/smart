@@ -45,7 +45,10 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(errors.New("reject")).Maybe()
+	// Validator.Validate returns ([]string, error), so the mock must
+	// return a slice (or nil) and an error. Return nil slice and an
+	// error to simulate rejection.
+	discardValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
 
@@ -267,9 +270,16 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockTagSearch := mocks.NewTagSearchService(t)
+
+	// Default mock behavior: when tests don't configure the validator or DB
+	// explicitly, return success (no tags, no error) so calls are allowed.
+	mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return([]string{}, nil)
+	mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(nil)
 	var writer slicewriter
 
 	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockTagSearch)
+
+	h.SetHandleAsync(false)
 	router := SetupRouter(h)
 
 	for _, tt := range tests {
@@ -298,7 +308,14 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				if !tt.validationError.bool {
 					err = nil
 				}
-				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(err)
+				// Validator.Validate returns ([]string, error).
+				// When simulating an error, return nil slice + error;
+				// otherwise return empty slice + nil.
+				if err != nil {
+					mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, err)
+				} else {
+					mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return([]string{}, nil)
+				}
 				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
 			}
 

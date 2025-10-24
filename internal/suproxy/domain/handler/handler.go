@@ -18,12 +18,13 @@ import (
 
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
-	logger    *slog.Logger
-	config    *config.Config
-	client    *http.Client
-	validator service.Validator
-	db        service.DatabaseService
-	tagSearch service.TagSearchService
+	logger      *slog.Logger
+	config      *config.Config
+	client      *http.Client
+	validator   service.Validator
+	db          service.DatabaseService
+	tagSearch   service.TagSearchService
+	handleAsync bool
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
@@ -42,12 +43,13 @@ func NewSuproxyController(
 	}
 
 	return &SuproxyController{
-		logger:    logger,
-		config:    config,
-		client:    client,
-		validator: val,
-		db:        db,
-		tagSearch: tagSearch,
+		logger:      logger,
+		config:      config,
+		client:      client,
+		validator:   val,
+		db:          db,
+		tagSearch:   tagSearch,
+		handleAsync: true,
 	}, nil
 }
 
@@ -81,7 +83,15 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if code == http.StatusOK {
-		go s.HandleRequest(c.Copy(), request, body)
+		// Pass a context.Context to HandleRequest. Use a copy of the Gin
+		// context to safely access the underlying *http.Request when
+		// running in a background goroutine. Allow synchronous handling
+		// when configured (useful for tests).
+		if s.handleAsync {
+			go s.HandleRequest(c.Copy().Request.Context(), request, body)
+		} else {
+			s.HandleRequest(c.Copy().Request.Context(), request, body)
+		}
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
 	}
@@ -159,4 +169,10 @@ func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp
 	}
 
 	return s.db.SaveDbEntry(ctx, dbentry)
+}
+
+// SetHandleAsync sets whether HandleRequest should run asynchronously.
+// Use false in tests to make behavior deterministic.
+func (s *SuproxyController) SetHandleAsync(on bool) {
+	s.handleAsync = on
 }
