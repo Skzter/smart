@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	openai "github.com/sashabaranov/go-openai"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -63,7 +65,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		frontendError := a.handleError(err)
+		frontendError := handleError(err)
 		unwrappedError := errors.Unwrap(frontendError)
 		// checks if the error need the unwrapped
 		// Unwrap() returns nil if nothing needs to be unwrapped
@@ -114,22 +116,37 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 // handleError handles the errors for the validate and generate functions
 // takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
 // if source found decides if it can return this error or a generic error because the error message may expose sensitive data
-func (a *AutotesterController) handleError(err error) error {
+func handleError(err error) error {
+	if err == nil {
+		return nil
+	}
 	// Generate() returns only the repository/service errors
-	var repoError *repository.Error
-	var assertNotNilError *assert.NotNilError
+	var (
+		repoError         *repository.Error
+		assertNotNilError *assert.NotNilError
+		apiErr            *openai.APIError
+		reqErr            *openai.RequestError
+	)
+
 	// maps the given error to the target error, when success you can operate on the custom error type
-	if errors.As(err, &repoError) {
+	switch {
+	case errors.As(err, &repoError):
 		switch repoError.Type {
 		case repository.Private:
 			return errOpenAIFailure
 		case repository.Public:
 			return repoError
 		}
-	} else if errors.As(err, &assertNotNilError) {
-		// when the assert of nil ctx fails
+	case errors.As(err, &assertNotNilError),
+		errors.As(err, &apiErr),
+		errors.As(err, &reqErr):
+		// catching errors from the assert and OpenAI requests
+		return errOpenAIFailure
+	case strings.Contains(err.Error(), "Post"):
+		// error when no internet connection but bit unclean
 		return errOpenAIFailure
 	}
+
 	// Validate() returns unique errors but they dont contain sensitive information
 	return err
 }

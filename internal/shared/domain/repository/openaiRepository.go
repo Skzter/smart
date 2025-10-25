@@ -128,8 +128,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		})
 
 	if err != nil {
-		qa.logger.Error(fmt.Sprintf("REPO: request to openai CreateChatCompletion(): %v", err.Error()))
-		return nil, ErrOpenAI
+		return nil, err
 	}
 
 	if request.SessionID == "" {
