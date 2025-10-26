@@ -57,9 +57,12 @@
             convo[convo.length - 1].answer = answer.data.message.data;
             setConversationId(answer.data.conversationId);
         } catch (err) {
-            console.error("api call failed", err);
-            convo[convo.length - 1].answer =
-                "Interner Server Error - Bitte nochmal versuchen!";
+            if (err.isAxiosError) {
+                convo[convo.length - 1].answer = err.response.data.message;
+            } else {
+                convo[convo.length - 1].answer =
+                    "no axios error returned - something went horribly wrong";
+            }
         } finally {
             isLoading = false;
         }
