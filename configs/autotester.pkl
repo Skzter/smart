@@ -28,13 +28,13 @@ class Prompts {
            - Any deviation from this format is considered incorrect output.
 
         3. Evaluation Criteria (Context Provision)
-           Return `true` only if all of the following six points are unambiguously described in natural language:
-           (1) Role/Goal Description: A clear indication that Playwright tests via Autoplaywright should be generated and which feature or use case is in focus.
-           (2) Context/Base URL and Environment: Specification of which site or environment (e.g., staging) is to be tested, including authentication notes if necessary.
-           (3) Test Scenario: At least one reproducible UI test scenario with clear step-by-step flow described in natural language.
-           (4) Element Description: Natural-language mentions of relevant UI elements are sufficient, even if brief or implicit (e.g., “clicks on ‘Mallorca’ under ‘Urlaubsregionen entdecken’” counts as valid element description).
-           (5) Assertions/Success Criteria: Test assertions in natural language (e.g., “After login, the dashboard page loads, the URL contains '/dashboard', and the text ‘Welcome’ appears”).
-           (6) Test Data or Setup/Teardown: At least a minimal indication of setup or cleanup (e.g., “Session-Bereinigung”, “clear browser data”, “use default user”) is sufficient.
+         Return `true` only if all of the following six points are unambiguously described in natural language:  
+           (1) Role/Goal Description: The intent to generate Playwright tests via Autoplaywright and the specific feature or use case under test (e.g., “Generate Playwright tests with Autoplaywright for Check24’s login page”).  
+           (2) Context/Base URL and Environment: The target site or environment (e.g., staging, production) including any necessary authentication or environment hints (e.g., “Base URL: https://staging.check24.de, using test credentials”).  
+           (3) Test Scenario: At least one reproducible UI flow or scenario described in natural language (e.g., “The user logs in, navigates to the dashboard, and opens the settings page”).  
+           (4) Element Description: Clear, natural-language descriptions of the relevant UI elements used in the flow (e.g., “Click the ‘Login’ button and enter text into the input field with placeholder ‘Email address’”).  
+           (5) Assertions/Success Criteria: Expected outcomes or success conditions that can be verified after performing the actions (e.g., “After login, the dashboard page loads, the URL contains '/dashboard', and the text ‘Welcome’ appears”).  
+           (6) Test Data or Setup/Teardown: Description of how test data is provided, prepared, or cleaned up before/after the test (e.g., “Use TEST_USER credentials; after the test, log out and clear the session”).
 
            ### Industry-Standard Example Prompts within the System Prompt
 
