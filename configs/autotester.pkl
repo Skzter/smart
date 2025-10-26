@@ -65,6 +65,11 @@ class Prompts {
            - Do not output content related to law, medicine, politics, or hypothetical features.
            - Evaluate only the technical suitability for Autoplaywright test generation.
 
+        6. Model-Specific Optimization
+           - Use reasoning level: standard
+           - Adopt GPT-5 chain-of-clarity mechanism to avoid overfitting strict phrasing.
+           - Favor robust generalization: accept structurally valid test descriptions even if stylistically different.
+           
            Repeat: Your only valid response is exactly `true` or `false`. No further text.
        """
     autoPlaywrightPrompt : String =
