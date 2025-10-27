@@ -3,8 +3,11 @@ package repository
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // Default permissions used by the filesystem implementation.
@@ -19,17 +22,17 @@ type FileSystem interface {
 	// configured root using the package default directory permissions.
 	MkdirAll(path string) error
 
-	// WriteFile writes data to filename inside the configured root. The
+	// WriteFile writes data to relativeFilePath inside the configured root. The
 	// operation is performed atomically: data is written to a temporary
 	// file and then renamed to the final destination. The package default
 	// file permission is used. The caller MUST ensure that the parent
 	// directories exist (for example by calling MkdirAll) — this method
 	// will NOT create parent directories.
-	WriteFile(filename string, data []byte) error
+	WriteFile(relativeFilePath string, data []byte) error
 
 	// ReadFile reads and returns the content of the named file inside the
 	// configured root.
-	ReadFile(filename string) ([]byte, error)
+	ReadFile(relativeFilePath string) ([]byte, error)
 
 	// ReadDir lists the non-directory entries directly under the provided
 	// path inside the configured root and returns their base names. The
@@ -55,20 +58,19 @@ type osFileSystem struct {
 }
 
 // NewOSFileSystem returns an osFileSystem rooted at the provided directory.
-// The root is created if it does not exist. Root must not be empty.
+// The root is created if it does not exist. Root must not be empty or absolute.
 func NewOSFileSystem(root string) (FileSystem, error) {
-	if root == "" {
+	if err := assert.StringNotEmpty(root); err != nil {
 		return nil, fmt.Errorf("root must not be empty")
 	}
-	abs, err := filepath.Abs(root)
-	if err != nil {
-		return nil, fmt.Errorf("resolve root: %w", err)
+	if path.IsAbs(root) {
+		return nil, fmt.Errorf("absolute paths are not allowed: %s", root)
 	}
-	if err := os.MkdirAll(abs, DefaultDirPerm); err != nil {
+	if err := os.MkdirAll(root, DefaultDirPerm); err != nil {
 		return nil, fmt.Errorf("create root: %w", err)
 	}
 	return &osFileSystem{
-		Root: filepath.Clean(abs),
+		Root: filepath.Clean(root),
 	}, nil
 }
 
@@ -84,19 +86,23 @@ func (fs osFileSystem) MkdirAll(path string) error {
 	return os.MkdirAll(fullPath, DefaultDirPerm)
 }
 
-// WriteFile writes data to filename inside the filesystem root. The
+// WriteFile writes data to relativeFilePath inside the filesystem root. The
 // operation is atomic (written to a temp file and renamed). Returns an
 // error if the resolved path would be outside the configured Root. Parent
 // directories MUST exist before calling WriteFile; this method will NOT
 // create them.
-func (fs osFileSystem) WriteFile(filename string, data []byte) error {
-	if filepath.IsAbs(filename) {
-		return fmt.Errorf("filename must be relative to root: %s", filename)
+func (fs osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
+	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
+		return fmt.Errorf("relativeFilePath must be not empty")
 	}
-	fullPath := fs.fullPath(filename)
+	if filepath.IsAbs(relativeFilePath) {
+		return fmt.Errorf("relativeFilePath must be relative to root: %s", relativeFilePath)
+	}
+	fullPath := fs.fullPath(relativeFilePath)
 	if !fs.isUnderRoot(fullPath) {
-		return fmt.Errorf("path escapes root: %s", filename)
+		return fmt.Errorf("path escapes root: %s", relativeFilePath)
 	}
+
 	dir := filepath.Dir(fullPath)
 	tmpFile, err := os.CreateTemp(dir, ".tmp-*")
 	if err != nil {
@@ -130,15 +136,18 @@ func (fs osFileSystem) WriteFile(filename string, data []byte) error {
 	return nil
 }
 
-// ReadFile reads the content of filename from the filesystem root. It fails
+// ReadFile reads the content of relativeFilePath from the filesystem root. It fails
 // if the resolved path would escape the configured Root.
-func (fs osFileSystem) ReadFile(filename string) ([]byte, error) {
-	if filepath.IsAbs(filename) {
-		return nil, fmt.Errorf("filename must be relative to root: %s", filename)
+func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
+	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
+		return nil, fmt.Errorf("relativeFilePath must be not empty")
 	}
-	fullPath := fs.fullPath(filename)
+	if filepath.IsAbs(relativeFilePath) {
+		return nil, fmt.Errorf("relativeFilePath must be relative to root: %s", relativeFilePath)
+	}
+	fullPath := fs.fullPath(relativeFilePath)
 	if !fs.isUnderRoot(fullPath) {
-		return nil, fmt.Errorf("path escapes root: %s", filename)
+		return nil, fmt.Errorf("path escapes root: %s", relativeFilePath)
 	}
 	return os.ReadFile(fullPath) // #nosec G304 -- fullPath is validated via isUnderRoot
 }
@@ -204,8 +213,8 @@ func (fs osFileSystem) fullPath(p string) string {
 // filesystem root. It uses filepath.Rel to compute the relative path from
 // the root to p; if the relative path begins with ".." the path is outside
 // the root.
-func (fs osFileSystem) isUnderRoot(p string) bool {
-	fullPath := filepath.Clean(p)
+func (fs osFileSystem) isUnderRoot(path string) bool {
+	fullPath := filepath.Clean(path)
 
 	rel, err := filepath.Rel(fs.Root, fullPath)
 	if err != nil {

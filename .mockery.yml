@@ -45,6 +45,7 @@ packages:
     interfaces:
       SessionSummaryStorageRepository:
       TestCaseStorageRepository:
+      FileSystem:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service:
     config:
       dir: './internal/autotester/domain/service/mocks'
