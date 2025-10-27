@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +12,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -86,15 +86,16 @@ func TestValidatePrompt(t *testing.T) {
 		mockSetup    func(s *mocks.MockOpenAI, ctx context.Context)
 		wantErr      bool
 		errSubstring string
+		expectedErr  error
 	}{
 		{
 			name: "service error",
 			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
 				s.On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), fmt.Errorf("network down"))
+					Return((*entity.Response)(nil), repository.ErrOpenAI)
 			},
-			wantErr:      true,
-			errSubstring: "failed to send prompt validation request to OpenAI",
+			wantErr:     true,
+			expectedErr: repository.ErrOpenAI,
 		},
 		{
 			name: "valid prompt (true)",
@@ -102,7 +103,8 @@ func TestValidatePrompt(t *testing.T) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "true"}, nil)
 			},
-			wantErr: false,
+			wantErr:     false,
+			expectedErr: nil,
 		},
 		{
 			name: "invalid prompt (false)",
@@ -110,8 +112,8 @@ func TestValidatePrompt(t *testing.T) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "false"}, nil)
 			},
-			wantErr:      true,
-			errSubstring: "prompt does not contain required information",
+			wantErr:     true,
+			expectedErr: ErrNotEnoughInformation,
 		},
 		{
 			name: "unexpected response",
@@ -119,8 +121,8 @@ func TestValidatePrompt(t *testing.T) {
 				s.On("Request", ctx, mock.Anything).
 					Return(&entity.Response{Text: "oops"}, nil)
 			},
-			wantErr:      true,
-			errSubstring: `unexpected validation response: "oops"`,
+			wantErr:     true,
+			expectedErr: ErrUnexpectedResponse,
 		},
 	}
 
@@ -143,8 +145,8 @@ func TestValidatePrompt(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected an error, got nil")
 				}
-				if !strings.Contains(err.Error(), tt.errSubstring) {
-					t.Fatalf("error %q does not contain expected substring %q", err.Error(), tt.errSubstring)
+				if !errors.Is(err, tt.expectedErr) {
+					t.Fatalf("unexpected error: got %v, wanted %v", err.Error(), tt.expectedErr)
 				}
 			} else if err != nil {
 				t.Fatalf("expected no error, got %v", err)
