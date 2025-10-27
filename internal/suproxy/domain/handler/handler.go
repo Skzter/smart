@@ -86,11 +86,11 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		// Pass a context.Context to HandleRequest. Use a copy of the Gin
 		// context to safely access the underlying *http.Request when
 		// running in a background goroutine. Allow synchronous handling
-		// when configured (useful for tests).
+		// when configured.
 		if s.handleAsync {
-			go s.HandleRequest(c.Copy().Request.Context(), request, body)
+			go s.HandleRequest(c.Copy(), request, body)
 		} else {
-			s.HandleRequest(c.Copy().Request.Context(), request, body)
+			s.HandleRequest(c, request, body)
 		}
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
