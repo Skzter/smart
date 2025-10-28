@@ -1,7 +1,12 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
     import { getTemplate } from "../lib/Api.ts";
+    import Popup from "./Popup.svelte";
     let { input = $bindable(""), onclick } = $props();
+    
+    let showPopup = $state(false);
+    let popupMessage = $state("");
+    let popupTitle = $state("Error");
 
     function handleKeyPress(e: KeyboardEvent) {
         if (e.key === "Enter" && input.trim() && !e.shiftKey) {
@@ -10,12 +15,17 @@
             e.preventDefault();
         }
     }
+    
     async function loadTemplate(){
         let response = await getTemplate("/template")
         if (response.status != 200){
-            alert("NO TEMPLATE FOUND!");
+            console.error("NO TEMPLATE FOUND!");
+            popupMessage = "NO TEMPLATE FOUND!";
+            popupTitle = "Template Error";
+            showPopup = true;
+        } else {
+            input = response.data.template;
         }
-        input = response.data.template;
     }
 </script>
 
@@ -40,3 +50,5 @@
         onclick={loadTemplate}
     >Template</Button>
 </div>
+
+<Popup bind:isOpen={showPopup} message={popupMessage} title={popupTitle} />
