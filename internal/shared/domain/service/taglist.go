@@ -10,33 +10,33 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TaglistService defines the interface for managing taglists.
-type TaglistService interface {
+// TaglistStorage defines the interface for managing taglists.
+type TaglistStorage interface {
 	// StoreTaglist updates stored taglist
 	StoreTaglist(context.Context, []string) error
 	// GetTaglist retrieves Taglist from storage
 	GetTaglist(ctx context.Context) ([]string, error)
 }
 
-// taglistService provides access to the database through the configured repository.
-type taglistService struct {
+// taglistStorage provides access to the database through the configured repository.
+type taglistStorage struct {
 	logger *slog.Logger
-	repo   repository.TaglistRepository
+	repo   repository.TaglistStorage
 }
 
-// NewTaglistService creates a new instance of TaglistService.
-func NewTaglistService(logger *slog.Logger, repo repository.TaglistRepository) (TaglistService, error) {
+// NewTaglistStorage creates a new instance of TaglistService.
+func NewTaglistStorage(logger *slog.Logger, repo repository.TaglistStorage) (TaglistStorage, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, fmt.Errorf("repo cannot be nil, %w", err)
 	}
-	return &taglistService{
+	return &taglistStorage{
 		logger: logger,
 		repo:   repo,
 	}, nil
 }
 
 // StoreTaglist updates stored taglist
-func (d *taglistService) StoreTaglist(ctx context.Context, tags []string) error {
+func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -63,7 +63,7 @@ func (d *taglistService) StoreTaglist(ctx context.Context, tags []string) error 
 }
 
 // GetTaglist retrieves Taglist from storage
-func (d *taglistService) GetTaglist(ctx context.Context) ([]string, error) {
+func (d *taglistStorage) GetTaglist(ctx context.Context) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}

@@ -14,8 +14,8 @@ import (
 // EntryPrefix is the prefix used for database entries in the S3 storage.
 const EntryPrefix = "taglist/"
 
-// TaglistRepository defines the interface for database operations on the taglist.
-type TaglistRepository interface {
+// TaglistStorage defines the interface for database operations on the taglist.
+type TaglistStorage interface {
 	// creates taglist in database
 	CreateTaglist(ctx context.Context, TagList entity.TagListEntity) error
 	// retrieves taglist from database
@@ -26,24 +26,24 @@ type TaglistRepository interface {
 	TaglistExists(ctx context.Context) (bool, error)
 }
 
-type taglistRepository struct {
+type taglistStorage struct {
 	s3Wrapper      service.S3StorageWrapper
 	parquetWrapper service.ParquetFileWrapper[entity.TagListEntity]
 	logger         *slog.Logger
 	key            string
 }
 
-// NewTaglistRepository creates a new instance of TaglistRepository
-func NewTaglistRepository(
+// NewTaglistStorage creates a new instance of TaglistRepository
+func NewTaglistStorage(
 	logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	parquetWrapper service.ParquetFileWrapper[entity.TagListEntity],
-) (TaglistRepository, error) {
+) (TaglistStorage, error) {
 	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
 		return nil, err
 	}
 
-	return &taglistRepository{
+	return &taglistStorage{
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
@@ -52,7 +52,7 @@ func NewTaglistRepository(
 }
 
 // CreateTaglist writes the given entry to the database by converting it to Parquet format and uploading it to S3.
-func (tR *taglistRepository) CreateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
+func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -81,7 +81,7 @@ func (tR *taglistRepository) CreateTaglist(ctx context.Context, taglist entity.T
 }
 
 // ReadRequest retrieves the taglist from the database, downloading the Parquet file and reading its content.
-func (tR *taglistRepository) ReadTaglist(ctx context.Context) (*entity.TagListEntity, error) {
+func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagListEntity, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -112,7 +112,7 @@ func (tR *taglistRepository) ReadTaglist(ctx context.Context) (*entity.TagListEn
 }
 
 // UpdateRequest updates the existing taglist, overwriting it's contents while keeping metadata.
-func (tR *taglistRepository) UpdateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
+func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -151,7 +151,7 @@ func (tR *taglistRepository) UpdateTaglist(ctx context.Context, taglist entity.T
 }
 
 // TaglistExists checks whether an taglist is already stored
-func (tR *taglistRepository) TaglistExists(ctx context.Context) (bool, error) {
+func (tR *taglistStorage) TaglistExists(ctx context.Context) (bool, error) {
 	return tR.s3Wrapper.FileExists(ctx, EntryPrefix+tR.key)
 }
 
