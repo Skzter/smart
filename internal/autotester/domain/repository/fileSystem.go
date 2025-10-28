@@ -219,10 +219,11 @@ func (fs osFileSystem) fullPath(p string) string {
 	return filepath.Clean(filepath.Join(fs.Root, p))
 }
 
-// isUnderRoot reports whether the cleaned path is located inside the
-// filesystem root. It uses filepath.Rel to compute the relative path from
-// the root to p; if the relative path begins with ".." the path is outside
-// the root.
+// isUnderRoot reports whether the given path is located inside the
+// filesystem root. It resolves both the root and the path to absolute paths,
+// follows symlinks using filepath.EvalSymlinks, and then checks if the resolved
+// path has the resolved root as a prefix. Returns true if the path is under
+// the root or equal to the root, false otherwise.
 func (fs osFileSystem) isUnderRoot(path string) bool {
 	rootAbs, err := filepath.Abs(fs.Root)
 	if err != nil {
