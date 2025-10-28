@@ -6,7 +6,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -17,14 +17,14 @@ type GeneratePrompt interface {
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
 type generatePrompt struct {
-	service service.OpenAI
+	service sharedService.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewGeneratePromptService(service service.OpenAI, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
+func NewGeneratePromptService(service sharedService.OpenAI, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
