@@ -85,9 +85,6 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagListEntit
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
-	if err := assert.StringNotEmpty(tR.key); err != nil {
-		return nil, fmt.Errorf("key must not be empty: %w", err)
-	}
 
 	parquetData, metadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+tR.key)
 	if err != nil {
@@ -97,12 +94,17 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagListEntit
 		slog.Int("size", len(parquetData)),
 		slog.Any("metadata", metadata),
 	)
-	dbEntries, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
+	taglist, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read parquet data: %w", err)
 	}
-	tR.logger.Debug("events read from parquet", slog.Int("count", len(dbEntries)))
-	firstEntry := dbEntries[0]
+	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglist)))
+
+	if len(taglist) == 0 {
+		return nil, fmt.Errorf("no taglist found with key: %s", EntryPrefix+tR.key)
+	}
+
+	firstEntry := taglist[0]
 
 	if err := validateTaglist(firstEntry); err != nil {
 		return nil, fmt.Errorf("read invalid taglist: %w", err)
