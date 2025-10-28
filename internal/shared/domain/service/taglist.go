@@ -10,7 +10,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TaglistService defines an interface for reading and writing Taglist to/from database.
+// TaglistService defines the interface for managing taglists.
 type TaglistService interface {
 	// StoreTaglist updates stored taglist
 	StoreTaglist(context.Context, []string) error
@@ -35,19 +35,19 @@ func NewTaglistService(logger *slog.Logger, repo repository.TaglistRepository) (
 	}, nil
 }
 
-// StoreTaglist updates stored taglist via repository.
+// StoreTaglist updates stored taglist
 func (d *taglistService) StoreTaglist(ctx context.Context, tags []string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
-
+	// Check if taglist exists
 	exists, err := d.repo.TaglistExists(ctx)
 	if err != nil {
 		return fmt.Errorf("S3 Error: %w", err)
 	}
 
 	taglist := entity.TagListEntity{Tags: tags}
-
+	// Create or update taglist
 	if !exists {
 		if err := d.repo.CreateTaglist(ctx, taglist); err != nil {
 			return fmt.Errorf("failed to save taglist: %w", err)
@@ -62,6 +62,7 @@ func (d *taglistService) StoreTaglist(ctx context.Context, tags []string) error 
 	return nil
 }
 
+// GetTaglist retrieves Taglist from storage
 func (d *taglistService) GetTaglist(ctx context.Context) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
