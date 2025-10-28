@@ -183,7 +183,7 @@ class Prompts {
 }
 prompts : Prompts
 
-timeout: Int = 20
+timeout: Int = 60
 
 region: String = "eu-central-1"
 
