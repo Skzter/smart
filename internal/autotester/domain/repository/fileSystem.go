@@ -146,10 +146,20 @@ func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 		return nil, fmt.Errorf("relativeFilePath must be relative to root: %s", relativeFilePath)
 	}
 	fullPath := fs.fullPath(relativeFilePath)
-	if !fs.isUnderRoot(fullPath) {
+
+	// voll aufgelösten Pfad verwenden (Abs + EvalSymlinks) bevor geprüft und gelesen wird
+	resolvedPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve path: %w", err)
+	}
+	if rp, err := filepath.EvalSymlinks(resolvedPath); err == nil {
+		resolvedPath = rp
+	}
+
+	if !fs.isUnderRoot(resolvedPath) {
 		return nil, fmt.Errorf("path escapes root: %s", relativeFilePath)
 	}
-	return os.ReadFile(fullPath) // #nosec G304 -- fullPath is validated via isUnderRoot
+	return os.ReadFile(resolvedPath)
 }
 
 // ReadDir lists all entries directly under path (relative to the
@@ -209,24 +219,26 @@ func (fs osFileSystem) fullPath(p string) string {
 	return filepath.Clean(filepath.Join(fs.Root, p))
 }
 
-// isUnderRoot reports whether the cleaned path p is located inside the
+// isUnderRoot reports whether the cleaned path is located inside the
 // filesystem root. It uses filepath.Rel to compute the relative path from
 // the root to p; if the relative path begins with ".." the path is outside
 // the root.
 func (fs osFileSystem) isUnderRoot(path string) bool {
-	fullPath := filepath.Clean(path)
-
-	rel, err := filepath.Rel(fs.Root, fullPath)
+	rootAbs, err := filepath.Abs(fs.Root)
 	if err != nil {
 		return false
 	}
-
-	if rel == "." {
-		return true
+	if r, err := filepath.EvalSymlinks(rootAbs); err == nil {
+		rootAbs = r
 	}
 
-	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+	pathAbs, err := filepath.Abs(path)
+	if err != nil {
 		return false
 	}
-	return true
+	if p, err := filepath.EvalSymlinks(pathAbs); err == nil {
+		pathAbs = p
+	}
+
+	return strings.HasPrefix(pathAbs, rootAbs+string(os.PathSeparator)) || pathAbs == rootAbs
 }

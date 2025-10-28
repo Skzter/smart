@@ -177,19 +177,19 @@ func TestWriteFile(t *testing.T) {
 		},
 		{
 			name:             "relativeFilePath is an absolute path",
-			relativeFilePath: "/abs/path",
+			relativeFilePath: "/abs/path/file.txt",
 			data:             nil,
 			expectError:      true,
 		},
 		{
 			name:             "relativeFilePath is valid",
-			relativeFilePath: "validFilename",
+			relativeFilePath: "validFilename.txt",
 			data:             []byte("Test data"),
 			expectError:      false,
 		},
 		{
 			name:             "relativeFilePath escapes root",
-			relativeFilePath: "../validFilename",
+			relativeFilePath: "../validFilename.txt",
 			data:             []byte("Test data"),
 			expectError:      true,
 		},
@@ -232,7 +232,15 @@ func TestWriteFile(t *testing.T) {
 			}
 
 			fullPath := filepath.Join(tmp, rootDir, test.relativeFilePath)
-			content, readErr := os.ReadFile(fullPath) // #nosec G304
+			checkedFullPath, err := filepath.Abs(fullPath)
+			if err != nil {
+				t.Fatalf("setup failed")
+			}
+			if r, err := filepath.EvalSymlinks(checkedFullPath); err == nil {
+				checkedFullPath = r
+			}
+
+			content, readErr := os.ReadFile(checkedFullPath)
 			if readErr != nil {
 				t.Fatalf("expected file %q to exist: %v", fullPath, readErr)
 			}
@@ -582,9 +590,19 @@ func TestIsUnderRoot(t *testing.T) {
 	tmp := t.TempDir()
 	fs := &osFileSystem{Root: tmp}
 
-	subDir := filepath.Join(tmp, "subdir")
-	outside := filepath.Join(filepath.Dir(tmp), "outside")
-	parentInside := filepath.Join(tmp, "a", "..", "b")
+	subdir := filepath.Join(tmp, "subdir")
+	if err := os.Mkdir(subdir, DefaultDirPerm); err != nil {
+		t.Fatalf("setup: create subdir: %v", err)
+	}
+
+	aDir := filepath.Join(tmp, "a")
+	if err := os.Mkdir(aDir, DefaultDirPerm); err != nil {
+		t.Fatalf("setup: create a dir: %v", err)
+	}
+	bDir := filepath.Join(tmp, "b")
+	if err := os.Mkdir(bDir, DefaultDirPerm); err != nil {
+		t.Fatalf("setup: create b dir: %v", err)
+	}
 
 	tests := []struct {
 		name           string
@@ -598,17 +616,17 @@ func TestIsUnderRoot(t *testing.T) {
 		},
 		{
 			name:           "path is inside root",
-			path:           subDir,
+			path:           subdir,
 			expectedResult: true,
 		},
 		{
 			name:           "path escapes root",
-			path:           outside,
+			path:           filepath.Join(filepath.Dir(tmp), "outside"),
 			expectedResult: false,
 		},
 		{
 			name:           "path contains .. but stays inside root",
-			path:           parentInside,
+			path:           filepath.Join(tmp, "a", "..", "b"),
 			expectedResult: true,
 		},
 		{
@@ -623,7 +641,7 @@ func TestIsUnderRoot(t *testing.T) {
 			result := fs.isUnderRoot(test.path)
 
 			if result != test.expectedResult {
-				t.Fatalf("expected %t but got %t", test.expectedResult, result)
+				t.Fatalf("expected %t but got %t \npath was: %s", test.expectedResult, result, test.path)
 			}
 		})
 	}
