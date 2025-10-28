@@ -12,6 +12,35 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+// ErrorType for referencing Public or Private Errors -> Public for frontend, Private is backend only
+type ErrorType int
+
+// Enum for Error Types
+const (
+	Public ErrorType = iota
+	Private
+)
+
+// Error is custom error type for giving each error a type and message
+type Error struct {
+	Type        ErrorType
+	ErrorString string
+}
+
+func (e *Error) Error() string {
+	return e.ErrorString
+}
+
+// errors for different repo failures
+var (
+	ErrNilUserPrompt      = &Error{Type: Private, ErrorString: "request without user prompt"}
+	ErrNilSystemPrompt    = &Error{Type: Private, ErrorString: "request without system prompt"}
+	ErrNilModel           = &Error{Type: Private, ErrorString: "request without model"}
+	ErrEmptyResponseArray = &Error{Type: Private, ErrorString: "REPO openai error: response contains no messages to choose from"}
+	ErrEmptyResponse      = &Error{Type: Private, ErrorString: "REPO openai error: chosen response message is empty"}
+	ErrOpenAI             = &Error{Type: Private, ErrorString: "REPO openai error: request to the server failed"}
+)
+
 // OpenAI defines methods for interacting with OpenAI API.
 type OpenAI interface {
 	// CreateRequest sends a request to OpenAI API and returns the response.
@@ -55,11 +84,12 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("REPO: ctx => %w", err)
 	}
 
+	// func validates request entity and returns custom error
 	if err := validateRequestEntity(request); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("REPO entity validation: %w", err)
 	}
 
 	// add Request from user to messages of repo
@@ -98,8 +128,6 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		})
 
 	if err != nil {
-		err := fmt.Errorf("openai request: %w", err)
-		qa.logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -109,13 +137,13 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	// check if there are responses from api
 	if len(resp.Choices) == 0 {
-		return nil, fmt.Errorf("openai api error: Response contains no message")
+		return nil, ErrEmptyResponseArray
 	}
 
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, fmt.Errorf("openai api error: Response contains empty message")
+		return nil, ErrEmptyResponse
 	}
 
 	// append response to message array of repo
@@ -133,11 +161,11 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 func validateRequestEntity(request entity.Request) error {
 	switch {
 	case request.Prompt == "":
-		return fmt.Errorf("request without user prompt")
+		return ErrNilUserPrompt
 	case request.SystemPrompt == "":
-		return fmt.Errorf("request without system prompt")
+		return ErrNilSystemPrompt
 	case request.Model == "":
-		return fmt.Errorf("request without model")
+		return ErrNilModel
 	default:
 		return nil
 	}
