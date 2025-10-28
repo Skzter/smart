@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -36,6 +37,10 @@ type TestcaseLocalStorageRepository interface {
 	// user and session. Implementations should return nil when the file did
 	// not exist (idempotent delete) or an error for IO failures.
 	Delete(testId, lang, userId, sessionId string) error
+
+	// DeleteOlderThan removes all TestCases that are older than the specified duration.
+	// Returns the number of deleted files and any error that occurred.
+	DeleteOlderThan(maxAge time.Duration) (int, error)
 }
 
 type testcaseLocalStorageRepository struct {
@@ -174,6 +179,55 @@ func (r *testcaseLocalStorageRepository) Delete(testId, lang, userId, sessionId 
 		return fmt.Errorf("remove file %s: %w", path, err)
 	}
 	return nil
+}
+
+func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (int, error) {
+	cutoffTime := time.Now().Add(-maxAge)
+	deletedCount := 0
+
+	userIds, err := r.filesystem.ReadDir(".")
+	if err != nil {
+		return 0, fmt.Errorf("read user directories: %w", err)
+	}
+
+	for _, userId := range userIds {
+		sessions, err := r.filesystem.ReadDir(userId)
+		if err != nil {
+			continue
+		}
+
+		for _, sessionId := range sessions {
+			sessionPath := filepath.Join(userId, sessionId)
+
+			files, err := r.filesystem.ReadDir(filepath.Join(userId, sessionId))
+			if err != nil {
+				continue
+			}
+
+			for _, filename := range files {
+				filePath := filepath.Join(sessionPath, filename)
+
+				fileInfo, err := r.filesystem.GetFileStats(filePath)
+				if err != nil {
+					continue
+				}
+
+				if fileInfo.ModTime().Before(cutoffTime) {
+					testId, lang, err := validateFilename(filename)
+					if err != nil {
+						continue
+					}
+
+					if err := r.Delete(testId, lang, userId, sessionId); err != nil {
+						continue
+					}
+
+					deletedCount++
+				}
+			}
+		}
+	}
+	return deletedCount, nil
 }
 
 // readTestcaseFromPath reads the file at the given path and constructs a TestCase

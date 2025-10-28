@@ -586,6 +586,95 @@ func removeTests() []struct {
 	}
 }
 
+func TestGetFileStats(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		setupFile   bool
+		expectError bool
+	}{
+		{
+			name:        "absolute path",
+			path:        "/abs/path",
+			expectError: true,
+		},
+		{
+			name:        "file stats",
+			path:        "file.txt",
+			setupFile:   true,
+			expectError: false,
+		},
+		{
+			name:        "nested file",
+			path:        "sub/file.txt",
+			setupFile:   true,
+			expectError: false,
+		},
+		{
+			name:        "path escapes root",
+			path:        "../outside",
+			expectError: true,
+		},
+		{
+			name:        "non-existent file",
+			path:        "missing.txt",
+			expectError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			oldWd, err := os.Getwd()
+			if err != nil {
+				t.Fatal("setup failed")
+			}
+
+			defer func() {
+				if err := os.Chdir(oldWd); err != nil {
+					t.Fatalf("restore working dir: %v", err)
+				}
+			}()
+
+			if err := os.Chdir(tmp); err != nil {
+				t.Fatalf("chdir: %v", err)
+			}
+
+			fs, err := NewOSFileSystem(rootDir)
+			if err != nil {
+				t.Fatalf("NewOSFileSystem: %v", err)
+			}
+
+			if test.setupFile {
+				fullPath := filepath.Join(tmp, rootDir, test.path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
+					t.Fatalf("mkdir: %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte("content"), 0o600); err != nil {
+					t.Fatalf("write: %v", err)
+				}
+			}
+
+			info, err := fs.GetFileStats(test.path)
+
+			if test.expectError {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if info.Size() == 0 {
+				t.Fatal("expected file size > 0")
+			}
+		})
+	}
+}
+
 func TestIsUnderRoot(t *testing.T) {
 	tmp := t.TempDir()
 	fs := &osFileSystem{Root: tmp}

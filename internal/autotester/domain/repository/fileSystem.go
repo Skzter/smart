@@ -48,6 +48,10 @@ type FileSystem interface {
 	// returns nil. Implementations must reject operations that would escape
 	// the configured root.
 	Remove(path string, recursive bool) error
+
+	// Stat returns file information for the given path relative to the filesystem root.
+	// Returns an error if the path would escape the configured Root or if the file does not exist.
+	GetFileStats(path string) (os.FileInfo, error)
 }
 
 // osFileSystem is a implementation of the FileSystem interface that confines all operations
@@ -86,11 +90,6 @@ func (fs osFileSystem) MkdirAll(path string) error {
 	return os.MkdirAll(fullPath, DefaultDirPerm)
 }
 
-// WriteFile writes data to relativeFilePath inside the filesystem root. The
-// operation is atomic (written to a temp file and renamed). Returns an
-// error if the resolved path would be outside the configured Root. Parent
-// directories MUST exist before calling WriteFile; this method will NOT
-// create them.
 func (fs osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return fmt.Errorf("relativeFilePath must be not empty")
@@ -136,8 +135,6 @@ func (fs osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
 	return nil
 }
 
-// ReadFile reads the content of relativeFilePath from the filesystem root. It fails
-// if the resolved path would escape the configured Root.
 func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return nil, fmt.Errorf("relativeFilePath must be not empty")
@@ -147,7 +144,6 @@ func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	}
 	fullPath := fs.fullPath(relativeFilePath)
 
-	// voll aufgelösten Pfad verwenden (Abs + EvalSymlinks) bevor geprüft und gelesen wird
 	resolvedPath, err := filepath.Abs(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("resolve path: %w", err)
@@ -162,9 +158,6 @@ func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	return os.ReadFile(resolvedPath)
 }
 
-// ReadDir lists all entries directly under path (relative to the
-// filesystem root) and returns their base names. The operation is rejected
-// if the resolved path would escape the configured Root.
 func (fs osFileSystem) ReadDir(path string) ([]string, error) {
 	if filepath.IsAbs(path) {
 		return nil, fmt.Errorf("path must be relative to root: %s", path)
@@ -184,12 +177,6 @@ func (fs osFileSystem) ReadDir(path string) ([]string, error) {
 	return names, nil
 }
 
-// Remove removes the named path from the filesystem root. When recursive is
-// true the path and all children are removed; when false only the named
-// path is removed and the call will fail for non-empty directories.
-//
-// The operation is rejected if the path would escape the configured Root.
-// If the path does not exist the method returns nil.
 func (fs osFileSystem) Remove(path string, recursive bool) error {
 	if filepath.IsAbs(path) {
 		return fmt.Errorf("path must be relative to root: %s", path)
@@ -213,6 +200,19 @@ func (fs osFileSystem) Remove(path string, recursive bool) error {
 		return err
 	}
 	return nil
+}
+
+func (fs osFileSystem) GetFileStats(path string) (os.FileInfo, error) {
+	if filepath.IsAbs(path) {
+		return nil, fmt.Errorf("absolute paths are not allowed: %s", path)
+	}
+
+	full := fs.fullPath(path)
+	if !fs.isUnderRoot(full) {
+		return nil, fmt.Errorf("path escapes root: %s", path)
+	}
+
+	return os.Lstat(full)
 }
 
 func (fs osFileSystem) fullPath(p string) string {
