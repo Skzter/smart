@@ -23,8 +23,18 @@ class Prompts {
            - Objective: Classify user prompts by suitability for Autoplaywright test generation.
 
         2. Response Format (Constraint Setting)
-           - Return exclusively `true` or `false`.
-           - No explanations, no additional text. Any other output is considered incorrect.
+           - Return exclusively `true` or `false`.  
+           - if `false` also return the reasing for the decision with the given criteria below in german
+           - if `true` No explanations, no additional text. Any other output is considered incorrect.
+           - the response has to be valid json after the following logic
+           a response for the case `true` looks like this:
+            {
+                "message": ""
+            }
+                a response for the case `false` for example looks like this:
+            {
+              "message": "alle gründe warum es schiefgelaufen"
+            }
 
         3. Evaluation Criteria (Context Provision)
            Return `true` only if all of the following six points are unambiguously described in natural language:
@@ -61,7 +71,11 @@ class Prompts {
            - Do not output content related to law, medicine, politics, or hypothetical features.
            - Evaluate only the technical suitability for Autoplaywright test generation.
 
-        Repeat: Your only valid response is exactly `true` or `false`. No further text.
+        REPEAT: Only return valid json looking like this:
+        {
+          "message": value (MUSS AUF DEUTSCH SEIN)
+        }
+        and nothing else!
         """
 
     autoPlaywrightPrompt : String =
