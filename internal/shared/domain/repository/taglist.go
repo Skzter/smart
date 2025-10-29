@@ -118,9 +118,6 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist entity.TagL
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
-	if err := assert.StringNotEmpty(tR.key); err != nil {
-		return fmt.Errorf("key must not be empty: %w", err)
-	}
 
 	if err := validateTaglist(taglist); err != nil {
 		return fmt.Errorf("failed to validate TagList: %w", err)
