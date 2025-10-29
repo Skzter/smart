@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"os"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -33,6 +35,68 @@ type MockFileSystem_Expecter struct {
 
 func (_m *MockFileSystem) EXPECT() *MockFileSystem_Expecter {
 	return &MockFileSystem_Expecter{mock: &_m.Mock}
+}
+
+// GetFileStats provides a mock function for the type MockFileSystem
+func (_mock *MockFileSystem) GetFileStats(path string) (os.FileInfo, error) {
+	ret := _mock.Called(path)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetFileStats")
+	}
+
+	var r0 os.FileInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (os.FileInfo, error)); ok {
+		return returnFunc(path)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) os.FileInfo); ok {
+		r0 = returnFunc(path)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(os.FileInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(path)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockFileSystem_GetFileStats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFileStats'
+type MockFileSystem_GetFileStats_Call struct {
+	*mock.Call
+}
+
+// GetFileStats is a helper method to define mock.On call
+//   - path string
+func (_e *MockFileSystem_Expecter) GetFileStats(path interface{}) *MockFileSystem_GetFileStats_Call {
+	return &MockFileSystem_GetFileStats_Call{Call: _e.mock.On("GetFileStats", path)}
+}
+
+func (_c *MockFileSystem_GetFileStats_Call) Run(run func(path string)) *MockFileSystem_GetFileStats_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockFileSystem_GetFileStats_Call) Return(v os.FileInfo, err error) *MockFileSystem_GetFileStats_Call {
+	_c.Call.Return(v, err)
+	return _c
+}
+
+func (_c *MockFileSystem_GetFileStats_Call) RunAndReturn(run func(path string) (os.FileInfo, error)) *MockFileSystem_GetFileStats_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // MkdirAll provides a mock function for the type MockFileSystem
@@ -149,8 +213,8 @@ func (_c *MockFileSystem_ReadDir_Call) RunAndReturn(run func(path string) ([]str
 }
 
 // ReadFile provides a mock function for the type MockFileSystem
-func (_mock *MockFileSystem) ReadFile(filename string) ([]byte, error) {
-	ret := _mock.Called(filename)
+func (_mock *MockFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
+	ret := _mock.Called(relativeFilePath)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ReadFile")
@@ -159,17 +223,17 @@ func (_mock *MockFileSystem) ReadFile(filename string) ([]byte, error) {
 	var r0 []byte
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string) ([]byte, error)); ok {
-		return returnFunc(filename)
+		return returnFunc(relativeFilePath)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string) []byte); ok {
-		r0 = returnFunc(filename)
+		r0 = returnFunc(relativeFilePath)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(filename)
+		r1 = returnFunc(relativeFilePath)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -182,12 +246,12 @@ type MockFileSystem_ReadFile_Call struct {
 }
 
 // ReadFile is a helper method to define mock.On call
-//   - filename string
-func (_e *MockFileSystem_Expecter) ReadFile(filename interface{}) *MockFileSystem_ReadFile_Call {
-	return &MockFileSystem_ReadFile_Call{Call: _e.mock.On("ReadFile", filename)}
+//   - relativeFilePath string
+func (_e *MockFileSystem_Expecter) ReadFile(relativeFilePath interface{}) *MockFileSystem_ReadFile_Call {
+	return &MockFileSystem_ReadFile_Call{Call: _e.mock.On("ReadFile", relativeFilePath)}
 }
 
-func (_c *MockFileSystem_ReadFile_Call) Run(run func(filename string)) *MockFileSystem_ReadFile_Call {
+func (_c *MockFileSystem_ReadFile_Call) Run(run func(relativeFilePath string)) *MockFileSystem_ReadFile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -205,7 +269,7 @@ func (_c *MockFileSystem_ReadFile_Call) Return(bytes []byte, err error) *MockFil
 	return _c
 }
 
-func (_c *MockFileSystem_ReadFile_Call) RunAndReturn(run func(filename string) ([]byte, error)) *MockFileSystem_ReadFile_Call {
+func (_c *MockFileSystem_ReadFile_Call) RunAndReturn(run func(relativeFilePath string) ([]byte, error)) *MockFileSystem_ReadFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -268,8 +332,8 @@ func (_c *MockFileSystem_Remove_Call) RunAndReturn(run func(path string, recursi
 }
 
 // WriteFile provides a mock function for the type MockFileSystem
-func (_mock *MockFileSystem) WriteFile(filename string, data []byte) error {
-	ret := _mock.Called(filename, data)
+func (_mock *MockFileSystem) WriteFile(relativeFilePath string, data []byte) error {
+	ret := _mock.Called(relativeFilePath, data)
 
 	if len(ret) == 0 {
 		panic("no return value specified for WriteFile")
@@ -277,7 +341,7 @@ func (_mock *MockFileSystem) WriteFile(filename string, data []byte) error {
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(string, []byte) error); ok {
-		r0 = returnFunc(filename, data)
+		r0 = returnFunc(relativeFilePath, data)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -290,13 +354,13 @@ type MockFileSystem_WriteFile_Call struct {
 }
 
 // WriteFile is a helper method to define mock.On call
-//   - filename string
+//   - relativeFilePath string
 //   - data []byte
-func (_e *MockFileSystem_Expecter) WriteFile(filename interface{}, data interface{}) *MockFileSystem_WriteFile_Call {
-	return &MockFileSystem_WriteFile_Call{Call: _e.mock.On("WriteFile", filename, data)}
+func (_e *MockFileSystem_Expecter) WriteFile(relativeFilePath interface{}, data interface{}) *MockFileSystem_WriteFile_Call {
+	return &MockFileSystem_WriteFile_Call{Call: _e.mock.On("WriteFile", relativeFilePath, data)}
 }
 
-func (_c *MockFileSystem_WriteFile_Call) Run(run func(filename string, data []byte)) *MockFileSystem_WriteFile_Call {
+func (_c *MockFileSystem_WriteFile_Call) Run(run func(relativeFilePath string, data []byte)) *MockFileSystem_WriteFile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -319,7 +383,7 @@ func (_c *MockFileSystem_WriteFile_Call) Return(err error) *MockFileSystem_Write
 	return _c
 }
 
-func (_c *MockFileSystem_WriteFile_Call) RunAndReturn(run func(filename string, data []byte) error) *MockFileSystem_WriteFile_Call {
+func (_c *MockFileSystem_WriteFile_Call) RunAndReturn(run func(relativeFilePath string, data []byte) error) *MockFileSystem_WriteFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
