@@ -130,6 +130,7 @@ func handleError(err error) (int, error) {
 	)
 
 	// maps the given error to the target error, when success you can operate on the custom error type
+	// see https://go.dev/wiki/Switch#missing-expression
 	switch {
 	case errors.As(err, &customError):
 		switch customError.Type {
