@@ -8,18 +8,13 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	openai "github.com/sashabaranov/go-openai"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
-)
-
-var (
-	errOpenAIFailure = errors.New("failure in the request to open ai")
 )
 
 // AutotesterController is the controller for autotesting requests.
@@ -65,14 +60,14 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		frontendError := handleError(err)
+		status, frontendError := handleError(err)
 		unwrappedError := errors.Unwrap(frontendError)
 		// checks if the error need the unwrapped
 		// Unwrap() returns nil if nothing needs to be unwrapped
 		if unwrappedError != nil {
 			frontendError = unwrappedError
 		}
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: frontendError.Error()})
+		c.JSON(status, entity.ErrorMessage{Error: frontendError.Error()})
 		a.logger.Error(fmt.Sprintf("HANDLER serviceHandler: %s", err.Error()))
 		return
 	}
@@ -97,9 +92,17 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // First validates the user prompt through validationService, then generates a response through generationService.
 // Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
+	}
+	if msg != "" {
+		return &entity.ResponseForUser{
+			Message:   sharedEntity.Message{MessageBody: msg},
+			UserId:    userRequest.UserId,
+			SessionId: userRequest.SessionId,
+			LogStamp:  userRequest.LogStamp,
+		}, nil
 	}
 	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
@@ -116,37 +119,31 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 // handleError handles the errors for the validate and generate functions
 // takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
 // if source found decides if it can return this error or a generic error because the error message may expose sensitive data
-func handleError(err error) error {
+func handleError(err error) (int, error) {
 	if err == nil {
-		return nil
+		return http.StatusOK, nil
 	}
 	// Generate() returns only the repository/service errors
 	var (
-		repoError         *repository.Error
 		assertNotNilError *assert.NotNilError
-		apiErr            *openai.APIError
-		reqErr            *openai.RequestError
+		customError       *errs.Error
 	)
 
 	// maps the given error to the target error, when success you can operate on the custom error type
 	switch {
-	case errors.As(err, &repoError):
-		switch repoError.Type {
-		case repository.Private:
-			return errOpenAIFailure
-		case repository.Public:
-			return repoError
+	case errors.As(err, &customError):
+		switch customError.Type {
+		case errs.Private:
+			return http.StatusInternalServerError, errs.ErrInternalServer
+		case errs.Public:
+			return http.StatusBadRequest, customError
 		}
-	case errors.As(err, &assertNotNilError),
-		errors.As(err, &apiErr),
-		errors.As(err, &reqErr):
+	case errors.As(err, &assertNotNilError):
 		// catching errors from the assert and OpenAI requests
-		return errOpenAIFailure
+		return http.StatusInternalServerError, errs.ErrInternalServer
 	case strings.Contains(err.Error(), "Post"):
 		// error when no internet connection but bit unclean
-		return errOpenAIFailure
+		return http.StatusInternalServerError, errs.ErrInternalServer
 	}
-
-	// Validate() returns unique errors but they dont contain sensitive information
-	return err
+	return http.StatusBadRequest, err
 }

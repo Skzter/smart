@@ -11,14 +11,12 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -81,29 +79,25 @@ func TestHandleChatRequest(t *testing.T) {
 	invalidPrompt := "this is a invalid prompt"
 	sessionid := "2"
 
+	jsonErr := errors.New("json error")
+	customJsonErr := &errs.Error{
+		Message:    "invalid json",
+		Underlying: jsonErr,
+		Type:       errs.Private,
+	}
 	mockSetup := []struct {
 		function         string
 		userPrompt       string
 		sessionID        string
 		expectedResponse string
 		ResponseError    error
-		expectedError    bool
 	}{
 		{
 			function:         "ValidatePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: "true",
+			expectedResponse: "",
 			ResponseError:    nil,
-			expectedError:    false,
-		},
-		{
-			function:         "ValidatePrompt",
-			userPrompt:       invalidPrompt,
-			sessionID:        sessionid,
-			expectedResponse: "false",
-			ResponseError:    errors.New("prompt does not contain required information for test generation"),
-			expectedError:    true,
 		},
 		{
 			function:         "GeneratePrompt",
@@ -111,7 +105,48 @@ func TestHandleChatRequest(t *testing.T) {
 			sessionID:        sessionid,
 			expectedResponse: "This is a generated Prompt",
 			ResponseError:    nil,
-			expectedError:    false,
+		},
+		{
+			// no need for generate mock
+			function:         "ValidatePrompt",
+			userPrompt:       invalidPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "versuch doch mal das",
+			ResponseError:    nil,
+		},
+		{
+			// errors in validation
+			function:         "ValidatePrompt",
+			userPrompt:       "json gibts nicht",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError:    customJsonErr,
+		},
+		{
+			// test has to pass in validation in order to fail in generation below
+			function:         "ValidatePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError:    nil,
+		},
+		{
+			function:         "GeneratePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError:    errs.ErrEmptyResponse,
+		},
+		{
+			// test for frontend facing error but currently none available
+			function:         "ValidatePrompt",
+			userPrompt:       "validation failure results in fe error",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError: &errs.Error{
+				Underlying: errors.New("frontend error"),
+				Type:       errs.Public,
+			},
 		},
 	}
 	tests := []struct {
@@ -147,7 +182,43 @@ func TestHandleChatRequest(t *testing.T) {
 				"userId":         "2",
 				"conversationId": "2"
 			}`,
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			TestName: "valid request, validate will return false json",
+			RequestBody: `{
+				"message": {
+					"data":  "json gibts nicht",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
 			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			TestName: "valid request, errors when generating",
+			RequestBody: `{
+				"message": {
+					"data":  "generating err",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			TestName: "invalid request, user error",
+			RequestBody: `{
+				"message": {
+					"data":  "validation failure results in fe error",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
+			ExpectedStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -157,7 +228,7 @@ func TestHandleChatRequest(t *testing.T) {
 	// setup mocks
 	for _, mc := range mockSetup {
 		if mc.function == "ValidatePrompt" {
-			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.ResponseError)
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
 		}
 		if mc.function == "GeneratePrompt" {
 			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
@@ -166,7 +237,7 @@ func TestHandleChatRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, "/api/v1/chat", bytes.NewBufferString(test.RequestBody))
+			req, err := http.NewRequest(http.MethodPost, "/v1/chat", bytes.NewBufferString(test.RequestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -182,6 +253,7 @@ func TestHandleChatRequest(t *testing.T) {
 			if err != nil {
 				t.Errorf("build failed")
 			}
+
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
@@ -232,7 +304,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, "/api/v1/userInfo", bytes.NewBufferString(test.UserRequestBody))
+			req, err := http.NewRequest(http.MethodPost, "/v1/userInfo", bytes.NewBufferString(test.UserRequestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -258,73 +330,74 @@ func TestHandleUserInfoRequest(t *testing.T) {
 }
 
 func TestHandleError(t *testing.T) {
-	apiErr := &openai.APIError{
-		Message:        "You exceeded your current quota",
-		Type:           "insufficient_quota",
-		HTTPStatusCode: 429,
+	errPublic := errors.New("public error")
+	publicCustomErr := &errs.Error{
+		Message:    fmt.Sprintf("wild error: %v", errPublic),
+		Underlying: errPublic,
+		Type:       errs.Public,
 	}
 
-	reqErr := &openai.RequestError{
-		Err:            fmt.Errorf("dial tcp: lookup api.openai.com: no such host"),
-		HTTPStatusCode: 0,
-	}
 	tests := []struct {
-		name        string
-		givenError  error
-		wantedError error
-		wantErr     bool
+		name         string
+		givenError   error
+		wantedError  error
+		wantedStatus int
+		wantErr      bool
 	}{
 		{
-			name:        "nil error",
-			givenError:  nil,
-			wantedError: nil,
-			wantErr:     false,
+			name:         "nil error",
+			givenError:   nil,
+			wantedError:  nil,
+			wantedStatus: http.StatusOK,
+			wantErr:      false,
 		},
 		{
-			name:        "repository error: empty response",
-			givenError:  repository.ErrEmptyResponse,
-			wantedError: errOpenAIFailure,
-			wantErr:     true,
+			name:         "custom: repo error: empty response",
+			givenError:   errs.ErrEmptyResponse,
+			wantedError:  errs.ErrInternalServer,
+			wantedStatus: http.StatusInternalServerError,
+			wantErr:      true,
 		},
 		{
-			name:        "service error: nil ctx",
-			givenError:  &assert.NotNilError{Message: "assert failed"},
-			wantedError: errOpenAIFailure,
-			wantErr:     true,
+			name:         "custom: service error: nil ctx",
+			givenError:   &assert.NotNilError{Message: "assert failed"},
+			wantedError:  errs.ErrInternalServer,
+			wantedStatus: http.StatusInternalServerError,
+			wantErr:      true,
 		},
 		{
-			name:        "openai api error",
-			givenError:  apiErr,
-			wantedError: errOpenAIFailure,
-			wantErr:     true,
+			name:         "connection error",
+			givenError:   errors.New("Post failure to connect to api.openai.com"),
+			wantedError:  errs.ErrInternalServer,
+			wantedStatus: http.StatusInternalServerError,
+			wantErr:      true,
 		},
 		{
-			name:        "openai request error",
-			givenError:  reqErr,
-			wantedError: errOpenAIFailure,
-			wantErr:     true,
+			name:         "custom: public error",
+			givenError:   publicCustomErr,
+			wantedError:  publicCustomErr,
+			wantedStatus: http.StatusBadRequest,
+			wantErr:      true,
 		},
 		{
-			name:        "connection error",
-			givenError:  errors.New("Post failure to connect to api.openai.com"),
-			wantedError: errOpenAIFailure,
-			wantErr:     true,
-		},
-		{
-			name:        "validate error",
-			givenError:  service.ErrNotEnoughInformation,
-			wantedError: service.ErrNotEnoughInformation,
-			wantErr:     true,
+			name:         "public error",
+			givenError:   errPublic,
+			wantedError:  errPublic,
+			wantedStatus: http.StatusBadRequest,
+			wantErr:      true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := handleError(tt.givenError)
+			status, err := handleError(tt.givenError)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("handleError() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !errors.Is(err, tt.wantedError) {
 				t.Errorf("gave back wrong error: got: %v, wanted error: %v", err, tt.wantedError)
+			}
+			if status != tt.wantedStatus {
+				t.Errorf("gave back wrong code: got %d, wanted %d", status, tt.wantedStatus)
 			}
 		})
 	}
