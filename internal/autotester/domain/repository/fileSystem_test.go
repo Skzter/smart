@@ -675,6 +675,95 @@ func TestGetFileStats(t *testing.T) {
 	}
 }
 
+func TestGetValidatedPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		path        string
+		expectError bool
+		setupFile   bool
+	}{
+		{
+			name:        "absolute path rejected",
+			path:        "/abs/path",
+			expectError: true,
+		},
+		{
+			name:        "path escapes root",
+			path:        "../outside",
+			expectError: true,
+		},
+		{
+			name:        "valid relative path",
+			path:        "sub/file.txt",
+			expectError: false,
+			setupFile:   true,
+		},
+		{
+			name:        "valid root-level path",
+			path:        "file.txt",
+			expectError: false,
+			setupFile:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			oldWd, err := os.Getwd()
+			if err != nil {
+				t.Fatal("setup failed")
+			}
+
+			defer func() {
+				if err := os.Chdir(oldWd); err != nil {
+					t.Fatalf("restore working dir: %v", err)
+				}
+			}()
+
+			if err := os.Chdir(tmp); err != nil {
+				t.Fatalf("chdir: %v", err)
+			}
+
+			fs, err := NewOSFileSystem(rootDir)
+			if err != nil {
+				t.Fatalf("NewOSFileSystem: %v", err)
+			}
+
+			if test.setupFile {
+				fullPath := filepath.Join(tmp, rootDir, test.path)
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
+					t.Fatalf("mkdir: %v", err)
+				}
+				if err := os.WriteFile(fullPath, []byte("content"), 0o600); err != nil {
+					t.Fatalf("write: %v", err)
+				}
+			}
+
+			validatedPath, err := fs.GetValidatedPath(test.path)
+
+			if test.expectError {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if validatedPath == "" {
+				t.Fatal("expected non-empty validated path")
+			}
+
+			expectedPath := filepath.Clean(filepath.Join(rootDir, test.path))
+			if validatedPath != expectedPath {
+				t.Fatalf("path mismatch:\nwant: %q\ngot:  %q", expectedPath, validatedPath)
+			}
+		})
+	}
+}
+
 func TestIsUnderRoot(t *testing.T) {
 	tmp := t.TempDir()
 	fs := &osFileSystem{Root: tmp}

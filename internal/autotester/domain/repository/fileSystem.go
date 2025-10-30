@@ -52,6 +52,10 @@ type FileSystem interface {
 	// Stat returns file information for the given path relative to the filesystem root.
 	// Returns an error if the path would escape the configured Root or if the file does not exist.
 	GetFileStats(path string) (os.FileInfo, error)
+
+	// GetValidatedPath validates a relative path and returns it if it's within the filesystem root.
+	// Returns an error if the path would escape the configured Root or if validation fails.
+	GetValidatedPath(relativePath string) (string, error)
 }
 
 // osFileSystem is a implementation of the FileSystem interface that confines all operations
@@ -78,7 +82,7 @@ func NewOSFileSystem(root string) (FileSystem, error) {
 	}, nil
 }
 
-func (fs osFileSystem) MkdirAll(path string) error {
+func (fs *osFileSystem) MkdirAll(path string) error {
 	if filepath.IsAbs(path) {
 		return fmt.Errorf("path must be relative to root: %s", path)
 	}
@@ -90,7 +94,7 @@ func (fs osFileSystem) MkdirAll(path string) error {
 	return os.MkdirAll(fullPath, DefaultDirPerm)
 }
 
-func (fs osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
+func (fs *osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return fmt.Errorf("relativeFilePath must be not empty")
 	}
@@ -135,7 +139,7 @@ func (fs osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
 	return nil
 }
 
-func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
+func (fs *osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return nil, fmt.Errorf("relativeFilePath must be not empty")
 	}
@@ -158,7 +162,7 @@ func (fs osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	return os.ReadFile(resolvedPath)
 }
 
-func (fs osFileSystem) ReadDir(path string) ([]string, error) {
+func (fs *osFileSystem) ReadDir(path string) ([]string, error) {
 	if filepath.IsAbs(path) {
 		return nil, fmt.Errorf("path must be relative to root: %s", path)
 	}
@@ -177,7 +181,7 @@ func (fs osFileSystem) ReadDir(path string) ([]string, error) {
 	return names, nil
 }
 
-func (fs osFileSystem) Remove(path string, recursive bool) error {
+func (fs *osFileSystem) Remove(path string, recursive bool) error {
 	if filepath.IsAbs(path) {
 		return fmt.Errorf("path must be relative to root: %s", path)
 	}
@@ -202,7 +206,7 @@ func (fs osFileSystem) Remove(path string, recursive bool) error {
 	return nil
 }
 
-func (fs osFileSystem) GetFileStats(path string) (os.FileInfo, error) {
+func (fs *osFileSystem) GetFileStats(path string) (os.FileInfo, error) {
 	if filepath.IsAbs(path) {
 		return nil, fmt.Errorf("absolute paths are not allowed: %s", path)
 	}
@@ -215,7 +219,20 @@ func (fs osFileSystem) GetFileStats(path string) (os.FileInfo, error) {
 	return os.Lstat(full)
 }
 
-func (fs osFileSystem) fullPath(p string) string {
+func (fs *osFileSystem) GetValidatedPath(relativePath string) (string, error) {
+	if filepath.IsAbs(relativePath) {
+		return "", fmt.Errorf("path must be relative to root: %s", relativePath)
+	}
+
+	fullPath := fs.fullPath(relativePath)
+	if !fs.isUnderRoot(fullPath) {
+		return "", fmt.Errorf("path escapes root: %s", relativePath)
+	}
+
+	return fullPath, nil
+}
+
+func (fs *osFileSystem) fullPath(p string) string {
 	return filepath.Clean(filepath.Join(fs.Root, p))
 }
 
@@ -224,7 +241,7 @@ func (fs osFileSystem) fullPath(p string) string {
 // follows symlinks using filepath.EvalSymlinks, and then checks if the resolved
 // path has the resolved root as a prefix. Returns true if the path is under
 // the root or equal to the root, false otherwise.
-func (fs osFileSystem) isUnderRoot(path string) bool {
+func (fs *osFileSystem) isUnderRoot(path string) bool {
 	rootAbs, err := filepath.Abs(fs.Root)
 	if err != nil {
 		return false

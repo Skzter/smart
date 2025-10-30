@@ -99,6 +99,66 @@ func (_c *MockFileSystem_GetFileStats_Call) RunAndReturn(run func(path string) (
 	return _c
 }
 
+// GetValidatedPath provides a mock function for the type MockFileSystem
+func (_mock *MockFileSystem) GetValidatedPath(relativePath string) (string, error) {
+	ret := _mock.Called(relativePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetValidatedPath")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
+		return returnFunc(relativePath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
+		r0 = returnFunc(relativePath)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(relativePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockFileSystem_GetValidatedPath_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetValidatedPath'
+type MockFileSystem_GetValidatedPath_Call struct {
+	*mock.Call
+}
+
+// GetValidatedPath is a helper method to define mock.On call
+//   - relativePath string
+func (_e *MockFileSystem_Expecter) GetValidatedPath(relativePath interface{}) *MockFileSystem_GetValidatedPath_Call {
+	return &MockFileSystem_GetValidatedPath_Call{Call: _e.mock.On("GetValidatedPath", relativePath)}
+}
+
+func (_c *MockFileSystem_GetValidatedPath_Call) Run(run func(relativePath string)) *MockFileSystem_GetValidatedPath_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockFileSystem_GetValidatedPath_Call) Return(s string, err error) *MockFileSystem_GetValidatedPath_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockFileSystem_GetValidatedPath_Call) RunAndReturn(run func(relativePath string) (string, error)) *MockFileSystem_GetValidatedPath_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // MkdirAll provides a mock function for the type MockFileSystem
 func (_mock *MockFileSystem) MkdirAll(path string) error {
 	ret := _mock.Called(path)
