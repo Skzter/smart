@@ -10,28 +10,31 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TestcaseLocalStorageService defines business operations for storing and
-// reading TestCase objects in a local storage backend. The service is
-// user- and session-scoped and exposes simple read/write entry points.
+// TestcaseLocalStorageService provides business operations for managing TestCase files
+// in local storage. The service handles both frontend API operations (Save, Delete) and
+// test runner path provisioning (GetTestPath*). All operations are user- and session-scoped.
 type TestcaseLocalStorageService interface {
-	// Save stores the given TestCase for the provided user and session.
+	// Save stores the given TestCase for the specified user and session.
 	// Returns an error when validation or storage fails.
 	Save(testcase *entity.TestCase, userId, sessionId string) error
 
-	// ReadLatest returns the latest TestCase for the given testId within the
-	// specified user and session. The returned TestCase is the most recent
-	// one for that test identifier.
-	Read(testId, lang, userId, sessionId string) (*entity.TestCase, error)
+	// GetTestPath returns the relative file path to a specific TestCase file,
+	// starting from the root of the local test storage directory.
+	// Returns an error if path validation fails or the file does not exist.
+	GetTestPath(testId, lang, userId, sessionId string) (string, error)
 
-	// ReadAllBySession returns all TestCases that belong to the given user
-	// and session. The slice may be empty when no testcases are found.
-	ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error)
+	// GetTestPathsBySession returns all relative TestCase file paths for a session,
+	// starting from the root of the local test storage directory.
+	// Returns an error if the session directory cannot be read or path validation fails.
+	GetTestPathsBySession(userId, sessionId string) ([]string, error)
 
-	// ReadAllByUser returns all TestCases that belong to the given user
-	// across all sessions. The slice may be empty when no testcases exist.
-	ReadAllByUser(userId string) (map[string][]*entity.TestCase, error)
+	// GetTestPathsByUser returns all relative TestCase file paths for a user, grouped by sessionId.
+	// Paths start from the root of the local test storage directory.
+	// Returns an error if the user directory cannot be read or any session directory read fails.
+	GetTestPathsByUser(userId string) (map[string][]string, error)
 
 	// Delete removes a testcase identified by testId for the given user and session.
+	// Returns an error if path validation fails or the file cannot be deleted.
 	Delete(testId, lang, userId, sessionId string) error
 
 	// CleanupOldTests removes all testcases that are older than 24 hours.
@@ -86,84 +89,85 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 	return nil
 }
 
-func (s *testcaseLocalStorageService) Read(testId, lang, userId, sessionId string) (*entity.TestCase, error) {
-	s.logger.Debug("reading testcase",
+func (s *testcaseLocalStorageService) GetTestPath(testId, lang, userId, sessionId string) (string, error) {
+	s.logger.Debug("getting testcase path",
 		slog.String("testId", testId),
 		slog.String("language", lang),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)
 
-	testcase, err := s.repo.Read(testId, lang, userId, sessionId)
+	path, err := s.repo.GetTestPath(testId, lang, userId, sessionId)
 	if err != nil {
-		s.logger.Error("failed to read testcase",
+		s.logger.Error("failed to get testcase path",
 			slog.String("testId", testId),
 			slog.String("language", lang),
 			slog.String("userId", userId),
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("read from repository failed: %w", err)
+		return "", fmt.Errorf("get path from repository failed: %w", err)
 	}
 
-	s.logger.Debug("testcase read successfully",
+	s.logger.Debug("testcase path retrieved successfully",
 		slog.String("testId", testId),
 		slog.String("language", lang),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
+		slog.String("path", path),
 	)
-	return testcase, nil
+	return path, nil
 }
 
-func (s *testcaseLocalStorageService) ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error) {
-	s.logger.Debug("reading all testcases for session",
+func (s *testcaseLocalStorageService) GetTestPathsBySession(userId, sessionId string) ([]string, error) {
+	s.logger.Debug("getting all testcase paths for session",
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)
 
-	testcases, err := s.repo.ReadAllBySession(userId, sessionId)
+	paths, err := s.repo.GetTestPathsBySession(userId, sessionId)
 	if err != nil {
-		s.logger.Error("failed to read testcases by session",
+		s.logger.Error("failed to get testcase paths by session",
 			slog.String("userId", userId),
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("read from repository failed: %w", err)
+		return nil, fmt.Errorf("get paths from repository failed: %w", err)
 	}
 
-	s.logger.Info("testcases read successfully",
+	s.logger.Info("testcase paths retrieved successfully",
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
-		slog.Int("count", len(testcases)),
+		slog.Int("count", len(paths)),
 	)
-	return testcases, nil
+	return paths, nil
 }
 
-func (s *testcaseLocalStorageService) ReadAllByUser(userId string) (map[string][]*entity.TestCase, error) {
-	s.logger.Debug("reading all testcases for user",
+func (s *testcaseLocalStorageService) GetTestPathsByUser(userId string) (map[string][]string, error) {
+	s.logger.Debug("getting all testcase paths for user",
 		slog.String("userId", userId),
 	)
 
-	testcases, err := s.repo.ReadAllByUser(userId)
+	paths, err := s.repo.GetTestPathsByUser(userId)
 	if err != nil {
-		s.logger.Error("failed to read testcases by user",
+		s.logger.Error("failed to get testcase paths by user",
 			slog.String("userId", userId),
 			slog.String("error", err.Error()),
 		)
-		return nil, fmt.Errorf("read from repository failed: %w", err)
+		return nil, fmt.Errorf("get paths from repository failed: %w", err)
 	}
 
 	totalCount := 0
-	for _, sessionTestcases := range testcases {
-		totalCount += len(sessionTestcases)
+	for _, sessionPaths := range paths {
+		totalCount += len(sessionPaths)
 	}
 
-	s.logger.Info("testcases read successfully",
+	s.logger.Info("testcase paths retrieved successfully",
 		slog.String("userId", userId),
-		slog.Int("sessionCount", len(testcases)),
-		slog.Int("totalTestcases", totalCount),
+		slog.Int("sessionCount", len(paths)),
+		slog.Int("totalPaths", totalCount),
 	)
-	return testcases, nil
+	return paths, nil
 }
 
 func (s *testcaseLocalStorageService) Delete(testId, lang, userId, sessionId string) error {

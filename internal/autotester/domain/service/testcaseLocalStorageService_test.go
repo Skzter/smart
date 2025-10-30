@@ -63,7 +63,7 @@ func TestSave(t *testing.T) {
 		Description: "Test description",
 		TestCode: entity.TestCode{
 			Code:     "console.log('test');",
-			Language: "javascript",
+			Language: "ts",
 		},
 		Status: entity.TestStatusPassed,
 	}
@@ -116,18 +116,8 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func TestRead(t *testing.T) {
+func TestGetTestPath(t *testing.T) {
 	logger := slog.Default()
-
-	testCase := &entity.TestCase{
-		TestID:      "test-1",
-		Description: "Test description",
-		TestCode: entity.TestCode{
-			Code:     "console.log('test');",
-			Language: "javascript",
-		},
-		Status: entity.TestStatusPassed,
-	}
 
 	tests := []struct {
 		name      string
@@ -137,31 +127,31 @@ func TestRead(t *testing.T) {
 		sessionId string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
-		want      *entity.TestCase
+		want      string
 	}{
 		{
-			name:      "successful read",
+			name:      "successful get path",
 			testId:    "test-1",
-			lang:      "javascript",
+			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Read("test-1", "javascript", "user-1", "session-1").Return(testCase, nil)
+				m.EXPECT().GetTestPath("test-1", "ts", "user-1", "session-1").Return("user-1/session-1/test-1.ts", nil)
 			},
 			wantErr: false,
-			want:    testCase,
+			want:    "user-1/session-1/test-1.ts",
 		},
 		{
 			name:      "repository error",
 			testId:    "test-1",
-			lang:      "javascript",
+			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Read("test-1", "javascript", "user-1", "session-1").Return(nil, errors.New("repository error"))
+				m.EXPECT().GetTestPath("test-1", "ts", "user-1", "session-1").Return("", errors.New("repository error"))
 			},
 			wantErr: true,
-			want:    nil,
+			want:    "",
 		},
 	}
 
@@ -175,39 +165,19 @@ func TestRead(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.Read(test.testId, test.lang, test.userId, test.sessionId)
+			got, err := service.GetTestPath(test.testId, test.lang, test.userId, test.sessionId)
 			if (err != nil) != test.wantErr {
-				t.Errorf("Read() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetTestPath() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if got != test.want {
-				t.Errorf("Read() got = %v, want %v", got, test.want)
+				t.Errorf("GetTestPath() got = %v, want %v", got, test.want)
 			}
 		})
 	}
 }
 
-func TestReadAllBySession(t *testing.T) {
+func TestGetTestPathsBySession(t *testing.T) {
 	logger := slog.Default()
-
-	testCase1 := &entity.TestCase{
-		TestID:      "test-1",
-		Description: "Test description 1",
-		TestCode: entity.TestCode{
-			Code:     "console.log('test1');",
-			Language: "javascript",
-		},
-		Status: entity.TestStatusPassed,
-	}
-
-	testCase2 := &entity.TestCase{
-		TestID:      "test-2",
-		Description: "Test description 2",
-		TestCode: entity.TestCode{
-			Code:     "console.log('test2');",
-			Language: "javascript",
-		},
-		Status: entity.TestStatusFailed,
-	}
 
 	tests := []struct {
 		name      string
@@ -215,34 +185,40 @@ func TestReadAllBySession(t *testing.T) {
 		sessionId string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
-		want      []*entity.TestCase
+		want      []string
 	}{
 		{
-			name:      "successful read with multiple testcases",
+			name:      "successful get paths with multiple files",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().ReadAllBySession("user-1", "session-1").Return([]*entity.TestCase{testCase1, testCase2}, nil)
+				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return([]string{
+					"user-1/session-1/test-1.ts",
+					"user-1/session-1/test-2.ts",
+				}, nil)
 			},
 			wantErr: false,
-			want:    []*entity.TestCase{testCase1, testCase2},
+			want: []string{
+				"user-1/session-1/test-1.ts",
+				"user-1/session-1/test-2.ts",
+			},
 		},
 		{
-			name:      "successful read with empty result",
+			name:      "successful get paths with empty result",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().ReadAllBySession("user-1", "session-1").Return([]*entity.TestCase{}, nil)
+				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return([]string{}, nil)
 			},
 			wantErr: false,
-			want:    []*entity.TestCase{},
+			want:    []string{},
 		},
 		{
 			name:      "repository error",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().ReadAllBySession("user-1", "session-1").Return(nil, errors.New("repository error"))
+				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return(nil, errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    nil,
@@ -259,77 +235,57 @@ func TestReadAllBySession(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.ReadAllBySession(test.userId, test.sessionId)
+			got, err := service.GetTestPathsBySession(test.userId, test.sessionId)
 			if (err != nil) != test.wantErr {
-				t.Errorf("ReadAllBySession() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetTestPathsBySession() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if len(got) != len(test.want) {
-				t.Errorf("ReadAllBySession() got %d testcases, want %d", len(got), len(test.want))
+				t.Errorf("GetTestPathsBySession() got %d paths, want %d", len(got), len(test.want))
 			}
 		})
 	}
 }
 
-func TestReadAllByUser(t *testing.T) {
+func TestGetTestPathsByUser(t *testing.T) {
 	logger := slog.Default()
-
-	testCase1 := &entity.TestCase{
-		TestID:      "test-1",
-		Description: "Test description 1",
-		TestCode: entity.TestCode{
-			Code:     "console.log('test1');",
-			Language: "javascript",
-		},
-		Status: entity.TestStatusPassed,
-	}
-
-	testCase2 := &entity.TestCase{
-		TestID:      "test-2",
-		Description: "Test description 2",
-		TestCode: entity.TestCode{
-			Code:     "console.log('test2');",
-			Language: "javascript",
-		},
-		Status: entity.TestStatusFailed,
-	}
 
 	tests := []struct {
 		name      string
 		userId    string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
-		want      map[string][]*entity.TestCase
+		want      map[string][]string
 	}{
 		{
-			name:   "successful read with multiple sessions",
+			name:   "successful get paths with multiple sessions",
 			userId: "user-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				result := map[string][]*entity.TestCase{
-					"session-1": {testCase1},
-					"session-2": {testCase2},
+				result := map[string][]string{
+					"session-1": {"user-1/session-1/test-1.ts"},
+					"session-2": {"user-1/session-2/test-2.ts"},
 				}
-				m.EXPECT().ReadAllByUser("user-1").Return(result, nil)
+				m.EXPECT().GetTestPathsByUser("user-1").Return(result, nil)
 			},
 			wantErr: false,
-			want: map[string][]*entity.TestCase{
-				"session-1": {testCase1},
-				"session-2": {testCase2},
+			want: map[string][]string{
+				"session-1": {"user-1/session-1/test-1.ts"},
+				"session-2": {"user-1/session-2/test-2.ts"},
 			},
 		},
 		{
-			name:   "successful read with empty result",
+			name:   "successful get paths with empty result",
 			userId: "user-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().ReadAllByUser("user-1").Return(map[string][]*entity.TestCase{}, nil)
+				m.EXPECT().GetTestPathsByUser("user-1").Return(map[string][]string{}, nil)
 			},
 			wantErr: false,
-			want:    map[string][]*entity.TestCase{},
+			want:    map[string][]string{},
 		},
 		{
 			name:   "repository error",
 			userId: "user-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().ReadAllByUser("user-1").Return(nil, errors.New("repository error"))
+				m.EXPECT().GetTestPathsByUser("user-1").Return(nil, errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    nil,
@@ -346,12 +302,12 @@ func TestReadAllByUser(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.ReadAllByUser(test.userId)
+			got, err := service.GetTestPathsByUser(test.userId)
 			if (err != nil) != test.wantErr {
-				t.Errorf("ReadAllByUser() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetTestPathsByUser() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if len(got) != len(test.want) {
-				t.Errorf("ReadAllByUser() got %d sessions, want %d", len(got), len(test.want))
+				t.Errorf("GetTestPathsByUser() got %d sessions, want %d", len(got), len(test.want))
 			}
 		})
 	}
@@ -372,22 +328,22 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "successful delete",
 			testId:    "test-1",
-			lang:      "javascript",
+			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "javascript", "user-1", "session-1").Return(nil)
+				m.EXPECT().Delete("test-1", "ts", "user-1", "session-1").Return(nil)
 			},
 			wantErr: false,
 		},
 		{
 			name:      "repository error",
 			testId:    "test-1",
-			lang:      "javascript",
+			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "javascript", "user-1", "session-1").Return(errors.New("repository error"))
+				m.EXPECT().Delete("test-1", "ts", "user-1", "session-1").Return(errors.New("repository error"))
 			},
 			wantErr: true,
 		},

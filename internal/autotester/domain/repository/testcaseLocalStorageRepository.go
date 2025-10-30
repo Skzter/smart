@@ -13,25 +13,31 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TestcaseLocalStorageRepository defines methods for saving, reading and deleting
-// local TestCase objects. The Save method returns the generated local key on success.
+// TestcaseLocalStorageRepository provides low-level file operations for managing TestCase files
+// in local storage. The repository handles both data persistence (Save, Delete) and
+// path provisioning for the test runner (GetTestPath*). All operations are user- and session-scoped.
 type TestcaseLocalStorageRepository interface {
 	// Save persists the given TestCase for the specified user and session.
 	// Implementations may create directories or files as required.
 	Save(testcase *entity.TestCase, userId, sessionId string) error
 
-	// ReadLatest returns the most recent TestCase matching testId for the
-	// provided user and session. Returns an error when not found or on IO
-	// failure.
-	Read(testId, lang, userId, sessionId string) (*entity.TestCase, error)
+	// GetTestPath returns the validated relative file path to a specific TestCase file,
+	// starting from the root of the local test storage directory.
+	// The path is ready for the test runner to execute the test without
+	// needing to know the internal storage structure.
+	GetTestPath(testId, lang, userId, sessionId string) (string, error)
 
-	// ReadAllBySession returns all TestCases for the given user within the
-	// specified session. The returned slice may be empty if no entries exist.
-	ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error)
+	// GetTestPathsBySession returns all validated relative file paths to TestCase files for a session,
+	// starting from the root of the local test storage directory.
+	// The paths are ready for the test runner to execute all tests within the session
+	// without needing to know the internal storage structure.
+	GetTestPathsBySession(userId, sessionId string) ([]string, error)
 
-	// ReadAllByUser returns all TestCases for the given user across all
-	// sessions. The returned slice may be empty when none exist.
-	ReadAllByUser(userId string) (map[string][]*entity.TestCase, error)
+	// GetTestPathsByUser returns all validated relative file paths to TestCase files for a user,
+	// grouped by sessionId. The paths start from the root of the local test storage directory
+	// and are ready for the test runner to execute all tests across sessions
+	// without needing to know the internal storage structure.
+	GetTestPathsByUser(userId string) (map[string][]string, error)
 
 	// Delete removes the TestCase with the given testId for the provided
 	// user and session. Implementations should return nil when the file did
@@ -90,22 +96,33 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 	return nil
 }
 
-func (r *testcaseLocalStorageRepository) Read(testId, lang, userId, sessionId string) (*entity.TestCase, error) {
+func (r *testcaseLocalStorageRepository) GetTestPath(testId, lang, userId, sessionId string) (string, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
-		return nil, fmt.Errorf("validate path elements: %w", err)
+		return "", fmt.Errorf("validate path elements: %w", err)
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + lang
 	if _, _, err := validateFilename(filename); err != nil {
-		return nil, fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+		return "", fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
-	path := filepath.Join(dir, filename)
-	return r.readTestcaseFromPath(path, testId, lang)
+	relativePath := filepath.Join(dir, filename)
+
+	if _, err := r.filesystem.GetFileStats(relativePath); err != nil {
+		r.logger.Error("testcase file not found", "path", relativePath, "err", err)
+		return "", fmt.Errorf("testcase file not found %s: %w", relativePath, err)
+	}
+
+	validatedPath, err := r.filesystem.GetValidatedPath(relativePath)
+	if err != nil {
+		return "", fmt.Errorf("validate path: %w", err)
+	}
+
+	return validatedPath, nil
 }
 
-func (r *testcaseLocalStorageRepository) ReadAllBySession(userId, sessionId string) ([]*entity.TestCase, error) {
+func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId string) ([]string, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
 		return nil, fmt.Errorf("validate path elements: %w", err)
 	}
@@ -117,28 +134,27 @@ func (r *testcaseLocalStorageRepository) ReadAllBySession(userId, sessionId stri
 		return nil, fmt.Errorf("read directory %s: %w", dir, err)
 	}
 
-	results := make([]*entity.TestCase, 0, len(filenames))
+	results := make([]string, 0, len(filenames))
 	for _, filename := range filenames {
-		testId, lang, err := validateFilename(filename)
-		if err != nil {
+		if _, _, err := validateFilename(filename); err != nil {
 			r.logger.Warn("skipping invalid testcase file", "file", filename, "err", err)
 			continue
 		}
 
-		path := filepath.Join(dir, filename)
-		tc, err := r.readTestcaseFromPath(path, testId, lang)
+		relativePath := filepath.Join(dir, filename)
+		validatedPath, err := r.filesystem.GetValidatedPath(relativePath)
 		if err != nil {
-			r.logger.Error("failed to read testcase from path", "path", path, "err", err)
-			return nil, fmt.Errorf("read testcase %s: %w", path, err)
+			r.logger.Error("failed to validate path", "path", relativePath, "err", err)
+			return nil, fmt.Errorf("validate path for %s: %w", relativePath, err)
 		}
 
-		results = append(results, tc)
+		results = append(results, validatedPath)
 	}
 
 	return results, nil
 }
 
-func (r *testcaseLocalStorageRepository) ReadAllByUser(userId string) (map[string][]*entity.TestCase, error) {
+func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[string][]string, error) {
 	if err := validatePathNameElements(userId); err != nil {
 		return nil, fmt.Errorf("validate path elements: %w", err)
 	}
@@ -149,15 +165,15 @@ func (r *testcaseLocalStorageRepository) ReadAllByUser(userId string) (map[strin
 		return nil, fmt.Errorf("read user directory %s: %w", userId, err)
 	}
 
-	results := make(map[string][]*entity.TestCase)
+	results := make(map[string][]string)
 
 	for _, sessionId := range sessions {
-		testcases, err := r.ReadAllBySession(userId, sessionId)
+		testPaths, err := r.GetTestPathsBySession(userId, sessionId)
 		if err != nil {
 			return nil, fmt.Errorf("read session %s for user %s: %w", sessionId, userId, err)
 		}
 
-		results[sessionId] = testcases
+		results[sessionId] = testPaths
 	}
 	return results, nil
 }
@@ -228,29 +244,6 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 		}
 	}
 	return deletedCount, nil
-}
-
-// readTestcaseFromPath reads the file at the given path and constructs a TestCase
-// using the provided testId and language. The function assumes the caller has
-// already validated the path/filename and therefore does not perform those checks.
-func (r *testcaseLocalStorageRepository) readTestcaseFromPath(path, testId, lang string) (*entity.TestCase, error) {
-	data, err := r.filesystem.ReadFile(path)
-	if err != nil {
-		r.logger.Error("read testcase file failed", "path", path, "err", err)
-		return nil, fmt.Errorf("read testcase file %s: %w", path, err)
-	}
-
-	testcase := &entity.TestCase{
-		TestID:      testId,
-		Description: "",
-		TestCode: entity.TestCode{
-			Code:     string(data),
-			Language: lang,
-		},
-		Status: entity.TestStatusNotRun,
-	}
-
-	return testcase, nil
 }
 
 func validateTestcase(testcase *entity.TestCase) error {
