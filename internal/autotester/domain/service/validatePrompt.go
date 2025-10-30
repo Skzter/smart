@@ -55,7 +55,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 		return "", err
 	}
 
-	llmRespone := autotesterEntity.LlmValidationResponse{}
+	llmRespone := autotesterEntity.ModelAnswerText{}
 	err = json.Unmarshal([]byte(resp.Text), &llmRespone)
 	if err != nil {
 		return "", &errs.Error{
@@ -64,5 +64,5 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 			Type:       errs.Private,
 		}
 	}
-	return llmRespone.Message, nil
+	return llmRespone.Text, nil
 }
