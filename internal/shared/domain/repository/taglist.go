@@ -17,11 +17,11 @@ const EntryPrefix = "taglist/"
 // TaglistStorage defines the interface for database operations on the taglist.
 type TaglistStorage interface {
 	// creates taglist in database
-	CreateTaglist(ctx context.Context, TagList entity.TagListEntity) error
+	CreateTaglist(ctx context.Context, TagList *entity.TagListEntity) error
 	// retrieves taglist from database
 	ReadTaglist(ctx context.Context) (*entity.TagListEntity, error)
 	// overwrites the stored taglist with the one provided
-	UpdateTaglist(ctx context.Context, TagList entity.TagListEntity) error
+	UpdateTaglist(ctx context.Context, TagList *entity.TagListEntity) error
 	// checks if a taglist exists in s3
 	TaglistExists(ctx context.Context) (bool, error)
 }
@@ -52,7 +52,7 @@ func NewTaglistStorage(
 }
 
 // CreateTaglist writes the given entry to the database by converting it to Parquet format and uploading it to S3.
-func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
+func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.TagListEntity) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -60,7 +60,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist entity.TagL
 		return fmt.Errorf("failed to validate TagList: %w", err)
 	}
 
-	parquetData, err := tR.parquetWrapper.WriteStructToParquet(taglist)
+	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
 	if err != nil {
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}
@@ -80,7 +80,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist entity.TagL
 	return nil
 }
 
-// ReadRequest retrieves the taglist from the database, downloading the Parquet file and reading its content.
+// ReadTaglist retrieves the taglist from the database, downloading the Parquet file and reading its content.
 func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagListEntity, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
@@ -106,15 +106,15 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagListEntit
 
 	firstEntry := taglist[0]
 
-	if err := validateTaglist(firstEntry); err != nil {
+	if err := validateTaglist(&firstEntry); err != nil {
 		return nil, fmt.Errorf("read invalid taglist: %w", err)
 	}
 
 	return &firstEntry, nil
 }
 
-// UpdateRequest updates the existing taglist, overwriting it's contents while keeping metadata.
-func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist entity.TagListEntity) error {
+// UpdateTaglist updates the existing taglist, overwriting it's contents while keeping metadata.
+func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.TagListEntity) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -128,7 +128,7 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist entity.TagL
 		return fmt.Errorf("failed to download data: %w", err)
 	}
 
-	parquetData, err := tR.parquetWrapper.WriteStructToParquet(taglist)
+	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
 	if err != nil {
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}
@@ -151,11 +151,14 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist entity.TagL
 
 // TaglistExists checks whether an taglist is already stored
 func (tR *taglistStorage) TaglistExists(ctx context.Context) (bool, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return false, err
+	}
 	return tR.s3Wrapper.FileExists(ctx, EntryPrefix+tR.key)
 }
 
 // validateTaglist validates the taglist before processing it
-func validateTaglist(taglist entity.TagListEntity) error {
+func validateTaglist(taglist *entity.TagListEntity) error {
 	if len(taglist.Tags) == 0 {
 		return fmt.Errorf("taglist is empty: %s", taglist)
 	}

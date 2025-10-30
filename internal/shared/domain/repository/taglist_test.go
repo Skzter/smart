@@ -35,6 +35,8 @@ type mockCall struct {
 	Returns []any
 }
 
+func ctx(t *testing.T) context.Context { return t.Context() }
+
 func setupMocks(s3calls ...*mockCall) func(...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
 	return func(parquetCalls ...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
 		return func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
@@ -63,44 +65,44 @@ func TestCreateTaglist(t *testing.T) {
 	tests := []struct {
 		name         string
 		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
-		taglist      entity.TagListEntity
+		taglist      *entity.TagListEntity
 		ctx          func(t *testing.T) context.Context
 		expectsError bool
 	}{
 		{
 			name:         "happy path",
 			mockSetup:    setupMocks(uploadParquetFile(nil))(writeStructToParquet([]byte{}, nil)),
-			taglist:      entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: false,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "nil ctx",
 			mockSetup:    setupMocks()(),
-			taglist:      entity.TagListEntity{},
+			taglist:      &entity.TagListEntity{},
 			expectsError: true,
 			ctx:          func(t *testing.T) context.Context { return nil },
 		},
 		{
 			name:         "validation error",
 			mockSetup:    setupMocks()(),
-			taglist:      entity.TagListEntity{},
+			taglist:      &entity.TagListEntity{},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "parquet error",
 			mockSetup:    setupMocks()(writeStructToParquet(nil, errors.New("err"))),
-			taglist:      entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "s3 error",
 			mockSetup:    setupMocks(uploadParquetFile(errors.New("err")))(writeStructToParquet([]byte{}, nil)),
-			taglist:      entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 	}
 
@@ -136,7 +138,7 @@ func TestReadTaglist(t *testing.T) {
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{tags}, nil)),
 			taglist:      &tags,
 			expectsError: false,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "nil ctx",
@@ -150,28 +152,28 @@ func TestReadTaglist(t *testing.T) {
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, errors.New("err")))(),
 			taglist:      nil,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "parquet error",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{}, errors.New("err"))),
 			taglist:      nil,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "invalid taglist returned",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{{Tags: []string{"", ""}}}, nil)),
 			taglist:      nil,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "no taglist found",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{}, nil)),
 			taglist:      nil,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 	}
 
@@ -209,7 +211,7 @@ func TestUpdateTaglist(t *testing.T) {
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil), uploadParquetFile(nil))(writeStructToParquet([]byte{}, nil)),
 			taglist:      &tags,
 			expectsError: false,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "ctx nil",
@@ -223,28 +225,28 @@ func TestUpdateTaglist(t *testing.T) {
 			mockSetup:    setupMocks()(),
 			taglist:      &entity.TagListEntity{},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "s3 download error",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, errors.New("err")))(),
 			taglist:      &tags,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "parquet error",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(writeStructToParquet([]byte{}, errors.New("err"))),
 			taglist:      &tags,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 		{
 			name:         "s3 upload error",
 			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil), uploadParquetFile(errors.New("err")))(writeStructToParquet([]byte{}, nil)),
 			taglist:      &tags,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return t.Context() },
+			ctx:          ctx,
 		},
 	}
 
@@ -254,7 +256,7 @@ func TestUpdateTaglist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3, parquet := tt.mockSetup(t)
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			err := repo.UpdateTaglist(tt.ctx(t), *tt.taglist)
+			err := repo.UpdateTaglist(tt.ctx(t), tt.taglist)
 
 			if tt.expectsError {
 				assert.Error(t, err)
@@ -269,17 +271,29 @@ func TestTaglistExists(t *testing.T) {
 	tests := []struct {
 		name           string
 		mockSetup      func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
+		ctx            func(t *testing.T) context.Context
 		expectedResult bool
+		expectedError  bool
 	}{
 		{
 			name:           "file exists",
 			mockSetup:      setupMocks(fileExists(true, nil))(),
+			ctx:            ctx,
 			expectedResult: true,
+			expectedError:  false,
 		},
 		{
 			name:           "file doesn't exist",
 			mockSetup:      setupMocks(fileExists(false, nil))(),
+			ctx:            ctx,
 			expectedResult: false,
+			expectedError:  false,
+		},
+		{
+			name:          "ctx nil",
+			mockSetup:     setupMocks()(),
+			ctx:           func(t *testing.T) context.Context { return nil },
+			expectedError: true,
 		},
 	}
 
@@ -289,10 +303,14 @@ func TestTaglistExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s3, parquet := tt.mockSetup(t)
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			exists, err := repo.TaglistExists(t.Context())
+			exists, err := repo.TaglistExists(tt.ctx(t))
 
-			assert.Nil(t, err)
-			assert.Equal(t, tt.expectedResult, exists)
+			if tt.expectedError {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, tt.expectedResult, exists)
+			}
 		})
 	}
 }

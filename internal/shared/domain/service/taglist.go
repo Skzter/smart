@@ -27,7 +27,7 @@ type taglistStorage struct {
 // NewTaglistStorage creates a new instance of TaglistService.
 func NewTaglistStorage(logger *slog.Logger, repo repository.TaglistStorage) (TaglistStorage, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
-		return nil, fmt.Errorf("repo cannot be nil, %w", err)
+		return nil, err
 	}
 	return &taglistStorage{
 		logger: logger,
@@ -46,19 +46,19 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error 
 		return fmt.Errorf("S3 Error: %w", err)
 	}
 
-	taglist := entity.TagListEntity{Tags: tags}
+	taglist := &entity.TagListEntity{Tags: tags}
+
 	// Create or update taglist
 	if !exists {
-		if err := d.repo.CreateTaglist(ctx, taglist); err != nil {
-			return fmt.Errorf("failed to save taglist: %w", err)
-		}
+		err = d.repo.CreateTaglist(ctx, taglist)
 	} else {
-		if err := d.repo.UpdateTaglist(ctx, taglist); err != nil {
-			return fmt.Errorf("failed to save taglist: %w", err)
-		}
+		err = d.repo.UpdateTaglist(ctx, taglist)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to save taglist: %w", err)
 	}
 
-	d.logger.Debug("Taglist saved successfully", "request", taglist)
+	d.logger.Debug("Taglist saved successfully", "taglist", taglist)
 	return nil
 }
 
