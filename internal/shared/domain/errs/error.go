@@ -30,9 +30,10 @@ func (e *Error) Unwrap() error {
 
 // Public errors for the user
 //
-//nolint:gochecknoglobals, staticcheck
+//nolint:gochecknoglobals,staticcheck
 var (
 	// ErrInternalServer is an frontend-facing error, when the request to openai fails or any other part of the repository
+	//lint:ignore ST1005 "Satzanfang" vom deutschen Error großgeschrieben
 	ErrInternalServer error = errors.New("Interner Server Error - bitte nochmal versuchen")
 )
 
