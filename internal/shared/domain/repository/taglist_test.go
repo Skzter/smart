@@ -13,20 +13,20 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
-func uploadParquetFile(err error) mockCall { return call("UploadParquetFile", 4, err) }
-func writeStructToParquet(b []byte, err error) mockCall {
+func uploadParquetFile(err error) *mockCall { return call("UploadParquetFile", 4, err) }
+func writeStructToParquet(b []byte, err error) *mockCall {
 	return call("WriteStructToParquet", 1, b, err)
 }
-func downloadParquetFile(b []byte, m map[string]string, err error) mockCall {
+func downloadParquetFile(b []byte, m map[string]string, err error) *mockCall {
 	return call("DownloadParquetFile", 2, b, m, err)
 }
-func readStructsFromParquet(tle []entity.TagListEntity, err error) mockCall {
+func readStructsFromParquet(tle []entity.TagListEntity, err error) *mockCall {
 	return call("ReadStructsFromParquet", 1, tle, err)
 }
-func fileExists(b bool, err error) mockCall { return call("FileExists", 2, b, err) }
+func fileExists(b bool, err error) *mockCall { return call("FileExists", 2, b, err) }
 
-func call(name string, params int, returns ...any) mockCall {
-	return mockCall{Name: name, Params: params, Returns: returns}
+func call(name string, params int, returns ...any) *mockCall {
+	return &mockCall{Name: name, Params: params, Returns: returns}
 }
 
 type mockCall struct {
@@ -35,8 +35,8 @@ type mockCall struct {
 	Returns []any
 }
 
-func setupMocks(s3calls ...mockCall) func(...mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
-	return func(parquetCalls ...mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
+func setupMocks(s3calls ...*mockCall) func(...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
+	return func(parquetCalls ...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
 		return func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
 			s3 := mocks.NewMockS3StorageWrapper(t)
 			parquet := mocks.NewMockParquetFileWrapper[entity.TagListEntity](t)
