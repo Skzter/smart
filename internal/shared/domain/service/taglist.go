@@ -46,7 +46,7 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error 
 		return fmt.Errorf("S3 Error: %w", err)
 	}
 
-	taglist := &entity.TagListEntity{Tags: tags}
+	taglist := &entity.TagList{Tags: tags}
 
 	// Create or update taglist
 	if !exists {

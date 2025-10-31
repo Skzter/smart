@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func call(name string, params int, returns ...any) *mockCall {
 func taglistExists(b bool, err error) *mockCall { return call("TaglistExists", 1, b, err) }
 func createTaglist(err error) *mockCall         { return call("CreateTaglist", 2, err) }
 func updateTaglist(err error) *mockCall         { return call("UpdateTaglist", 2, err) }
-func readTaglist(tle *entity.TagListEntity, err error) *mockCall {
+func readTaglist(tle *entity.TagList, err error) *mockCall {
 	return call("ReadTaglist", 1, tle, err)
 }
 
@@ -49,6 +48,8 @@ func setupMocks(calls ...*mockCall) func(*testing.T) repository.TaglistStorage {
 func ctx(t *testing.T) context.Context { return t.Context() }
 
 func TestNewTaglistStorage(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
@@ -63,13 +64,13 @@ func TestNewTaglistStorage(t *testing.T) {
 		},
 		{
 			testName:      "Invalid Repo Only",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:        logger,
 			repo:          func(t *testing.T) repository.TaglistStorage { return nil },
 			expectedError: true,
 		},
 		{
 			testName:      "Valid Parameters",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:        logger,
 			repo:          setupMocks(),
 			expectedError: false,
 		},
@@ -91,7 +92,7 @@ func TestNewTaglistStorage(t *testing.T) {
 }
 
 func TestStoreTaglist(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		testName      string
@@ -153,7 +154,7 @@ func TestStoreTaglist(t *testing.T) {
 }
 
 func TestGetTaglist(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		testName       string
@@ -176,7 +177,7 @@ func TestGetTaglist(t *testing.T) {
 		},
 		{
 			testName:       "Successful Taglist Read",
-			repo:           setupMocks(readTaglist(&entity.TagListEntity{Tags: []string{"A", "B", "C"}}, nil)),
+			repo:           setupMocks(readTaglist(&entity.TagList{Tags: []string{"A", "B", "C"}}, nil)),
 			ctx:            ctx,
 			expectedError:  false,
 			expectedResult: []string{"A", "B", "C"},

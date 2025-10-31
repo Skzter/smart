@@ -20,7 +20,7 @@ func writeStructToParquet(b []byte, err error) *mockCall {
 func downloadParquetFile(b []byte, m map[string]string, err error) *mockCall {
 	return call("DownloadParquetFile", 2, b, m, err)
 }
-func readStructsFromParquet(tle []entity.TagListEntity, err error) *mockCall {
+func readStructsFromParquet(tle []entity.TagList, err error) *mockCall {
 	return call("ReadStructsFromParquet", 1, tle, err)
 }
 func fileExists(b bool, err error) *mockCall { return call("FileExists", 2, b, err) }
@@ -37,11 +37,11 @@ type mockCall struct {
 
 func ctx(t *testing.T) context.Context { return t.Context() }
 
-func setupMocks(s3calls ...*mockCall) func(...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
-	return func(parquetCalls ...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
-		return func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
+func setupMocks(s3calls ...*mockCall) func(...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
+	return func(parquetCalls ...*mockCall) func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
+		return func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
 			s3 := mocks.NewMockS3StorageWrapper(t)
-			parquet := mocks.NewMockParquetFileWrapper[entity.TagListEntity](t)
+			parquet := mocks.NewMockParquetFileWrapper[entity.TagList](t)
 			for _, arg := range s3calls {
 				args := make([]any, arg.Params)
 				for i := range args {
@@ -64,43 +64,43 @@ func setupMocks(s3calls ...*mockCall) func(...*mockCall) func(t *testing.T) (*mo
 func TestCreateTaglist(t *testing.T) {
 	tests := []struct {
 		name         string
-		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
-		taglist      *entity.TagListEntity
+		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
+		taglist      *entity.TagList
 		ctx          func(t *testing.T) context.Context
 		expectsError bool
 	}{
 		{
 			name:         "happy path",
 			mockSetup:    setupMocks(uploadParquetFile(nil))(writeStructToParquet([]byte{}, nil)),
-			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: false,
 			ctx:          ctx,
 		},
 		{
 			name:         "nil ctx",
 			mockSetup:    setupMocks()(),
-			taglist:      &entity.TagListEntity{},
+			taglist:      &entity.TagList{},
 			expectsError: true,
 			ctx:          func(t *testing.T) context.Context { return nil },
 		},
 		{
 			name:         "validation error",
 			mockSetup:    setupMocks()(),
-			taglist:      &entity.TagListEntity{},
+			taglist:      &entity.TagList{},
 			expectsError: true,
 			ctx:          ctx,
 		},
 		{
 			name:         "parquet error",
 			mockSetup:    setupMocks()(writeStructToParquet(nil, errors.New("err"))),
-			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: true,
 			ctx:          ctx,
 		},
 		{
 			name:         "s3 error",
 			mockSetup:    setupMocks(uploadParquetFile(errors.New("err")))(writeStructToParquet([]byte{}, nil)),
-			taglist:      &entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: true,
 			ctx:          ctx,
 		},
@@ -124,18 +124,18 @@ func TestCreateTaglist(t *testing.T) {
 }
 
 func TestReadTaglist(t *testing.T) {
-	tags := entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}}
+	tags := entity.TagList{Tags: []string{"TAG1", "TAG2"}}
 
 	tests := []struct {
 		name         string
-		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
-		taglist      *entity.TagListEntity
+		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
+		taglist      *entity.TagList
 		ctx          func(t *testing.T) context.Context
 		expectsError bool
 	}{
 		{
 			name:         "happy path",
-			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{tags}, nil)),
+			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagList{tags}, nil)),
 			taglist:      &tags,
 			expectsError: false,
 			ctx:          ctx,
@@ -156,21 +156,21 @@ func TestReadTaglist(t *testing.T) {
 		},
 		{
 			name:         "parquet error",
-			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{}, errors.New("err"))),
+			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagList{}, errors.New("err"))),
 			taglist:      nil,
 			expectsError: true,
 			ctx:          ctx,
 		},
 		{
 			name:         "invalid taglist returned",
-			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{{Tags: []string{"", ""}}}, nil)),
+			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagList{{Tags: []string{"", ""}}}, nil)),
 			taglist:      nil,
 			expectsError: true,
 			ctx:          ctx,
 		},
 		{
 			name:         "no taglist found",
-			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagListEntity{}, nil)),
+			mockSetup:    setupMocks(downloadParquetFile([]byte{}, map[string]string{}, nil))(readStructsFromParquet([]entity.TagList{}, nil)),
 			taglist:      nil,
 			expectsError: true,
 			ctx:          ctx,
@@ -197,12 +197,12 @@ func TestReadTaglist(t *testing.T) {
 }
 
 func TestUpdateTaglist(t *testing.T) {
-	tags := entity.TagListEntity{Tags: []string{"TAG1", "TAG2"}}
+	tags := entity.TagList{Tags: []string{"TAG1", "TAG2"}}
 
 	tests := []struct {
 		name         string
-		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
-		taglist      *entity.TagListEntity
+		mockSetup    func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
+		taglist      *entity.TagList
 		ctx          func(t *testing.T) context.Context
 		expectsError bool
 	}{
@@ -216,14 +216,14 @@ func TestUpdateTaglist(t *testing.T) {
 		{
 			name:         "ctx nil",
 			mockSetup:    setupMocks()(),
-			taglist:      &entity.TagListEntity{},
+			taglist:      &entity.TagList{},
 			expectsError: true,
 			ctx:          func(t *testing.T) context.Context { return nil },
 		},
 		{
 			name:         "invalid taglist",
 			mockSetup:    setupMocks()(),
-			taglist:      &entity.TagListEntity{},
+			taglist:      &entity.TagList{},
 			expectsError: true,
 			ctx:          ctx,
 		},
@@ -270,7 +270,7 @@ func TestUpdateTaglist(t *testing.T) {
 func TestTaglistExists(t *testing.T) {
 	tests := []struct {
 		name           string
-		mockSetup      func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
+		mockSetup      func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
 		ctx            func(t *testing.T) context.Context
 		expectedResult bool
 		expectedError  bool
@@ -320,7 +320,7 @@ func TestNewTaglistStorage(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		mockSetup   func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity])
+		mockSetup   func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
 		logger      *slog.Logger
 		expectError bool
 	}{
@@ -332,7 +332,7 @@ func TestNewTaglistStorage(t *testing.T) {
 		},
 		{
 			name: "everything nil",
-			mockSetup: func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagListEntity]) {
+			mockSetup: func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
 				return nil, nil
 			},
 			logger:      nil,

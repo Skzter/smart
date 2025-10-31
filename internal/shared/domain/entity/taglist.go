@@ -1,6 +1,6 @@
 package entity
 
-// TagListEntity represents a list of tags with metadata.
-type TagListEntity struct {
+// TagList represents a list of tags with metadata.
+type TagList struct {
 	Tags []string `json:"tags"`
 }
