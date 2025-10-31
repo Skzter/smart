@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -60,7 +59,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		status, frontendError := handleError(err)
+		status, frontendError := errs.HandleError(err)
 		unwrappedError := errors.Unwrap(frontendError)
 		// checks if the error need the unwrapped
 		// Unwrap() returns nil if nothing needs to be unwrapped
@@ -114,37 +113,4 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,
 	}, nil
-}
-
-// handleError handles the errors for the validate and generate functions
-// takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
-// if source found decides if it can return this error or a generic error because the error message may expose sensitive data
-func handleError(err error) (int, error) {
-	if err == nil {
-		return http.StatusOK, nil
-	}
-	// Generate() returns only the repository/service errors
-	var (
-		assertNotNilError *assert.NotNilError
-		customError       *errs.Error
-	)
-
-	// maps the given error to the target error, when success you can operate on the custom error type
-	// see https://go.dev/wiki/Switch#missing-expression
-	switch {
-	case errors.As(err, &customError):
-		switch customError.Type {
-		case errs.Private:
-			return http.StatusInternalServerError, errs.ErrInternalServer
-		case errs.Public:
-			return http.StatusBadRequest, customError
-		}
-	case errors.As(err, &assertNotNilError):
-		// catching errors from the assert and OpenAI requests
-		return http.StatusInternalServerError, errs.ErrInternalServer
-	case strings.Contains(err.Error(), "Post"):
-		// error when no internet connection but bit unclean
-		return http.StatusInternalServerError, errs.ErrInternalServer
-	}
-	return http.StatusBadRequest, err
 }

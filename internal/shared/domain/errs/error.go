@@ -2,6 +2,9 @@ package errs
 
 import (
 	"errors"
+	"net/http"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // ErrorType for referencing Public or Private Errors -> Public for frontend, Private is backend only
@@ -34,7 +37,7 @@ func (e *Error) Unwrap() error {
 var (
 	// ErrInternalServer is an frontend-facing error, when the request to openai fails or any other part of the repository
 	//lint:ignore ST1005 "Satzanfang" vom deutschen Error großgeschrieben
-	ErrInternalServer error = errors.New("Interner Server Error - bitte nochmal versuchen")
+	ErrInternalServer = &Error{Type: Public, Message: "Interner Server Error - bitte nochmal versuchen"}
 )
 
 // Errors for the Repository
@@ -46,3 +49,33 @@ var (
 	ErrEmptyResponse      = &Error{Type: Private, Message: "REPO openai error: chosen response message is empty"}
 	ErrOpenAI             = &Error{Type: Private, Message: "REPO openai error: request to the server failed"}
 )
+
+// HandleError handles the errors for the validate and generate functions
+// takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
+// if source found decides if it can return this error or a generic error because the error message may expose sensitive data
+func HandleError(err error) (int, error) {
+	if err == nil {
+		return http.StatusOK, nil
+	}
+	// Generate() returns only the repository/service errors
+	var (
+		assertNotNilError *assert.NotNilError
+		customError       *Error
+	)
+
+	// maps the given error to the target error, when success you can operate on the custom error type
+	// see https://go.dev/wiki/Switch#missing-expression
+	switch {
+	case errors.As(err, &customError):
+		switch customError.Type {
+		case Private:
+			return http.StatusInternalServerError, ErrInternalServer
+		case Public:
+			return http.StatusBadRequest, customError
+		}
+	case errors.As(err, &assertNotNilError):
+		// catching errors from the assert and OpenAI requests
+		return http.StatusInternalServerError, ErrInternalServer
+	}
+	return http.StatusBadRequest, err
+}

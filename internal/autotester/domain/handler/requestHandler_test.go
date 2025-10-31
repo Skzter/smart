@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +16,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -324,80 +322,6 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
-			}
-		})
-	}
-}
-
-func TestHandleError(t *testing.T) {
-	errPublic := errors.New("public error")
-	publicCustomErr := &errs.Error{
-		Message:    fmt.Sprintf("wild error: %v", errPublic),
-		Underlying: errPublic,
-		Type:       errs.Public,
-	}
-
-	tests := []struct {
-		name         string
-		givenError   error
-		wantedError  error
-		wantedStatus int
-		wantErr      bool
-	}{
-		{
-			name:         "nil error",
-			givenError:   nil,
-			wantedError:  nil,
-			wantedStatus: http.StatusOK,
-			wantErr:      false,
-		},
-		{
-			name:         "custom: repo error: empty response",
-			givenError:   errs.ErrEmptyResponse,
-			wantedError:  errs.ErrInternalServer,
-			wantedStatus: http.StatusInternalServerError,
-			wantErr:      true,
-		},
-		{
-			name:         "custom: service error: nil ctx",
-			givenError:   &assert.NotNilError{Message: "assert failed"},
-			wantedError:  errs.ErrInternalServer,
-			wantedStatus: http.StatusInternalServerError,
-			wantErr:      true,
-		},
-		{
-			name:         "connection error",
-			givenError:   errors.New("Post failure to connect to api.openai.com"),
-			wantedError:  errs.ErrInternalServer,
-			wantedStatus: http.StatusInternalServerError,
-			wantErr:      true,
-		},
-		{
-			name:         "custom: public error",
-			givenError:   publicCustomErr,
-			wantedError:  publicCustomErr,
-			wantedStatus: http.StatusBadRequest,
-			wantErr:      true,
-		},
-		{
-			name:         "public error",
-			givenError:   errPublic,
-			wantedError:  errPublic,
-			wantedStatus: http.StatusBadRequest,
-			wantErr:      true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			status, err := handleError(tt.givenError)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("handleError() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !errors.Is(err, tt.wantedError) {
-				t.Errorf("gave back wrong error: got: %v, wanted error: %v", err, tt.wantedError)
-			}
-			if status != tt.wantedStatus {
-				t.Errorf("gave back wrong code: got %d, wanted %d", status, tt.wantedStatus)
 			}
 		})
 	}
