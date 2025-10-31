@@ -92,7 +92,7 @@ func getSaveTestCases() []saveTestCase {
 	return []saveTestCase{
 		{
 			name:      "success",
-			git stash			testcase:  baseTestcase,
+			testcase:  baseTestcase,
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {
@@ -414,83 +414,76 @@ func TestGetTestPathsBySession(t *testing.T) {
 				assert.Nil(t, paths)
 			} else {
 				assert.NoError(t, err)
-				assert.NotNil(t, testcases)
-				assert.Equal(t, tc.wantCount, len(testcases))
+				assert.NotNil(t, paths)
+				assert.Equal(t, tc.wantCount, len(paths))
 			}
 			mockFS.AssertExpectations(t)
 		})
 	}
 }
 
-func TestReadAllByUser(t *testing.T) {
+func TestGetTestPathsByUser(t *testing.T) {
 	logger := slog.Default()
-
 	tests := []struct {
-		name      string
-		userID    string
-		setupMock func(m *mocks.MockFileSystem)
-		wantErr   bool
-		wantCount int // total sessions in result map
+		name         string
+		userID       string
+		setupMock    func(m *mocks.MockFileSystem)
+		wantErr      bool
+		wantSessions int
+		wantPaths    map[string][]string
 	}{
 		{
 			name:   "success with multiple sessions",
 			userID: userID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				// simulate two sessions for the user
 				m.On("ReadDir", userID).Return([]string{"session1", "session2"}, nil).Once()
 
-				// Each session directory should be read successfully
-				m.On("ReadDir", filepath.Join(userID, "session1")).Return([]string{"123e4567-e89b-12d3-a456-426614174000.en"}, nil).Once()
-				m.On("ReadFile", filepath.Join(userID, "session1", "123e4567-e89b-12d3-a456-426614174000.en")).Return([]byte("console.log('123e4567-e89b-12d3-a456-426614174000.en');"), nil).Once()
+				// session1 files
+				path1 := filepath.Join(userID, "session1", "123e4567-e89b-12d3-a456-426614174000.js")
+				path2 := filepath.Join(userID, "session1", "223e4567-e89b-12d3-a456-426614174001.js")
+				m.On("ReadDir", filepath.Join(userID, "session1")).Return([]string{
+					"123e4567-e89b-12d3-a456-426614174000.js",
+					"223e4567-e89b-12d3-a456-426614174001.js",
+				}, nil).Once()
+				m.On("GetValidatedPath", path1).Return(path1, nil).Once()
+				m.On("GetValidatedPath", path2).Return(path2, nil).Once()
 
-				m.On("ReadDir", filepath.Join(userID, "session2")).Return([]string{"819b4567-e89b-12d3-a456-426614174001.en"}, nil).Once()
-				m.On("ReadFile", filepath.Join(userID, "session2", "819b4567-e89b-12d3-a456-426614174001.en")).Return([]byte("console.log('tc2');"), nil).Once()
-			},
-			wantErr:   false,
-			wantCount: 2, // sessions
-		},
-
-		{
-			name:   "invalid user id (empty)",
-			userID: "",
-			setupMock: func(m *mocks.MockFileSystem) {
-				// nothing to mock, should fail at path validation
-			},
-			wantErr:      true,
-			wantSessions: 0,
-			wantPaths:    nil,
-		},
-		{
-			name:   "read user directory fails",
-			userID: userID,
-			setupMock: func(m *mocks.MockFileSystem) {
-				m.EXPECT().ReadDir(userID).Return(nil, assert.AnError).Once()
-			},
-			wantErr:      true,
-			wantSessions: 0,
-			wantPaths:    nil,
-		},
-		{
-			name:   "read session fails",
-			userID: userID,
-			setupMock: func(m *mocks.MockFileSystem) {
-				// user directory has one session
-				m.On("ReadDir", userID).Return([]string{"session1"}, nil).Once()
-				// simulate failure when reading that session’s testcases
-				m.On("ReadDir", filepath.Join(userID, "session1")).Return(nil, assert.AnError).Once()
+				// session2 files
+				path3 := filepath.Join(userID, "session2", "323e4567-e89b-12d3-a456-426614174002.js")
+				m.On("ReadDir", filepath.Join(userID, "session2")).Return([]string{
+					"323e4567-e89b-12d3-a456-426614174002.js",
+				}, nil).Once()
+				m.On("GetValidatedPath", path3).Return(path3, nil).Once()
 			},
 			wantErr:      false,
-			wantSessions: 1,
+			wantSessions: 2,
 			wantPaths: map[string][]string{
-				"session1": {},
+				"session1": {
+					filepath.Join(userID, "session1", "123e4567-e89b-12d3-a456-426614174000.js"),
+					filepath.Join(userID, "session1", "223e4567-e89b-12d3-a456-426614174001.js"),
+				},
+				"session2": {filepath.Join(userID, "session2", "323e4567-e89b-12d3-a456-426614174002.js")},
 			},
 		},
+		{
+			name:         "empty user id",
+			userID:       "",
+			setupMock:    func(m *mocks.MockFileSystem) {},
+			wantErr:      true,
+			wantSessions: 0,
+			wantPaths:    nil,
+		},
+		{
+			name:   "read dir fails",
+			userID: userID,
+			setupMock: func(m *mocks.MockFileSystem) {
+				m.On("ReadDir", userID).Return(nil, assert.AnError).Once()
+			},
+			wantErr:      true,
+			wantSessions: 0,
+			wantPaths:    nil,
+		},
 	}
-}
-
-func TestGetTestPathsByUser(t *testing.T) {
-	logger := slog.Default()
-	tests := getTestPathsByUserTestCases()
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -526,14 +519,6 @@ func TestGetTestPathsByUser(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestDelete(t *testing.T) {
-	// TODO
-}
-
-func TestDeleteOlderThan(t *testing.T) {
-	// TODO
 }
 
 func TestDelete(t *testing.T) {
@@ -712,83 +697,6 @@ func TestDeleteOlderThan(t *testing.T) {
 	}
 }
 
-func TestReadTestcaseFromPath(t *testing.T) {
-	logger := slog.Default()
-
-	tests := []struct {
-		name      string
-		path      string
-		testID    string
-		lang      string
-		setupMock func(m *mocks.MockFileSystem)
-		wantErr   bool
-		wantCode  string
-	}{
-		{
-			name:   "success",
-			path:   "user1/session1/123e4567-e89b-12d3-a456-426614174000.en",
-			testID: "123e4567-e89b-12d3-a456-426614174000",
-			lang:   "en",
-			setupMock: func(m *mocks.MockFileSystem) {
-				m.On("ReadFile", "user1/session1/123e4567-e89b-12d3-a456-426614174000.en").
-					Return([]byte("console.log('hello');"), nil).
-					Once()
-			},
-			wantErr:  false,
-			wantCode: "console.log('hello');",
-		},
-		{
-			name:   "read file fails",
-			path:   "user1/session1/123e4567-e89b-12d3-a456-426614174000.en",
-			testID: "123e4567-e89b-12d3-a456-426614174000",
-			lang:   "en",
-			setupMock: func(m *mocks.MockFileSystem) {
-				m.On("ReadFile", "user1/session1/123e4567-e89b-12d3-a456-426614174000.en").
-					Return(nil, assert.AnError).
-					Once()
-			},
-			wantErr:  true,
-			wantCode: "",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockFS := mocks.NewMockFileSystem(t)
-			if tc.setupMock != nil {
-				tc.setupMock(mockFS)
-			}
-
-			repo, err := NewTestcaseLocalStorageRepository(logger, mockFS)
-			assert.NoError(t, err)
-			assert.NotNil(t, repo)
-
-			//FIXME:
-			// NewTestcaseLocalStorageRepository returns the interface type; we need the
-			// concrete implementation to call the unexported helper readTestcaseFromPath.
-			concreteRepo, ok := repo.(*testcaseLocalStorageRepository)
-			if !ok {
-				t.Fatalf("unexpected repo type: %T", repo)
-			}
-
-			result, err := concreteRepo.readTestcaseFromPath(tc.path, tc.testID, tc.lang)
-			if tc.wantErr {
-				assert.Error(t, err)
-				assert.Nil(t, result)
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, result)
-				assert.Equal(t, tc.testID, result.TestID)
-				assert.Equal(t, tc.lang, result.TestCode.Language)
-				assert.Equal(t, tc.wantCode, result.TestCode.Code)
-				assert.Equal(t, entity.TestStatusNotRun, result.Status)
-			}
-
-			mockFS.AssertExpectations(t)
-		})
-	}
-}
-
 func TestValidateTestcase(t *testing.T) {
 	valid := &entity.TestCase{
 		TestID: "123e4567-e89b-12d3-a456-426614174000",
@@ -910,5 +818,4 @@ func TestValidateFilename(t *testing.T) {
 			}
 		})
 	}
-}
 }
