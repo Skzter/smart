@@ -3,7 +3,7 @@
     import { getTemplate } from "../lib/Api.ts";
     import Popup from "./Popup.svelte";
     let { input = $bindable(""), onclick } = $props();
-    
+
     let showPopup = $state(false);
     let popupMessage = $state("");
     let popupTitle = $state("Error");
@@ -15,19 +15,13 @@
             e.preventDefault();
         }
     }
-    
+
     async function loadTemplate() {
         try {
-            const res = await getTemplate("/template");
-
-            if (!res.ok) throw { status: res.status, message: await res.text() };
-            const data = await res.json();
-            input = data.template;
+            let response = await getTemplate("/template");
+            input = response.data.template
         } catch (err) {
-            const status = err.status;
-            if (status === 404) popupMessage = "Template nicht gefunden (404)";
-            else if (status >= 500) popupMessage = "Serverfehler (500)";
-            else popupMessage = "Interner Server Error";
+            popupMessage = "NO TEMPLATE FOUND!";
             popupTitle = "Template Error";
             showPopup = true;
         }
@@ -49,11 +43,9 @@
         {onclick}
         disabled={!input.trim()}>Send</Button
     >
-    <Button
-        color="purple"
-        class="w-1/10 h-1/3"
-        onclick={loadTemplate}
-    >Template</Button>
+    <Button color="purple" class="w-1/10 h-1/3" onclick={loadTemplate}
+        >Template</Button
+    >
 </div>
 
 <Popup bind:isOpen={showPopup} message={popupMessage} title={popupTitle} />
