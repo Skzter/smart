@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -59,14 +58,8 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		status, frontendError := errs.HandleError(err)
-		unwrappedError := errors.Unwrap(frontendError)
-		// checks if the error need the unwrapped
-		// Unwrap() returns nil if nothing needs to be unwrapped
-		if unwrappedError != nil {
-			frontendError = unwrappedError
-		}
-		c.JSON(status, entity.ErrorMessage{Error: frontendError.Error()})
+		status, message := errs.HandleError(err)
+		c.JSON(status, entity.ErrorMessage{Error: message})
 		a.logger.Error(fmt.Sprintf("HANDLER => %s", err.Error()))
 		return
 	}

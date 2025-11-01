@@ -47,9 +47,9 @@ var (
 // HandleError handles the errors for the validate and generate functions
 // takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
 // if source found decides if it can return this error or a generic error because the error message may expose sensitive data
-func HandleError(err error) (int, error) {
+func HandleError(err error) (int, string) {
 	if err == nil {
-		return http.StatusOK, nil
+		return http.StatusOK, ""
 	}
 
 	var customError *Error
@@ -57,10 +57,20 @@ func HandleError(err error) (int, error) {
 	if errors.As(err, &customError) {
 		switch customError.Type {
 		case Private:
-			return http.StatusInternalServerError, ErrInternalServer
+			return http.StatusInternalServerError, unwrap(ErrInternalServer)
 		case Public:
-			return http.StatusBadRequest, customError
+			return http.StatusBadRequest, unwrap(customError)
 		}
 	}
-	return http.StatusBadRequest, err
+	return http.StatusBadRequest, unwrap(err)
+}
+
+func unwrap(err error) string {
+	unwrappedError := errors.Unwrap(err)
+	// checks if the error need the unwrapped
+	// Unwrap() returns nil if nothing needs to be unwrapped
+	if unwrappedError != nil {
+		err = unwrappedError
+	}
+	return err.Error()
 }
