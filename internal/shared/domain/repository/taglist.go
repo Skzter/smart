@@ -53,8 +53,8 @@ func NewTaglistStorage(
 
 // CreateTaglist writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.TagList) error {
-	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context cannot be nil, %w", err)
+	if err := assert.NotNil(ctx, taglist); err != nil {
+		return err
 	}
 	if err := validateTaglist(taglist); err != nil {
 		return fmt.Errorf("failed to validate TagList: %w", err)
@@ -65,7 +65,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}
 
-	tR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
+	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	var timestamp = fmt.Sprintf("%d", time.Now().Unix())
 	metadata := map[string]string{
@@ -94,17 +94,17 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 		slog.Int("size", len(parquetData)),
 		slog.Any("metadata", metadata),
 	)
-	taglist, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
+	taglists, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read parquet data: %w", err)
 	}
-	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglist)))
+	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglists)))
 
-	if len(taglist) == 0 {
+	if len(taglists) == 0 {
 		return nil, fmt.Errorf("no taglist found with key: %s", EntryPrefix+tR.key)
 	}
 
-	firstEntry := taglist[0]
+	firstEntry := taglists[0]
 
 	if err := validateTaglist(&firstEntry); err != nil {
 		return nil, fmt.Errorf("read invalid taglist: %w", err)
@@ -115,8 +115,8 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 
 // UpdateTaglist updates the existing taglist, overwriting it's contents while keeping metadata.
 func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.TagList) error {
-	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context cannot be nil, %w", err)
+	if err := assert.NotNil(ctx, taglist); err != nil {
+		return err
 	}
 
 	if err := validateTaglist(taglist); err != nil {
@@ -133,7 +133,7 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}
 
-	tR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
+	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
 
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 	metadata := map[string]string{
