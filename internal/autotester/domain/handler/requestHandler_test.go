@@ -83,6 +83,14 @@ func TestHandleChatRequest(t *testing.T) {
 		Underlying: jsonErr,
 		Type:       errs.Private,
 	}
+
+	feErr := errors.New("frontend error")
+	frontendError := errs.Error{
+		Message:    "error",
+		Underlying: feErr,
+		Type:       errs.Public,
+	}
+
 	mockSetup := []struct {
 		function         string
 		userPrompt       string
@@ -141,10 +149,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "validation failure results in fe error",
 			sessionID:        sessionid,
 			expectedResponse: "",
-			ResponseError: &errs.Error{
-				Underlying: errors.New("frontend error"),
-				Type:       errs.Public,
-			},
+			ResponseError:    &frontendError,
 		},
 	}
 	tests := []struct {

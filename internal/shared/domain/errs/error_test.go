@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 func TestErrorStruct(t *testing.T) {
@@ -76,13 +74,6 @@ func TestHandleError(t *testing.T) {
 			wantErr:      true,
 		},
 		{
-			name:         "custom: service error: nil ctx",
-			givenError:   &assert.NotNilError{Message: "assert failed"},
-			wantedError:  ErrInternalServer,
-			wantedStatus: http.StatusInternalServerError,
-			wantErr:      true,
-		},
-		{
 			name:         "custom: public error",
 			givenError:   publicCustomErr,
 			wantedError:  publicCustomErr,
@@ -104,7 +95,7 @@ func TestHandleError(t *testing.T) {
 				t.Errorf("handleError() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if !errors.Is(err, tt.wantedError) {
-				t.Errorf("gave back wrong error: got: %v, wanted error: %v", err, tt.wantedError)
+				t.Errorf("gave back wrong error: got: %v, wanted error: %v", err.Error(), tt.wantedError.Error())
 			}
 			if status != tt.wantedStatus {
 				t.Errorf("gave back wrong code: got %d, wanted %d", status, tt.wantedStatus)

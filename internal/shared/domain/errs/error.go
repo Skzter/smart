@@ -3,8 +3,6 @@ package errs
 import (
 	"errors"
 	"net/http"
-
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // ErrorType for referencing Public or Private Errors -> Public for frontend, Private is backend only
@@ -31,12 +29,8 @@ func (e *Error) Unwrap() error {
 	return e.Underlying
 }
 
-// Public errors for the user
-//
-//nolint:gochecknoglobals,staticcheck
 var (
 	// ErrInternalServer is an frontend-facing error, when the request to openai fails or any other part of the repository
-	//lint:ignore ST1005 "Satzanfang" vom deutschen Error großgeschrieben
 	ErrInternalServer = &Error{Type: Public, Message: "Interner Server Error - bitte nochmal versuchen"}
 )
 
@@ -57,25 +51,16 @@ func HandleError(err error) (int, error) {
 	if err == nil {
 		return http.StatusOK, nil
 	}
-	// Generate() returns only the repository/service errors
-	var (
-		assertNotNilError *assert.NotNilError
-		customError       *Error
-	)
 
-	// maps the given error to the target error, when success you can operate on the custom error type
-	// see https://go.dev/wiki/Switch#missing-expression
-	switch {
-	case errors.As(err, &customError):
+	var customError *Error
+
+	if errors.As(err, &customError) {
 		switch customError.Type {
 		case Private:
 			return http.StatusInternalServerError, ErrInternalServer
 		case Public:
 			return http.StatusBadRequest, customError
 		}
-	case errors.As(err, &assertNotNilError):
-		// catching errors from the assert and OpenAI requests
-		return http.StatusInternalServerError, ErrInternalServer
 	}
 	return http.StatusBadRequest, err
 }

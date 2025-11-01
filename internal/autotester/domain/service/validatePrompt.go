@@ -40,7 +40,11 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
 func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", fmt.Errorf("SERVICE: ValidatePrompt(): %w", err)
+		return "", &errs.Error{
+			Message:    fmt.Sprintf("SERVICE: ValidatePrompt(): %v", err),
+			Underlying: err,
+			Type:       errs.Private,
+		}
 	}
 
 	req := entity.Request{
@@ -52,7 +56,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("SERVICE: ValdidatePrompt() => %w", err)
 	}
 
 	llmRespone := autotesterEntity.ModelAnswerText{}

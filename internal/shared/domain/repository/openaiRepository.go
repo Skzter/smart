@@ -56,7 +56,11 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("REPO: ctx => %w", err)
+		return nil, &errs.Error{
+			Message:    fmt.Sprintf("REPO: ctx => %v", err),
+			Underlying: err,
+			Type:       errs.Private,
+		}
 	}
 
 	// func validates request entity and returns custom error

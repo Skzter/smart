@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -43,7 +44,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("SERVICE: GeneratePrompt() => %w", err)
 	}
 	return resp.Text, nil
 }

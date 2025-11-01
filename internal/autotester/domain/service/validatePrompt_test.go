@@ -14,7 +14,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 //nolint:dupl
@@ -184,7 +183,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:        nil,
 			wantErr:    true,
 			isValid:    false,
-			expectedErr: &assert.NotNilError{
+			expectedErr: &errs.Error{
 				Message: "assert failed: given value at index 0 is nil",
 			},
 		},

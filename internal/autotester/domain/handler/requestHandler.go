@@ -67,7 +67,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			frontendError = unwrappedError
 		}
 		c.JSON(status, entity.ErrorMessage{Error: frontendError.Error()})
-		a.logger.Error(fmt.Sprintf("HANDLER serviceHandler: %s", err.Error()))
+		a.logger.Error(fmt.Sprintf("HANDLER => %s", err.Error()))
 		return
 	}
 
@@ -93,7 +93,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
 	msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serviceHandler() => %w", err)
 	}
 	if msg != "" {
 		return &entity.ResponseForUser{
@@ -105,7 +105,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	}
 	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("serviceHandler() => %w", err)
 	}
 	return &entity.ResponseForUser{
 		Message:   sharedEntity.Message{MessageBody: genText},
