@@ -16,15 +16,21 @@
         }
     }
     
-    async function loadTemplate(){
-        let response = await getTemplate("/template")
-        if (response.status != 200){
-            console.error("NO TEMPLATE FOUND!");
-            popupMessage = "NO TEMPLATE FOUND!";
+    async function loadTemplate() {
+        try {
+            const res = await fetch("/template");
+            if (!res.ok) throw { status: res.status, message: await res.text() };
+            const data = await res.json();
+            input = data.template;
+        } catch (err) {
+            const status = err.status;
+            if (status === 404) popupMessage = "Template nicht gefunden (404)";
+            else if (status >= 500) popupMessage = "Serverfehler (500)";
+            else popupMessage = "Interner Server Error";
             popupTitle = "Template Error";
             showPopup = true;
-        } else {
-            input = response.data.template;
+        } finally {
+            isLoading = false;
         }
     }
 </script>

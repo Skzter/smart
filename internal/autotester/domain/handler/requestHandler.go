@@ -44,7 +44,7 @@ func NewAutotesterController(
 
 // HandleGetTemplate processes a template request from the frontend.
 func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
-	c.JSON(http.StatusOK, entity.Template{Template: a.config.Template})
+	c.JSON(http.StatusInternalServerError, entity.Template{Template: a.config.Template})
 }
 
 // HandleChatRequest processes a chat request from the frontend.
