@@ -119,7 +119,6 @@ describe("Prompt Component", () => {
     test("clicking Template calls getTemplate and fills textarea on success", async () => {
         const user = userEvent.setup();
         const templateString = "This is a loaded template";
-        // mock success response
         getTemplate.mockResolvedValue({ status: 200, data: { template: templateString } });
 
         render(Prompt, { input: "" });
@@ -127,7 +126,6 @@ describe("Prompt Component", () => {
         const templateButton = screen.getByText("Template");
         await user.click(templateButton);
 
-        // wait for async update to the component's textarea value
         await waitFor(() => {
           expect(screen.getByPlaceholderText("Prompt")).toHaveValue(templateString);
         });
@@ -138,7 +136,6 @@ describe("Prompt Component", () => {
 
     test("clicking Template shows alert on non-200 response and doesn't change textarea", async () => {
         const user = userEvent.setup();
-        // mock failure response
         getTemplate.mockResolvedValue({ status: 404, data: {} });
         const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
@@ -151,9 +148,7 @@ describe("Prompt Component", () => {
           expect(alertSpy).toHaveBeenCalledWith("NO TEMPLATE FOUND!");
         });
 
-        // textarea should remain unchanged
         expect(screen.getByPlaceholderText("Prompt")).toHaveValue("");
-
         expect(getTemplate).toHaveBeenCalledTimes(1);
         expect(getTemplate).toHaveBeenCalledWith("/template");
 

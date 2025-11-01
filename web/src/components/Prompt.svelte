@@ -18,7 +18,8 @@
     
     async function loadTemplate() {
         try {
-            const res = await fetch("/template");
+            const res = await getTemplate("/template");
+
             if (!res.ok) throw { status: res.status, message: await res.text() };
             const data = await res.json();
             input = data.template;
@@ -29,8 +30,6 @@
             else popupMessage = "Interner Server Error";
             popupTitle = "Template Error";
             showPopup = true;
-        } finally {
-            isLoading = false;
         }
     }
 </script>
