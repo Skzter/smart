@@ -14,19 +14,6 @@ beforeEach(() => {
     vi.clearAllMocks();
 });
 
-if (!Element.prototype.animate) {
-    Element.prototype.animate = () => ({
-        cancel: () => {},
-        finish: () => {},
-        play: () => {},
-        pause: () => {},
-        reverse: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        finished: Promise.resolve(),
-        playState: "finished",
-    });
-}
 describe("Prompt Component", () => {
     test("renders textarea and button", () => {
         render(Prompt);
