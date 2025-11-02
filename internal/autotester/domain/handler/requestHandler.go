@@ -46,6 +46,8 @@ func NewAutotesterController(
 func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
 	if a.config.Template == "" {
 		c.JSON(http.StatusInternalServerError, "")
+		a.logger.Error("TEMPLATE Handler: missing template in config")
+		return
 	}
 
 	c.JSON(http.StatusOK, entity.Template{Template: a.config.Template})

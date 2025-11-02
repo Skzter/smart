@@ -188,5 +188,4 @@ template: String = """
     Ablauf: {{Detailierte Beschreibung des Ablaufs}}  
     Assertions: {{Erfolgsbedingungen}}  
     Testdaten/Setup: {{Voraussetzungen an Testdaten und Teardown-Anweisungen}}
-
 """

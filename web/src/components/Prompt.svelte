@@ -19,8 +19,8 @@
     async function loadTemplate() {
         try {
             let response = await getTemplate("/template");
-            input = response.data.template
-        } catch (err) {
+            input = response.data.template;
+        } catch {
             popupMessage = "NO TEMPLATE FOUND!";
             popupTitle = "Template Error";
             showPopup = true;
