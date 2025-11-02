@@ -1,6 +1,11 @@
 #!/bin/sh
 
-# in root
+# This test is for testing the sysprompt with the given test cases in fixtures/autotester. Each File has the expected output in the file
+# name. This tests outputs to fixtures/autotester/out/output.txt where you can see the test name (file name) and the response from the
+# api. you can check if everything is alright if a true test has a playwright test in its message and false if there is a response with
+# tips for the user.
+# currently doing 13 requests which takes ~6min or ~28secs per test case
+
 cd ..
 echo "building ..."
 go-task build
@@ -12,6 +17,7 @@ fname="out/output.txt"
 for file in *; do 
     if [ -f "$file" ]; then 
         ./../../build/autotester &
+        printf "\t\t\t\t%s\n" "$file"
         SERVER_PID=$!
         echo $SERVER_PID
         echo "Waiting for server to start..."
