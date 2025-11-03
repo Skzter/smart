@@ -60,8 +60,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 	}
 
 	llmRespone := autotesterEntity.ModelAnswerText{}
-	err = json.Unmarshal([]byte(resp.Text), &llmRespone)
-	if err != nil {
+	if err = json.Unmarshal([]byte(resp.Text), &llmRespone); err != nil {
 		return "", &errors.Error{
 			Message:    fmt.Sprintf("SERVICE: ValidatePrompt() - unmarshal: %s", err.Error()),
 			Underlying: err,
