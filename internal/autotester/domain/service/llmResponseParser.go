@@ -2,6 +2,7 @@ package service
 
 import (
 	"log/slog"
+	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -36,5 +37,24 @@ func NewLLMResponseParser(logger *slog.Logger) (LLMResponseParser, error) {
 }
 
 func (l llmResponseParser) ParseResponse(rawResponse *sharedEntity.Response) (*entity.LLMResponse, error) {
-	panic("unimplemented")
+	// split the string in to single words
+	strings := strings.Fields(rawResponse.Text)
+
+	testcode := ""
+	answerTest := ""
+
+	if strings[0] == "import" {
+		testcode = rawResponse.Text
+	} else {
+		answerTest = rawResponse.Text
+	}
+
+	logStamp, _ := entity.NewLogStamp("system")
+
+	return &entity.LLMResponse{
+		SessionId:  rawResponse.SessionID,
+		LogStamp:   logStamp,
+		AnswerText: &entity.ModelAnswerText{Text: answerTest},
+		TestCode:   &entity.TestCode{Code: testcode, Language: "ts"},
+	}, nil
 }
