@@ -1,4 +1,4 @@
-package errs
+package errors
 
 import (
 	"errors"
@@ -29,19 +29,20 @@ func (e *Error) Unwrap() error {
 	return e.Underlying
 }
 
+// nolint: gochecknoglobals
 var (
-	// ErrInternalServer is an frontend-facing error, when the request to openai fails or any other part of the repository
-	ErrInternalServer = &Error{Type: Public, Message: "Interner Server Error - bitte nochmal versuchen"}
+	// InternalServerError is an frontend-facing error, when the request to openai fails or any other part of the repository
+	InternalServerError = &Error{Type: Public, Message: "Interner Server Error - bitte nochmal versuchen"}
 )
 
 // Errors for the Repository
+// nolint: gochecknoglobals
 var (
-	ErrNilUserPrompt      = &Error{Type: Private, Message: "request without user prompt"}
-	ErrNilSystemPrompt    = &Error{Type: Private, Message: "request without system prompt"}
-	ErrNilModel           = &Error{Type: Private, Message: "request without model"}
-	ErrEmptyResponseArray = &Error{Type: Private, Message: "REPO openai error: response contains no messages to choose from"}
-	ErrEmptyResponse      = &Error{Type: Private, Message: "REPO openai error: chosen response message is empty"}
-	ErrOpenAI             = &Error{Type: Private, Message: "REPO openai error: request to the server failed"}
+	NilUserPrompt      = &Error{Type: Private, Message: "request without user prompt"}
+	NilSystemPrompt    = &Error{Type: Private, Message: "request without system prompt"}
+	NilModel           = &Error{Type: Private, Message: "request without model"}
+	EmptyResponseArray = &Error{Type: Private, Message: "REPO openai error: response contains no messages to choose from"}
+	EmptyResponse      = &Error{Type: Private, Message: "REPO openai error: chosen response message is empty"}
 )
 
 // HandleError handles the errors for the validate and generate functions
@@ -57,7 +58,7 @@ func HandleError(err error) (int, string) {
 	if errors.As(err, &customError) {
 		switch customError.Type {
 		case Private:
-			return http.StatusInternalServerError, unwrap(ErrInternalServer)
+			return http.StatusInternalServerError, unwrap(InternalServerError)
 		case Public:
 			return http.StatusBadRequest, unwrap(customError)
 		}

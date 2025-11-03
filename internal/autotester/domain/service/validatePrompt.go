@@ -9,7 +9,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -40,10 +40,10 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
 func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", &errs.Error{
+		return "", &errors.Error{
 			Message:    fmt.Sprintf("SERVICE: ValidatePrompt(): %v", err),
 			Underlying: err,
-			Type:       errs.Private,
+			Type:       errors.Private,
 		}
 	}
 
@@ -62,10 +62,10 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 	llmRespone := autotesterEntity.ModelAnswerText{}
 	err = json.Unmarshal([]byte(resp.Text), &llmRespone)
 	if err != nil {
-		return "", &errs.Error{
+		return "", &errors.Error{
 			Message:    fmt.Sprintf("SERVICE: ValidatePrompt() - unmarshal: %s", err.Error()),
 			Underlying: err,
-			Type:       errs.Private,
+			Type:       errors.Private,
 		}
 	}
 	return llmRespone.Text, nil

@@ -10,7 +10,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -94,7 +94,7 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:        "service error",
 			wantErr:     true,
-			expectedErr: errs.ErrInternalServer,
+			expectedErr: sharedErrors.InternalServerError,
 		},
 	}
 
@@ -106,7 +106,7 @@ func TestGeneratePrompt(t *testing.T) {
 			if tt.wantErr {
 				service.
 					On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), errs.ErrInternalServer)
+					Return((*entity.Response)(nil), sharedErrors.InternalServerError)
 			} else {
 				service.
 					On("Request", ctx, mock.Anything).

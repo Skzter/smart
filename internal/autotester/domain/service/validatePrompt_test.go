@@ -11,7 +11,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -141,7 +141,7 @@ func TestValidatePrompt(t *testing.T) {
 				SessionID: sessionId,
 			},
 			response:    &entity.Response{},
-			returnError: errs.ErrNilUserPrompt,
+			returnError: sharedErrors.NilUserPrompt,
 		},
 	}
 
@@ -183,7 +183,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:        nil,
 			wantErr:    true,
 			isValid:    false,
-			expectedErr: &errs.Error{
+			expectedErr: &sharedErrors.Error{
 				Message: "assert failed: given value at index 0 is nil",
 			},
 		},
@@ -193,7 +193,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
-			expectedErr: errs.ErrNilUserPrompt,
+			expectedErr: sharedErrors.NilUserPrompt,
 		},
 	}
 

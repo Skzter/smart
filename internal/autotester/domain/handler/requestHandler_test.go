@@ -15,7 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -78,17 +78,17 @@ func TestHandleChatRequest(t *testing.T) {
 	sessionid := "2"
 
 	jsonErr := errors.New("json error")
-	customJsonErr := &errs.Error{
+	customJsonErr := &sharedErrors.Error{
 		Message:    "invalid json",
 		Underlying: jsonErr,
-		Type:       errs.Private,
+		Type:       sharedErrors.Private,
 	}
 
 	feErr := errors.New("frontend error")
-	frontendError := errs.Error{
+	frontendError := sharedErrors.Error{
 		Message:    "error",
 		Underlying: feErr,
-		Type:       errs.Public,
+		Type:       sharedErrors.Public,
 	}
 
 	mockSetup := []struct {
@@ -141,7 +141,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "generating err",
 			sessionID:        sessionid,
 			expectedResponse: "",
-			ResponseError:    errs.ErrEmptyResponse,
+			ResponseError:    sharedErrors.EmptyResponse,
 		},
 		{
 			// test for frontend facing error but currently none available

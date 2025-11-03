@@ -1,4 +1,4 @@
-package errs
+package errors
 
 import (
 	"errors"
@@ -68,8 +68,8 @@ func TestHandleError(t *testing.T) {
 		},
 		{
 			name:              "custom: repo error: empty response",
-			givenError:        ErrEmptyResponse,
-			wantedErrorString: ErrInternalServer.Error(),
+			givenError:        EmptyResponse,
+			wantedErrorString: InternalServerError.Error(),
 			wantedStatus:      http.StatusInternalServerError,
 			wantErr:           true,
 		},

@@ -9,7 +9,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errs"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -56,10 +56,10 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, &errs.Error{
+		return nil, &errors.Error{
 			Message:    fmt.Sprintf("REPO: ctx => %v", err),
 			Underlying: err,
-			Type:       errs.Private,
+			Type:       errors.Private,
 		}
 	}
 
@@ -104,10 +104,10 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		})
 
 	if err != nil {
-		return nil, &errs.Error{
+		return nil, &errors.Error{
 			Message:    fmt.Sprintf("REPO: openai request: %v", err.Error()),
 			Underlying: err,
-			Type:       errs.Private,
+			Type:       errors.Private,
 		}
 	}
 
@@ -117,13 +117,13 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	// check if there are responses from api
 	if len(resp.Choices) == 0 {
-		return nil, errs.ErrEmptyResponseArray
+		return nil, errors.EmptyResponseArray
 	}
 
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, errs.ErrEmptyResponse
+		return nil, errors.EmptyResponse
 	}
 
 	// append response to message array of repo
@@ -141,11 +141,11 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 func validateRequestEntity(request entity.Request) error {
 	switch {
 	case request.Prompt == "":
-		return errs.ErrNilUserPrompt
+		return errors.NilUserPrompt
 	case request.SystemPrompt == "":
-		return errs.ErrNilSystemPrompt
+		return errors.NilSystemPrompt
 	case request.Model == "":
-		return errs.ErrNilModel
+		return errors.NilModel
 	default:
 		return nil
 	}
