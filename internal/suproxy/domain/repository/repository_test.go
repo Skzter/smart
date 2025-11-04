@@ -20,8 +20,10 @@ func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// testKey is a sample key used for testing purposes
-const testKey = "tag1-tag2-123456"
+const (
+	testKey     = "tag1-tag2-123456"
+	EntryPrefix = "supplierData/"
+)
 
 // getValidEntry returns a valid DatabaseEntry for testing
 func getValidEntry() entity.DatabaseEntry {
@@ -81,7 +83,7 @@ func TestNewDatabaseRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
+			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper, EntryPrefix)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewDatabaseRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -171,16 +173,15 @@ func TestReadRequest(t *testing.T) {
 			repo, mockS3, mockParquet := setupMocks(t)
 
 			fakeData := []byte("parquet")
-			key := testKey
 			metadata := map[string]string{"created": "123456"}
 
-			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+key).Return(fakeData, metadata, tt.mockDownloadError)
+			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+testKey).Return(fakeData, metadata, tt.mockDownloadError)
 
 			if tt.mockDownloadError == nil {
 				mockParquet.On("ReadStructsFromParquet", fakeData).Return([]entity.DatabaseEntry{getValidEntry()}, tt.mockParquetReadError)
 			}
 
-			_, err := repo.ReadRequest(context.Background(), key)
+			_, err := repo.ReadRequest(context.Background(), testKey)
 
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -456,6 +457,7 @@ func setupMocks(t *testing.T) (
 		s3Wrapper:      mockS3,
 		parquetWrapper: mockParquet,
 		logger:         logger,
+		entryPrefix:    EntryPrefix,
 	}
 
 	return repo, mockS3, mockParquet
