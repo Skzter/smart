@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -44,9 +45,9 @@ func NewAutotesterController(
 
 // HandleGetTemplate processes a template request from the frontend.
 func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
-	if a.config.Template == "" {
+	if err := assert.StringNotEmpty(a.config.Template); err != nil {
 		c.JSON(http.StatusInternalServerError, "")
-		a.logger.Error("TEMPLATE Handler: missing template in config")
+		a.logger.Error(fmt.Sprintf("HANDLER: getTemplate() => %s", err.Error()))
 		return
 	}
 
