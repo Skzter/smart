@@ -4,17 +4,22 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -247,6 +252,79 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+func TestHandleError(t *testing.T) {
+	apiErr := &openai.APIError{
+		Message:        "You exceeded your current quota",
+		Type:           "insufficient_quota",
+		HTTPStatusCode: 429,
+	}
+
+	reqErr := &openai.RequestError{
+		Err:            fmt.Errorf("dial tcp: lookup api.openai.com: no such host"),
+		HTTPStatusCode: 0,
+	}
+	tests := []struct {
+		name        string
+		givenError  error
+		wantedError error
+		wantErr     bool
+	}{
+		{
+			name:        "nil error",
+			givenError:  nil,
+			wantedError: nil,
+			wantErr:     false,
+		},
+		{
+			name:        "repository error: empty response",
+			givenError:  repository.ErrEmptyResponse,
+			wantedError: errOpenAIFailure,
+			wantErr:     true,
+		},
+		{
+			name:        "service error: nil ctx",
+			givenError:  &assert.NotNilError{Message: "assert failed"},
+			wantedError: errOpenAIFailure,
+			wantErr:     true,
+		},
+		{
+			name:        "openai api error",
+			givenError:  apiErr,
+			wantedError: errOpenAIFailure,
+			wantErr:     true,
+		},
+		{
+			name:        "openai request error",
+			givenError:  reqErr,
+			wantedError: errOpenAIFailure,
+			wantErr:     true,
+		},
+		{
+			name:        "connection error",
+			givenError:  errors.New("Post failure to connect to api.openai.com"),
+			wantedError: errOpenAIFailure,
+			wantErr:     true,
+		},
+		{
+			name:        "validate error",
+			givenError:  service.ErrNotEnoughInformation,
+			wantedError: service.ErrNotEnoughInformation,
+			wantErr:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := handleError(tt.givenError)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("handleError() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !errors.Is(err, tt.wantedError) {
+				t.Errorf("gave back wrong error: got: %v, wanted error: %v", err, tt.wantedError)
 			}
 		})
 	}
