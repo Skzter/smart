@@ -13,6 +13,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
@@ -27,8 +28,11 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
+		FileSystemProvider,
+		repository.NewTestcaseLocalStorageRepository,
 		service.NewValidatePromptService,
 		service.NewGeneratePromptService,
+		service.NewTestcaseLocalStorageService,
 		application.NewRouter,
 		handler.NewAutotesterController,
 	)
@@ -54,4 +58,9 @@ func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
 func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
+}
+
+// FileSystemProvider provides a new filesystem.
+func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
+	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
