@@ -13,15 +13,13 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
-func ctx(t *testing.T) context.Context { return t.Context() }
-
 func TestCreateTaglist(t *testing.T) {
 	tests := []struct {
 		name          string
 		uploadReturns *[]any
 		writeReturns  *[]any
 		taglist       *entity.TagList
-		ctx           func(t *testing.T) context.Context
+		ctx           context.Context
 		expectsError  bool
 	}{
 		{
@@ -30,26 +28,26 @@ func TestCreateTaglist(t *testing.T) {
 			writeReturns:  &[]any{[]byte{}, nil},
 			taglist:       &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError:  false,
-			ctx:           ctx,
+			ctx:           context.Background(),
 		},
 		{
 			name:         "nil ctx",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return nil },
+			ctx:          nil,
 		},
 		{
 			name:         "validation error",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          ctx,
+			ctx:          context.Background(),
 		},
 		{
 			name:         "parquet error",
 			writeReturns: &[]any{nil, errors.New("err")},
 			taglist:      &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError: true,
-			ctx:          ctx,
+			ctx:          context.Background(),
 		},
 		{
 			name:          "s3 error",
@@ -57,7 +55,7 @@ func TestCreateTaglist(t *testing.T) {
 			writeReturns:  &[]any{[]byte{}, nil},
 			taglist:       &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
 			expectsError:  true,
-			ctx:           ctx,
+			ctx:           context.Background(),
 		},
 	}
 
@@ -77,7 +75,7 @@ func TestCreateTaglist(t *testing.T) {
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			err := repo.CreateTaglist(tt.ctx(t), tt.taglist)
+			err := repo.CreateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
 				assert.Error(t, err)
@@ -96,7 +94,7 @@ func TestReadTaglist(t *testing.T) {
 		downloadReturns *[]any
 		readReturns     *[]any
 		taglist         *entity.TagList
-		ctx             func(t *testing.T) context.Context
+		ctx             context.Context
 		expectsError    bool
 	}{
 		{
@@ -105,20 +103,20 @@ func TestReadTaglist(t *testing.T) {
 			readReturns:     &[]any{[]entity.TagList{tags}, nil},
 			taglist:         &tags,
 			expectsError:    false,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:         "nil ctx",
 			taglist:      nil,
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return nil },
+			ctx:          nil,
 		},
 		{
 			name:            "s3 error",
 			downloadReturns: &[]any{[]byte{}, map[string]string{}, errors.New("err")},
 			taglist:         nil,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:            "parquet error",
@@ -126,7 +124,7 @@ func TestReadTaglist(t *testing.T) {
 			readReturns:     &[]any{[]entity.TagList{}, errors.New("err")},
 			taglist:         nil,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:            "invalid taglist returned",
@@ -134,7 +132,7 @@ func TestReadTaglist(t *testing.T) {
 			readReturns:     &[]any{[]entity.TagList{{Tags: []string{"", ""}}}, nil},
 			taglist:         nil,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:            "no taglist found",
@@ -142,7 +140,7 @@ func TestReadTaglist(t *testing.T) {
 			readReturns:     &[]any{[]entity.TagList{}, nil},
 			taglist:         nil,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 	}
 
@@ -162,7 +160,7 @@ func TestReadTaglist(t *testing.T) {
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			taglist, err := repo.ReadTaglist(tt.ctx(t))
+			taglist, err := repo.ReadTaglist(tt.ctx)
 
 			if tt.expectsError {
 				assert.Error(t, err)
@@ -184,7 +182,7 @@ func TestUpdateTaglist(t *testing.T) {
 		downloadReturns *[]any
 		writeReturns    *[]any
 		taglist         *entity.TagList
-		ctx             func(t *testing.T) context.Context
+		ctx             context.Context
 		expectsError    bool
 	}{
 		{
@@ -194,26 +192,26 @@ func TestUpdateTaglist(t *testing.T) {
 			writeReturns:    &[]any{[]byte{}, nil},
 			taglist:         &tags,
 			expectsError:    false,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:         "ctx nil",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          func(t *testing.T) context.Context { return nil },
+			ctx:          nil,
 		},
 		{
 			name:         "invalid taglist",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          ctx,
+			ctx:          context.Background(),
 		},
 		{
 			name:            "s3 download error",
 			downloadReturns: &[]any{[]byte{}, map[string]string{}, errors.New("err")},
 			taglist:         &tags,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:            "parquet error",
@@ -221,7 +219,7 @@ func TestUpdateTaglist(t *testing.T) {
 			writeReturns:    &[]any{[]byte{}, errors.New("err")},
 			taglist:         &tags,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 		{
 			name:            "s3 upload error",
@@ -230,7 +228,7 @@ func TestUpdateTaglist(t *testing.T) {
 			writeReturns:    &[]any{[]byte{}, nil},
 			taglist:         &tags,
 			expectsError:    true,
-			ctx:             ctx,
+			ctx:             context.Background(),
 		},
 	}
 
@@ -254,7 +252,7 @@ func TestUpdateTaglist(t *testing.T) {
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			err := repo.UpdateTaglist(tt.ctx(t), tt.taglist)
+			err := repo.UpdateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
 				assert.Error(t, err)
@@ -269,27 +267,27 @@ func TestTaglistExists(t *testing.T) {
 	tests := []struct {
 		name           string
 		existReturns   *[]any
-		ctx            func(t *testing.T) context.Context
+		ctx            context.Context
 		expectedResult bool
 		expectedError  bool
 	}{
 		{
 			name:           "file exists",
 			existReturns:   &[]any{true, nil},
-			ctx:            ctx,
+			ctx:            context.Background(),
 			expectedResult: true,
 			expectedError:  false,
 		},
 		{
 			name:           "file doesn't exist",
 			existReturns:   &[]any{false, nil},
-			ctx:            ctx,
+			ctx:            context.Background(),
 			expectedResult: false,
 			expectedError:  false,
 		},
 		{
 			name:          "ctx nil",
-			ctx:           func(t *testing.T) context.Context { return nil },
+			ctx:           nil,
 			expectedError: true,
 		},
 	}
@@ -306,7 +304,7 @@ func TestTaglistExists(t *testing.T) {
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet)
-			exists, err := repo.TaglistExists(tt.ctx(t))
+			exists, err := repo.TaglistExists(tt.ctx)
 
 			if tt.expectedError {
 				assert.NotNil(t, err)

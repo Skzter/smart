@@ -14,8 +14,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
-func ctx(t *testing.T) context.Context { return t.Context() }
-
 func TestNewTaglistStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
@@ -68,46 +66,46 @@ func TestStoreTaglist(t *testing.T) {
 		existsReturns *[]any
 		createReturns *[]any
 		updateReturns *[]any
-		ctx           func(*testing.T) context.Context
+		ctx           context.Context
 		expectedError bool
 	}{
 		{
 			testName:      "Nil Context",
-			ctx:           func(t *testing.T) context.Context { return nil },
+			ctx:           nil,
 			expectedError: true,
 		},
 		{
 			testName:      "Repo TaglistExists Error",
 			existsReturns: &[]any{false, errors.New("err")},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: true,
 		},
 		{
 			testName:      "Create New Taglist Successfully",
 			existsReturns: &[]any{false, nil},
 			createReturns: &[]any{nil},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: false,
 		},
 		{
 			testName:      "Update Existing Taglist Successfully",
 			existsReturns: &[]any{true, nil},
 			updateReturns: &[]any{nil},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: false,
 		},
 		{
 			testName:      "Create Taglist Fails",
 			existsReturns: &[]any{false, nil},
 			createReturns: &[]any{errors.New("err")},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: true,
 		},
 		{
 			testName:      "Update Taglist Fails",
 			existsReturns: &[]any{true, nil},
 			updateReturns: &[]any{errors.New("err")},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: true,
 		},
 	}
@@ -127,7 +125,7 @@ func TestStoreTaglist(t *testing.T) {
 
 			storage, _ := NewTaglistStorage(logger, repo)
 
-			err := storage.StoreTaglist(test.ctx(t), []string{"A", "B", "C"})
+			err := storage.StoreTaglist(test.ctx, []string{"A", "B", "C"})
 
 			if test.expectedError {
 				assert.NotNil(t, err)
@@ -144,25 +142,25 @@ func TestGetTaglist(t *testing.T) {
 	tests := []struct {
 		testName       string
 		readReturns    *[]any
-		ctx            func(t *testing.T) context.Context
+		ctx            context.Context
 		expectedError  bool
 		expectedResult []string
 	}{
 		{
 			testName:      "Nil Context",
-			ctx:           func(t *testing.T) context.Context { return nil },
+			ctx:           nil,
 			expectedError: true,
 		},
 		{
 			testName:      "Repo ReadTaglist Error",
 			readReturns:   &[]any{nil, errors.New("errors")},
-			ctx:           ctx,
+			ctx:           context.Background(),
 			expectedError: true,
 		},
 		{
 			testName:       "Successful Taglist Read",
 			readReturns:    &[]any{&entity.TagList{Tags: []string{"A", "B", "C"}}, nil},
-			ctx:            ctx,
+			ctx:            context.Background(),
 			expectedError:  false,
 			expectedResult: []string{"A", "B", "C"},
 		},
@@ -181,7 +179,7 @@ func TestGetTaglist(t *testing.T) {
 				t.Fatalf("failed to init TaglistStorage: %v", err)
 			}
 
-			result, err := storage.GetTaglist(test.ctx(t))
+			result, err := storage.GetTaglist(test.ctx)
 
 			if test.expectedError {
 				assert.NotNil(t, err)
