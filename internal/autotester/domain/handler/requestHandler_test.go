@@ -348,7 +348,7 @@ func TestHandleTemplate(t *testing.T) {
 			TestName:       "Request, empty Template",
 			template:       "",
 			ctx:            context.Background(),
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusTeapot,
 		},
 	}
 

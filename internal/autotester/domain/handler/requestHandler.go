@@ -54,7 +54,7 @@ func NewAutotesterController(
 // HandleGetTemplate processes a template request from the frontend.
 func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
 	if err := assert.StringNotEmpty(a.config.Template); err != nil {
-		c.JSON(http.StatusInternalServerError, "")
+		c.JSON(http.StatusTeapot, "")
 		a.logger.Error(fmt.Sprintf("HANDLER: getTemplate() => %s", err.Error()))
 		return
 	}
