@@ -38,20 +38,35 @@ func (_m *MockValidatePrompt) EXPECT() *MockValidatePrompt_Expecter {
 }
 
 // ValidatePrompt provides a mock function for the type MockValidatePrompt
-func (_mock *MockValidatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) error {
+func (_mock *MockValidatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error) {
 	ret := _mock.Called(ctx, userPrompt, sessionID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidatePrompt")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+	var r0 bool
+	var r1 string
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (bool, string, error)); ok {
+		return returnFunc(ctx, userPrompt, sessionID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) bool); ok {
 		r0 = returnFunc(ctx, userPrompt, sessionID)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(bool)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) string); ok {
+		r1 = returnFunc(ctx, userPrompt, sessionID)
+	} else {
+		r1 = ret.Get(1).(string)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, userPrompt, sessionID)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockValidatePrompt_ValidatePrompt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidatePrompt'
@@ -90,12 +105,12 @@ func (_c *MockValidatePrompt_ValidatePrompt_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockValidatePrompt_ValidatePrompt_Call) Return(err error) *MockValidatePrompt_ValidatePrompt_Call {
-	_c.Call.Return(err)
+func (_c *MockValidatePrompt_ValidatePrompt_Call) Return(b bool, s string, err error) *MockValidatePrompt_ValidatePrompt_Call {
+	_c.Call.Return(b, s, err)
 	return _c
 }
 
-func (_c *MockValidatePrompt_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string, sessionID string) error) *MockValidatePrompt_ValidatePrompt_Call {
+func (_c *MockValidatePrompt_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string, sessionID string) (bool, string, error)) *MockValidatePrompt_ValidatePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

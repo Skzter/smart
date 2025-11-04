@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Erstelle einen Autoplaywright-Test für Check24 Reisesparte. Base-URL: https://staging.check24.de/reise. Szenario: Flugsuche von München nach Barcelona. Ablauf: Der Nutzer sucht einen Flug im August. Assertions: Ergebnisseite zeigt Flüge. Testdaten: Fixture-Datei mit Flugdaten; Setup/Teardown entsprechend.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}
