@@ -14,37 +14,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
-type mockCall struct {
-	Name    string
-	Params  int
-	Returns []any
-}
-
-func call(name string, params int, returns ...any) *mockCall {
-	return &mockCall{Name: name, Params: params, Returns: returns}
-}
-
-func taglistExists(b bool, err error) *mockCall { return call("TaglistExists", 1, b, err) }
-func createTaglist(err error) *mockCall         { return call("CreateTaglist", 2, err) }
-func updateTaglist(err error) *mockCall         { return call("UpdateTaglist", 2, err) }
-func readTaglist(tle *entity.TagList, err error) *mockCall {
-	return call("ReadTaglist", 1, tle, err)
-}
-
-func setupMocks(calls ...*mockCall) func(*testing.T) repository.TaglistStorage {
-	return func(t *testing.T) repository.TaglistStorage {
-		repo := mocks.NewMockTaglistStorage(t)
-		for _, call := range calls {
-			args := make([]any, call.Params)
-			for i := range args {
-				args[i] = mock.Anything
-			}
-			repo.On(call.Name, args...).Return(call.Returns...)
-		}
-		return repo
-	}
-}
-
 func ctx(t *testing.T) context.Context { return t.Context() }
 
 func TestNewTaglistStorage(t *testing.T) {
@@ -71,7 +40,7 @@ func TestNewTaglistStorage(t *testing.T) {
 		{
 			testName:      "Valid Parameters",
 			logger:        logger,
-			repo:          setupMocks(),
+			repo:          func(t *testing.T) repository.TaglistStorage { return mocks.NewMockTaglistStorage(t) },
 			expectedError: false,
 		},
 	}
@@ -96,43 +65,48 @@ func TestStoreTaglist(t *testing.T) {
 
 	tests := []struct {
 		testName      string
-		repo          func(*testing.T) repository.TaglistStorage
+		existsReturns *[]any
+		createReturns *[]any
+		updateReturns *[]any
 		ctx           func(*testing.T) context.Context
 		expectedError bool
 	}{
 		{
 			testName:      "Nil Context",
-			repo:          setupMocks(),
 			ctx:           func(t *testing.T) context.Context { return nil },
 			expectedError: true,
 		},
 		{
 			testName:      "Repo TaglistExists Error",
-			repo:          setupMocks(taglistExists(false, errors.New("err"))),
+			existsReturns: &[]any{false, errors.New("err")},
 			ctx:           ctx,
 			expectedError: true,
 		},
 		{
 			testName:      "Create New Taglist Successfully",
-			repo:          setupMocks(taglistExists(false, nil), createTaglist(nil)),
+			existsReturns: &[]any{false, nil},
+			createReturns: &[]any{nil},
 			ctx:           ctx,
 			expectedError: false,
 		},
 		{
 			testName:      "Update Existing Taglist Successfully",
-			repo:          setupMocks(taglistExists(true, nil), updateTaglist(nil)),
+			existsReturns: &[]any{true, nil},
+			updateReturns: &[]any{nil},
 			ctx:           ctx,
 			expectedError: false,
 		},
 		{
 			testName:      "Create Taglist Fails",
-			repo:          setupMocks(taglistExists(false, nil), createTaglist(errors.New("err"))),
+			existsReturns: &[]any{false, nil},
+			createReturns: &[]any{errors.New("err")},
 			ctx:           ctx,
 			expectedError: true,
 		},
 		{
 			testName:      "Update Taglist Fails",
-			repo:          setupMocks(taglistExists(true, nil), updateTaglist(errors.New("err"))),
+			existsReturns: &[]any{true, nil},
+			updateReturns: &[]any{errors.New("err")},
 			ctx:           ctx,
 			expectedError: true,
 		},
@@ -140,7 +114,18 @@ func TestStoreTaglist(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			storage, _ := NewTaglistStorage(logger, test.repo(t))
+			repo := mocks.NewMockTaglistStorage(t)
+			if test.existsReturns != nil {
+				repo.On("TaglistExists", mock.Anything).Return(*test.existsReturns...)
+			}
+			if test.createReturns != nil {
+				repo.On("CreateTaglist", mock.Anything, mock.Anything).Return(*test.createReturns...)
+			}
+			if test.updateReturns != nil {
+				repo.On("UpdateTaglist", mock.Anything, mock.Anything).Return(*test.updateReturns...)
+			}
+
+			storage, _ := NewTaglistStorage(logger, repo)
 
 			err := storage.StoreTaglist(test.ctx(t), []string{"A", "B", "C"})
 
@@ -158,26 +143,25 @@ func TestGetTaglist(t *testing.T) {
 
 	tests := []struct {
 		testName       string
-		repo           func(t *testing.T) repository.TaglistStorage
+		readReturns    *[]any
 		ctx            func(t *testing.T) context.Context
 		expectedError  bool
 		expectedResult []string
 	}{
 		{
 			testName:      "Nil Context",
-			repo:          setupMocks(),
 			ctx:           func(t *testing.T) context.Context { return nil },
 			expectedError: true,
 		},
 		{
 			testName:      "Repo ReadTaglist Error",
-			repo:          setupMocks(readTaglist(nil, errors.New("errors"))),
+			readReturns:   &[]any{nil, errors.New("errors")},
 			ctx:           ctx,
 			expectedError: true,
 		},
 		{
 			testName:       "Successful Taglist Read",
-			repo:           setupMocks(readTaglist(&entity.TagList{Tags: []string{"A", "B", "C"}}, nil)),
+			readReturns:    &[]any{&entity.TagList{Tags: []string{"A", "B", "C"}}, nil},
 			ctx:            ctx,
 			expectedError:  false,
 			expectedResult: []string{"A", "B", "C"},
@@ -186,7 +170,13 @@ func TestGetTaglist(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			storage, err := NewTaglistStorage(logger, test.repo(t))
+			repo := mocks.NewMockTaglistStorage(t)
+
+			if test.readReturns != nil {
+				repo.On("ReadTaglist", mock.Anything).Return(*test.readReturns...)
+			}
+
+			storage, err := NewTaglistStorage(logger, repo)
 			if err != nil {
 				t.Fatalf("failed to init TaglistStorage: %v", err)
 			}
