@@ -320,32 +320,35 @@ func TestNewTaglistStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
-		name        string
-		mockSetup   func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList])
-		logger      *slog.Logger
-		expectError bool
+		name           string
+		useNilWrappers bool
+		logger         *slog.Logger
+		expectError    bool
 	}{
 		{
-			name: "happy path",
-			mockSetup: func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
-				return mocks.NewMockS3StorageWrapper(t), mocks.NewMockParquetFileWrapper[entity.TagList](t)
-			},
-			logger:      logger,
-			expectError: false,
+			name:           "happy path",
+			useNilWrappers: false,
+			logger:         logger,
+			expectError:    false,
 		},
 		{
-			name: "everything nil",
-			mockSetup: func(t *testing.T) (*mocks.MockS3StorageWrapper, *mocks.MockParquetFileWrapper[entity.TagList]) {
-				return nil, nil
-			},
-			logger:      nil,
-			expectError: true,
+			name:           "everything nil",
+			useNilWrappers: true,
+			logger:         nil,
+			expectError:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s3, parquet := tt.mockSetup(t)
+			var s3 *mocks.MockS3StorageWrapper = nil
+			var parquet *mocks.MockParquetFileWrapper[entity.TagList] = nil
+
+			if !tt.useNilWrappers {
+				s3 = mocks.NewMockS3StorageWrapper(t)
+				parquet = mocks.NewMockParquetFileWrapper[entity.TagList](t)
+			}
+
 			repo, err := NewTaglistStorage(tt.logger, s3, parquet)
 
 			if tt.expectError {

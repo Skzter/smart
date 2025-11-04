@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
@@ -20,32 +19,37 @@ func TestNewTaglistStorage(t *testing.T) {
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
-		repo          func(*testing.T) repository.TaglistStorage
+		repoNil       bool
 		expectedError bool
 	}{
 		{
 			testName:      "Invalid Logger and Repo",
 			logger:        nil,
-			repo:          func(t *testing.T) repository.TaglistStorage { return nil },
+			repoNil:       true,
 			expectedError: true,
 		},
 		{
 			testName:      "Invalid Repo Only",
 			logger:        logger,
-			repo:          func(t *testing.T) repository.TaglistStorage { return nil },
+			repoNil:       true,
 			expectedError: true,
 		},
 		{
 			testName:      "Valid Parameters",
 			logger:        logger,
-			repo:          func(t *testing.T) repository.TaglistStorage { return mocks.NewMockTaglistStorage(t) },
+			repoNil:       false,
 			expectedError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			storage, err := NewTaglistStorage(test.logger, test.repo(t))
+			var repo *mocks.MockTaglistStorage = nil
+			if !test.repoNil {
+				repo = mocks.NewMockTaglistStorage(t)
+			}
+
+			storage, err := NewTaglistStorage(test.logger, repo)
 
 			if test.expectedError {
 				assert.NotNil(t, err)
