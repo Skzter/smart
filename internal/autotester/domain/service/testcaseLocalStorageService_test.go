@@ -44,7 +44,7 @@ func TestNewTestcaseLocalStorageService(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			service, err := NewTestcaseLocalStorageService(test.logger, test.repo)
+			service, err := NewTestcaseLocalStorageService(test.logger, test.repo, false)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewTestcaseStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -103,7 +103,7 @@ func TestSave(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
@@ -160,7 +160,7 @@ func TestGetTestPath(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
@@ -230,7 +230,7 @@ func TestGetTestPathsBySession(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
@@ -297,7 +297,7 @@ func TestGetTestPathsByUser(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
@@ -354,7 +354,7 @@ func TestDelete(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
@@ -403,7 +403,7 @@ func TestCleanupOldTests(t *testing.T) {
 			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 			test.setupMock(mockRepo)
 
-			service, err := NewTestcaseLocalStorageService(logger, mockRepo)
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
 			if err != nil {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}

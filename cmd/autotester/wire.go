@@ -32,7 +32,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		repository.NewTestcaseLocalStorageRepository,
 		service.NewValidatePromptService,
 		service.NewGeneratePromptService,
-		service.NewTestcaseLocalStorageService,
+		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
 	)
@@ -63,4 +63,8 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 // FileSystemProvider provides a new filesystem.
 func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
+}
+
+func TestcaseLocalStorageServiceProvider(logger *slog.Logger, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
+	return service.NewTestcaseLocalStorageService(logger, repo, true)
 }
