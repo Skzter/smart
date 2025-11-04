@@ -84,8 +84,7 @@ func getSaveTestCases() []saveTestCase {
 	baseTestcase := &entity.TestCase{
 		TestID: "123e4567-e89b-12d3-a456-426614174000",
 		TestCode: entity.TestCode{
-			Language: "ts",
-			Code:     "console.log('hello');",
+			Code: "console.log('hello');",
 		},
 	}
 
@@ -99,7 +98,7 @@ func getSaveTestCases() []saveTestCase {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
 
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+baseTestcase.TestCode.Language)
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"ts")
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(nil).Once()
 			},
 			wantErr: false,
@@ -123,7 +122,7 @@ func getSaveTestCases() []saveTestCase {
 			setupMock: func(m *mocks.MockFileSystem) {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+baseTestcase.TestCode.Language)
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"ts")
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(assert.AnError).Once()
 			},
 			wantErr: true,
@@ -133,8 +132,7 @@ func getSaveTestCases() []saveTestCase {
 			testcase: &entity.TestCase{
 				TestID: "invalid/test:id",
 				TestCode: entity.TestCode{
-					Language: "ts",
-					Code:     "console.log('bad');",
+					Code: "console.log('bad');",
 				},
 			},
 			userID:    userID,
@@ -186,7 +184,6 @@ func TestSave(t *testing.T) {
 type getTestPathTestCase struct {
 	name      string
 	testID    string
-	lang      string
 	userID    string
 	sessionID string
 	setupMock func(m *mocks.MockFileSystem, relativePath string)
@@ -199,7 +196,6 @@ func getTestPathTestCases() []getTestPathTestCase {
 		{
 			name:      "success",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "ts",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
@@ -213,7 +209,6 @@ func getTestPathTestCases() []getTestPathTestCase {
 		{
 			name:      "file not found",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "ts",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
@@ -225,7 +220,6 @@ func getTestPathTestCases() []getTestPathTestCase {
 		{
 			name:      "path validation fails",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "ts",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
@@ -238,7 +232,6 @@ func getTestPathTestCases() []getTestPathTestCase {
 		{
 			name:      "invalid filename",
 			testID:    "invalid/test:id",
-			lang:      "ts",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: nil,
@@ -248,7 +241,6 @@ func getTestPathTestCases() []getTestPathTestCase {
 		{
 			name:      "invalid path elements empty user/session",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "ts",
 			userID:    "",
 			sessionID: "",
 			setupMock: nil,
@@ -269,12 +261,12 @@ func TestGetTestPath(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+"."+tc.lang)
+			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+".ts")
 			if tc.setupMock != nil {
 				tc.setupMock(mockFS, relativePath)
 			}
 
-			got, err := repo.GetTestPath(tc.testID, tc.lang, tc.userID, tc.sessionID)
+			got, err := repo.GetTestPath(tc.testID, tc.userID, tc.sessionID)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
@@ -441,25 +433,25 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 				// session1 files
 				session1Path := filepath.Join(userID, "session1")
 				m.EXPECT().ReadDir(session1Path).Return([]string{
-					"123e4567-e89b-12d3-a456-426614174000.js",
-					"223e4567-e89b-12d3-a456-426614174001.js",
+					"123e4567-e89b-12d3-a456-426614174000.ts",
+					"223e4567-e89b-12d3-a456-426614174001.ts",
 				}, nil).Once()
 
-				path1 := filepath.Join(session1Path, "123e4567-e89b-12d3-a456-426614174000.js")
+				path1 := filepath.Join(session1Path, "123e4567-e89b-12d3-a456-426614174000.ts")
 				fullPath1 := filepath.Clean(filepath.Join(testRoot, path1))
 				m.EXPECT().GetValidatedPath(path1).Return(fullPath1, nil).Once()
 
-				path2 := filepath.Join(session1Path, "223e4567-e89b-12d3-a456-426614174001.js")
+				path2 := filepath.Join(session1Path, "223e4567-e89b-12d3-a456-426614174001.ts")
 				fullPath2 := filepath.Clean(filepath.Join(testRoot, path2))
 				m.EXPECT().GetValidatedPath(path2).Return(fullPath2, nil).Once()
 
 				// session2 files
 				session2Path := filepath.Join(userID, "session2")
 				m.EXPECT().ReadDir(session2Path).Return([]string{
-					"323e4567-e89b-12d3-a456-426614174002.js",
+					"323e4567-e89b-12d3-a456-426614174002.ts",
 				}, nil).Once()
 
-				path3 := filepath.Join(session2Path, "323e4567-e89b-12d3-a456-426614174002.js")
+				path3 := filepath.Join(session2Path, "323e4567-e89b-12d3-a456-426614174002.ts")
 				fullPath3 := filepath.Clean(filepath.Join(testRoot, path3))
 				m.EXPECT().GetValidatedPath(path3).Return(fullPath3, nil).Once()
 			},
@@ -467,11 +459,11 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 			wantSessions: 2,
 			wantPaths: map[string][]string{
 				"session1": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/123e4567-e89b-12d3-a456-426614174000.js")),
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/223e4567-e89b-12d3-a456-426614174001.js")),
+					filepath.Clean(filepath.Join(testRoot, "user1/session1/123e4567-e89b-12d3-a456-426614174000.ts")),
+					filepath.Clean(filepath.Join(testRoot, "user1/session1/223e4567-e89b-12d3-a456-426614174001.ts")),
 				},
 				"session2": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session2/323e4567-e89b-12d3-a456-426614174002.js")),
+					filepath.Clean(filepath.Join(testRoot, "user1/session2/323e4567-e89b-12d3-a456-426614174002.ts")),
 				},
 			},
 		},
@@ -570,7 +562,6 @@ func TestDelete(t *testing.T) {
 	tests := []struct {
 		name      string
 		testID    string
-		lang      string
 		userID    string
 		sessionID string
 		setupMock func(m *mocks.MockFileSystem)
@@ -579,11 +570,10 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "success",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "en",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.en")
+				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.ts")
 				m.EXPECT().Remove(path, false).Return(nil).Once()
 			},
 			wantErr: false,
@@ -591,7 +581,6 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "invalid path elements",
 			testID:    "",
-			lang:      "en",
 			userID:    "",
 			sessionID: "",
 			setupMock: func(m *mocks.MockFileSystem) {},
@@ -600,7 +589,6 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "invalid filename",
 			testID:    "invalid:test",
-			lang:      "en",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {},
@@ -609,11 +597,10 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "remove fails",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			lang:      "en",
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.en")
+				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.ts")
 				m.EXPECT().Remove(path, false).Return(assert.AnError).Once()
 			},
 			wantErr: true,
@@ -631,7 +618,7 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			err = repo.Delete(tc.testID, tc.lang, tc.userID, tc.sessionID)
+			err = repo.Delete(tc.testID, tc.userID, tc.sessionID)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -658,7 +645,7 @@ func TestDeleteOlderThan(t *testing.T) {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
 				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				fname := "123e4567-e89b-12d3-a456-426614174000.en"
+				fname := "123e4567-e89b-12d3-a456-426614174000.ts"
 				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
 
 				filePath := filepath.Join(userID, sessionID, fname)
@@ -681,9 +668,9 @@ func TestDeleteOlderThan(t *testing.T) {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
 				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{"newfile.en"}, nil).Once()
+				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{"newfile"}, nil).Once()
 
-				filePath := filepath.Join(userID, sessionID, "newfile.en")
+				filePath := filepath.Join(userID, sessionID, "newfile")
 				m.EXPECT().GetFileStats(filePath).Return(testMockFileInfo{modTime: now}, nil).Once()
 			},
 			wantErr:     false,
@@ -694,7 +681,7 @@ func TestDeleteOlderThan(t *testing.T) {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
 				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				fname := "123e4567-e89b-12d3-a456-426614174000.en"
+				fname := "123e4567-e89b-12d3-a456-426614174000.ts"
 				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
 
 				filePath := filepath.Join(userID, sessionID, fname)
@@ -733,8 +720,7 @@ func TestValidateTestcase(t *testing.T) {
 	valid := &entity.TestCase{
 		TestID: "123e4567-e89b-12d3-a456-426614174000",
 		TestCode: entity.TestCode{
-			Code:     "print('ok')",
-			Language: "py",
+			Code: "print('ok')",
 		},
 	}
 
@@ -756,12 +742,7 @@ func TestValidateTestcase(t *testing.T) {
 			true},
 
 		{"empty Code",
-			&entity.TestCase{TestID: valid.TestID, TestCode: entity.TestCode{Language: "py"}},
-			true},
-
-		{"empty Language",
-			&entity.TestCase{TestID: valid.TestID, TestCode: entity.TestCode{Code: "console.log('ok')"}},
-			true},
+			&entity.TestCase{TestID: valid.TestID, TestCode: entity.TestCode{Code: ""}}, true},
 	}
 
 	for _, tc := range tests {
@@ -825,28 +806,26 @@ func TestValidateFilename(t *testing.T) {
 	validID := "123e4567-e89b-12d3-a456-426614174000"
 
 	tests := []struct {
-		name         string
-		filename     string
-		wantErr      bool
-		wantTestID   string
-		wantLanguage string
+		name       string
+		filename   string
+		wantErr    bool
+		wantTestID string
 	}{
-		{"valid filename", validID + ".go", false, validID, "go"},
-		{"empty filename", "", true, "", ""},
-		{"missing extension", validID, true, "", ""},
-		{"empty extension", validID + ".", true, "", ""},
-		{"invalid UUID", "not-a-uuid.go", true, "", ""},
+		{"valid filename", validID + ".go", false, validID},
+		{"empty filename", "", true, ""},
+		{"missing extension", validID, true, ""},
+		{"empty extension", validID + ".", true, ""},
+		{"invalid UUID", "not-a-uuid.go", true, ""},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			testID, lang, err := validateFilename(tc.filename)
+			testID, err := validateFilename(tc.filename)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tc.wantTestID, testID)
-				assert.Equal(t, tc.wantLanguage, lang)
 			}
 		})
 	}

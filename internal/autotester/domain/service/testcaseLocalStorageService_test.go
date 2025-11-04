@@ -15,7 +15,7 @@ import (
 // nolint:dupl
 func TestNewTestcaseLocalStorageService(t *testing.T) {
 	logger := slog.Default()
-	mockRepo := &mocks.MockTestcaseLocalStorageRepository{}
+	mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 
 	tests := []struct {
 		name    string
@@ -59,11 +59,9 @@ func TestSave(t *testing.T) {
 	logger := slog.Default()
 
 	testCase := &entity.TestCase{
-		TestID:      "test-1",
-		Description: "Test description",
+		TestID: "test-1",
 		TestCode: entity.TestCode{
-			Code:     "console.log('test');",
-			Language: "ts",
+			Code: "console.log('test');",
 		},
 		Status: entity.TestStatusPassed,
 	}
@@ -122,7 +120,6 @@ func TestGetTestPath(t *testing.T) {
 	tests := []struct {
 		name      string
 		testId    string
-		lang      string
 		userId    string
 		sessionId string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
@@ -132,11 +129,10 @@ func TestGetTestPath(t *testing.T) {
 		{
 			name:      "successful get path",
 			testId:    "test-1",
-			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPath("test-1", "ts", "user-1", "session-1").Return("user-1/session-1/test-1.ts", nil)
+				m.EXPECT().GetTestPath("test-1", "user-1", "session-1").Return("user-1/session-1/test-1.ts", nil)
 			},
 			wantErr: false,
 			want:    "user-1/session-1/test-1.ts",
@@ -144,11 +140,10 @@ func TestGetTestPath(t *testing.T) {
 		{
 			name:      "repository error",
 			testId:    "test-1",
-			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPath("test-1", "ts", "user-1", "session-1").Return("", errors.New("repository error"))
+				m.EXPECT().GetTestPath("test-1", "user-1", "session-1").Return("", errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    "",
@@ -165,7 +160,7 @@ func TestGetTestPath(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.GetTestPath(test.testId, test.lang, test.userId, test.sessionId)
+			got, err := service.GetTestPath(test.testId, test.userId, test.sessionId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("GetTestPath() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -193,14 +188,14 @@ func TestGetTestPathsBySession(t *testing.T) {
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
 				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return([]string{
-					"user-1/session-1/test-1.ts",
-					"user-1/session-1/test-2.ts",
+					"user-1/session-1/test-1",
+					"user-1/session-1/test-2",
 				}, nil)
 			},
 			wantErr: false,
 			want: []string{
-				"user-1/session-1/test-1.ts",
-				"user-1/session-1/test-2.ts",
+				"user-1/session-1/test-1",
+				"user-1/session-1/test-2",
 			},
 		},
 		{
@@ -261,15 +256,15 @@ func TestGetTestPathsByUser(t *testing.T) {
 			userId: "user-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
 				result := map[string][]string{
-					"session-1": {"user-1/session-1/test-1.ts"},
-					"session-2": {"user-1/session-2/test-2.ts"},
+					"session-1": {"user-1/session-1/test-1"},
+					"session-2": {"user-1/session-2/test-2"},
 				}
 				m.EXPECT().GetTestPathsByUser("user-1").Return(result, nil)
 			},
 			wantErr: false,
 			want: map[string][]string{
-				"session-1": {"user-1/session-1/test-1.ts"},
-				"session-2": {"user-1/session-2/test-2.ts"},
+				"session-1": {"user-1/session-1/test-1"},
+				"session-2": {"user-1/session-2/test-2"},
 			},
 		},
 		{
@@ -319,7 +314,6 @@ func TestDelete(t *testing.T) {
 	tests := []struct {
 		name      string
 		testId    string
-		lang      string
 		userId    string
 		sessionId string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
@@ -328,22 +322,20 @@ func TestDelete(t *testing.T) {
 		{
 			name:      "successful delete",
 			testId:    "test-1",
-			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "ts", "user-1", "session-1").Return(nil)
+				m.EXPECT().Delete("test-1", "user-1", "session-1").Return(nil)
 			},
 			wantErr: false,
 		},
 		{
 			name:      "repository error",
 			testId:    "test-1",
-			lang:      "ts",
 			userId:    "user-1",
 			sessionId: "session-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "ts", "user-1", "session-1").Return(errors.New("repository error"))
+				m.EXPECT().Delete("test-1", "user-1", "session-1").Return(errors.New("repository error"))
 			},
 			wantErr: true,
 		},
@@ -359,7 +351,7 @@ func TestDelete(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			err = service.Delete(test.testId, test.lang, test.userId, test.sessionId)
+			err = service.Delete(test.testId, test.userId, test.sessionId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, test.wantErr)
 			}

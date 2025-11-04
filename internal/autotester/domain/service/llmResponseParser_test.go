@@ -150,9 +150,6 @@ test('example', async ({ page }) => {
 			if got.TestCode.Code != tc.testCode {
 				t.Errorf("TestCode.Code = %q, want %q", got.TestCode.Code, tc.testCode)
 			}
-			if got.TestCode.Language != tc.language {
-				t.Errorf("TestCode.Language = %q, want %q", got.TestCode.Language, tc.language)
-			}
 		})
 	}
 }

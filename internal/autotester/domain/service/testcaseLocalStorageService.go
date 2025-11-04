@@ -21,7 +21,7 @@ type TestcaseLocalStorageService interface {
 	// GetTestPath returns the relative file path to a specific TestCase file,
 	// starting from the root of the local test storage directory.
 	// Returns an error if path validation fails or the file does not exist.
-	GetTestPath(testId, lang, userId, sessionId string) (string, error)
+	GetTestPath(testId, userId, sessionId string) (string, error)
 
 	// GetTestPathsBySession returns all relative TestCase file paths for a session,
 	// starting from the root of the local test storage directory.
@@ -35,7 +35,7 @@ type TestcaseLocalStorageService interface {
 
 	// Delete removes a testcase identified by testId for the given user and session.
 	// Returns an error if path validation fails or the file cannot be deleted.
-	Delete(testId, lang, userId, sessionId string) error
+	Delete(testId, userId, sessionId string) error
 
 	// CleanupOldTests removes all testcases that are older than 24 hours.
 	// Returns an error if the cleanup operation fails.
@@ -64,7 +64,6 @@ func NewTestcaseLocalStorageService(logger *slog.Logger, repo repository.Testcas
 func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, sessionId string) error {
 	s.logger.Debug("saving testcase",
 		slog.String("testId", testcase.TestID),
-		slog.String("language", testcase.TestCode.Language),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)
@@ -72,7 +71,6 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 	if err := s.repo.Save(testcase, userId, sessionId); err != nil {
 		s.logger.Error("failed to save testcase",
 			slog.String("testId", testcase.TestID),
-			slog.String("language", testcase.TestCode.Language),
 			slog.String("userId", userId),
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
@@ -82,26 +80,23 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 
 	s.logger.Info("testcase saved successfully",
 		slog.String("testId", testcase.TestID),
-		slog.String("language", testcase.TestCode.Language),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)
 	return nil
 }
 
-func (s *testcaseLocalStorageService) GetTestPath(testId, lang, userId, sessionId string) (string, error) {
+func (s *testcaseLocalStorageService) GetTestPath(testId, userId, sessionId string) (string, error) {
 	s.logger.Debug("getting testcase path",
 		slog.String("testId", testId),
-		slog.String("language", lang),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)
 
-	path, err := s.repo.GetTestPath(testId, lang, userId, sessionId)
+	path, err := s.repo.GetTestPath(testId, userId, sessionId)
 	if err != nil {
 		s.logger.Error("failed to get testcase path",
 			slog.String("testId", testId),
-			slog.String("language", lang),
 			slog.String("userId", userId),
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
@@ -111,7 +106,6 @@ func (s *testcaseLocalStorageService) GetTestPath(testId, lang, userId, sessionI
 
 	s.logger.Debug("testcase path retrieved successfully",
 		slog.String("testId", testId),
-		slog.String("language", lang),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 		slog.String("path", path),
@@ -170,11 +164,10 @@ func (s *testcaseLocalStorageService) GetTestPathsByUser(userId string) (map[str
 	return paths, nil
 }
 
-func (s *testcaseLocalStorageService) Delete(testId, lang, userId, sessionId string) error {
-	if err := s.repo.Delete(testId, lang, userId, sessionId); err != nil {
+func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) error {
+	if err := s.repo.Delete(testId, userId, sessionId); err != nil {
 		s.logger.Error("failed to delete testcase",
 			slog.String("testId", testId),
-			slog.String("language", lang),
 			slog.String("userId", userId),
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
@@ -184,7 +177,6 @@ func (s *testcaseLocalStorageService) Delete(testId, lang, userId, sessionId str
 
 	s.logger.Info("testcase deleted successfully",
 		slog.String("testId", testId),
-		slog.String("language", lang),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 	)

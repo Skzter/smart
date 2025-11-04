@@ -13,6 +13,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+const testcaseLanguageDefault = "ts"
+
 // TestcaseLocalStorageRepository provides low-level file operations for managing TestCase files
 // in local storage. The repository handles both data persistence (Save, Delete) and
 // path provisioning for the test runner (GetTestPath*). All operations are user- and session-scoped.
@@ -25,7 +27,7 @@ type TestcaseLocalStorageRepository interface {
 	// starting from the root of the local test storage directory.
 	// The path is ready for the test runner to execute the test without
 	// needing to know the internal storage structure.
-	GetTestPath(testId, lang, userId, sessionId string) (string, error)
+	GetTestPath(testId, userId, sessionId string) (string, error)
 
 	// GetTestPathsBySession returns all validated relative file paths to TestCase files for a session,
 	// starting from the root of the local test storage directory.
@@ -42,7 +44,7 @@ type TestcaseLocalStorageRepository interface {
 	// Delete removes the TestCase with the given testId for the provided
 	// user and session. Implementations should return nil when the file did
 	// not exist (idempotent delete) or an error for IO failures.
-	Delete(testId, lang, userId, sessionId string) error
+	Delete(testId, userId, sessionId string) error
 
 	// DeleteOlderThan removes all TestCases that are older than the specified duration.
 	// Returns the number of deleted files and any error that occurred.
@@ -75,8 +77,8 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 		return fmt.Errorf("validate testcase: %w", err)
 	}
 
-	filename := testcase.TestID + "." + testcase.TestCode.Language
-	if _, _, err := validateFilename(filename); err != nil {
+	filename := testcase.TestID + "." + testcaseLanguageDefault
+	if _, err := validateFilename(filename); err != nil {
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -96,14 +98,14 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 	return nil
 }
 
-func (r *testcaseLocalStorageRepository) GetTestPath(testId, lang, userId, sessionId string) (string, error) {
+func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId string) (string, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
 		return "", fmt.Errorf("validate path elements: %w", err)
 	}
 
 	dir := filepath.Join(userId, sessionId)
-	filename := testId + "." + lang
-	if _, _, err := validateFilename(filename); err != nil {
+	filename := testId + "." + testcaseLanguageDefault
+	if _, err := validateFilename(filename); err != nil {
 		return "", fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -136,7 +138,7 @@ func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId
 
 	results := make([]string, 0, len(filenames))
 	for _, filename := range filenames {
-		if _, _, err := validateFilename(filename); err != nil {
+		if _, err := validateFilename(filename); err != nil {
 			r.logger.Warn("skipping invalid testcase file", "file", filename, "err", err)
 			continue
 		}
@@ -178,14 +180,14 @@ func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[
 	return results, nil
 }
 
-func (r *testcaseLocalStorageRepository) Delete(testId, lang, userId, sessionId string) error {
+func (r *testcaseLocalStorageRepository) Delete(testId, userId, sessionId string) error {
 	if err := validatePathNameElements(testId, userId, sessionId); err != nil {
 		return fmt.Errorf("validate path elements: %w", err)
 	}
 
 	dir := filepath.Join(userId, sessionId)
-	filename := testId + "." + lang
-	if _, _, err := validateFilename(filename); err != nil {
+	filename := testId + "." + testcaseLanguageDefault
+	if _, err := validateFilename(filename); err != nil {
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -229,12 +231,12 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 				}
 
 				if fileInfo.ModTime().Before(cutoffTime) {
-					testId, lang, err := validateFilename(filename)
+					testId, err := validateFilename(filename)
 					if err != nil {
 						continue
 					}
 
-					if err := r.Delete(testId, lang, userId, sessionId); err != nil {
+					if err := r.Delete(testId, userId, sessionId); err != nil {
 						continue
 					}
 
@@ -256,7 +258,7 @@ func validateTestcase(testcase *entity.TestCase) error {
 	if err := assert.StringNotEmpty(testcase.TestCode.Code); err != nil {
 		return fmt.Errorf("testcase.TestCode.Code must not be empty: %w", err)
 	}
-	if err := assert.StringNotEmpty(testcase.TestCode.Language); err != nil {
+	if err := assert.StringNotEmpty(testcaseLanguageDefault); err != nil {
 		return fmt.Errorf("testcase.TestCode.Language must not be empty: %w", err)
 	}
 	return nil
@@ -274,25 +276,20 @@ func validatePathNameElements(values ...string) error {
 // validateFilename parses and validates a filename in the form
 // <testId>.<language>. On success it returns the parsed
 // testId and language.
-func validateFilename(filename string) (testID, language string, err error) {
+func validateFilename(filename string) (testID string, err error) {
 	if filename == "" {
-		return "", "", fmt.Errorf("empty filename")
+		return "", fmt.Errorf("empty filename")
 	}
 
 	dotPosition := strings.LastIndex(filename, ".")
 	if dotPosition <= 0 || dotPosition == len(filename)-1 {
-		return "", "", fmt.Errorf("missing or invalid extension")
-	}
-
-	language = filename[dotPosition+1:]
-	if language == "" {
-		return "", "", fmt.Errorf("empty language")
+		return "", fmt.Errorf("missing or invalid extension")
 	}
 
 	testId := filename[:dotPosition]
 	if _, err := uuid.Parse(testId); err != nil {
-		return "", "", fmt.Errorf("invalid UUID format in testId '%s': %w", testId, err)
+		return "", fmt.Errorf("invalid UUID format in testId '%s': %w", testId, err)
 	}
 
-	return testId, language, nil
+	return testId, nil
 }

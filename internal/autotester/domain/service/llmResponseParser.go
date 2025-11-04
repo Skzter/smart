@@ -55,6 +55,6 @@ func (l llmResponseParser) ParseResponse(rawResponse *sharedEntity.Response) (*e
 		SessionId:  rawResponse.SessionID,
 		LogStamp:   logStamp,
 		AnswerText: &entity.ModelAnswerText{Text: answerTest},
-		TestCode:   &entity.TestCode{Code: testcode, Language: "ts"},
+		TestCode:   &entity.TestCode{Code: testcode},
 	}, nil
 }

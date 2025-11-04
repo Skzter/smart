@@ -183,6 +183,3 @@ bucket: String = "smart-autotester"
 
 testsRootDir: String = "tempTests"
 
-
-
-
