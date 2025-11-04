@@ -68,13 +68,13 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		qa.logger.Error(fmt.Sprintf("REPO openai: %s", err.Error()))
+		qa.logger.Error(err.Error())
 		return nil, sharedError.ErrInternalServer
 	}
 
 	// func validates request entity and returns custom error
 	if err := validateRequestEntity(request); err != nil {
-		qa.logger.Error(fmt.Sprintf("REPO entity validation: %s", err.Error()))
+		qa.logger.Error(err.Error())
 		return nil, sharedError.ErrInternalServer
 	}
 
@@ -114,7 +114,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		})
 
 	if err != nil {
-		qa.logger.Error(fmt.Sprintf("REPO openai request: %s", err.Error()))
+		qa.logger.Error(err.Error())
 		return nil, sharedError.ErrInternalServer
 	}
 
@@ -129,7 +129,6 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	}
 
 	// first choice of all responses
-	qa.logger.Error(fmt.Sprintf("%v", resp.Choices))
 	text := resp.Choices[0].Message.Content
 	if text == "" {
 		qa.logger.Error(errEmptyResponse)

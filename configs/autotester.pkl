@@ -29,10 +29,12 @@ class Prompts {
            - the response has to be valid json after the following logic
            a response for the case `true` looks like this:
             {
+                "valid": true,
                 "message": ""
             }
                 a response for the case `false` for example looks like this:
             {
+              "valid": false,
               "message": "alle gründe warum es schiefgelaufen"
             }
            - Any deviation from this format is considered incorrect output.
@@ -82,6 +84,7 @@ class Prompts {
 
         REPEAT: Only return valid json looking like this:
         {
+          "valid": boolean
           "message": value (MUSS AUF DEUTSCH SEIN)
         }
         and nothing else!

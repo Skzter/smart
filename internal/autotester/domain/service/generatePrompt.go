@@ -37,7 +37,7 @@ func NewGeneratePromptService(service sharedService.OpenAI, config *config.Confi
 func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrGeneration
+		return "", errors.ErrInternalServer
 	}
 	req := entity.Request{
 		Prompt:       userPrompt,

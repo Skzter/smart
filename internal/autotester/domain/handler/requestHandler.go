@@ -80,11 +80,11 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // First validates the user prompt through validationService, then generates a response through generationService.
 // Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
-	if msg != "" {
+	if !valid {
 		return &entity.ResponseForUser{
 			Message:   sharedEntity.Message{MessageBody: msg},
 			UserId:    userRequest.UserId,

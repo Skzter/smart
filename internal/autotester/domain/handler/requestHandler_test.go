@@ -81,6 +81,7 @@ func TestHandleChatRequest(t *testing.T) {
 		userPrompt       string
 		sessionID        string
 		expectedResponse string
+		expectedBool     bool
 		ResponseError    error
 	}{
 		{
@@ -88,6 +89,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
 			expectedResponse: "",
+			expectedBool:     true,
 			ResponseError:    nil,
 		},
 		{
@@ -103,6 +105,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       invalidPrompt,
 			sessionID:        sessionid,
 			expectedResponse: "versuch doch mal das",
+			expectedBool:     false,
 			ResponseError:    nil,
 		},
 		{
@@ -111,6 +114,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "json gibts nicht",
 			sessionID:        sessionid,
 			expectedResponse: "",
+			expectedBool:     false,
 			ResponseError:    sharedErrors.ErrValidation,
 		},
 		{
@@ -119,6 +123,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "generating err",
 			sessionID:        sessionid,
 			expectedResponse: "",
+			expectedBool:     true,
 			ResponseError:    nil,
 		},
 		{
@@ -196,7 +201,7 @@ func TestHandleChatRequest(t *testing.T) {
 	// setup mocks
 	for _, mc := range mockSetup {
 		if mc.function == "ValidatePrompt" {
-			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedBool, mc.expectedResponse, mc.ResponseError)
 		}
 		if mc.function == "GeneratePrompt" {
 			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
@@ -205,7 +210,7 @@ func TestHandleChatRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, "/v1/chat", bytes.NewBufferString(test.RequestBody))
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/chat", bytes.NewBufferString(test.RequestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
@@ -272,7 +277,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodPost, "/v1/userInfo", bytes.NewBufferString(test.UserRequestBody))
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/userInfo", bytes.NewBufferString(test.UserRequestBody))
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}

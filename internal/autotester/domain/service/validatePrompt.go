@@ -15,7 +15,7 @@ import (
 
 // ValidatePrompt defines an interface for prompt validation
 type ValidatePrompt interface {
-	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error)
+	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error)
 }
 
 // validatePrompt provides functionality to validate user prompts using OpenAI.
@@ -37,10 +37,10 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
-func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
+func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrValidation
+		return false, "", errors.ErrInternalServer
 	}
 
 	req := entity.Request{
@@ -52,13 +52,13 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return "", errors.ErrValidation
+		return false, "", errors.ErrValidation
 	}
 
-	llmRespone := autotesterEntity.ModelAnswerText{}
-	if err = json.Unmarshal([]byte(resp.Text), &llmRespone); err != nil {
+	llmResponse := autotesterEntity.LlmValidationResponse{}
+	if err = json.Unmarshal([]byte(resp.Text), &llmResponse); err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrValidation
+		return false, "", errors.ErrInternalServer
 	}
-	return llmRespone.Text, nil
+	return llmResponse.Valid, llmResponse.Message, nil
 }

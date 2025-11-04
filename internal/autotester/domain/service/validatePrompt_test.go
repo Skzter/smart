@@ -175,7 +175,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
-			expectedErr: sharedErrors.ErrValidation,
+			expectedErr: sharedErrors.ErrInternalServer,
 		},
 		{
 			name:        "nil ctx",
@@ -183,7 +183,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:         nil,
 			wantErr:     true,
 			isValid:     false,
-			expectedErr: sharedErrors.ErrValidation,
+			expectedErr: sharedErrors.ErrInternalServer,
 		},
 		{
 			name:        "service error",
@@ -201,7 +201,7 @@ func TestValidatePrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt, sessionId)
+			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt, sessionId)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("got nil error, expected => %v", tt.expectedErr)
@@ -212,16 +212,17 @@ func TestValidatePrompt(t *testing.T) {
 				}
 			} else {
 				if tt.isValid {
+					if valid != tt.isValid {
+						t.Fatalf("expected %t, got %t", tt.isValid, valid)
+					}
 					if str != "" {
 						t.Fatalf("expected nil string, got => %v", str)
 					}
-				} else {
-					if str == "" {
-						t.Fatal("expected populated string but got nil string")
-					}
+				} else if str == "" {
+					t.Fatal("expected populated string but got nil string")
 				}
 			}
+			mock.AssertExpectationsForObjects(t)
 		})
 	}
-	mock.AssertExpectationsForObjects(t)
 }
