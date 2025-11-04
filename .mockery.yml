@@ -53,3 +53,4 @@ packages:
     interfaces:
       GeneratePrompt:
       ValidatePrompt:
+      TestcaseLocalStorageService:
