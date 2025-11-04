@@ -1,8 +1,18 @@
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { vi } from "vitest";
 import Prompt from "../../src/components/Prompt.svelte";
+
+vi.mock("../../src/lib/Api.ts", () => ({
+    getTemplate: vi.fn(),
+}));
+
+import { getTemplate } from "../../src/lib/Api.ts";
+
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 describe("Prompt Component", () => {
     test("renders textarea and button", () => {
@@ -104,5 +114,47 @@ describe("Prompt Component", () => {
         await user.keyboard("[Enter]");
 
         expect(mockFn).not.toHaveBeenCalled();
+    });
+
+    test("clicking Template calls getTemplate and fills textarea on success", async () => {
+        const user = userEvent.setup();
+        const templateString = "This is a loaded template";
+        getTemplate.mockResolvedValue({
+            status: 200,
+            data: { template: templateString },
+        });
+
+        render(Prompt, { input: "" });
+
+        const templateButton = screen.getByText("Template");
+        await user.click(templateButton);
+
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText("Prompt")).toHaveValue(
+                templateString,
+            );
+        });
+
+        expect(getTemplate).toHaveBeenCalledTimes(1);
+        expect(getTemplate).toHaveBeenCalledWith("/template");
+    });
+
+    test("clicking Template shows alert on non-200 response and doesn't change textarea", async () => {
+        const user = userEvent.setup();
+        getTemplate.mockRejectedValue({ status: 404, data: {} });
+
+        render(Prompt, { input: "" });
+
+        const templateButton = screen.getByText("Template");
+        await user.click(templateButton);
+
+        await waitFor(() => {
+            expect(screen.getByText("NO TEMPLATE FOUND!")).toBeInTheDocument();
+            expect(screen.getByText("Template Error")).toBeInTheDocument();
+        });
+
+        expect(screen.getByPlaceholderText("Prompt")).toHaveValue("");
+        expect(getTemplate).toHaveBeenCalledTimes(1);
+        expect(getTemplate).toHaveBeenCalledWith("/template");
     });
 });
