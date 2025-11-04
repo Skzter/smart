@@ -18,3 +18,17 @@ Object.defineProperty(window, "matchMedia", {
         dispatchEvent: vi.fn(),
     })),
 });
+
+if (!Element.prototype.animate) {
+    Element.prototype.animate = () => ({
+        cancel: () => {},
+        finish: () => {},
+        play: () => {},
+        pause: () => {},
+        reverse: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        finished: Promise.resolve(),
+        playState: "finished",
+    });
+}

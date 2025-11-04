@@ -42,6 +42,17 @@ func NewAutotesterController(
 	}, nil
 }
 
+// HandleGetTemplate processes a template request from the frontend.
+func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
+	if err := assert.StringNotEmpty(a.config.Template); err != nil {
+		c.JSON(http.StatusTeapot, "")
+		a.logger.Error(err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, entity.Template{Template: a.config.Template})
+}
+
 // HandleChatRequest processes a chat request from the frontend.
 // Expects a JSON with UserRequestDTO and returns a response from the LLM.
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {

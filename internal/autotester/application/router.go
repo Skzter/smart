@@ -19,6 +19,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 	apiV1 := router.Group("/v1")
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
+		apiV1.GET("/template", controller.HandleGetTemplate)
 	}
 
 	router.GET("/auth_config.json", func(c *gin.Context) {
