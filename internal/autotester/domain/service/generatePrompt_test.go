@@ -94,7 +94,7 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:        "service error",
 			wantErr:     true,
-			expectedErr: sharedErrors.InternalServerError,
+			expectedErr: sharedErrors.ErrGeneration,
 		},
 	}
 
@@ -106,7 +106,7 @@ func TestGeneratePrompt(t *testing.T) {
 			if tt.wantErr {
 				service.
 					On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), sharedErrors.InternalServerError)
+					Return((*entity.Response)(nil), sharedErrors.ErrInternalServer)
 			} else {
 				service.
 					On("Request", ctx, mock.Anything).

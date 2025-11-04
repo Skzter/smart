@@ -3,7 +3,6 @@ package handler
 import (
 	"bytes"
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -77,20 +76,6 @@ func TestHandleChatRequest(t *testing.T) {
 	invalidPrompt := "this is a invalid prompt"
 	sessionid := "2"
 
-	jsonErr := errors.New("json error")
-	customJsonErr := &sharedErrors.Error{
-		Message:    "invalid json",
-		Underlying: jsonErr,
-		Type:       sharedErrors.Private,
-	}
-
-	feErr := errors.New("frontend error")
-	frontendError := sharedErrors.Error{
-		Message:    "error",
-		Underlying: feErr,
-		Type:       sharedErrors.Public,
-	}
-
 	mockSetup := []struct {
 		function         string
 		userPrompt       string
@@ -126,7 +111,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "json gibts nicht",
 			sessionID:        sessionid,
 			expectedResponse: "",
-			ResponseError:    customJsonErr,
+			ResponseError:    sharedErrors.ErrValidation,
 		},
 		{
 			// test has to pass in validation in order to fail in generation below
@@ -141,15 +126,7 @@ func TestHandleChatRequest(t *testing.T) {
 			userPrompt:       "generating err",
 			sessionID:        sessionid,
 			expectedResponse: "",
-			ResponseError:    sharedErrors.EmptyResponse,
-		},
-		{
-			// test for frontend facing error but currently none available
-			function:         "ValidatePrompt",
-			userPrompt:       "validation failure results in fe error",
-			sessionID:        sessionid,
-			expectedResponse: "",
-			ResponseError:    &frontendError,
+			ResponseError:    sharedErrors.ErrGeneration,
 		},
 	}
 	tests := []struct {
@@ -210,18 +187,6 @@ func TestHandleChatRequest(t *testing.T) {
 				"conversationId": "2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
-		},
-		{
-			TestName: "invalid request, user error",
-			RequestBody: `{
-				"message": {
-					"data":  "validation failure results in fe error",
-					"agent": "user"
-				},
-				"userId":         "2",
-				"conversationId": "2"
-			}`,
-			ExpectedStatus: http.StatusBadRequest,
 		},
 	}
 

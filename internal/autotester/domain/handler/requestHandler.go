@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -11,7 +10,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -58,9 +56,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		status, message := errors.HandleError(err)
-		c.JSON(status, entity.ErrorMessage{Error: message})
-		a.logger.Error(fmt.Sprintf("HANDLER => %s", err.Error()))
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 
@@ -86,7 +82,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
 	msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
-		return nil, fmt.Errorf("serviceHandler() => %w", err)
+		return nil, err
 	}
 	if msg != "" {
 		return &entity.ResponseForUser{
@@ -98,7 +94,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	}
 	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
-		return nil, fmt.Errorf("serviceHandler() => %w", err)
+		return nil, err
 	}
 	return &entity.ResponseForUser{
 		Message:   sharedEntity.Message{MessageBody: genText},

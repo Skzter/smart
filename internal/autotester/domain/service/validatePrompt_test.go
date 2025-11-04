@@ -141,7 +141,7 @@ func TestValidatePrompt(t *testing.T) {
 				SessionID: sessionId,
 			},
 			response:    &entity.Response{},
-			returnError: sharedErrors.NilUserPrompt,
+			returnError: sharedErrors.ErrInternalServer,
 		},
 	}
 
@@ -175,17 +175,15 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
-			expectedErr: errors.New("unmarshal"),
+			expectedErr: sharedErrors.ErrValidation,
 		},
 		{
-			name:       "nil ctx",
-			userPrompt: validPrompt,
-			ctx:        nil,
-			wantErr:    true,
-			isValid:    false,
-			expectedErr: &sharedErrors.Error{
-				Message: "assert failed: given value at index 0 is nil",
-			},
+			name:        "nil ctx",
+			userPrompt:  validPrompt,
+			ctx:         nil,
+			wantErr:     true,
+			isValid:     false,
+			expectedErr: sharedErrors.ErrValidation,
 		},
 		{
 			name:        "service error",
@@ -193,7 +191,7 @@ func TestValidatePrompt(t *testing.T) {
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
-			expectedErr: sharedErrors.NilUserPrompt,
+			expectedErr: sharedErrors.ErrValidation,
 		},
 	}
 

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -40,11 +39,8 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
 func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", &errors.Error{
-			Message:    fmt.Sprintf("SERVICE: ValidatePrompt(): %v", err),
-			Underlying: err,
-			Type:       errors.Private,
-		}
+		s.logger.Error(err.Error())
+		return "", errors.ErrValidation
 	}
 
 	req := entity.Request{
@@ -56,16 +52,13 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("SERVICE: ValdidatePrompt() => %w", err)
+		return "", errors.ErrValidation
 	}
 
 	llmRespone := autotesterEntity.ModelAnswerText{}
 	if err = json.Unmarshal([]byte(resp.Text), &llmRespone); err != nil {
-		return "", &errors.Error{
-			Message:    fmt.Sprintf("SERVICE: ValidatePrompt() - unmarshal: %s", err.Error()),
-			Underlying: err,
-			Type:       errors.Private,
-		}
+		s.logger.Error(err.Error())
+		return "", errors.ErrValidation
 	}
 	return llmRespone.Text, nil
 }

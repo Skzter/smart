@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -27,18 +26,14 @@ func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}
-
 	return &openAI{repo, logger}, nil
 }
 
 // Request sends a request to the OpenAI repository and returns the response.
 func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, &errors.Error{
-			Message:    fmt.Sprintf("SERVICE: ctx => %v", err),
-			Underlying: err,
-			Type:       errors.Private,
-		}
+		c.logger.Error(err.Error())
+		return nil, errors.ErrInternalServer
 	}
 
 	return c.repo.CreateRequest(ctx, request)
