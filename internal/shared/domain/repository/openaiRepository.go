@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -9,36 +10,19 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedError "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// ErrorType for referencing Public or Private Errors -> Public for frontend, Private is backend only
-type ErrorType int
-
-// Enum for Error Types
-const (
-	Public ErrorType = iota
-	Private
+var (
+	errNilUserPrompt   = errors.New("request without user prompt")
+	errNilSystemPrompt = errors.New("request without system prompt")
+	errNilModel        = errors.New("request without model")
 )
 
-// Error is custom error type for giving each error a type and message
-type Error struct {
-	Type        ErrorType
-	ErrorString string
-}
-
-func (e *Error) Error() string {
-	return e.ErrorString
-}
-
-// errors for different repo failures
-var (
-	ErrNilUserPrompt      = &Error{Type: Private, ErrorString: "request without user prompt"}
-	ErrNilSystemPrompt    = &Error{Type: Private, ErrorString: "request without system prompt"}
-	ErrNilModel           = &Error{Type: Private, ErrorString: "request without model"}
-	ErrEmptyResponseArray = &Error{Type: Private, ErrorString: "REPO openai error: response contains no messages to choose from"}
-	ErrEmptyResponse      = &Error{Type: Private, ErrorString: "REPO openai error: chosen response message is empty"}
-	ErrOpenAI             = &Error{Type: Private, ErrorString: "REPO openai error: request to the server failed"}
+const (
+	errEmptyResponseArray = "REPO openai error: response contains no messages to choose from"
+	errEmptyResponse      = "REPO openai error: chosen response message is empty"
 )
 
 // OpenAI defines methods for interacting with OpenAI API.
@@ -84,12 +68,14 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("REPO: ctx => %w", err)
+		qa.logger.Error(err.Error())
+		return nil, sharedError.ErrInternalServer
 	}
 
 	// func validates request entity and returns custom error
 	if err := validateRequestEntity(request); err != nil {
-		return nil, fmt.Errorf("REPO entity validation: %w", err)
+		qa.logger.Error(err.Error())
+		return nil, sharedError.ErrInternalServer
 	}
 
 	// add Request from user to messages of repo
@@ -128,7 +114,8 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 		})
 
 	if err != nil {
-		return nil, err
+		qa.logger.Error(err.Error())
+		return nil, sharedError.ErrInternalServer
 	}
 
 	if request.SessionID == "" {
@@ -137,13 +124,15 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 
 	// check if there are responses from api
 	if len(resp.Choices) == 0 {
-		return nil, ErrEmptyResponseArray
+		qa.logger.Error(errEmptyResponseArray)
+		return nil, sharedError.ErrInternalServer
 	}
 
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, ErrEmptyResponse
+		qa.logger.Error(errEmptyResponse)
+		return nil, sharedError.ErrInternalServer
 	}
 
 	// append response to message array of repo
@@ -161,11 +150,11 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 func validateRequestEntity(request entity.Request) error {
 	switch {
 	case request.Prompt == "":
-		return ErrNilUserPrompt
+		return errNilUserPrompt
 	case request.SystemPrompt == "":
-		return ErrNilSystemPrompt
+		return errNilSystemPrompt
 	case request.Model == "":
-		return ErrNilModel
+		return errNilModel
 	default:
 		return nil
 	}

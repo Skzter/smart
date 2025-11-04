@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Base-URL: https://staging.check24.de. Szenario: Nutzer wählt Angebot aus. Ablauf: Klick auf Angebote. Assertions: Seite lädt. Testdaten: generisch.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}
