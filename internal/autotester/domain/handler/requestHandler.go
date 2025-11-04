@@ -112,12 +112,15 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	if err != nil {
 		return nil, err
 	}
-	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	genResp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
+
+	a.logger.Info("Selected Tags: ", "Tags", genResp.Tags)
+
 	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: genText},
+		Message:   sharedEntity.Message{MessageBody: genResp.Code},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,

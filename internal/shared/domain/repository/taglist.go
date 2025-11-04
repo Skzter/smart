@@ -12,7 +12,7 @@ import (
 )
 
 // EntryPrefix is the prefix used for database entries in the S3 storage.
-const EntryPrefix = "taglist/"
+const EntryPrefix = "taglist_test/"
 
 // TaglistStorage defines the interface for database operations on the taglist.
 type TaglistStorage interface {
@@ -47,7 +47,7 @@ func NewTaglistStorage(
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
-		key:            "taglist",
+		key:            "taglist.parquet",
 	}, nil
 }
 
