@@ -4,7 +4,7 @@ info:
   description: api for the connection from frontend to backend.
   version: 1.0.0
 paths:
-  /v1/chat:
+  /api/v1/chat:
     post:
       summary: "Takes user message and returns LLMs message."
       requestBody:
@@ -33,7 +33,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   
-  /v1/userInfo:
+  /api/v1/userInfo:
     post:
       summary: "Requests User Info from Backend on inital load"
       requestBody:
@@ -63,7 +63,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /v1/saveLocal:
+  /api/v1/saveLocal:
     post:
       summary: "Takes a testcode and saves it locally"
       requestBody:

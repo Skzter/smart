@@ -50,15 +50,30 @@ type testcaseLocalStorageService struct {
 // NewTestcaseLocalStorageService creates a TestcaseLocalStorageService using
 // the provided logger and repository. It returns an error when required
 // dependencies are nil.
-func NewTestcaseLocalStorageService(logger *slog.Logger, repo repository.TestcaseLocalStorageRepository) (TestcaseLocalStorageService, error) {
+func NewTestcaseLocalStorageService(logger *slog.Logger, repo repository.TestcaseLocalStorageRepository, enableCleanup bool) (TestcaseLocalStorageService, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}
 
-	return &testcaseLocalStorageService{
+	service := &testcaseLocalStorageService{
 		logger: logger,
 		repo:   repo,
-	}, nil
+	}
+
+	if enableCleanup {
+		ticker := time.NewTicker(time.Hour * 24)
+		go func() {
+			for range ticker.C {
+				if err := service.CleanupOldTests(); err != nil {
+					service.logger.Error("failed to cleanup old tests",
+						slog.String("error", err.Error()),
+					)
+				}
+			}
+		}()
+	}
+
+	return service, nil
 }
 
 func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, sessionId string) error {
