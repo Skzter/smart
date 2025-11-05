@@ -96,7 +96,7 @@ func TestHandleChatRequest(t *testing.T) {
 			function:         "GeneratePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: &entity.GenerationResponse{Code: "some code", Tags: []string{"Tag1", "Tag2"}},
+			expectedResponse: "some code",
 			ResponseError:    nil,
 		},
 		{
@@ -130,7 +130,7 @@ func TestHandleChatRequest(t *testing.T) {
 			function:         "GeneratePrompt",
 			userPrompt:       "generating err",
 			sessionID:        sessionid,
-			expectedResponse: nil,
+			expectedResponse: "",
 			ResponseError:    sharedErrors.ErrGeneration,
 		},
 	}

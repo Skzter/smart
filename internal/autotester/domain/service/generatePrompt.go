@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
@@ -16,7 +15,7 @@ import (
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
-	GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error)
+	GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error)
 }
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
@@ -38,15 +37,15 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
-func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
-		return nil, errors.ErrInternalServer
+		return "", errors.ErrInternalServer
 	}
 
 	prompt, err := s.fillPrompt(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	req := sharedEntity.Request{
@@ -58,21 +57,15 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	var genResp entity.GenerationResponse
-	if err = json.Unmarshal([]byte(resp.Text), &genResp); err != nil {
+	if err = assert.StringNotEmpty(resp.Text); err != nil {
 		s.logger.Error(err.Error())
-		return nil, errors.ErrGeneration
+		return "", errors.ErrGeneration
 	}
 
-	if err = assert.StringNotEmpty(genResp.Code); err != nil {
-		s.logger.Error(err.Error())
-		return nil, errors.ErrGeneration
-	}
-
-	return &genResp, nil
+	return resp.Text, nil
 }
 
 // fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"testing"
@@ -11,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
@@ -97,22 +95,20 @@ func TestGeneratePrompt(t *testing.T) {
 	}
 	tags := []string{"Tag1, Tag2"}
 	code := "some code"
-	request := entity.GenerationResponse{Code: code, Tags: tags}
-	mRequest, _ := json.Marshal(request)
 
 	tests := []struct {
 		name              string
-		expectedResult    *entity.GenerationResponse
-		requestReturns    *[]any
-		getTaglistReturns *[]any
+		expectedResult    string
+		requestReturns    []any
+		getTaglistReturns []any
 		expectErr         bool
 		ctx               context.Context
 	}{
 		{
 			name:              "success",
-			expectedResult:    &entity.GenerationResponse{Tags: tags, Code: code},
-			requestReturns:    &[]any{&sharedEntity.Response{Text: string(mRequest)}, nil},
-			getTaglistReturns: &[]any{tags, nil},
+			expectedResult:    code,
+			requestReturns:    []any{&sharedEntity.Response{Text: code}, nil},
+			getTaglistReturns: []any{tags, nil},
 			expectErr:         false,
 			ctx:               context.Background(),
 		},
@@ -123,28 +119,21 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "taglist error",
-			getTaglistReturns: &[]any{[]string{}, errors.New("Err")},
-			expectErr:         true,
-			ctx:               context.Background(),
-		},
-		{
-			name:              "incorrectly structured openai response",
-			requestReturns:    &[]any{&sharedEntity.Response{Text: "incorrect response"}, nil},
-			getTaglistReturns: &[]any{tags, nil},
+			getTaglistReturns: []any{[]string{}, errors.New("Err")},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},
 		{
 			name:              "empty code segment in openau response",
-			requestReturns:    &[]any{&sharedEntity.Response{Text: `{"Tags": [], "Code": ""}`}, nil},
-			getTaglistReturns: &[]any{tags, nil},
+			requestReturns:    []any{&sharedEntity.Response{Text: ""}, nil},
+			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},
 		{
 			name:              "openai error",
-			requestReturns:    &[]any{(*sharedEntity.Response)(nil), sharedErrors.ErrInternalServer},
-			getTaglistReturns: &[]any{[]string{"Tag1, Tag2"}, nil},
+			requestReturns:    []any{nil, sharedErrors.ErrInternalServer},
+			getTaglistReturns: []any{[]string{"Tag1, Tag2"}, nil},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},
@@ -156,11 +145,11 @@ func TestGeneratePrompt(t *testing.T) {
 			taglist := mocks.NewMockTaglistStorage(t)
 
 			if tt.requestReturns != nil {
-				openai.On("Request", mock.Anything, mock.Anything).Return(*tt.requestReturns...)
+				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
 			}
 
 			if tt.getTaglistReturns != nil {
-				taglist.On("GetTaglist", mock.Anything).Return(*tt.getTaglistReturns...)
+				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
@@ -168,7 +157,7 @@ func TestGeneratePrompt(t *testing.T) {
 
 			if tt.expectErr {
 				assert.NotNil(t, err)
-				assert.Nil(t, got)
+				assert.Empty(t, got)
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedResult, got)
