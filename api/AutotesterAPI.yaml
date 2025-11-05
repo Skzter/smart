@@ -112,14 +112,30 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   
   /api/v1/deleteLocal:
-    post:
+    delete:
       summary: "Deletes a locally stored test case by its ID"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeleteLocalRequest'
+      parameters:
+        - name: testcaseId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Unique identifier of the test case to be deleted."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "ID of the user deleting the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        - name: conversationId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "ID of the conversation the test case belongs to."
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
         
       responses:
         '200':

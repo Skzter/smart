@@ -147,13 +147,18 @@ func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
 }
 
 // HandleDeleteLocalRequest processes a request to delete a locally stored test case.
-// Expects a JSON with LocalDeleteRequest containing the test case ID, user ID and conversation ID.
+// Expects query parameters with testcaseId, userId and conversationId.
 // Returns a LocalDeleteResponse confirming the deletion or an error if the deletion fails.
 func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 	var deleteLocalRequest entity.LocalDeleteRequest
 
-	if err := c.BindJSON(&deleteLocalRequest); err != nil {
+	if err := c.ShouldBindQuery(&deleteLocalRequest); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	if deleteLocalRequest.TestcaseId == "" || deleteLocalRequest.UserId == "" || deleteLocalRequest.ConversationId == "" {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
 		return
 	}
 

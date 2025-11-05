@@ -388,35 +388,37 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 
 	tests := []struct {
 		TestName       string
-		RequestBody    string
+		QueryParams    map[string]string
 		ExpectedStatus int
 		SetupMock      func(*mocks.MockTestcaseLocalStorageService)
 	}{
 		{
 			TestName: "Valid delete request",
-			RequestBody: `{
-				"testcaseId": "test123",
-				"userId": "user123",
-				"conversationId": "conv456"
-			}`,
+			QueryParams: map[string]string{
+				"testcaseId":     "test123",
+				"userId":         "user123",
+				"conversationId": "conv456",
+			},
 			ExpectedStatus: http.StatusOK,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
 				m.EXPECT().Delete("test123", "user123", "conv456").Return(nil).Once()
 			},
 		},
 		{
-			TestName:       "Invalid JSON",
-			RequestBody:    `{"invalid":json}`,
+			TestName: "Missing required parameters",
+			QueryParams: map[string]string{
+				"testcaseId": "test123",
+			},
 			ExpectedStatus: http.StatusBadRequest,
 			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
 		},
 		{
 			TestName: "Delete service fails",
-			RequestBody: `{
-				"testcaseId": "test789",
-				"userId": "user789",
-				"conversationId": "conv789"
-			}`,
+			QueryParams: map[string]string{
+				"testcaseId":     "test789",
+				"userId":         "user789",
+				"conversationId": "conv789",
+			},
 			ExpectedStatus: http.StatusInternalServerError,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
 				m.EXPECT().Delete("test789", "user789", "conv789").Return(errors.New("database error")).Once()
@@ -432,11 +434,23 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 
 			test.SetupMock(mockLocalStorageServ)
 
-			req, err := http.NewRequest(http.MethodPost, "/api/v1/deleteLocal", bytes.NewBufferString(test.RequestBody))
+			url := "/api/v1/deleteLocal"
+			if len(test.QueryParams) > 0 {
+				url += "?"
+				first := true
+				for key, value := range test.QueryParams {
+					if !first {
+						url += "&"
+					}
+					url += key + "=" + value
+					first = false
+				}
+			}
+
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
 			if err != nil {
 				t.Fatalf("Failed to create request: %v", err)
 			}
-			req.Header.Set("Content-Type", "application/json")
 
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
