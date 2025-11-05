@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Autoplaywright-Test für Check24. Base-URL: https://staging.check24.de. Szenario: Login und Session-Timeout. Ablauf: Nutzer klickt auf 'Anmelden', gibt Zugangsdaten (ENV-Variablen) ein, klickt 'Login'. Danach simuliere Inaktivität oder Wartezeit, dann interagiere erneut (z. B. klicke auf 'Dashboard-Link'), erwarte Weiterleitung auf Login-Seite mit Text 'Bitte melden Sie sich erneut an'. Elemente: Eingabefeld 'E-Mail-Adresse', Passwortfeld, Button 'Login', Link 'Dashboard'. Assertions: Nach Timeout und Interaktion wird Login-Seite angezeigt. Testdaten/Setup: TEST_USER existiert; Setup: Session-Timeout-Konfiguration aktivieren; Teardown: Session bereinigen.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

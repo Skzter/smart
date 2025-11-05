@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -25,7 +26,6 @@ func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}
-
 	return &openAI{repo, logger}, nil
 }
 
@@ -33,7 +33,7 @@ func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		c.logger.Error(err.Error())
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 
 	return c.repo.CreateRequest(ctx, request)

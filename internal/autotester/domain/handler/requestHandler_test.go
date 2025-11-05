@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -82,24 +83,16 @@ func TestHandleChatRequest(t *testing.T) {
 		userPrompt       string
 		sessionID        string
 		expectedResponse string
+		expectedBool     bool
 		ResponseError    error
-		expectedError    bool
 	}{
 		{
 			function:         "ValidatePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: "true",
+			expectedResponse: "",
+			expectedBool:     true,
 			ResponseError:    nil,
-			expectedError:    false,
-		},
-		{
-			function:         "ValidatePrompt",
-			userPrompt:       invalidPrompt,
-			sessionID:        sessionid,
-			expectedResponse: "false",
-			ResponseError:    errors.New("prompt does not contain required information for test generation"),
-			expectedError:    true,
 		},
 		{
 			function:         "GeneratePrompt",
@@ -107,7 +100,40 @@ func TestHandleChatRequest(t *testing.T) {
 			sessionID:        sessionid,
 			expectedResponse: "This is a generated Prompt",
 			ResponseError:    nil,
-			expectedError:    false,
+		},
+		{
+			// no need for generate mock
+			function:         "ValidatePrompt",
+			userPrompt:       invalidPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "versuch doch mal das",
+			expectedBool:     false,
+			ResponseError:    nil,
+		},
+		{
+			// errors in validation
+			function:         "ValidatePrompt",
+			userPrompt:       "json gibts nicht",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			expectedBool:     false,
+			ResponseError:    sharedErrors.ErrValidation,
+		},
+		{
+			// test has to pass in validation in order to fail in generation below
+			function:         "ValidatePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			expectedBool:     true,
+			ResponseError:    nil,
+		},
+		{
+			function:         "GeneratePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError:    sharedErrors.ErrGeneration,
 		},
 	}
 	tests := []struct {
@@ -143,6 +169,30 @@ func TestHandleChatRequest(t *testing.T) {
 				"userId":         "2",
 				"conversationId": "2"
 			}`,
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			TestName: "valid request, validate will return false json",
+			RequestBody: `{
+				"message": {
+					"data":  "json gibts nicht",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			TestName: "valid request, errors when generating",
+			RequestBody: `{
+				"message": {
+					"data":  "generating err",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 		},
 	}
@@ -154,7 +204,7 @@ func TestHandleChatRequest(t *testing.T) {
 	// setup mocks
 	for _, mc := range mockSetup {
 		if mc.function == "ValidatePrompt" {
-			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.ResponseError)
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedBool, mc.expectedResponse, mc.ResponseError)
 		}
 		if mc.function == "GeneratePrompt" {
 			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
@@ -179,6 +229,7 @@ func TestHandleChatRequest(t *testing.T) {
 			if err != nil {
 				t.Errorf("build failed")
 			}
+
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {

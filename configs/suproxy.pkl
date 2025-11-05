@@ -3,7 +3,7 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-model: String ="gpt-4.1-nano-2025-04-14"
+model: String ="gpt-5-mini-2025-08-07"
 
 port: String = "8080" 
 
@@ -164,13 +164,15 @@ class Prompts {
       "reason": [tag1, tag2] 
     }
     """
-    prompt2 : String = "und so weiter"
-    tollerPromp : String = "namen können beliebig gewählt werden"
 }
 prompts : Prompts
 
-timeout: Int = 20
+timeout: Int = 60
 
 region: String = "eu-central-1"
 
 bucket: String = "smart-suproxy"
+
+entryPrefix: String = "supplierData/"
+
+taglistPrefix: String = "taglist/"

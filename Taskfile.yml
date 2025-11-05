@@ -80,7 +80,8 @@ tasks:
       - task: lint-frontend
       - pnpm run build
     sources:
-      - "**/*"
+      - "*"
+      - "src/**/*"
 
   build-frontend-dev:
     desc: "Build the frontend"
@@ -89,7 +90,8 @@ tasks:
     cmds:
       - pnpm build
     sources:
-      - "**/*"
+      - "*"
+      - "src/**/*"
 
   build-pipeline:
     desc: "Use in build job of pipeline to make production build binaries"
@@ -128,7 +130,6 @@ tasks:
 
   run-suproxy:
     desc: "Run the suproxy service"
-    deps: [generate-config-suproxy, di-generate-suproxy]
     cmds:
       - task: .run-app
         vars:
@@ -136,7 +137,7 @@ tasks:
 
   run-autotester:
     desc: "Run the autotester service"
-    deps: [generate-config-autotester, di-generate-autotester, build-frontend-dev]
+    deps: [build-frontend-dev]
     cmds:
       - task: .run-app
         vars:
@@ -197,6 +198,12 @@ tasks:
     deps: [install-frontend-deps]
     cmds:
       - pnpm test
+
+  test-sysprompt:
+    desc: "run the test script for testing the current sysprompts against the given testcases"
+    dir: "scripts"
+    cmds:
+    - ./sysprompt-test.sh
 
   # --------------------------------------------------------------------------------
   # Code Quality & Linting

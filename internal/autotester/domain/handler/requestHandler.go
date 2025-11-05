@@ -46,6 +46,17 @@ func NewAutotesterController(
 	}, nil
 }
 
+// HandleGetTemplate processes a template request from the frontend.
+func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
+	if err := assert.StringNotEmpty(a.config.Template); err != nil {
+		c.JSON(http.StatusTeapot, "")
+		a.logger.Error(err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, entity.Template{Template: a.config.Template})
+}
+
 // HandleChatRequest processes a chat request from the frontend.
 // Expects a JSON with UserRequestDTO and returns a response from the LLM.
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
@@ -57,10 +68,10 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
+	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "OpenAI service failed"})
-		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 
@@ -84,9 +95,17 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // First validates the user prompt through validationService, then generates a response through generationService.
 // Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
+	}
+	if !valid {
+		return &entity.ResponseForUser{
+			Message:   sharedEntity.Message{MessageBody: msg},
+			UserId:    userRequest.UserId,
+			SessionId: userRequest.SessionId,
+			LogStamp:  userRequest.LogStamp,
+		}, nil
 	}
 	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {

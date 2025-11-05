@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Erzeuge Playwright-Tests via Autoplaywright für Check24. Base-URL: https://urlaub.check24.de/. Szenario: Wechsel von Schritt 1 auf Schritt 4 via 'Urlaubsregionen entdecken'. Ablauf: Der Nutzer klickt auf 'Mallorca' unter 'Urlaubsregionen entdecken'. Assertions: Nach dem Klick landet der Nutzer auf https://urlaub.check24.de/suche/hotel. Es gibt mindestens eine Kachel mit einem Angebot für ein Hotel. In allen Angebotskacheln taucht das Wort 'Mallorca auf'. Testdaten/Setup: Session-Bereinigung.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

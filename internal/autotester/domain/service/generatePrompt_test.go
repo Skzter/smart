@@ -1,16 +1,16 @@
 package service
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log/slog"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -80,31 +80,33 @@ func TestGeneratePrompt(t *testing.T) {
 	}
 
 	tests := []struct {
-		name     string
-		wantText string
-		wantErr  bool
+		name        string
+		wantText    string
+		wantErr     bool
+		expectedErr error
 	}{
 		{
-			name:     "success",
-			wantText: "openai says hello",
-			wantErr:  false,
+			name:        "success",
+			wantText:    "openai says hello",
+			wantErr:     false,
+			expectedErr: nil,
 		},
 		{
-			name:    "service error",
-			wantErr: true,
+			name:        "service error",
+			wantErr:     true,
+			expectedErr: sharedErrors.ErrGeneration,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := mocks.NewMockOpenAI(t)
-			rec := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(rec)
+			ctx := context.Background()
 
 			if tt.wantErr {
 				service.
 					On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), fmt.Errorf("service failure"))
+					Return((*entity.Response)(nil), sharedErrors.ErrInternalServer)
 			} else {
 				service.
 					On("Request", ctx, mock.Anything).
@@ -122,6 +124,9 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 			if !tt.wantErr && got != tt.wantText {
 				t.Errorf("GeneratePrompt() = %q, want %q", got, tt.wantText)
+			}
+			if !errors.Is(err, tt.expectedErr) {
+				t.Errorf("GeneratePrompt() error = %v, expected = %v", err, tt.expectedErr)
 			}
 
 			service.AssertExpectations(t)

@@ -1,7 +1,7 @@
 /// <reference types="vitest/globals" />
 
-import * as matchers from '@testing-library/jest-dom/matchers';
-import { expect } from 'vitest';
+import * as matchers from "@testing-library/jest-dom/matchers";
+import { expect } from "vitest";
 
 expect.extend(matchers);
 
@@ -18,3 +18,17 @@ Object.defineProperty(window, "matchMedia", {
         dispatchEvent: vi.fn(),
     })),
 });
+
+if (!Element.prototype.animate) {
+    Element.prototype.animate = () => ({
+        cancel: () => {},
+        finish: () => {},
+        play: () => {},
+        pause: () => {},
+        reverse: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        finished: Promise.resolve(),
+        playState: "finished",
+    });
+}

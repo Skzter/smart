@@ -62,6 +62,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+ 
+  /api/v1/template:
+    get:
+      summary: "Gets Template from Autotester Config and returns it"
+      responses:
+        '200':
+          description: Template from config is not empty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+        '500':
+          description: Template from config is empty
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ""
 
   /api/v1/saveLocal:
     post:
@@ -269,3 +287,10 @@ components:
         message:
           type: string
           example: "An error occurred while processing the request."
+
+    Template:
+      type: object
+      properties:
+        template:
+          type: string
+          example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
