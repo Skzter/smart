@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"slices"
 
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -38,10 +40,21 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 	}, nil
 }
 
-// SyncTaglist syncs stored taglist.
-func (tls *taglistSync) SyncTaglist(ctx context.Context, tags []string) error {
-	// check taglists from struct, with given tags
-	// if not equal, replace new tags with old in struct and upload new tags to s3
-	// store func from service to upload
+// SyncTaglist syncs given taglist with in-memory and pushes new taglist to s3
+func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist []string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return err
+	}
+	if len(taglist) == 0 {
+		return errors.New("empty taglist")
+	}
+
+	if !slices.Equal(tls.tagList, taglist) {
+		tls.tagList = taglist
+		err := tls.taglistService.StoreTaglist(ctx, tls.tagList)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
