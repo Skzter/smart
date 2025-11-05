@@ -13,6 +13,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
 )
 
+const EntryPrefix = "taglist/"
+
 func TestCreateTaglist(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -74,7 +76,7 @@ func TestCreateTaglist(t *testing.T) {
 				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
 			err := repo.CreateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -159,7 +161,7 @@ func TestReadTaglist(t *testing.T) {
 				parquet.On("ReadStructsFromParquet", mock.Anything).Return(*tt.readReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
 			taglist, err := repo.ReadTaglist(tt.ctx)
 
 			if tt.expectsError {
@@ -251,7 +253,7 @@ func TestUpdateTaglist(t *testing.T) {
 				s3.On("DownloadParquetFile", mock.Anything, mock.Anything).Return(*tt.downloadReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
 			err := repo.UpdateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -303,7 +305,7 @@ func TestTaglistExists(t *testing.T) {
 				s3.On("FileExists", mock.Anything, mock.Anything).Return(*tt.existReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
 			exists, err := repo.TaglistExists(tt.ctx)
 
 			if tt.expectedError {
@@ -349,7 +351,7 @@ func TestNewTaglistStorage(t *testing.T) {
 				parquet = mocks.NewMockParquetFileWrapper[entity.TagList](t)
 			}
 
-			repo, err := NewTaglistStorage(tt.logger, s3, parquet)
+			repo, err := NewTaglistStorage(tt.logger, s3, parquet, EntryPrefix)
 
 			if tt.expectError {
 				assert.Error(t, err)
