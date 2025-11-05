@@ -12,6 +12,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -83,4 +84,16 @@ func DatabaseRepositoryProvider(
 		parquetWrapper,
 		cfg.EntryPrefix,
 	)
+}
+func TaglistRepositoryProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapper.S3StorageWrapper,
+	parquetWrapper wrapper.ParquetFileWrapper[sharedEntity.TagList],
+) (sharedRepo.TaglistStorage, error) {
+	return sharedRepo.NewTaglistStorage(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.TaglistPrefix)
 }
