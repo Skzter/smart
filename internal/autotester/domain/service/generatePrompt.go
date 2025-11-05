@@ -58,16 +58,18 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
-		return nil, errors.ErrGeneration
+		return nil, err
 	}
 
 	var genResp entity.GenerationResponse
 	if err = json.Unmarshal([]byte(resp.Text), &genResp); err != nil {
-		return nil, err
+		s.logger.Error(err.Error())
+		return nil, errors.ErrGeneration
 	}
 
 	if err = assert.StringNotEmpty(genResp.Code); err != nil {
-		return nil, err
+		s.logger.Error(err.Error())
+		return nil, errors.ErrGeneration
 	}
 
 	return &genResp, nil
@@ -76,7 +78,8 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 // fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config
 func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", err
+		s.logger.Error(err.Error())
+		return "", errors.ErrInternalServer
 	}
 
 	taglist, err := s.taglistService.GetTaglist(ctx)
