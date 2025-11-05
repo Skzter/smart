@@ -11,9 +11,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// EntryPrefix is the prefix used for database entries in the S3 storage.
-const EntryPrefix = "taglist/"
-
 // TaglistStorage defines the interface for database operations on the taglist.
 type TaglistStorage interface {
 	// creates taglist in database
@@ -31,6 +28,7 @@ type taglistStorage struct {
 	parquetWrapper service.ParquetFileWrapper[entity.TagList]
 	logger         *slog.Logger
 	key            string
+	entryPrefix    string
 }
 
 // NewTaglistStorage creates a new instance of TaglistRepository
@@ -38,6 +36,7 @@ func NewTaglistStorage(
 	logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	parquetWrapper service.ParquetFileWrapper[entity.TagList],
+	prefix string,
 ) (TaglistStorage, error) {
 	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
 		return nil, err
@@ -47,7 +46,8 @@ func NewTaglistStorage(
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
-		key:            "taglist",
+		key:            "taglist.parquet",
+		entryPrefix:    prefix,
 	}, nil
 }
 
@@ -72,7 +72,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 		"created": timestamp,
 	}
 
-	err = tR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+tR.key, parquetData, metadata)
+	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to upload existing parquet: %w", err)
 	}
@@ -86,7 +86,7 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
 
-	parquetData, metadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+tR.key)
+	parquetData, metadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
 	}
@@ -101,7 +101,7 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglists)))
 
 	if len(taglists) == 0 {
-		return nil, fmt.Errorf("no taglist found with key: %s", EntryPrefix+tR.key)
+		return nil, fmt.Errorf("no taglist found with key: %s", tR.entryPrefix+tR.key)
 	}
 
 	firstEntry := taglists[0]
@@ -123,7 +123,7 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 		return fmt.Errorf("failed to validate TagList: %w", err)
 	}
 
-	_, oldmetadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+tR.key)
+	_, oldmetadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
 		return fmt.Errorf("failed to download data: %w", err)
 	}
@@ -141,7 +141,7 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 		"updated": timestamp,
 	}
 
-	err = tR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+tR.key, parquetData, metadata)
+	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
@@ -154,7 +154,7 @@ func (tR *taglistStorage) TaglistExists(ctx context.Context) (bool, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return false, err
 	}
-	return tR.s3Wrapper.FileExists(ctx, EntryPrefix+tR.key)
+	return tR.s3Wrapper.FileExists(ctx, tR.entryPrefix+tR.key)
 }
 
 // validateTaglist validates the taglist before processing it
