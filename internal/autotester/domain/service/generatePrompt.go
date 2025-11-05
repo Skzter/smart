@@ -9,6 +9,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -38,6 +39,11 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the configured AutoPlaywrightPrompt as system prompt and gpt-4-1106-preview as model.
 func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		s.logger.Error(err.Error())
+		return nil, errors.ErrInternalServer
+	}
+
 	prompt, err := s.fillPrompt(ctx)
 	if err != nil {
 		return nil, err
@@ -52,7 +58,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, errors.ErrGeneration
 	}
 
 	var genResp entity.GenerationResponse

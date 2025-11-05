@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Autoplaywright-Test: Nutzer durchsucht Mietwagen-Angebote in Hamburg für 5 Tage. Base-URL: https://staging.check24.de/mietwagen. Ablauf: Nutzer öffnet Seite, gibt 'Hamburg' ein, wählt Datum, klickt 'Suchen'. Elementbeschreibung: Feld 'Ort', Kalender-Widget, Button 'Suchen'. Testdaten/Setup: Beispiel-Daten; Teardown: keine.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

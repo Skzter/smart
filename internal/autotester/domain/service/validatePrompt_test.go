@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -73,86 +72,157 @@ func TestNewValidatePromptService(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func TestValidatePrompt(t *testing.T) {
-	logger := slog.Default()
+	serviceMock := mocks.NewMockOpenAI(t)
 	cfg := &config.Config{
+		Model: "",
 		Prompts: &config.Prompts{
-			ValidationPrompt: "validate system prompt",
+			ValidationPrompt: "",
+		},
+	}
+	logger := slog.New(slog.DiscardHandler)
+	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
+
+	sessionId := "die tollste Session ID"
+
+	validPrompt := "valid Prompt"
+	invalidPrompt := "invalid Prompt"
+	invalidJson := "invalid json"
+
+	validRequest := entity.Request{
+		Prompt:    validPrompt,
+		SessionID: sessionId,
+	}
+	validResponse := entity.Response{
+		Text: `{"valid": true, "message": ""}`,
+	}
+
+	invalidRequest := entity.Request{
+		Prompt:    invalidPrompt,
+		SessionID: sessionId,
+	}
+	invalidResponse := entity.Response{
+		Text: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
+	}
+
+	invalidJsonRequest := entity.Request{
+		Prompt:    invalidJson,
+		SessionID: sessionId,
+	}
+	invalidJsonResponse := entity.Response{
+		Text: "no json",
+	}
+
+	mockSetup := []struct {
+		request     entity.Request
+		response    *entity.Response
+		returnError error
+		wantErr     bool
+	}{
+		{
+			request:     validRequest,
+			response:    &validResponse,
+			returnError: nil,
+		},
+		{
+			request:     invalidRequest,
+			response:    &invalidResponse,
+			returnError: nil,
+		},
+		{
+			request:     invalidJsonRequest,
+			response:    &invalidJsonResponse,
+			returnError: nil,
+		},
+		{
+			request: entity.Request{
+				Prompt:    "",
+				SessionID: sessionId,
+			},
+			response:    &entity.Response{},
+			returnError: sharedErrors.ErrInternalServer,
 		},
 	}
 
 	tests := []struct {
-		name         string
-		mockSetup    func(s *mocks.MockOpenAI, ctx context.Context)
-		wantErr      bool
-		errSubstring string
-		expectedErr  error
+		name        string
+		userPrompt  string
+		ctx         context.Context
+		wantErr     bool
+		isValid     bool
+		expectedErr error
 	}{
 		{
-			name: "service error",
-			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
-				s.On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), repository.ErrOpenAI)
-			},
-			wantErr:     true,
-			expectedErr: repository.ErrOpenAI,
-		},
-		{
-			name: "valid prompt (true)",
-			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
-				s.On("Request", ctx, mock.Anything).
-					Return(&entity.Response{Text: "true"}, nil)
-			},
+			name:        "valid request without changes",
+			userPrompt:  validPrompt,
+			ctx:         context.Background(),
 			wantErr:     false,
+			isValid:     true,
 			expectedErr: nil,
 		},
 		{
-			name: "invalid prompt (false)",
-			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
-				s.On("Request", ctx, mock.Anything).
-					Return(&entity.Response{Text: "false"}, nil)
-			},
-			wantErr:     true,
-			expectedErr: ErrNotEnoughInformation,
+			name:        "valid request but with changes",
+			userPrompt:  invalidPrompt,
+			ctx:         context.Background(),
+			wantErr:     false,
+			isValid:     false,
+			expectedErr: nil,
 		},
 		{
-			name: "unexpected response",
-			mockSetup: func(s *mocks.MockOpenAI, ctx context.Context) {
-				s.On("Request", ctx, mock.Anything).
-					Return(&entity.Response{Text: "oops"}, nil)
-			},
+			name:        "invalid json",
+			userPrompt:  invalidJson,
+			ctx:         context.Background(),
 			wantErr:     true,
-			expectedErr: ErrUnexpectedResponse,
+			isValid:     false,
+			expectedErr: sharedErrors.ErrInternalServer,
 		},
+		{
+			name:        "nil ctx",
+			userPrompt:  validPrompt,
+			ctx:         nil,
+			wantErr:     true,
+			isValid:     false,
+			expectedErr: sharedErrors.ErrInternalServer,
+		},
+		{
+			name:        "service error",
+			userPrompt:  "",
+			ctx:         context.Background(),
+			wantErr:     true,
+			isValid:     false,
+			expectedErr: sharedErrors.ErrValidation,
+		},
+	}
+
+	for _, mc := range mockSetup {
+		serviceMock.On("Request", mock.Anything, mc.request).Return(mc.response, mc.returnError)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			serviceMock := mocks.NewMockOpenAI(t)
-			rec := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(rec)
-
-			tt.mockSetup((*mocks.MockOpenAI)(serviceMock), ctx)
-
-			svc := &validatePrompt{
-				service: serviceMock,
-				config:  cfg,
-				logger:  logger,
-			}
-			err := svc.ValidatePrompt(ctx, "some user prompt", "session-xyz")
-
+			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt, sessionId)
 			if tt.wantErr {
 				if err == nil {
-					t.Fatal("expected an error, got nil")
+					t.Fatalf("got nil error, expected => %v", tt.expectedErr)
+				} else if !errors.Is(err, tt.expectedErr) {
+					if !strings.Contains(err.Error(), tt.expectedErr.Error()) {
+						t.Fatalf("unexpected error: got => %v, wanted => %v", err, tt.expectedErr)
+					}
 				}
-				if !errors.Is(err, tt.expectedErr) {
-					t.Fatalf("unexpected error: got %v, wanted %v", err.Error(), tt.expectedErr)
+			} else {
+				if tt.isValid {
+					if valid != tt.isValid {
+						t.Fatalf("expected %t, got %t", tt.isValid, valid)
+					}
+					if str != "" {
+						t.Fatalf("expected nil string, got => %v", str)
+					}
+				} else if str == "" {
+					t.Fatal("expected populated string but got nil string")
 				}
-			} else if err != nil {
-				t.Fatalf("expected no error, got %v", err)
 			}
-
-			serviceMock.AssertExpectations(t)
+			mock.AssertExpectationsForObjects(t)
 		})
 	}
 }

@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Playwright-Autoplaywright-Test für Check24 Hotelsuche. Base-URL: https://staging.check24.de/hotel. Szenario: Nutzer sucht Hotels in Leipzig für festes Datum. Ablauf: Nutzer öffnet Seite, wählt Ort 'Leipzig', setzt Datum, klickt 'Suchen'. Elemente: Eingabefeld mit Platzhalter 'Ort', Datumsauswahl über Kalender-Widget, Button 'Suchen'. Assertions: Ergebnisseite lädt, Liste sichtbar.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}
