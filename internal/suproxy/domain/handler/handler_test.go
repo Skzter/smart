@@ -51,37 +51,40 @@ func RejectValidator(t testing.TB) service.Validator {
 
 func TestNewSuproxyController(t *testing.T) {
 	tests := []struct {
-		name string
-		log  *slog.Logger
-		cfg  *config.Config
-		val  service.Validator
-		clt  *http.Client
-		db   service.DatabaseService
-		err  bool
+		name   string
+		log    *slog.Logger
+		cfg    *config.Config
+		val    service.Validator
+		clt    *http.Client
+		db     service.DatabaseService
+		syncer service.TaglistSync
+		err    bool
 	}{
 		{
-			name: "valid",
-			cfg:  &config.Config{},
-			log:  slog.Default(),
-			val:  RejectValidator(t),
-			clt:  &http.Client{},
-			db:   mocks.NewMockDatabaseService(t),
-			err:  false,
+			name:   "valid",
+			cfg:    &config.Config{},
+			log:    slog.Default(),
+			val:    RejectValidator(t),
+			clt:    &http.Client{},
+			db:     mocks.NewMockDatabaseService(t),
+			syncer: mocks.NewMockTaglistSync(t),
+			err:    false,
 		},
 		{
-			name: "params nil",
-			log:  nil,
-			cfg:  nil,
-			val:  nil,
-			clt:  nil,
-			db:   nil,
-			err:  true,
+			name:   "params nil",
+			log:    nil,
+			cfg:    nil,
+			val:    nil,
+			clt:    nil,
+			db:     nil,
+			syncer: nil,
+			err:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -168,8 +171,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 
 	validator := RejectValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
+	mockSyncer := mocks.NewMockTaglistSync(t)
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB)
+	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer)
 
 	router := SetupRouter(h)
 
@@ -230,6 +234,11 @@ type validationSetup struct {
 	tags []string
 }
 
+type syncerSetup struct {
+	err error
+}
+
+//nolint:funlen
 func TestHandlerHandleRequest(t *testing.T) {
 	validRespData, err := json.Marshal(entity.SupplierResponse{
 		HTTPStatusCode: 200,
@@ -248,6 +257,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 		respData          []byte
 		dbSetup           *dbSetup
 		vsetup            *validationSetup
+		syncerSetup       *syncerSetup
 		expectLoggedError bool
 	}{
 		{
@@ -258,6 +268,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: nil},
+			syncerSetup:       &syncerSetup{err: nil},
 			expectLoggedError: false,
 		},
 		{
@@ -268,6 +279,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: errors.New("Storage error")},
+			syncerSetup:       &syncerSetup{err: nil},
 			expectLoggedError: true,
 		},
 		{
@@ -275,13 +287,25 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData:          []byte("invalid"),
 			expectLoggedError: true,
 		},
+		{
+			name:     "sync error",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: nil},
+			syncerSetup:       &syncerSetup{err: errors.New("syncing error")},
+			expectLoggedError: true,
+		},
 	}
 
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
+	mockSyncer := mocks.NewMockTaglistSync(t)
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -300,6 +324,14 @@ func TestHandlerHandleRequest(t *testing.T) {
 				defer func() {
 					mockDB.AssertExpectations(t)
 					mockDB.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			if tt.syncerSetup != nil {
+				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(tt.syncerSetup.err)
+				defer func() {
+					mockSyncer.AssertExpectations(t)
+					mockSyncer.ExpectedCalls = []*mock.Call{}
 				}()
 			}
 
@@ -325,6 +357,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 		RejectValidator(b),
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
+		mocks.NewMockTaglistSync(b),
 	)
 
 	router := SetupRouter(ctrl)
