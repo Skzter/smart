@@ -1,6 +1,5 @@
 package handler
 
-/*
 import (
 	"bytes"
 	"context"
@@ -81,7 +80,7 @@ func TestHandleChatRequest(t *testing.T) {
 		function         string
 		userPrompt       string
 		sessionID        string
-		expectedResponse string
+		expectedResponse any
 		expectedBool     bool
 		ResponseError    error
 	}{
@@ -97,7 +96,7 @@ func TestHandleChatRequest(t *testing.T) {
 			function:         "GeneratePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: "This is a generated Prompt",
+			expectedResponse: &entity.GenerationResponse{Code: "some code", Tags: []string{"Tag1", "Tag2"}},
 			ResponseError:    nil,
 		},
 		{
@@ -131,7 +130,7 @@ func TestHandleChatRequest(t *testing.T) {
 			function:         "GeneratePrompt",
 			userPrompt:       "generating err",
 			sessionID:        sessionid,
-			expectedResponse: "",
+			expectedResponse: nil,
 			ResponseError:    sharedErrors.ErrGeneration,
 		},
 	}
@@ -302,4 +301,3 @@ func TestHandleUserInfoRequest(t *testing.T) {
 		})
 	}
 }
-*/

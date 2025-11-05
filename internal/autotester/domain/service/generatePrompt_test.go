@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"testing"
 
@@ -91,7 +92,7 @@ func TestGeneratePrompt(t *testing.T) {
 	logger := slog.Default()
 	cfg := &config.Config{
 		Prompts: &config.Prompts{
-			AutoPlaywrightPrompt: "system prompt %s",
+			AutoPlaywrightPromptT: "system prompt %s",
 		},
 	}
 	tags := []string{"Tag1, Tag2"}
@@ -105,6 +106,7 @@ func TestGeneratePrompt(t *testing.T) {
 		requestReturns    *[]any
 		getTaglistReturns *[]any
 		expectErr         bool
+		ctx               context.Context
 	}{
 		{
 			name:              "success",
@@ -112,12 +114,39 @@ func TestGeneratePrompt(t *testing.T) {
 			requestReturns:    &[]any{&sharedEntity.Response{Text: string(mRequest)}, nil},
 			getTaglistReturns: &[]any{tags, nil},
 			expectErr:         false,
+			ctx:               context.Background(),
 		},
 		{
-			name:              "service error",
+			name:      "nil ctx",
+			ctx:       nil,
+			expectErr: true,
+		},
+		{
+			name:              "taglist error",
+			getTaglistReturns: &[]any{[]string{}, errors.New("Err")},
+			expectErr:         true,
+			ctx:               context.Background(),
+		},
+		{
+			name:              "incorrectly structured openai response",
+			requestReturns:    &[]any{&sharedEntity.Response{Text: "incorrect response"}, nil},
+			getTaglistReturns: &[]any{tags, nil},
+			expectErr:         true,
+			ctx:               context.Background(),
+		},
+		{
+			name:              "empty code segment in openau response",
+			requestReturns:    &[]any{&sharedEntity.Response{Text: `{"Tags": [], "Code": ""}`}, nil},
+			getTaglistReturns: &[]any{tags, nil},
+			expectErr:         true,
+			ctx:               context.Background(),
+		},
+		{
+			name:              "openai error",
 			requestReturns:    &[]any{(*sharedEntity.Response)(nil), sharedErrors.ErrInternalServer},
 			getTaglistReturns: &[]any{[]string{"Tag1, Tag2"}, nil},
 			expectErr:         true,
+			ctx:               context.Background(),
 		},
 	}
 
@@ -125,8 +154,6 @@ func TestGeneratePrompt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			openai := mocks.NewMockOpenAI(t)
 			taglist := mocks.NewMockTaglistStorage(t)
-
-			ctx := context.Background()
 
 			if tt.requestReturns != nil {
 				openai.On("Request", mock.Anything, mock.Anything).Return(*tt.requestReturns...)
@@ -137,7 +164,7 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
-			got, err := svc.GeneratePrompt(ctx, "user says hi", "session-123")
+			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
 
 			if tt.expectErr {
 				assert.NotNil(t, err)

@@ -37,7 +37,7 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 }
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
-// It uses the configured AutoPlaywrightPrompt as system prompt and gpt-4-1106-preview as model.
+// It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
 func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
@@ -73,7 +73,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	return &genResp, nil
 }
 
-// fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt from the config
+// fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config
 func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return "", err
@@ -81,15 +81,15 @@ func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
 	taglist, err := s.taglistService.GetTaglist(ctx)
 	if err != nil {
 		s.logger.Error(err.Error())
-		return "", fmt.Errorf("placeholder") // hier custom error irgendwann
+		return "", errors.ErrInternalServer
 	}
 
 	staglist, err := json.Marshal(taglist)
 	if err != nil {
 		s.logger.Error(err.Error())
-		return "", err // hier custom error irgendwann
+		return "", errors.ErrInternalServer
 	}
 
-	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPrompt, string(staglist))
+	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, string(staglist))
 	return prompt, nil
 }
