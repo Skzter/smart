@@ -40,5 +40,8 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 
 // SyncTaglist syncs stored taglist.
 func (tls *taglistSync) SyncTaglist(ctx context.Context, tags []string) error {
+	// check taglists from struct, with given tags
+	// if not equal, replace new tags with old in struct and upload new tags to s3
+	// store func from service to upload
 	return nil
 }

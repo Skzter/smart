@@ -115,6 +115,8 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 		return
 	}
 
+	// future sync service, maybo async
+
 	if err := s.store(ctx, &req, &list, tags); err != nil {
 		s.logger.Error(err.Error())
 		return
