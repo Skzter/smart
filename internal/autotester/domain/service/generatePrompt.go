@@ -73,7 +73,11 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	return &genResp, nil
 }
 
+// fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt from the config
 func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return "", err
+	}
 	taglist, err := s.taglistService.GetTaglist(ctx)
 	if err != nil {
 		s.logger.Error(err.Error())

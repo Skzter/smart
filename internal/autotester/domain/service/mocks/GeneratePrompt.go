@@ -8,6 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockGeneratePrompt creates a new instance of MockGeneratePrompt. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -38,22 +39,24 @@ func (_m *MockGeneratePrompt) EXPECT() *MockGeneratePrompt_Expecter {
 }
 
 // GeneratePrompt provides a mock function for the type MockGeneratePrompt
-func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
+func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error) {
 	ret := _mock.Called(ctx, userPrompt, sessionID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GeneratePrompt")
 	}
 
-	var r0 string
+	var r0 *entity.GenerationResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*entity.GenerationResponse, error)); ok {
 		return returnFunc(ctx, userPrompt, sessionID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *entity.GenerationResponse); ok {
 		r0 = returnFunc(ctx, userPrompt, sessionID)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.GenerationResponse)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = returnFunc(ctx, userPrompt, sessionID)
@@ -99,12 +102,12 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(s string, err error) *MockGeneratePrompt_GeneratePrompt_Call {
-	_c.Call.Return(s, err)
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(generationResponse *entity.GenerationResponse, err error) *MockGeneratePrompt_GeneratePrompt_Call {
+	_c.Call.Return(generationResponse, err)
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string, sessionID string) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string, sessionID string) (*entity.GenerationResponse, error)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }
