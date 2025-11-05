@@ -30,12 +30,12 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		service.NewValidatePromptService,
-		sharedRepo.NewTaglistStorage,
 		application.NewRouter,
 		handler.NewAutotesterController,
 		TagListParquetWrapperProvider,
 		service.NewGeneratePromptService,
 		S3WrapperProvider,
+		TaglistStorageProvider,
 	)
 
 	return nil, nil
@@ -73,4 +73,17 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.
 		SecretKey: build.AwsSecretAccessKey,
 	}
 	return wrapperService.NewS3Wrapper(logger, config)
+}
+
+func TaglistStorageProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapperService.S3StorageWrapper,
+	parquetWrapper wrapperService.ParquetFileWrapper[sharedEntity.TagList],
+) (sharedRepo.TaglistStorage, error) {
+	return sharedRepo.NewTaglistStorage(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.TaglistPrefix)
 }
