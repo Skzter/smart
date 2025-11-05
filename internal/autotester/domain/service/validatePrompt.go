@@ -2,39 +2,20 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"encoding/json"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// Error is custom error type for validation service
-type Error struct {
-	underlying error
-	message    string
-}
-
-func (e *Error) Error() string {
-	return e.message
-}
-
-func (e *Error) Unwrap() error {
-	return e.underlying
-}
-
-// Errors which the llm validation can return
-var (
-	ErrNotEnoughInformation = errors.New("prompt does not contain required information for test generation")
-	ErrUnexpectedResponse   = errors.New("unexpected validation response, please try again")
-)
-
 // ValidatePrompt defines an interface for prompt validation
 type ValidatePrompt interface {
-	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) error
+	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error)
 }
 
 // validatePrompt provides functionality to validate user prompts using OpenAI.
@@ -56,7 +37,12 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
-func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) error {
+func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		s.logger.Error(err.Error())
+		return false, "", errors.ErrInternalServer
+	}
+
 	req := entity.Request{
 		Prompt:       userPrompt,
 		SessionID:    sessionID,
@@ -66,21 +52,13 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		return err
+		return false, "", errors.ErrValidation
 	}
 
-	switch resp.Text {
-	case "true":
-		return nil
-	case "false":
-		return &Error{
-			underlying: ErrNotEnoughInformation,
-			message:    fmt.Sprintf("SERVICE: ValidatePrompt() => %v", ErrNotEnoughInformation.Error()),
-		}
-	default:
-		return &Error{
-			underlying: ErrUnexpectedResponse,
-			message:    fmt.Sprintf("SERVICE: ValidatePrompt(): no binary decision in validation => %s", resp.Text),
-		}
+	llmResponse := autotesterEntity.LlmValidationResponse{}
+	if err = json.Unmarshal([]byte(resp.Text), &llmResponse); err != nil {
+		s.logger.Error(err.Error())
+		return false, "", errors.ErrInternalServer
 	}
+	return llmResponse.Valid, llmResponse.Message, nil
 }
