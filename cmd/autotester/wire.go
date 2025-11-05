@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -54,4 +55,16 @@ func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
 func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
+}
+func TaglistStorageProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapperService.S3StorageWrapper,
+	parquetWrapper wrapperService.ParquetFileWrapper[sharedEntity.TagList],
+) (sharedRepo.TaglistStorage, error) {
+	return sharedRepo.NewTaglistStorage(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.TaglistPrefix)
 }
