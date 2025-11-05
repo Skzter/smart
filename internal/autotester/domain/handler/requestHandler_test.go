@@ -350,7 +350,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusOK,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Delete("test123", "", "user123", "conv456").Return(nil).Once()
+				m.EXPECT().Delete("test123", "user123", "conv456").Return(nil).Once()
 			},
 		},
 		{
@@ -368,7 +368,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Delete("test789", "", "user789", "conv789").Return(errors.New("database error")).Once()
+				m.EXPECT().Delete("test789", "user789", "conv789").Return(errors.New("database error")).Once()
 			},
 		},
 	}

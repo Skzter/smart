@@ -13,8 +13,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-const testcaseLanguageDefault = "ts"
-
 // TestcaseLocalStorageRepository provides low-level file operations for managing TestCase files
 // in local storage. The repository handles both data persistence (Save, Delete) and
 // path provisioning for the test runner (GetTestPath*). All operations are user- and session-scoped.
@@ -50,6 +48,8 @@ type TestcaseLocalStorageRepository interface {
 	// Returns the number of deleted files and any error that occurred.
 	DeleteOlderThan(maxAge time.Duration) (int, error)
 }
+
+const testcaseLanguageDefault = "ts"
 
 type testcaseLocalStorageRepository struct {
 	filesystem FileSystem
