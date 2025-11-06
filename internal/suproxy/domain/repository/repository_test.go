@@ -28,11 +28,7 @@ const (
 // getValidEntry returns a valid DatabaseEntry for testing
 func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
-		Request: entity.RequestNoHeader{
-			Prompt:      "prompt",
-			Destination: "http://example.com",
-			Request:     `{}`,
-		},
+		Request:  "Test request",
 		Response: entity.Response{Response: "OK"},
 		Tags:     []string{"tag1", "tag2"},
 	}
@@ -300,11 +296,7 @@ func TestValidateDbEntry(t *testing.T) {
 		{
 			name: "valid entry",
 			entry: entity.DatabaseEntry{
-				Request: entity.RequestNoHeader{
-					Prompt:      "prompt",
-					Destination: "http://example.com",
-					Request:     "{}",
-				},
+				Request:  "Test request",
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{"tag1"},
 			},
@@ -312,27 +304,19 @@ func TestValidateDbEntry(t *testing.T) {
 		},
 
 		{
-			name: "invalid request - empty prompt",
+			name: "invalid request - empty string",
 			entry: entity.DatabaseEntry{
-				Request: entity.RequestNoHeader{
-					Prompt:      "",
-					Destination: "http://example.com",
-					Request:     "{}",
-				},
+				Request:  "",
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{"tag1"},
 			},
 			expectError: true,
-			errorText:   "prompt must not be empty",
+			errorText:   "request must not be empty",
 		},
 		{
 			name: "invalid response - empty response",
 			entry: entity.DatabaseEntry{
-				Request: entity.RequestNoHeader{
-					Prompt:      "prompt",
-					Destination: "http://example.com",
-					Request:     "{}",
-				},
+				Request:  "Test request",
 				Response: entity.Response{Response: ""},
 				Tags:     []string{"tag1"},
 			},
@@ -342,11 +326,7 @@ func TestValidateDbEntry(t *testing.T) {
 		{
 			name: "invalid tags - empty list",
 			entry: entity.DatabaseEntry{
-				Request: entity.RequestNoHeader{
-					Prompt:      "prompt",
-					Destination: "http://example.com",
-					Request:     "{}",
-				},
+				Request:  "Test request",
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{},
 			},
