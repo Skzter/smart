@@ -476,22 +476,26 @@ func TestValidateTestCaseData(t *testing.T) {
 	}
 }
 
-// nolint:dupl
 func TestGenerateTestCaseKey(t *testing.T) {
-	key := generateTestCaseKey()
+	testID := "test-id-123"
+	key := generateTestCaseKey(testID)
 
 	if key == "" {
-		t.Errorf("generateSessionSummaryKey() returned empty string")
+		t.Errorf("generateTestCaseKey() returned empty string")
 	}
 	if len(key) < 25 {
-		t.Errorf("generateSessionSummaryKey() returned too short key: %s", key)
+		t.Errorf("generateTestCaseKey() returned too short key: %s", key)
 	}
-	const prefix = "testCase/"
+	const prefix = "autotester/testcase/"
 	if len(key) < len(prefix) || key[:len(prefix)] != prefix {
-		t.Errorf("generateSessionSummaryKey() should start with '%s', got: %s", prefix, key)
+		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", prefix, key)
 	}
 	if len(key) <= len(prefix) || key[len(prefix):] == "" {
-		t.Errorf("generateSessionSummaryKey() should contain a timestamp after prefix, got: %s", key)
+		t.Errorf("generateTestCaseKey() should contain a timestamp after prefix, got: %s", key)
+	}
+	expectedPrefix := "autotester/testcase/" + testID + "_"
+	if len(key) < len(expectedPrefix) || key[:len(expectedPrefix)] != expectedPrefix {
+		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", expectedPrefix, key)
 	}
 }
 

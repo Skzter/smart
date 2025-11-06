@@ -42,5 +42,18 @@ func (t *testcaseStorageService) SaveTestCase(ctx context.Context, testCase *ent
 	if err := assert.NotNil(ctx); err != nil {
 		return err
 	}
-	return t.repo.Create(ctx, testCase)
+
+	err := t.repo.Create(ctx, testCase)
+	if err != nil {
+		t.logger.Error("failed to save testcase",
+			slog.String("testID", testCase.TestID),
+			slog.String("error", err.Error()),
+		)
+		return err
+	}
+
+	t.logger.Debug("testcase successfully saved",
+		slog.String("testID", testCase.TestID),
+	)
+	return nil
 }

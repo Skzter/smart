@@ -26,7 +26,7 @@ type TestCaseStorageRepository interface {
 	Delete(ctx context.Context, key string) error
 }
 
-const prefixTestCase = "testCase"
+const prefixTestCase = "autotester/testcase"
 
 // testCaseStorageRepository provides a repository implementation for TestCase entities,
 // encapsulating logic for S3 and Parquet operations.
@@ -61,7 +61,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 	if err != nil {
 		return err
 	}
-	key := generateTestCaseKey()
+	key := generateTestCaseKey(obj.TestID)
 	metadata := map[string]string{
 		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
 	}
@@ -164,9 +164,9 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 
 // generateTestCaseKey creates a unique S3 key for a TestCase object.
 // The format is: "testCase/testCase_<timestamp>"
-func generateTestCaseKey() string {
+func generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d", prefixTestCase, prefixTestCase, timestamp)
+	return fmt.Sprintf("%s/%s_%d", prefixTestCase, testcaseId, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.
