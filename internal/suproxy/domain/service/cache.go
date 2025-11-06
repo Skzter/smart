@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	// #nosec G501 -- MD5 is acceptable here for non-cryptographic cache key generation
+	// #nosec G501 - MD5 is acceptable here for non-cryptographic cache key generation
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -65,31 +65,72 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo CacheRepository)
 		ErrorOrEmpty: 45 * time.Second,
 	}
 
-	// Return initialized cache service
-	return &cacheService{
+	svc := &cacheService{
 		log:   log,
 		cfg:   cfg,
 		repo:  repo,
 		ttls:  ttls,
 		nowFn: time.Now,
 	}
+
+	log.Info("cache: service initialized",
+		"supplier_ttl", svc.ttls.SupplierOK,
+		"mock_ttl", svc.ttls.MockOK,
+		"error_or_empty_ttl", svc.ttls.ErrorOrEmpty,
+	)
+
+	return svc
 }
 
 // Lookup checks if a cached entry exists for a given request and returns it if found
 func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bool) ([]byte, bool, error) {
 	key := s.BuildKey(req, isMock)
 
+	start := s.nowFn()
 	raw, hit, err := s.repo.Get(ctx, key) // Try to get entry from cache
-	if err != nil || !hit {
-		return nil, false, err // Return miss or error
+	elapsed := s.nowFn().Sub(start)
+
+	if err != nil {
+		// Repository / Redis error – caller kann auf Supplier-Fallback gehen
+		s.log.Error("cache: lookup failed",
+			"key", key,
+			"mock", isMock,
+			"duration", elapsed,
+			"err", err,
+		)
+		return nil, false, err
+	}
+
+	if !hit {
+		s.log.Info("cache: miss",
+			"key", key,
+			"mock", isMock,
+			"duration", elapsed,
+		)
+		return nil, false, nil
 	}
 
 	var entry CacheEntry
 	if err := json.Unmarshal(raw, &entry); err != nil {
 		// Defensive: ignore corrupted cache entries
-		s.log.Warn("cache: failed to unmarshal entry, ignoring", "key", key, "err", err)
+		s.log.Warn("cache: failed to unmarshal entry, ignoring",
+			"key", key,
+			"mock", isMock,
+			"duration", elapsed,
+			"err", err,
+		)
 		return nil, false, nil
 	}
+
+	age := s.nowFn().Sub(entry.CachedAt)
+
+	s.log.Info("cache: hit",
+		"key", key,
+		"mock", isMock,
+		"duration", elapsed,
+		"age", age,
+	)
+
 	return []byte(entry.Response), true, nil
 }
 
@@ -109,18 +150,67 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 
 	payload, err := json.Marshal(entry) // Serialize to JSON
 	if err != nil {
+		s.log.Error("cache: failed to marshal entry",
+			"key", key,
+			"mock", isMock,
+			"err", err,
+		)
 		return err
 	}
 
 	ttl := s.chooseTTL(isMock, isError, response) // Pick appropriate TTL
 
-	return s.repo.Set(ctx, key, payload, ttl) // Store in cache repository
+	start := s.nowFn()
+	err = s.repo.Set(ctx, key, payload, ttl) // Store in cache repository
+	elapsed := s.nowFn().Sub(start)
+
+	if err != nil {
+		s.log.Error("cache: store failed",
+			"key", key,
+			"mock", isMock,
+			"ttl", ttl,
+			"duration", elapsed,
+			"err", err,
+		)
+		return err
+	}
+
+	s.log.Info("cache: stored entry",
+		"key", key,
+		"mock", isMock,
+		"ttl", ttl,
+		"duration", elapsed,
+		"is_error", isError,
+	)
+
+	return nil
 }
 
 // Invalidate removes a specific cache entry based on the request key
 func (s *cacheService) Invalidate(ctx context.Context, req entity.Request, isMock bool) error {
 	key := s.BuildKey(req, isMock) // Reconstruct cache key
-	return s.repo.Delete(ctx, key) // Delete entry from cache
+
+	start := s.nowFn()
+	err := s.repo.Delete(ctx, key) // Delete entry from cache
+	elapsed := s.nowFn().Sub(start)
+
+	if err != nil {
+		s.log.Error("cache: invalidation failed",
+			"key", key,
+			"mock", isMock,
+			"duration", elapsed,
+			"err", err,
+		)
+		return err
+	}
+
+	s.log.Info("cache: invalidated entry",
+		"key", key,
+		"mock", isMock,
+		"duration", elapsed,
+	)
+
+	return nil
 }
 
 // BuildKey generates a stable cache key from request details (destination, headers, body)
@@ -178,7 +268,7 @@ func canonicalizeRequest(req entity.Request) string {
 
 // md5sum computes the MD5 hash of the input string and returns its hex encoding
 func md5sum(s string) string {
-	// #nosec G401 -- MD5 used intentionally for fast, non-secure hashing
+	// #nosec G401 - MD5 used intentionally for fast, non-secure hashing
 	h := md5.Sum([]byte(s))
 	return hex.EncodeToString(h[:])
 }
