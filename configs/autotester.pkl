@@ -207,6 +207,7 @@ taglistPrefix: String = "taglist/"
 bucket: String = "smart-autotester"
 
 testsRootDir: String = "tempTests"
+enableCleanUp: Boolean = true
 
 template: String = """
     Erzeuge Playwright-Tests via Autoplaywright für Check24.  

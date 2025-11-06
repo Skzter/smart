@@ -1,6 +1,6 @@
 package entity
 
-// TestCase represents a single test case with its ID, description, expected output, code, and status.
+// TestCase represents a single test case with its ID, code, and status.
 type TestCase struct {
 	TestID   string
 	TestCode TestCode

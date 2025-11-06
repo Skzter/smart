@@ -78,6 +78,6 @@ func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
-func TestcaseLocalStorageServiceProvider(logger *slog.Logger, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
-	return service.NewTestcaseLocalStorageService(logger, repo, true)
+func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
+	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }

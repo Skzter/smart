@@ -93,7 +93,7 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 		return fmt.Errorf("save to repository failed: %w", err)
 	}
 
-	s.logger.Info("testcase saved successfully",
+	s.logger.Debug("testcase saved successfully",
 		slog.String("testId", testcase.TestID),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
@@ -144,7 +144,7 @@ func (s *testcaseLocalStorageService) GetTestPathsBySession(userId, sessionId st
 		return nil, fmt.Errorf("get paths from repository failed: %w", err)
 	}
 
-	s.logger.Info("testcase paths retrieved successfully",
+	s.logger.Debug("testcase paths retrieved successfully",
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
 		slog.Int("count", len(paths)),
@@ -171,7 +171,7 @@ func (s *testcaseLocalStorageService) GetTestPathsByUser(userId string) (map[str
 		totalCount += len(sessionPaths)
 	}
 
-	s.logger.Info("testcase paths retrieved successfully",
+	s.logger.Debug("testcase paths retrieved successfully",
 		slog.String("userId", userId),
 		slog.Int("sessionCount", len(paths)),
 		slog.Int("totalPaths", totalCount),
@@ -190,7 +190,7 @@ func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) e
 		return fmt.Errorf("delete from repository failed: %w", err)
 	}
 
-	s.logger.Info("testcase deleted successfully",
+	s.logger.Debug("testcase deleted successfully",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
 		slog.String("sessionId", sessionId),
@@ -201,7 +201,7 @@ func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) e
 func (s *testcaseLocalStorageService) CleanupOldTests() error {
 	const maxAge = 24 * time.Hour
 
-	s.logger.Info("starting cleanup of old tests",
+	s.logger.Debug("starting cleanup of old tests",
 		slog.Duration("maxAge", maxAge),
 	)
 
@@ -214,7 +214,7 @@ func (s *testcaseLocalStorageService) CleanupOldTests() error {
 		return fmt.Errorf("cleanup old tests failed: %w", err)
 	}
 
-	s.logger.Info("cleanup of old tests completed successfully",
+	s.logger.Debug("cleanup of old tests completed successfully",
 		slog.Int("deletedCount", deletedCount),
 		slog.Duration("maxAge", maxAge),
 	)

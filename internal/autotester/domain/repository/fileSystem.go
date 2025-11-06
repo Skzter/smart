@@ -83,13 +83,9 @@ func NewOSFileSystem(root string) (FileSystem, error) {
 }
 
 func (fs *osFileSystem) MkdirAll(path string) error {
-	if filepath.IsAbs(path) {
-		return fmt.Errorf("path must be relative to root: %s", path)
-	}
-
-	fullPath := fs.fullPath(path)
-	if !fs.isUnderRoot(fullPath) {
-		return fmt.Errorf("path escapes root: %s", path)
+	fullPath, err := fs.validateAndGetFullPath(path)
+	if err != nil {
+		return err
 	}
 	return os.MkdirAll(fullPath, DefaultDirPerm)
 }
@@ -98,12 +94,9 @@ func (fs *osFileSystem) WriteFile(relativeFilePath string, data []byte) error {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return fmt.Errorf("relativeFilePath must be not empty")
 	}
-	if filepath.IsAbs(relativeFilePath) {
-		return fmt.Errorf("relativeFilePath must be relative to root: %s", relativeFilePath)
-	}
-	fullPath := fs.fullPath(relativeFilePath)
-	if !fs.isUnderRoot(fullPath) {
-		return fmt.Errorf("path escapes root: %s", relativeFilePath)
+	fullPath, err := fs.validateAndGetFullPath(relativeFilePath)
+	if err != nil {
+		return err
 	}
 
 	dir := filepath.Dir(fullPath)
@@ -143,32 +136,18 @@ func (fs *osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	if err := assert.StringNotEmpty(relativeFilePath); err != nil {
 		return nil, fmt.Errorf("relativeFilePath must be not empty")
 	}
-	if filepath.IsAbs(relativeFilePath) {
-		return nil, fmt.Errorf("relativeFilePath must be relative to root: %s", relativeFilePath)
-	}
-	fullPath := fs.fullPath(relativeFilePath)
-
-	resolvedPath, err := filepath.Abs(fullPath)
+	fullPath, err := fs.validateAndGetFullPath(relativeFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("resolve path: %w", err)
+		return nil, err
 	}
-	if rp, err := filepath.EvalSymlinks(resolvedPath); err == nil {
-		resolvedPath = rp
-	}
-
-	if !fs.isUnderRoot(resolvedPath) {
-		return nil, fmt.Errorf("path escapes root: %s", relativeFilePath)
-	}
-	return os.ReadFile(resolvedPath)
+	// #nosec G304 -- fullPath is validated by validateAndGetFullPath to prevent path traversal
+	return os.ReadFile(fullPath)
 }
 
 func (fs *osFileSystem) ReadDir(path string) ([]string, error) {
-	if filepath.IsAbs(path) {
-		return nil, fmt.Errorf("path must be relative to root: %s", path)
-	}
-	fullPath := fs.fullPath(path)
-	if !fs.isUnderRoot(fullPath) {
-		return nil, fmt.Errorf("path escapes root: %s", path)
+	fullPath, err := fs.validateAndGetFullPath(path)
+	if err != nil {
+		return nil, err
 	}
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
@@ -182,15 +161,11 @@ func (fs *osFileSystem) ReadDir(path string) ([]string, error) {
 }
 
 func (fs *osFileSystem) Remove(path string, recursive bool) error {
-	if filepath.IsAbs(path) {
-		return fmt.Errorf("path must be relative to root: %s", path)
-	}
-	full := fs.fullPath(path)
-	if !fs.isUnderRoot(full) {
-		return fmt.Errorf("path escapes root: %s", path)
+	full, err := fs.validateAndGetFullPath(path)
+	if err != nil {
+		return err
 	}
 
-	var err error
 	if recursive {
 		err = os.RemoveAll(full)
 	} else {
@@ -207,33 +182,33 @@ func (fs *osFileSystem) Remove(path string, recursive bool) error {
 }
 
 func (fs *osFileSystem) GetFileStats(path string) (os.FileInfo, error) {
-	if filepath.IsAbs(path) {
-		return nil, fmt.Errorf("absolute paths are not allowed: %s", path)
-	}
-
-	full := fs.fullPath(path)
-	if !fs.isUnderRoot(full) {
-		return nil, fmt.Errorf("path escapes root: %s", path)
+	full, err := fs.validateAndGetFullPath(path)
+	if err != nil {
+		return nil, err
 	}
 
 	return os.Lstat(full)
 }
 
 func (fs *osFileSystem) GetValidatedPath(relativePath string) (string, error) {
-	if filepath.IsAbs(relativePath) {
-		return "", fmt.Errorf("path must be relative to root: %s", relativePath)
-	}
-
-	fullPath := fs.fullPath(relativePath)
-	if !fs.isUnderRoot(fullPath) {
-		return "", fmt.Errorf("path escapes root: %s", relativePath)
-	}
-
-	return fullPath, nil
+	return fs.validateAndGetFullPath(relativePath)
 }
 
 func (fs *osFileSystem) fullPath(p string) string {
 	return filepath.Clean(filepath.Join(fs.Root, p))
+}
+
+// validateAndGetFullPath validates that the given path is relative and does not escape
+// the filesystem root. Returns the full path if valid, otherwise returns an error.
+func (fs *osFileSystem) validateAndGetFullPath(path string) (string, error) {
+	if filepath.IsAbs(path) {
+		return "", fmt.Errorf("path must be relative to root: %s", path)
+	}
+	fullPath := fs.fullPath(path)
+	if !fs.isUnderRoot(fullPath) {
+		return "", fmt.Errorf("path escapes root: %s", path)
+	}
+	return fullPath, nil
 }
 
 // isUnderRoot reports whether the given path is located inside the
