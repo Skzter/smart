@@ -309,9 +309,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				}
 
 				if err != nil {
-					mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, err)
+					mockValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, err)
 				} else {
-					mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return([]string{}, nil)
+					mockValidator.On("Validate", mock.Anything, mock.Anything).Return([]string{}, nil)
 				}
 				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
 			}
@@ -372,7 +372,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
-	// Setup Mocks
 	mockValidator := RejectValidator(b)
 	mockDB := mocks.NewMockDatabaseService(b)
 	mockTagSearch := mocks.NewTagSearchService(b)

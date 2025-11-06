@@ -14,14 +14,14 @@ type TagSearchService interface {
 }
 
 // tagSearchService is the concrete implementation of TagSearchService
-type tagSearchService struct{
-	s3     wrapper.S3StorageWrapper
+type tagSearchService struct {
+	s3 wrapper.S3StorageWrapper
 }
 
 // NewTagSearchService creates a new TagSearchService instance with S3 wrapper
 func NewTagSearchService(s3 wrapper.S3StorageWrapper) TagSearchService {
 	return &tagSearchService{
-		s3:     s3,
+		s3: s3,
 	}
 }
 

@@ -83,10 +83,6 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if code == http.StatusOK {
-		// Pass a context.Context to HandleRequest. Use a copy of the Gin
-		// context to safely access the underlying *http.Request when
-		// running in a background goroutine. Allow synchronous handling
-		// when configured.
 		if s.handleAsync {
 			go s.HandleRequest(c.Copy(), request, body)
 		} else {
