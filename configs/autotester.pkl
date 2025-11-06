@@ -24,7 +24,7 @@ class Prompts {
 
         2. Response Format (Constraint Setting)
            - Return exclusively `true` or `false`.  
-           - if `false` also return the reasing for the decision with the given criteria below in german
+           - if `false` also return the reasoning for the decision with the given criteria below in German
            - if `true` No explanations, no additional text. Any other output is considered incorrect.
            - the response has to be valid json after the following logic
            a response for the case `true` looks like this:
@@ -35,7 +35,7 @@ class Prompts {
                 a response for the case `false` for example looks like this:
             {
               "valid": false,
-              "message": "alle gründe warum es schiefgelaufen"
+              "message": "Alle Gründe warum es schiefgelaufen ist"
             }
            - Any deviation from this format is considered incorrect output.
 
