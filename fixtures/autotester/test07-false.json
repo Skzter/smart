@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Erstelle Autoplaywright-Test für das zukünftige KI-Feature auf Check24, das es noch nicht gibt. Base-URL: https://staging.check24.de. Szenario: Nutzer interagiert mit KI-Berater. Ablauf: ... Elemente: ... Assertions: ... Testdaten/Setup: ...",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

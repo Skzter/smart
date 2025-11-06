@@ -142,7 +142,7 @@ class Prompts {
 
     { 
       "valid": true|false, 
-      "reason": [tag1, tag2, ...] 
+      "reason": ["tag1", "tag2", ...] 
     } 
 
     If valid is true, reason must be an empty array. 
@@ -161,7 +161,7 @@ class Prompts {
 
     { 
       "valid": false, 
-      "reason": [tag1, tag2] 
+      "reason": ["tag1", "tag2"] 
     }
     """
 }
@@ -172,3 +172,7 @@ timeout: Int = 60
 region: String = "eu-central-1"
 
 bucket: String = "smart-suproxy"
+
+entryPrefix: String = "supplierData/"
+
+taglistPrefix: String = "taglist/"

@@ -18,38 +18,37 @@ import (
 
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
-	logger      *slog.Logger
-	config      *config.Config
-	client      *http.Client
-	validator   service.Validator
-	db          service.DatabaseService
-	tagSearch   service.TagSearchService
-	handleAsync bool
+	logger    *slog.Logger
+	config    *config.Config
+	client    *http.Client
+	validator service.Validator
+	db        service.DatabaseService
+	syncer    service.TaglistSync
+	tagSearch service.TagSearchService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-//
-//nolint:lll
 func NewSuproxyController(
 	logger *slog.Logger,
 	config *config.Config,
 	val service.Validator,
 	client *http.Client,
 	db service.DatabaseService,
+	syncer service.TaglistSync,
 	tagSearch service.TagSearchService,
 ) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db); err != nil {
+	if err := assert.NotNil(logger, config, val, client, db, syncer, tagSearch); err != nil {
 		return nil, err
 	}
 
 	return &SuproxyController{
-		logger:      logger,
-		config:      config,
-		client:      client,
-		validator:   val,
-		db:          db,
-		tagSearch:   tagSearch,
-		handleAsync: true,
+		logger:    logger,
+		config:    config,
+		client:    client,
+		validator: val,
+		db:        db,
+		syncer:    syncer,
+		tagSearch: tagSearch,
 	}, nil
 }
 
@@ -64,7 +63,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if request.Prompt != "" {
-		matchingKeys, err := s.tagSearch.FindKeysByTag(c.Request.Context(), request.Prompt)
+		matchingKeys, err := s.tagSearch.FindKeysByTag(c, request.Prompt)
 		switch {
 		case err != nil:
 			s.logger.Error("Tag-based search failed", "error", err)
@@ -83,11 +82,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if code == http.StatusOK {
-		if s.handleAsync {
-			go s.HandleRequest(c.Copy(), request, body)
-		} else {
-			s.HandleRequest(c, request, body)
-		}
+		go s.HandleRequest(c.Copy(), request, body)
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
 	}
@@ -144,6 +139,12 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 		return
 	}
 
+	err = s.syncer.SyncTaglist(ctx, tags)
+	if err != nil {
+		s.logger.Error(err.Error())
+		return
+	}
+
 	if err := s.store(ctx, &req, &list, tags); err != nil {
 		s.logger.Error(err.Error())
 		return
@@ -165,10 +166,4 @@ func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp
 	}
 
 	return s.db.SaveDbEntry(ctx, dbentry)
-}
-
-// SetHandleAsync sets whether HandleRequest should run asynchronously.
-// Use false in tests to make behavior deterministic.
-func (s *SuproxyController) SetHandleAsync(on bool) {
-	s.handleAsync = on
 }

@@ -10,10 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/application"
@@ -33,11 +35,15 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		service.NewValidator,
 		service.NewTagSearchService,
 		HTTPClientProvider,
-		shared.SharedProviderSet,		
+		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
 		service.NewDatabaseService,
-		repository.NewDatabaseRepository,
-		ParquetWrapperProvider,
+		DatabaseRepositoryProvider,
+		TaglistRepositoryProvider,
+		TagListParquetWrapperProvider,
+		sharedService.NewTaglistStorage,
+		service.NewTaglistSync,
+		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
 	)
 
@@ -58,8 +64,12 @@ func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
-func ParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
+func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
+}
+
+func TagListParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[sharedEntity.TagList], error) {
+	return wrapper.NewParquetWrapper[sharedEntity.TagList](logger, wrapper.DefaultParquetConfig())
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
@@ -70,4 +80,30 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3Stora
 		SecretKey: build.AwsSecretAccessKey,
 	}
 	return wrapper.NewS3Wrapper(logger, config)
+}
+
+func DatabaseRepositoryProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapper.S3StorageWrapper,
+	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
+) (repository.DatabaseRepository, error) {
+	return repository.NewDatabaseRepository(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.EntryPrefix,
+	)
+}
+func TaglistRepositoryProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapper.S3StorageWrapper,
+	parquetWrapper wrapper.ParquetFileWrapper[sharedEntity.TagList],
+) (sharedRepo.TaglistStorage, error) {
+	return sharedRepo.NewTaglistStorage(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.TaglistPrefix)
 }

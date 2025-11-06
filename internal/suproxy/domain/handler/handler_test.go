@@ -45,46 +45,49 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-
-	// Return nil slice and an to simulate rejection.
-	discardValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, errors.New("reject")).Maybe()
+	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
 
 func TestNewSuproxyController(t *testing.T) {
-	tagSearch := mocks.NewTagSearchService(t)
 	tests := []struct {
-		name string
-		log  *slog.Logger
-		cfg  *config.Config
-		val  service.Validator
-		clt  *http.Client
-		db   service.DatabaseService
-		err  bool
+		name       string
+		log        *slog.Logger
+		cfg        *config.Config
+		val        service.Validator
+		clt        *http.Client
+		db         service.DatabaseService
+		syncer     service.TaglistSync
+		tagservice service.TagSearchService
+		err        bool
 	}{
 		{
-			name: "valid",
-			cfg:  &config.Config{},
-			log:  slog.Default(),
-			val:  RejectValidator(t),
-			clt:  &http.Client{},
-			db:   mocks.NewMockDatabaseService(t),
-			err:  false,
+			name:       "valid",
+			cfg:        &config.Config{},
+			log:        slog.Default(),
+			val:        RejectValidator(t),
+			clt:        &http.Client{},
+			db:         mocks.NewMockDatabaseService(t),
+			syncer:     mocks.NewMockTaglistSync(t),
+			tagservice: mocks.NewTagSearchService(t),
+			err:        false,
 		},
 		{
-			name: "params nil",
-			log:  nil,
-			cfg:  nil,
-			val:  nil,
-			clt:  nil,
-			db:   nil,
-			err:  true,
+			name:       "params nil",
+			log:        nil,
+			cfg:        nil,
+			val:        nil,
+			clt:        nil,
+			db:         nil,
+			syncer:     nil,
+			tagservice: nil,
+			err:        true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tagSearch)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -94,7 +97,7 @@ func TestNewSuproxyController(t *testing.T) {
 
 type supplierSetup struct {
 	code     int
-	response any
+	response any // if nil, will use expected response
 }
 
 //nolint:funlen
@@ -114,11 +117,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		request          *entity.Request // will use invalid request if nil
 		useCorrectAdress bool
 		sSetup           *supplierSetup // only sets up server if not nil
-		expectedResponse any            // allows for unmarshal to fail
+		tsSetup          *[]any
+		expectedResponse any // allows for unmarshal to fail
 		expects200       bool
-		dbError          *struct{ bool }
-		validationError  *struct{ bool }
-		loggedError      bool
 	}{
 		{
 			name: "valid",
@@ -140,66 +141,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{false},
-			loggedError:     false,
-		},
-		{
-			name: "valid with malformed list entry",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{true},
-			loggedError:     true,
-		},
-		{
-			name: "valid with storage failure",
-			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-
-			validationError: &struct{ bool }{false},
-			dbError:         &struct{ bool }{true},
-			loggedError:     true,
 		},
 		{
 			name:             "invalid request body",
 			request:          nil,
 			expectedResponse: invalidRequestBody,
 			expects200:       false,
-			loggedError:      true,
 		},
 		{
 			name: "invalid address",
@@ -210,7 +157,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			useCorrectAdress: false,
 			expectedResponse: invalidRequestBody,
 			expects200:       false,
-			loggedError:      true,
 		},
 		{
 			name:             "supplier 400",
@@ -224,27 +170,11 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     400,
 				response: nil,
 			},
-			loggedError: true,
 		},
 		{
-			name: "invalid supplier data",
+			name: "non empty prompt, failure in tagsearch",
 			request: &entity.Request{
-				Prompt:  "",
-				Request: "{}",
-			},
-			useCorrectAdress: true,
-			expectedResponse: "invalid",
-			expects200:       true,
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			loggedError: true,
-		},
-		{
-			name: "validation error",
-			request: &entity.Request{
-				Prompt:  "",
+				Prompt:  "non empty prompt, but fails in tagsearch",
 				Request: `{}`,
 			},
 			useCorrectAdress: true,
@@ -261,29 +191,64 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			validationError: &struct{ bool }{true},
-			loggedError:     true,
+			tsSetup: &[]any{nil, errors.New("tagsearch error")},
+		},
+		{
+			name: "non empty prompt, no keys found",
+			request: &entity.Request{
+				Prompt:  "non emtpy prompt without matching keys",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			tsSetup: &[]any{[]string{}, nil},
+		},
+		{
+			name: "non empty prompt, matching keys found",
+			request: &entity.Request{
+				Prompt:  "non emtpy prompt with matching keys",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			tsSetup: &[]any{[]string{"tag1", "tag2"}, nil},
 		},
 	}
 
-	mockValidator := mocks.NewMockValidator(t)
-	mockDB := mocks.NewMockDatabaseService(t)
-	mockTagSearch := mocks.NewTagSearchService(t)
-
-	// Default mock behavior: when tests don't configure the validator or DB
-	// explicitly, return success (no tags, no error) so calls are allowed.
-	mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return([]string{}, nil)
-	mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(nil)
-	var writer slicewriter
-
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockTagSearch)
-
-	h.SetHandleAsync(false)
-	router := SetupRouter(h)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			writer.Clear()
+			validator := RejectValidator(t)
+			mockDB := mocks.NewMockDatabaseService(t)
+			mockSyncer := mocks.NewMockTaglistSync(t)
+			mockTagsearch := mocks.NewTagSearchService(t)
+
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+
+			router := SetupRouter(h)
 			w := httptest.NewRecorder()
 
 			var server *httptest.Server
@@ -302,29 +267,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				defer server.Close()
 			}
 
-			if tt.validationError != nil {
-				err := errors.New("error")
-				if !tt.validationError.bool {
-					err = nil
-				}
-
-				if err != nil {
-					mockValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, err)
-				} else {
-					mockValidator.On("Validate", mock.Anything, mock.Anything).Return([]string{}, nil)
-				}
-				defer func() { mockValidator.ExpectedCalls = []*mock.Call{} }()
-			}
-
-			if tt.dbError != nil {
-				err := errors.New("error")
-				if !tt.dbError.bool {
-					err = nil
-				}
-				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(err)
-				defer func() { mockDB.ExpectedCalls = []*mock.Call{} }()
-			}
-
 			// use correct header and destintation if request is not nil
 			var reqstring []byte
 			if tt.request != nil {
@@ -337,14 +279,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				tt.request.Header = header
 				tt.request.Destination = dest
 				reqstring, _ = json.Marshal(tt.request)
-
-				// Only set expectation if prompt is not empty
-				if strings.TrimSpace(tt.request.Prompt) != "" {
-					mockTagSearch.On("FindKeysByTag", mock.Anything, tt.request.Prompt).
-						Return([]string{"file1.parquet", "file2.parquet"}, nil).Once()
-				}
 			} else {
 				reqstring = []byte("invalid")
+			}
+
+			if tt.tsSetup != nil {
+				mockTagsearch.On("FindKeysByTag", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
 
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
@@ -353,40 +293,149 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			bytes, _ := io.ReadAll(w.Body)
 			expectedBytes, _ := json.Marshal(tt.expectedResponse)
 
-			valid := true
-			for i := range writer.len() {
-				if strings.Contains(string(writer.Read(i)), "ERROR") {
-					valid = false
-				}
-				t.Log(string(writer.Read(i)))
-			}
-
-			assert.Equal(t, tt.loggedError, !valid)
 			assert.Equal(t, tt.expects200, w.Code == http.StatusOK)
 			assert.Equal(t, string(expectedBytes), string(bytes))
+		})
+	}
+}
 
-			mockValidator.AssertExpectations(t)
-			mockTagSearch.AssertExpectations(t)
+type dbSetup struct {
+	err error
+}
+
+type validationSetup struct {
+	err  error
+	tags []string
+}
+
+//nolint:funlen
+func TestHandlerHandleRequest(t *testing.T) {
+	validRespData, err := json.Marshal(entity.SupplierResponse{
+		HTTPStatusCode: 200,
+		Data: entity.SupplierOfferList{
+			Items: []json.RawMessage{
+				[]byte(`{"offerid":223213}`),
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	tests := []struct {
+		name              string
+		respData          []byte
+		dbSetup           *dbSetup
+		vsetup            *validationSetup
+		wantSyncEr        bool
+		expectLoggedError bool
+	}{
+		{
+			name:     "valid, sucessful storage",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: nil},
+			wantSyncEr:        false,
+			expectLoggedError: false,
+		},
+		{
+			name:     "valid, storage error",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: errors.New("Storage error")},
+			wantSyncEr:        false,
+			expectLoggedError: true,
+		},
+		{
+			name:              "invalid resp data",
+			respData:          []byte("invalid"),
+			expectLoggedError: true,
+		},
+		{
+			name:     "sync error",
+			respData: validRespData,
+			vsetup: &validationSetup{
+				err:  nil,
+				tags: []string{"valid"},
+			},
+			dbSetup:           &dbSetup{err: nil},
+			wantSyncEr:        true,
+			expectLoggedError: true,
+		},
+	}
+
+	mockValidator := mocks.NewMockValidator(t)
+	mockDB := mocks.NewMockDatabaseService(t)
+	mockSyncer := mocks.NewMockTaglistSync(t)
+	mockTagsearch := mocks.NewTagSearchService(t)
+	var writer slicewriter
+
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer.Clear()
+
+			if tt.vsetup != nil {
+				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
+				defer func() {
+					mockValidator.AssertExpectations(t)
+					mockValidator.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			if tt.dbSetup != nil {
+				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(tt.dbSetup.err)
+				defer func() {
+					mockDB.AssertExpectations(t)
+					mockDB.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			if tt.wantSyncEr {
+				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(errors.New("syncing error"))
+				defer func() {
+					mockSyncer.AssertExpectations(t)
+					mockSyncer.ExpectedCalls = []*mock.Call{}
+				}()
+			} else {
+				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(nil)
+				defer func() {
+					mockSyncer.AssertExpectations(t)
+					mockSyncer.ExpectedCalls = []*mock.Call{}
+				}()
+			}
+
+			h.HandleRequest(t.Context(), entity.Request{}, &tt.respData)
+
+			err := false
+			for i := range writer.len() {
+				if strings.Contains(string(writer.Read(i)), "ERROR") {
+					err = true
+				}
+				t.Log("ERROR: ", string(writer.Read(i)))
+			}
+
+			assert.Equal(t, tt.expectLoggedError, err)
 		})
 	}
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
-	mockValidator := RejectValidator(b)
-	mockDB := mocks.NewMockDatabaseService(b)
-	mockTagSearch := mocks.NewTagSearchService(b)
-
-	mockTagSearch.
-		On("FindKeysByTag", mock.Anything, mock.AnythingOfType("string")).
-		Return([]string{"file1.parquet", "file2.parquet"}, nil)
-
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Config{},
-		mockValidator,
+		RejectValidator(b),
 		&http.Client{},
-		mockDB,
-		mockTagSearch,
+		mocks.NewMockDatabaseService(b),
+		mocks.NewMockTaglistSync(b),
+		mocks.NewTagSearchService(b),
 	)
 
 	router := SetupRouter(ctrl)
@@ -404,7 +453,6 @@ func BenchmarkPostOfferList(b *testing.B) {
 			panic(err)
 		}
 	}))
-	defer server.Close()
 
 	requestBody, _ := json.Marshal(entity.Request{
 		Header:      map[string]string{"Content-Type": "application/json"},
@@ -413,9 +461,9 @@ func BenchmarkPostOfferList(b *testing.B) {
 		Request:     `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
 	})
 
-	// Benchmark Loop
-	for b.ResetTimer(); b.N > 0; b.N-- {
+	for b.Loop() {
 		request, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(requestBody))
+
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, request)
 

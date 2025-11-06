@@ -199,6 +199,12 @@ tasks:
     cmds:
       - pnpm test
 
+  test-sysprompt:
+    desc: "run the test script for testing the current sysprompts against the given testcases"
+    dir: "scripts"
+    cmds:
+    - ./sysprompt-test.sh
+
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
   # --------------------------------------------------------------------------------

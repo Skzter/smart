@@ -1,17 +1,16 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"log/slog"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
@@ -95,20 +94,19 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:        "service error",
 			wantErr:     true,
-			expectedErr: repository.ErrOpenAI,
+			expectedErr: sharedErrors.ErrGeneration,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			service := mocks.NewMockOpenAI(t)
-			rec := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(rec)
+			ctx := context.Background()
 
 			if tt.wantErr {
 				service.
 					On("Request", ctx, mock.Anything).
-					Return((*entity.Response)(nil), repository.ErrOpenAI)
+					Return((*entity.Response)(nil), sharedErrors.ErrInternalServer)
 			} else {
 				service.
 					On("Request", ctx, mock.Anything).
