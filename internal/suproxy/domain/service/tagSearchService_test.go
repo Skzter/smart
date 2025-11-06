@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"io"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,18 +13,15 @@ import (
 
 // TestNewTagSearchService tests the creation of a new TagSearchService instance.
 func TestNewTagSearchService(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	mockS3 := mockWrapper.NewMockS3StorageWrapper(t)
 
-	// Dereference logger pointer to pass slog.Logger value
-	svc := NewTagSearchService(logger, mockS3)
+	svc := NewTagSearchService(mockS3)
 
 	assert.NotNil(t, svc)
 }
 
 // TestTagSearchService_FindKeysByTag tests the FindKeysByTag method of TagSearchService with different test cases.
 func TestFindKeysByTag(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	tests := []struct {
 		name         string
@@ -71,9 +66,7 @@ func TestFindKeysByTag(t *testing.T) {
 				mockS3.On("ListParquetFiles", mock.Anything, "").Return(tt.mockKeys, nil)
 			}
 
-			// Dereference logger pointer to pass slog.Logger value
 			svc := &tagSearchService{
-				logger: logger,
 				s3:     mockS3,
 			}
 

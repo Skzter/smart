@@ -45,9 +45,8 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	// Validator.Validate returns ([]string, error), so the mock must
-	// return a slice (or nil) and an error. Return nil slice and an
-	// error to simulate rejection.
+
+	// Return nil slice and an to simulate rejection.
 	discardValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
@@ -95,7 +94,7 @@ func TestNewSuproxyController(t *testing.T) {
 
 type supplierSetup struct {
 	code     int
-	response any // if nil, will use expected response
+	response any
 }
 
 //nolint:funlen
@@ -308,9 +307,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				if !tt.validationError.bool {
 					err = nil
 				}
-				// Validator.Validate returns ([]string, error).
-				// When simulating an error, return nil slice + error;
-				// otherwise return empty slice + nil.
+
 				if err != nil {
 					mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return(nil, err)
 				} else {
