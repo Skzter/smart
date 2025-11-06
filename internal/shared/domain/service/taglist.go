@@ -71,7 +71,7 @@ func (d *taglistStorage) GetTaglist(ctx context.Context) ([]string, error) {
 	list, err := d.repo.ReadTaglist(ctx)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get taglist, %w", err)
+		return nil, err
 	}
 
 	return list.Tags, nil
