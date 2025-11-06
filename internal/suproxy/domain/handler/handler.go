@@ -23,11 +23,19 @@ type SuproxyController struct {
 	client    *http.Client
 	validator service.Validator
 	db        service.DatabaseService
+	syncer    service.TaglistSync
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db); err != nil {
+func NewSuproxyController(
+	logger *slog.Logger,
+	config *config.Config,
+	val service.Validator,
+	client *http.Client,
+	db service.DatabaseService,
+	syncer service.TaglistSync,
+) (*SuproxyController, error) {
+	if err := assert.NotNil(logger, config, val, client, db, syncer); err != nil {
 		return nil, err
 	}
 
@@ -37,6 +45,7 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config, val servic
 		client:    client,
 		validator: val,
 		db:        db,
+		syncer:    syncer,
 	}, nil
 }
 
@@ -110,6 +119,12 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 	}
 
 	tags, err := s.validator.Validate(ctx, &list)
+	if err != nil {
+		s.logger.Error(err.Error())
+		return
+	}
+
+	err = s.syncer.SyncTaglist(ctx, tags)
 	if err != nil {
 		s.logger.Error(err.Error())
 		return

@@ -15,6 +15,7 @@ import (
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/application"
@@ -37,7 +38,11 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		OpenAiRepositoryProvider,
 		service.NewDatabaseService,
 		DatabaseRepositoryProvider,
-		ParquetWrapperProvider,
+		TaglistRepositoryProvider,
+		TagListParquetWrapperProvider,
+		sharedService.NewTaglistStorage,
+		service.NewTaglistSync,
+		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
 	)
 
@@ -58,8 +63,12 @@ func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
-func ParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
+func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
+}
+
+func TagListParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[sharedEntity.TagList], error) {
+	return wrapper.NewParquetWrapper[sharedEntity.TagList](logger, wrapper.DefaultParquetConfig())
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
