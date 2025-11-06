@@ -140,8 +140,19 @@ func (fs *osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// #nosec G304 -- fullPath is validated by validateAndGetFullPath to prevent path traversal
-	return os.ReadFile(fullPath)
+
+	resolvedPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve path: %w", err)
+	}
+	if rp, err := filepath.EvalSymlinks(resolvedPath); err == nil {
+		resolvedPath = rp
+	}
+
+	if !fs.isUnderRoot(resolvedPath) {
+		return nil, fmt.Errorf("path escapes root: %s", relativeFilePath)
+	}
+	return os.ReadFile(resolvedPath)
 }
 
 func (fs *osFileSystem) ReadDir(path string) ([]string, error) {
