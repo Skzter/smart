@@ -37,7 +37,10 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		OpenAiRepositoryProvider,
 		service.NewDatabaseService,
 		DatabaseRepositoryProvider,
-		ParquetWrapperProvider,
+		TaglistRepositoryProvider,
+		TagListParquetWrapperProvider,
+		service.NewTaglistSync,
+		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
 	)
 
@@ -58,8 +61,12 @@ func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
-func ParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
+func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
+}
+
+func TagListParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[sharedEntity.TagList], error) {
+	return wrapper.NewParquetWrapper[sharedEntity.TagList](logger, wrapper.DefaultParquetConfig())
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
