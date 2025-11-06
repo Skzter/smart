@@ -90,7 +90,7 @@ class Prompts {
         and nothing else!
        """
 
-   // %s  @line +25: Taglist
+   // %s  @line +28: Taglist
     autoPlaywrightPrompt_T : String =
     """
      System (immutable):
@@ -112,7 +112,7 @@ class Prompts {
 
     3. Taglist
        - Tags may only be picked from this list. Creation of new Tags is strictly prohibited
-       - Tags are required only if the testcase requires specialized testing data, in which case the tags must discribe this data. Otherwise no tags may be picked.
+       - Tags are required only if the testcase requires specialized testing data, in which case the tags must describe this data. Otherwise no tags may be picked.
        - Picked Tags are transmitted via HTTP URL parameters. 
        - Tags: %s
 

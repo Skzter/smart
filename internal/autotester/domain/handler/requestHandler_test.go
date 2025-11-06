@@ -80,7 +80,7 @@ func TestHandleChatRequest(t *testing.T) {
 		function         string
 		userPrompt       string
 		sessionID        string
-		expectedResponse any
+		expectedResponse string
 		expectedBool     bool
 		ResponseError    error
 	}{
