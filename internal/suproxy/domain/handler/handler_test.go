@@ -234,10 +234,6 @@ type validationSetup struct {
 	tags []string
 }
 
-type syncerSetup struct {
-	err error
-}
-
 //nolint:funlen
 func TestHandlerHandleRequest(t *testing.T) {
 	validRespData, err := json.Marshal(entity.SupplierResponse{
@@ -257,7 +253,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 		respData          []byte
 		dbSetup           *dbSetup
 		vsetup            *validationSetup
-		syncerSetup       *syncerSetup
+		wantSyncEr        bool
 		expectLoggedError bool
 	}{
 		{
@@ -268,7 +264,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: nil},
-			syncerSetup:       &syncerSetup{err: nil},
+			wantSyncEr:        false,
 			expectLoggedError: false,
 		},
 		{
@@ -279,7 +275,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: errors.New("Storage error")},
-			syncerSetup:       &syncerSetup{err: nil},
+			wantSyncEr:        false,
 			expectLoggedError: true,
 		},
 		{
@@ -295,7 +291,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 				tags: []string{"valid"},
 			},
 			dbSetup:           &dbSetup{err: nil},
-			syncerSetup:       &syncerSetup{err: errors.New("syncing error")},
+			wantSyncEr:        true,
 			expectLoggedError: true,
 		},
 	}
@@ -327,8 +323,14 @@ func TestHandlerHandleRequest(t *testing.T) {
 				}()
 			}
 
-			if tt.syncerSetup != nil {
-				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(tt.syncerSetup.err)
+			if tt.wantSyncEr {
+				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(errors.New("syncing error"))
+				defer func() {
+					mockSyncer.AssertExpectations(t)
+					mockSyncer.ExpectedCalls = []*mock.Call{}
+				}()
+			} else {
+				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(nil)
 				defer func() {
 					mockSyncer.AssertExpectations(t)
 					mockSyncer.ExpectedCalls = []*mock.Call{}

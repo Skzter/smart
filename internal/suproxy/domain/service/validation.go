@@ -80,12 +80,12 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		return []string{NoOffersInResponse}, nil
 	}
 
-	v.Logger.Info("Valid offerlist. Beginning LMM validation")
+	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
 	tags := make([]string, 0, 10)
 
 	for i, offer := range offers.Data.Items {
-		v.Logger.Info(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
+		v.Logger.Debug(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
 		if i >= v.cfg.MaxItemsPerValidation {
 			break
 		}

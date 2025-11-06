@@ -27,7 +27,14 @@ type SuproxyController struct {
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService, syncer service.TaglistSync) (*SuproxyController, error) {
+func NewSuproxyController(
+	logger *slog.Logger,
+	config *config.Config,
+	val service.Validator,
+	client *http.Client,
+	db service.DatabaseService,
+	syncer service.TaglistSync,
+) (*SuproxyController, error) {
 	if err := assert.NotNil(logger, config, val, client, db, syncer); err != nil {
 		return nil, err
 	}
@@ -117,7 +124,6 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 		return
 	}
 
-	// maybe in go routine?
 	err = s.syncer.SyncTaglist(ctx, tags)
 	if err != nil {
 		s.logger.Error(err.Error())
