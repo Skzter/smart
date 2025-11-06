@@ -14,6 +14,7 @@ import (
 var SharedProviderSet = wire.NewSet(
 	OpenAiClientProvider,
 	service.NewOpenAI,
+	service.NewTaglistStorage,
 )
 
 // OpenAiClientProvider provides a new OpenAI client.
