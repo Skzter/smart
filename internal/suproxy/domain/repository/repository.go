@@ -188,23 +188,7 @@ func validateDbEntry(dbEntry entity.DatabaseEntry) error {
 		return fmt.Errorf("failed to validate response: %w", err)
 	}
 	if err := validateTags(dbEntry.Tags); err != nil {
-		return fmt.Errorf("failed validate tags: %w", err)
-	}
-	return nil
-}
-
-// validateRequest validates the request part of the database entry
-func validateRequest(rq entity.RequestNoHeader) error {
-	if err := assert.StringNotEmpty(rq.Prompt); err != nil {
-		return fmt.Errorf("prompt must not be empty: %w", err)
-	}
-
-	if err := assert.StringNotEmpty(rq.Destination); err != nil {
-		return fmt.Errorf("destination must not be empty: %w", err)
-	}
-
-	if err := assert.StringNotEmpty(rq.Request); err != nil {
-		return fmt.Errorf("request must not be empty: %w", err)
+		return fmt.Errorf("failed to validate tags: %w", err)
 	}
 	return nil
 }
