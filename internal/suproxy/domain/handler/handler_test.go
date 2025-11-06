@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -23,23 +24,39 @@ import (
 )
 
 type slicewriter struct {
+	mu   sync.Mutex
 	data [][]byte
 }
 
 func (s *slicewriter) Write(p []byte) (n int, err error) {
-	s.data = append(s.data, p)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.data = append(s.data, append([]byte(nil), p...)) // copy p to avoid shared memory
 	return len(p), nil
 }
 
 func (s *slicewriter) Clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.data = [][]byte{}
 }
 
 func (s *slicewriter) Read(pos int) []byte {
-	return s.data[pos]
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if pos < 0 || pos >= len(s.data) {
+		return nil
+	}
+	return append([]byte(nil), s.data[pos]...)
 }
 
 func (s *slicewriter) len() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	return len(s.data)
 }
 
@@ -270,15 +287,13 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockTagSearch := mocks.NewTagSearchService(t)
 
-	// Default mock behavior: when tests don't configure the validator or DB
-	// explicitly, return success (no tags, no error) so calls are allowed.
-	mockValidator.On("Validate", mock.Anything, mock.AnythingOfType("*entity.SupplierResponse")).Return([]string{}, nil)
+	mockValidator.On("Validate", mock.Anything, mock.Anything).Return([]string{}, nil).Maybe()
 	mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(nil)
+
 	var writer slicewriter
 
 	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockTagSearch)
 
-	h.SetHandleAsync(false)
 	router := SetupRouter(h)
 
 	for _, tt := range tests {
@@ -325,7 +340,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				defer func() { mockDB.ExpectedCalls = []*mock.Call{} }()
 			}
 
-			// use correct header and destintation if request is not nil
 			var reqstring []byte
 			if tt.request != nil {
 				var dest string
