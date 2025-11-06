@@ -32,11 +32,10 @@ type CacheService interface {
 
 // cacheService struct implements CacheService and contains the main cache logic
 type cacheService struct {
-	log   *slog.Logger
-	cfg   *config.Config
-	repo  CacheRepository
-	ttls  ttlPolicy
-	nowFn func() time.Time
+	log  *slog.Logger
+	cfg  *config.Config
+	repo CacheRepository
+	ttls ttlPolicy
 }
 
 // ttlPolicy defines TTL durations for different cache cases
@@ -66,11 +65,10 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo CacheRepository)
 	}
 
 	svc := &cacheService{
-		log:   log,
-		cfg:   cfg,
-		repo:  repo,
-		ttls:  ttls,
-		nowFn: time.Now,
+		log:  log,
+		cfg:  cfg,
+		repo: repo,
+		ttls: ttls,
 	}
 
 	log.Info("cache: service initialized",
@@ -86,9 +84,9 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo CacheRepository)
 func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bool) ([]byte, bool, error) {
 	key := s.BuildKey(req, isMock)
 
-	start := s.nowFn()
+	start := time.Now()
 	raw, hit, err := s.repo.Get(ctx, key) // Try to get entry from cache
-	elapsed := s.nowFn().Sub(start)
+	elapsed := time.Since(start)
 
 	if err != nil {
 		// Repository / Redis error – caller kann auf Supplier-Fallback gehen
@@ -122,7 +120,7 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 		return nil, false, nil
 	}
 
-	age := s.nowFn().Sub(entry.CachedAt)
+	age := time.Since(entry.CachedAt)
 
 	s.log.Info("cache: hit",
 		"key", key,
@@ -144,7 +142,7 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 		Key:      key,
 		Request:  req,
 		Response: json.RawMessage(response),
-		CachedAt: s.nowFn().UTC(),
+		CachedAt: time.Now().UTC(),
 		Version:  1,
 	}
 
@@ -160,9 +158,9 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 
 	ttl := s.chooseTTL(isMock, isError, response) // Pick appropriate TTL
 
-	start := s.nowFn()
+	start := time.Now()
 	err = s.repo.Set(ctx, key, payload, ttl) // Store in cache repository
-	elapsed := s.nowFn().Sub(start)
+	elapsed := time.Since(start)
 
 	if err != nil {
 		s.log.Error("cache: store failed",
@@ -190,9 +188,9 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 func (s *cacheService) Invalidate(ctx context.Context, req entity.Request, isMock bool) error {
 	key := s.BuildKey(req, isMock) // Reconstruct cache key
 
-	start := s.nowFn()
+	start := time.Now()
 	err := s.repo.Delete(ctx, key) // Delete entry from cache
-	elapsed := s.nowFn().Sub(start)
+	elapsed := time.Since(start)
 
 	if err != nil {
 		s.log.Error("cache: invalidation failed",
