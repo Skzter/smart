@@ -33,8 +33,9 @@ func NewTagSearchService(cfg *config.Config, s3 wrapper.S3StorageWrapper) (TagSe
 	}, nil
 }
 
-// FindKeysByTag searches for all S3 file keys that contain the given tag string
-// It trims whitespace, validates the tag, retrieves all keys from S3, and filters matching ones
+// FindKeysByTag searches for parquet files whose extracted keys match the given tag.
+// It scans all available parquet files, extracts meaningful keys from their filenames,
+// and returns the list of files that contain keys present in the search tag.
 func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]string, error) {
 	tag = strings.TrimSpace(tag)
 	if tag == "" {
@@ -48,23 +49,19 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 	var matchingKeys []string
 	for _, file := range parquetFiles {
 		keys := extractKeysFromFile(file, t.config.EntryPrefix)
-		for _, key := range keys {
-			// check if key from current file substring from tag (prompt from request), if it is append file to array
-			if strings.Contains(tag, key) {
-				matchingKeys = append(matchingKeys, file)
-			}
+		if isKeysInTag(keys, tag) {
+			matchingKeys = append(matchingKeys, file)
 		}
 	}
 
 	return matchingKeys, nil
 }
 
-// extractKeysFromFile takes the parquetfile name and cuts of the prefix and suffix of the name
-// then splits them according the seperator and checks last value for being a int
-// then returns the array of keys
+// extractKeysFromFilename parses a parquet filename and extracts meaningful keys from it.
+// It removes the configured prefix and ".parquet" suffix, then splits the remaining
+// filename by the seperator "-" to extract individual keys. If the last segment is a numeric value,
+// it is excluded as it's typically a timestamp.
 func extractKeysFromFile(parquetFile string, prefix string) []string {
-	// filename is: supplierData/no-hotelid_missing-tourdates.parquet
-	// cuts suffix/prefix so only true filename remains
 	ParquetFileNoSuffix, ok := strings.CutSuffix(parquetFile, ".parquet")
 	if !ok {
 		return nil
@@ -83,4 +80,14 @@ func extractKeysFromFile(parquetFile string, prefix string) []string {
 		keys = keys[:len(keys)-1]
 	}
 	return keys
+}
+
+// isKeysInTag checks if the given tag contains any of keys as a substring
+func isKeysInTag(keys []string, tag string) bool {
+	for _, key := range keys {
+		if strings.Contains(tag, key) {
+			return true
+		}
+	}
+	return false
 }

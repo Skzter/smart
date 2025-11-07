@@ -120,39 +120,67 @@ func TestExtractKeysFromFile(t *testing.T) {
 	tests := []struct {
 		name         string
 		filename     string
-		prefix       string
 		expectedKeys []string
 	}{
 		{
 			name:         "valid file",
 			filename:     "supplierData/no_hotelid-missing_destination.parquet",
-			prefix:       goodPrefix,
 			expectedKeys: []string{"no_hotelid", "missing_destination"},
 		},
 		{
 			name:         "valid file with number at the end",
 			filename:     "supplierData/no_hotelid-missing_destination-912830913.parquet",
-			prefix:       goodPrefix,
 			expectedKeys: []string{"no_hotelid", "missing_destination"},
 		},
 		{
 			name:         "wrong suffix - .BAM",
 			filename:     "supplierData/wrong.BAM",
-			prefix:       goodPrefix,
 			expectedKeys: nil,
 		},
 		{
 			name:         "wrong prefix - shababs/",
 			filename:     "shababs/wrong.parquet",
-			prefix:       goodPrefix,
 			expectedKeys: nil,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			keys := extractKeysFromFile(tc.filename, tc.prefix)
+			keys := extractKeysFromFile(tc.filename, goodPrefix)
 			assert.Equal(t, tc.expectedKeys, keys)
+		})
+	}
+}
+
+func TestIsKeysInTag(t *testing.T) {
+	tests := []struct {
+		name     string
+		keys     []string
+		tag      string
+		wantTrue bool
+	}{
+		{
+			name:     "keys in tag",
+			keys:     []string{"tag1", "tag2", "tag3"},
+			tag:      "tag1 tag3",
+			wantTrue: true,
+		},
+		{
+			name:     "keys not in tag",
+			keys:     []string{"tag1", "tag2", "tag3"},
+			tag:      "hier ist nichts drinnen",
+			wantTrue: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ok := isKeysInTag(tc.keys, tc.tag)
+			if tc.wantTrue {
+				assert.True(t, ok)
+			} else {
+				assert.False(t, ok)
+			}
 		})
 	}
 }
