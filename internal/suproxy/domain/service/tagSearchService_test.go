@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,14 +40,11 @@ func TestNewTagSearchService(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service, err := NewTagSearchService(tc.cfg, tc.s3)
 			if tc.wantErr {
-				if err == nil {
-					t.Fatal("wantend error but got nil")
-				}
-				if service != nil {
-					t.Fatalf("wanted nil service, but got %v", service)
-				}
+				assert.NotNil(t, err)
+				assert.Nil(t, service)
 			} else {
-				assert.NotNil(t, service, err)
+				assert.Nil(t, err)
+				assert.NotNil(t, service)
 			}
 		})
 	}
@@ -60,8 +56,7 @@ func TestFindKeysByTag(t *testing.T) {
 	tests := []struct {
 		name         string
 		tag          string
-		mockKeys     []string
-		mockError    error
+		mockResponse []any
 		expectedKeys []string
 		expectError  bool
 	}{
@@ -71,22 +66,24 @@ func TestFindKeysByTag(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "S3 error",
-			tag:         "data",
-			mockError:   errors.New("s3 unavailable"),
-			expectError: true,
+			name:         "S3 error",
+			tag:          "data",
+			mockResponse: []any{nil, errors.New("s3 unavailable")},
+			expectedKeys: nil,
+			expectError:  true,
 		},
 		{
 			name:         "no matches",
 			tag:          "2025",
-			mockKeys:     []string{"file1.parquet", "something.txt"},
-			expectedKeys: []string(nil),
+			mockResponse: []any{[]string{"data/file1.parquet", "something.txt"}, nil},
+			expectedKeys: nil,
+			expectError:  false,
 		},
 		{
 			name:         "some matches",
-			tag:          "2025",
-			mockKeys:     []string{"supplierData/2025-report.parquet", "backup/2025-summary.txt", "archive/2024.csv"},
-			expectedKeys: []string{"supplierData/2025-report.parquet"},
+			tag:          "no_hotelid",
+			mockResponse: []any{[]string{"supplierData/no_hotelid-missing_tourdates.parquet", "backup/2025-summary.txt", "archive/2024.csv"}, nil},
+			expectedKeys: []string{"supplierData/no_hotelid-missing_tourdates.parquet"},
 		},
 	}
 
@@ -94,10 +91,8 @@ func TestFindKeysByTag(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
 
-			if tt.tag != "   " && tt.mockError != nil {
-				mockS3.On("ListParquetFiles", mock.Anything, "").Return(nil, tt.mockError)
-			} else if tt.tag != "   " {
-				mockS3.On("ListParquetFiles", mock.Anything, "").Return(tt.mockKeys, nil)
+			if tt.mockResponse != nil {
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).Return(tt.mockResponse...)
 			}
 
 			svc := &tagSearchService{
@@ -121,6 +116,7 @@ func TestFindKeysByTag(t *testing.T) {
 }
 
 func TestExtractKeysFromFile(t *testing.T) {
+	goodPrefix := "supplierData/"
 	tests := []struct {
 		name         string
 		filename     string
@@ -128,9 +124,27 @@ func TestExtractKeysFromFile(t *testing.T) {
 		expectedKeys []string
 	}{
 		{
+			name:         "valid file",
+			filename:     "supplierData/no_hotelid-missing_destination.parquet",
+			prefix:       goodPrefix,
+			expectedKeys: []string{"no_hotelid", "missing_destination"},
+		},
+		{
+			name:         "valid file with number at the end",
+			filename:     "supplierData/no_hotelid-missing_destination-912830913.parquet",
+			prefix:       goodPrefix,
+			expectedKeys: []string{"no_hotelid", "missing_destination"},
+		},
+		{
 			name:         "wrong suffix - .BAM",
-			filename:     "wrong.BAM",
-			prefix:       "supplierData/",
+			filename:     "supplierData/wrong.BAM",
+			prefix:       goodPrefix,
+			expectedKeys: nil,
+		},
+		{
+			name:         "wrong prefix - shababs/",
+			filename:     "shababs/wrong.parquet",
+			prefix:       goodPrefix,
 			expectedKeys: nil,
 		},
 	}
@@ -138,9 +152,7 @@ func TestExtractKeysFromFile(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			keys := extractKeysFromFile(tc.filename, tc.prefix)
-			if !slices.Equal(keys, tc.expectedKeys) {
-				t.Fatalf("slices dont equal:\nexpected => %v\ngot => %v\n", tc.expectedKeys, keys)
-			}
+			assert.Equal(t, tc.expectedKeys, keys)
 		})
 	}
 }
