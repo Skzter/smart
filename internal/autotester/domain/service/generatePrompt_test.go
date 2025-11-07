@@ -93,7 +93,7 @@ func TestGeneratePrompt(t *testing.T) {
 			AutoPlaywrightPromptT: "system prompt %s",
 		},
 	}
-	tags := []string{"Tag1, Tag2"}
+	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
 	code := "some code"
 
 	tests := []struct {
@@ -119,7 +119,7 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "taglist error",
-			getTaglistReturns: []any{[]string{}, errors.New("Err")},
+			getTaglistReturns: []any{nil, errors.New("Err")},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},
@@ -133,7 +133,7 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:              "openai error",
 			requestReturns:    []any{nil, sharedErrors.ErrInternalServer},
-			getTaglistReturns: []any{[]string{"Tag1, Tag2"}, nil},
+			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},

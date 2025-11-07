@@ -28,7 +28,7 @@ func TestCreateTaglist(t *testing.T) {
 			name:          "happy path",
 			uploadReturns: &[]any{nil},
 			writeReturns:  &[]any{[]byte{}, nil},
-			taglist:       &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
+			taglist:       &entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
 			expectsError:  false,
 			ctx:           context.Background(),
 		},
@@ -47,7 +47,7 @@ func TestCreateTaglist(t *testing.T) {
 		{
 			name:         "parquet error",
 			writeReturns: &[]any{nil, errors.New("err")},
-			taglist:      &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
+			taglist:      &entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
 			expectsError: true,
 			ctx:          context.Background(),
 		},
@@ -55,7 +55,7 @@ func TestCreateTaglist(t *testing.T) {
 			name:          "s3 error",
 			uploadReturns: &[]any{errors.New("err")},
 			writeReturns:  &[]any{[]byte{}, nil},
-			taglist:       &entity.TagList{Tags: []string{"TAG1", "TAG2"}},
+			taglist:       &entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
 			expectsError:  true,
 			ctx:           context.Background(),
 		},
@@ -89,7 +89,7 @@ func TestCreateTaglist(t *testing.T) {
 }
 
 func TestReadTaglist(t *testing.T) {
-	tags := entity.TagList{Tags: []string{"TAG1", "TAG2"}}
+	tags := entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}
 
 	tests := []struct {
 		name            string
@@ -131,7 +131,7 @@ func TestReadTaglist(t *testing.T) {
 		{
 			name:            "invalid taglist returned",
 			downloadReturns: &[]any{[]byte{}, map[string]string{}, nil},
-			readReturns:     &[]any{[]entity.TagList{{Tags: []string{"", ""}}}, nil},
+			readReturns:     &[]any{[]entity.TagList{{Tags: []entity.Tag{{Name: "", Description: "TAG1"}}}}, nil},
 			taglist:         nil,
 			expectsError:    true,
 			ctx:             context.Background(),
@@ -176,8 +176,7 @@ func TestReadTaglist(t *testing.T) {
 }
 
 func TestUpdateTaglist(t *testing.T) {
-	tags := entity.TagList{Tags: []string{"TAG1", "TAG2"}}
-
+	tags := entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}
 	tests := []struct {
 		name            string
 		uploadReturns   *[]any

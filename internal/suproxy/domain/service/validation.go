@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -41,7 +41,7 @@ type OpenAIValidationResult struct {
 // Validator defines an interface for validating a SupplierResponse.
 // Implementations should provide specific validation logic.
 type Validator interface {
-	Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error)
+	Validate(ctx context.Context, offers *entity.SupplierResponse) (*sharedEntity.TagList, error)
 }
 
 // Validator encapsulates the logic for validating supplier offer responses
@@ -67,17 +67,31 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenA
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error) {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*sharedEntity.TagList, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}
 
 	if offers.HTTPStatusCode != http.StatusOK {
-		return []string{ReponseNot200}, nil
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        ReponseNot200,
+					Description: "",
+				},
+			},
+		}, nil
 	}
 
 	if len(offers.Data.Items) == 0 {
-		return []string{NoOffersInResponse}, nil
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        NoOffersInResponse,
+					Description: "",
+				},
+			},
+		}, nil
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
@@ -100,7 +114,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 			continue
 		}
 
-		req := shared.Request{
+		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
 			Prompt:       item,
 			SystemPrompt: v.cfg.Prompts.ValidationPrompt,
@@ -133,7 +147,18 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	}
 
 	if len(tags) == 0 {
-		return []string{ValidOffer}, nil
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        ValidOffer,
+					Description: "",
+				},
+			},
+		}, nil
 	}
-	return tags, nil
+	taglist := []sharedEntity.Tag{}
+	for _, tag := range tags {
+		taglist = append(taglist, sharedEntity.Tag{Name: tag})
+	}
+	return &sharedEntity.TagList{Tags: taglist}, nil
 }

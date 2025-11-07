@@ -13,9 +13,9 @@ import (
 // TaglistStorage defines the interface for managing taglists.
 type TaglistStorage interface {
 	// StoreTaglist updates stored taglist
-	StoreTaglist(context.Context, []string) error
+	StoreTaglist(context.Context, *entity.TagList) error
 	// GetTaglist retrieves Taglist from storage
-	GetTaglist(ctx context.Context) ([]string, error)
+	GetTaglist(ctx context.Context) (*entity.TagList, error)
 }
 
 // taglistStorage provides access to the database through the configured repository.
@@ -36,7 +36,7 @@ func NewTaglistStorage(logger *slog.Logger, repo repository.TaglistStorage) (Tag
 }
 
 // StoreTaglist updates stored taglist
-func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error {
+func (d *taglistStorage) StoreTaglist(ctx context.Context, taglist *entity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -45,8 +45,6 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error 
 	if err != nil {
 		return fmt.Errorf("S3 Error: %w", err)
 	}
-
-	taglist := &entity.TagList{Tags: tags}
 
 	// Create or update taglist
 	if !exists {
@@ -63,7 +61,7 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, tags []string) error 
 }
 
 // GetTaglist retrieves Taglist from storage
-func (d *taglistStorage) GetTaglist(ctx context.Context) ([]string, error) {
+func (d *taglistStorage) GetTaglist(ctx context.Context) (*entity.TagList, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
@@ -74,5 +72,5 @@ func (d *taglistStorage) GetTaglist(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	return list.Tags, nil
+	return list, nil
 }

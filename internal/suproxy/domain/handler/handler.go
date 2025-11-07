@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -136,7 +137,7 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 	}
 }
 
-func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
+func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags *sharedEntity.TagList) error {
 	mresp, err := json.Marshal(resp)
 	if err != nil {
 		return err

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
@@ -231,7 +232,7 @@ type dbSetup struct {
 
 type validationSetup struct {
 	err  error
-	tags []string
+	tags *sharedEntity.TagList
 }
 
 //nolint:funlen
@@ -261,7 +262,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
 			dbSetup:           &dbSetup{err: nil},
 			wantSyncEr:        false,
@@ -272,7 +273,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
 			dbSetup:           &dbSetup{err: errors.New("Storage error")},
 			wantSyncEr:        false,
@@ -288,7 +289,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
 			dbSetup:           &dbSetup{err: nil},
 			wantSyncEr:        true,
@@ -340,7 +341,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			h.HandleRequest(t.Context(), entity.Request{}, &tt.respData)
 
 			err := false
-			for i := range writer.len() {
+			for i := 0; i < writer.len(); i++ {
 				if strings.Contains(string(writer.Read(i)), "ERROR") {
 					err = true
 				}
