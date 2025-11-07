@@ -68,6 +68,7 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/shared/domain/config
       - internal/build/configs
       - cmd/autotester/wire_gen.go
       - cmd/suproxy/wire_gen.go
