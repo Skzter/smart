@@ -216,10 +216,8 @@ prompts : Prompts
 timeout: Int = 60
 
 region: String = "eu-central-1"
-taglistPrefix: String = "taglist/"
+
 bucket: String = "smart-autotester"
-
-
 
 template: String = """
     Erzeuge Playwright-Tests via Autoplaywright für Check24.  

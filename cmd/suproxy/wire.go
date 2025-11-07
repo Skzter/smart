@@ -12,7 +12,6 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -37,8 +36,6 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		OpenAiRepositoryProvider,
 		service.NewDatabaseService,
 		DatabaseRepositoryProvider,
-		TaglistRepositoryProvider,
-		TagListParquetWrapperProvider,
 		service.NewTaglistSync,
 		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
@@ -65,10 +62,6 @@ func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWra
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
 }
 
-func TagListParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[sharedEntity.TagList], error) {
-	return wrapper.NewParquetWrapper[sharedEntity.TagList](logger, wrapper.DefaultParquetConfig())
-}
-
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
 	config := wconfig.S3Config{
 		Region:    cfg.Region,
@@ -91,16 +84,4 @@ func DatabaseRepositoryProvider(
 		parquetWrapper,
 		cfg.EntryPrefix,
 	)
-}
-func TaglistRepositoryProvider(
-	logger *slog.Logger,
-	cfg *config.Config,
-	s3wrapper wrapper.S3StorageWrapper,
-	parquetWrapper wrapper.ParquetFileWrapper[sharedEntity.TagList],
-) (sharedRepo.TaglistStorage, error) {
-	return sharedRepo.NewTaglistStorage(
-		logger,
-		s3wrapper,
-		parquetWrapper,
-		cfg.TaglistPrefix)
 }

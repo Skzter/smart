@@ -256,6 +256,7 @@ tasks:
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-config-shared
       - task: generate-config-embedded
       - task: di-generate-autotester
       - task: di-generate-suproxy
@@ -274,6 +275,13 @@ tasks:
     sources:
       - configs/suproxy.pkl
 
+  generate-config-shared:
+    desc: "generate code for reading shared config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/shared.pkl
+    sources:
+      - configs/shared.pkl
+
   generate-mocks:
     desc: "generate all mockery mocks"
     cmds:
@@ -286,6 +294,7 @@ tasks:
     sources:
     - configs/suproxy.pkl
     - configs/autotester.pkl
+    - configs/shared.pkl
   
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"

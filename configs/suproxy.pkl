@@ -174,5 +174,3 @@ region: String = "eu-central-1"
 bucket: String = "smart-suproxy"
 
 entryPrefix: String = "supplierData/"
-
-taglistPrefix: String = "taglist/"
