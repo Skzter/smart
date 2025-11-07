@@ -9,20 +9,54 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	mockWrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 )
 
 // TestNewTagSearchService tests the creation of a new TagSearchService instance.
 func TestNewTagSearchService(t *testing.T) {
-	mockS3 := mockWrapper.NewMockS3StorageWrapper(t)
+	cfg, _ := config.LoadAppConfig()
+	tests := []struct {
+		name    string
+		s3      service.S3StorageWrapper
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name:    "valid service",
+			s3:      mocks.NewMockS3StorageWrapper(t),
+			cfg:     cfg,
+			wantErr: false,
+		},
+		{
+			name:    "invalid service",
+			s3:      nil,
+			cfg:     nil,
+			wantErr: true,
+		},
+	}
 
-	svc := NewTagSearchService(mockS3)
-
-	assert.NotNil(t, svc)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			service, err := NewTagSearchService(tc.cfg, tc.s3)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("wantend error but got nil")
+				}
+				if service != nil {
+					t.Fatalf("wanted nil service, but got %v", service)
+				}
+			} else {
+				assert.NotNil(t, service, err)
+			}
+		})
+	}
 }
 
 // TestTagSearchService_FindKeysByTag tests the FindKeysByTag method of TagSearchService with different test cases.
 func TestFindKeysByTag(t *testing.T) {
+	cfg, _ := config.LoadAppConfig()
 	tests := []struct {
 		name         string
 		tag          string
@@ -52,13 +86,13 @@ func TestFindKeysByTag(t *testing.T) {
 			name:         "some matches",
 			tag:          "2025",
 			mockKeys:     []string{"supplierData/2025-report.parquet", "backup/2025-summary.txt", "archive/2024.csv"},
-			expectedKeys: nil,
+			expectedKeys: []string{"supplierData/2025-report.parquet"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockS3 := mockWrapper.NewMockS3StorageWrapper(t)
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
 
 			if tt.tag != "   " && tt.mockError != nil {
 				mockS3.On("ListParquetFiles", mock.Anything, "").Return(nil, tt.mockError)
@@ -67,7 +101,8 @@ func TestFindKeysByTag(t *testing.T) {
 			}
 
 			svc := &tagSearchService{
-				s3: mockS3,
+				config: cfg,
+				s3:     mockS3,
 			}
 
 			keys, err := svc.FindKeysByTag(context.Background(), tt.tag)
@@ -85,46 +120,24 @@ func TestFindKeysByTag(t *testing.T) {
 	}
 }
 
-/*
-	func extractKeysFromFile(parquetFile string) []string {
-		// filename is: supplierData/no-hotelid_missing-tourdates.parquet
-		// cuts suffix/prefix so only true filename remains
-		ParquetFileNoSuffix, ok := strings.CutSuffix(parquetFile, ".parquet")
-		if !ok {
-			return nil
-		}
-		ParquetFileKeysOnly, ok := strings.CutPrefix(ParquetFileNoSuffix, "supplierData/")
-		if !ok {
-			return nil
-		}
-		// keys are seperated with "-" in filename
-		keys := strings.Split(ParquetFileKeysOnly, "-")
-		validKeys := []string{}
-		for _, key := range keys {
-			// sometimes number in filename, so if it errors its a string and true key
-			if _, err := strconv.Atoi(key); err != nil {
-				validKeys = append(validKeys, key)
-			}
-		}
-		return validKeys
-	}
-*/
 func TestExtractKeysFromFile(t *testing.T) {
 	tests := []struct {
 		name         string
 		filename     string
+		prefix       string
 		expectedKeys []string
 	}{
 		{
 			name:         "wrong suffix - .BAM",
 			filename:     "wrong.BAM",
+			prefix:       "supplierData/",
 			expectedKeys: nil,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			keys := extractKeysFromFile(tc.filename)
+			keys := extractKeysFromFile(tc.filename, tc.prefix)
 			if !slices.Equal(keys, tc.expectedKeys) {
 				t.Fatalf("slices dont equal:\nexpected => %v\ngot => %v\n", tc.expectedKeys, keys)
 			}

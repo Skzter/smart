@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 )
 
 // TagSearchService defines the interface for searching S3 file keys by a given tag
@@ -16,14 +18,19 @@ type TagSearchService interface {
 
 // tagSearchService is the concrete implementation of TagSearchService
 type tagSearchService struct {
-	s3 wrapper.S3StorageWrapper
+	config *config.Config
+	s3     wrapper.S3StorageWrapper
 }
 
 // NewTagSearchService creates a new TagSearchService instance with S3 wrapper
-func NewTagSearchService(s3 wrapper.S3StorageWrapper) TagSearchService {
-	return &tagSearchService{
-		s3: s3,
+func NewTagSearchService(cfg *config.Config, s3 wrapper.S3StorageWrapper) (TagSearchService, error) {
+	if err := assert.NotNil(cfg, s3); err != nil {
+		return nil, err
 	}
+	return &tagSearchService{
+		config: cfg,
+		s3:     s3,
+	}, nil
 }
 
 // FindKeysByTag searches for all S3 file keys that contain the given tag string
@@ -40,7 +47,7 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 	}
 	var matchingKeys []string
 	for _, file := range parquetFiles {
-		keys := extractKeysFromFile(file)
+		keys := extractKeysFromFile(file, t.config.EntryPrefix)
 		for _, key := range keys {
 			// check if key from current file substring from tag (prompt from request), if it is append file to array
 			if strings.Contains(tag, key) {
@@ -52,25 +59,28 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 	return matchingKeys, nil
 }
 
-func extractKeysFromFile(parquetFile string) []string {
+// extractKeysFromFile takes the parquetfile name and cuts of the prefix and suffix of the name
+// then splits them according the seperator and checks last value for being a int
+// then returns the array of keys
+func extractKeysFromFile(parquetFile string, prefix string) []string {
 	// filename is: supplierData/no-hotelid_missing-tourdates.parquet
 	// cuts suffix/prefix so only true filename remains
 	ParquetFileNoSuffix, ok := strings.CutSuffix(parquetFile, ".parquet")
 	if !ok {
 		return nil
 	}
-	ParquetFileKeysOnly, ok := strings.CutPrefix(ParquetFileNoSuffix, "supplierData/")
+	ParquetFileKeysOnly, ok := strings.CutPrefix(ParquetFileNoSuffix, prefix)
 	if !ok {
 		return nil
 	}
+
 	// keys are seperated with "-" in filename
 	keys := strings.Split(ParquetFileKeysOnly, "-")
-	validKeys := []string{}
-	for _, key := range keys {
-		// sometimes number in filename, so if it errors its a string and true key
-		if _, err := strconv.Atoi(key); err != nil {
-			validKeys = append(validKeys, key)
-		}
+
+	// last key maybe be a number
+	if _, err := strconv.Atoi(keys[len(keys)-1]); err == nil {
+		// cuts of last element
+		keys = keys[:len(keys)-1]
 	}
-	return validKeys
+	return keys
 }

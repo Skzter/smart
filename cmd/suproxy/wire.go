@@ -33,7 +33,6 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		application.NewRouter,
 		handler.NewSuproxyController,
 		service.NewValidator,
-		service.NewTagSearchService,
 		HTTPClientProvider,
 		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
@@ -45,6 +44,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		service.NewTaglistSync,
 		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
+		TagsearchServiceProvider,
 	)
 
 	return nil, nil
@@ -106,4 +106,8 @@ func TaglistRepositoryProvider(
 		s3wrapper,
 		parquetWrapper,
 		cfg.TaglistPrefix)
+}
+
+func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
+	return service.NewTagSearchService(cfg, s3)
 }
