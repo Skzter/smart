@@ -253,7 +253,7 @@ func TestValidatorValidate(t *testing.T) {
 				panic(err)
 			}
 
-			tags, err := validator.Validate(t.Context(), tt.input)
+			tags, err := validator.Validate(t.Context(), tt.input, &sharedEntity.TagList{})
 
 			assert.Equal(t, tt.expectError, err != nil)
 			if err != nil {

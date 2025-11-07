@@ -41,7 +41,7 @@ type OpenAIValidationResult struct {
 // Validator defines an interface for validating a SupplierResponse.
 // Implementations should provide specific validation logic.
 type Validator interface {
-	Validate(ctx context.Context, offers *entity.SupplierResponse) (*sharedEntity.TagList, error)
+	Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error)
 }
 
 // Validator encapsulates the logic for validating supplier offer responses
@@ -67,7 +67,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenA
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*sharedEntity.TagList, error) {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}
@@ -114,12 +114,14 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 			continue
 		}
 
+		sysPrompt := fillPrompt(v.cfg.Prompts.ValidationPrompt, tagList)
+
 		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
 			Prompt:       item,
-			SystemPrompt: v.cfg.Prompts.ValidationPrompt,
+			SystemPrompt: sysPrompt,
 		}
-
+		v.Logger.Info(sysPrompt)
 		result, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return nil, err
@@ -161,4 +163,17 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		taglist = append(taglist, sharedEntity.Tag{Name: tag})
 	}
 	return &sharedEntity.TagList{Tags: taglist}, nil
+}
+
+func fillPrompt(prompt string, tagList *sharedEntity.TagList) string {
+	if tagList == nil || len(tagList.Tags) == 0 {
+		return ` 
+		3. Tag List (for the reason field) and Definitions
+		No tags available in memory or storage.`
+	}
+	formattedTags := ""
+	for _, tag := range tagList.Tags {
+		formattedTags += tag.Name + " - " + tag.Description + "\n"
+	}
+	return fmt.Sprintf(prompt, formattedTags)
 }

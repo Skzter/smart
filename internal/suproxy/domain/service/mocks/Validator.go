@@ -40,8 +40,8 @@ func (_m *MockValidator) EXPECT() *MockValidator_Expecter {
 }
 
 // Validate provides a mock function for the type MockValidator
-func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse) (*entity0.TagList, error) {
-	ret := _mock.Called(ctx, offers)
+func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *entity0.TagList) (*entity0.TagList, error) {
+	ret := _mock.Called(ctx, offers, tagList)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Validate")
@@ -49,18 +49,18 @@ func (_mock *MockValidator) Validate(ctx context.Context, offers *entity.Supplie
 
 	var r0 *entity0.TagList
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) (*entity0.TagList, error)); ok {
-		return returnFunc(ctx, offers)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse, *entity0.TagList) (*entity0.TagList, error)); ok {
+		return returnFunc(ctx, offers, tagList)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse) *entity0.TagList); ok {
-		r0 = returnFunc(ctx, offers)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SupplierResponse, *entity0.TagList) *entity0.TagList); ok {
+		r0 = returnFunc(ctx, offers, tagList)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity0.TagList)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SupplierResponse) error); ok {
-		r1 = returnFunc(ctx, offers)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SupplierResponse, *entity0.TagList) error); ok {
+		r1 = returnFunc(ctx, offers, tagList)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -75,11 +75,12 @@ type MockValidator_Validate_Call struct {
 // Validate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - offers *entity.SupplierResponse
-func (_e *MockValidator_Expecter) Validate(ctx interface{}, offers interface{}) *MockValidator_Validate_Call {
-	return &MockValidator_Validate_Call{Call: _e.mock.On("Validate", ctx, offers)}
+//   - tagList *entity0.TagList
+func (_e *MockValidator_Expecter) Validate(ctx interface{}, offers interface{}, tagList interface{}) *MockValidator_Validate_Call {
+	return &MockValidator_Validate_Call{Call: _e.mock.On("Validate", ctx, offers, tagList)}
 }
 
-func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers *entity.SupplierResponse)) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers *entity.SupplierResponse, tagList *entity0.TagList)) *MockValidator_Validate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -89,20 +90,25 @@ func (_c *MockValidator_Validate_Call) Run(run func(ctx context.Context, offers 
 		if args[1] != nil {
 			arg1 = args[1].(*entity.SupplierResponse)
 		}
+		var arg2 *entity0.TagList
+		if args[2] != nil {
+			arg2 = args[2].(*entity0.TagList)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) Return(tagList *entity0.TagList, err error) *MockValidator_Validate_Call {
-	_c.Call.Return(tagList, err)
+func (_c *MockValidator_Validate_Call) Return(tagList1 *entity0.TagList, err error) *MockValidator_Validate_Call {
+	_c.Call.Return(tagList1, err)
 	return _c
 }
 
-func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse) (*entity0.TagList, error)) *MockValidator_Validate_Call {
+func (_c *MockValidator_Validate_Call) RunAndReturn(run func(ctx context.Context, offers *entity.SupplierResponse, tagList *entity0.TagList) (*entity0.TagList, error)) *MockValidator_Validate_Call {
 	_c.Call.Return(run)
 	return _c
 }

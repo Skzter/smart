@@ -46,7 +46,7 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
+	discardValidator.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
 
@@ -174,6 +174,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
 
+	mockSyncer.On("GetCurrentTaglist").Return(&sharedEntity.TagList{}).Maybe()
+
 	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer)
 
 	router := SetupRouter(h)
@@ -250,12 +252,13 @@ func TestHandlerHandleRequest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		respData          []byte
-		dbSetup           *dbSetup
-		vsetup            *validationSetup
-		wantSyncEr        bool
-		expectLoggedError bool
+		name                 string
+		respData             []byte
+		dbSetup              *dbSetup
+		vsetup               *validationSetup
+		wantSyncEr           bool
+		expectLoggedError    bool
+		expectGetTaglistCall bool
 	}{
 		{
 			name:     "valid, sucessful storage",
@@ -264,9 +267,10 @@ func TestHandlerHandleRequest(t *testing.T) {
 				err:  nil,
 				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: nil},
-			wantSyncEr:        false,
-			expectLoggedError: false,
+			dbSetup:              &dbSetup{err: nil},
+			wantSyncEr:           false,
+			expectLoggedError:    false,
+			expectGetTaglistCall: true,
 		},
 		{
 			name:     "valid, storage error",
@@ -275,14 +279,16 @@ func TestHandlerHandleRequest(t *testing.T) {
 				err:  nil,
 				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: errors.New("Storage error")},
-			wantSyncEr:        false,
-			expectLoggedError: true,
+			dbSetup:              &dbSetup{err: errors.New("Storage error")},
+			wantSyncEr:           false,
+			expectLoggedError:    true,
+			expectGetTaglistCall: true,
 		},
 		{
-			name:              "invalid resp data",
-			respData:          []byte("invalid"),
-			expectLoggedError: true,
+			name:                 "invalid resp data",
+			respData:             []byte("invalid"),
+			expectLoggedError:    true,
+			expectGetTaglistCall: false,
 		},
 		{
 			name:     "sync error",
@@ -291,9 +297,10 @@ func TestHandlerHandleRequest(t *testing.T) {
 				err:  nil,
 				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: nil},
-			wantSyncEr:        true,
-			expectLoggedError: true,
+			dbSetup:              &dbSetup{err: nil},
+			wantSyncEr:           true,
+			expectLoggedError:    true,
+			expectGetTaglistCall: true,
 		},
 	}
 
@@ -309,7 +316,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			writer.Clear()
 
 			if tt.vsetup != nil {
-				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
+				mockValidator.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
 				defer func() {
 					mockValidator.AssertExpectations(t)
 					mockValidator.ExpectedCalls = []*mock.Call{}
@@ -324,6 +331,13 @@ func TestHandlerHandleRequest(t *testing.T) {
 				}()
 			}
 
+			if tt.expectGetTaglistCall {
+				mockSyncer.On("GetCurrentTaglist").Return(&sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}}})
+				defer func() {
+					mockSyncer.AssertExpectations(t)
+					mockSyncer.ExpectedCalls = []*mock.Call{}
+				}()
+			}
 			if tt.wantSyncEr {
 				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(errors.New("syncing error"))
 				defer func() {

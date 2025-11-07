@@ -16,7 +16,7 @@ type TaglistSync interface {
 	// SyncTaglist syncs stored taglist.
 	SyncTaglist(context.Context, *sharedEntity.TagList) error
 	// GetTaglist gets Taglist
-	GetTaglist() (sharedEntity.TagList, error)
+	GetCurrentTaglist() *sharedEntity.TagList
 }
 
 type taglistSync struct {
@@ -76,10 +76,7 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 }
 
 // GetTaglist gets Taglist
-func (tls *taglistSync) GetTaglist() (sharedEntity.TagList, error) {
+func (tls *taglistSync) GetCurrentTaglist() *sharedEntity.TagList {
 	tagList := *tls.tagList
-	if len(tagList.Tags) == 0 {
-		return sharedEntity.TagList{}, errors.New("taglist is empty")
-	}
-	return tagList, nil
+	return &tagList
 }

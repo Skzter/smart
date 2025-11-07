@@ -118,8 +118,7 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 		s.logger.Error(err.Error())
 		return
 	}
-
-	tags, err := s.validator.Validate(ctx, &list)
+	tags, err := s.validator.Validate(ctx, &list, s.syncer.GetCurrentTaglist())
 	if err != nil {
 		s.logger.Error(err.Error())
 		return

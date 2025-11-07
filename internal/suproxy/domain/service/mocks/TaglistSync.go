@@ -38,55 +38,48 @@ func (_m *MockTaglistSync) EXPECT() *MockTaglistSync_Expecter {
 	return &MockTaglistSync_Expecter{mock: &_m.Mock}
 }
 
-// GetTaglist provides a mock function for the type MockTaglistSync
-func (_mock *MockTaglistSync) GetTaglist() (entity.TagList, error) {
+// GetCurrentTaglist provides a mock function for the type MockTaglistSync
+func (_mock *MockTaglistSync) GetCurrentTaglist() *entity.TagList {
 	ret := _mock.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetTaglist")
+		panic("no return value specified for GetCurrentTaglist")
 	}
 
-	var r0 entity.TagList
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func() (entity.TagList, error)); ok {
-		return returnFunc()
-	}
-	if returnFunc, ok := ret.Get(0).(func() entity.TagList); ok {
+	var r0 *entity.TagList
+	if returnFunc, ok := ret.Get(0).(func() *entity.TagList); ok {
 		r0 = returnFunc()
 	} else {
-		r0 = ret.Get(0).(entity.TagList)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.TagList)
+		}
 	}
-	if returnFunc, ok := ret.Get(1).(func() error); ok {
-		r1 = returnFunc()
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
 }
 
-// MockTaglistSync_GetTaglist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaglist'
-type MockTaglistSync_GetTaglist_Call struct {
+// MockTaglistSync_GetCurrentTaglist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetCurrentTaglist'
+type MockTaglistSync_GetCurrentTaglist_Call struct {
 	*mock.Call
 }
 
-// GetTaglist is a helper method to define mock.On call
-func (_e *MockTaglistSync_Expecter) GetTaglist() *MockTaglistSync_GetTaglist_Call {
-	return &MockTaglistSync_GetTaglist_Call{Call: _e.mock.On("GetTaglist")}
+// GetCurrentTaglist is a helper method to define mock.On call
+func (_e *MockTaglistSync_Expecter) GetCurrentTaglist() *MockTaglistSync_GetCurrentTaglist_Call {
+	return &MockTaglistSync_GetCurrentTaglist_Call{Call: _e.mock.On("GetCurrentTaglist")}
 }
 
-func (_c *MockTaglistSync_GetTaglist_Call) Run(run func()) *MockTaglistSync_GetTaglist_Call {
+func (_c *MockTaglistSync_GetCurrentTaglist_Call) Run(run func()) *MockTaglistSync_GetCurrentTaglist_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockTaglistSync_GetTaglist_Call) Return(tagList entity.TagList, err error) *MockTaglistSync_GetTaglist_Call {
-	_c.Call.Return(tagList, err)
+func (_c *MockTaglistSync_GetCurrentTaglist_Call) Return(tagList *entity.TagList) *MockTaglistSync_GetCurrentTaglist_Call {
+	_c.Call.Return(tagList)
 	return _c
 }
 
-func (_c *MockTaglistSync_GetTaglist_Call) RunAndReturn(run func() (entity.TagList, error)) *MockTaglistSync_GetTaglist_Call {
+func (_c *MockTaglistSync_GetCurrentTaglist_Call) RunAndReturn(run func() *entity.TagList) *MockTaglistSync_GetCurrentTaglist_Call {
 	_c.Call.Return(run)
 	return _c
 }
