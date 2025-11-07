@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,8 +51,8 @@ func TestFindKeysByTag(t *testing.T) {
 		{
 			name:         "some matches",
 			tag:          "2025",
-			mockKeys:     []string{"data/2025-report.parquet", "backup/2025-summary.txt", "archive/2024.csv"},
-			expectedKeys: []string{"data/2025-report.parquet", "backup/2025-summary.txt"},
+			mockKeys:     []string{"supplierData/2025-report.parquet", "backup/2025-summary.txt", "archive/2024.csv"},
+			expectedKeys: nil,
 		},
 	}
 
@@ -80,6 +81,53 @@ func TestFindKeysByTag(t *testing.T) {
 			}
 
 			mockS3.AssertExpectations(t)
+		})
+	}
+}
+
+/*
+	func extractKeysFromFile(parquetFile string) []string {
+		// filename is: supplierData/no-hotelid_missing-tourdates.parquet
+		// cuts suffix/prefix so only true filename remains
+		ParquetFileNoSuffix, ok := strings.CutSuffix(parquetFile, ".parquet")
+		if !ok {
+			return nil
+		}
+		ParquetFileKeysOnly, ok := strings.CutPrefix(ParquetFileNoSuffix, "supplierData/")
+		if !ok {
+			return nil
+		}
+		// keys are seperated with "-" in filename
+		keys := strings.Split(ParquetFileKeysOnly, "-")
+		validKeys := []string{}
+		for _, key := range keys {
+			// sometimes number in filename, so if it errors its a string and true key
+			if _, err := strconv.Atoi(key); err != nil {
+				validKeys = append(validKeys, key)
+			}
+		}
+		return validKeys
+	}
+*/
+func TestExtractKeysFromFile(t *testing.T) {
+	tests := []struct {
+		name         string
+		filename     string
+		expectedKeys []string
+	}{
+		{
+			name:         "wrong suffix - .BAM",
+			filename:     "wrong.BAM",
+			expectedKeys: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			keys := extractKeysFromFile(tc.filename)
+			if !slices.Equal(keys, tc.expectedKeys) {
+				t.Fatalf("slices dont equal:\nexpected => %v\ngot => %v\n", tc.expectedKeys, keys)
+			}
 		})
 	}
 }
