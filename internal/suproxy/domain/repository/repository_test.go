@@ -295,11 +295,7 @@ func TestValidateDbEntry(t *testing.T) {
 	}{
 		{
 			name: "valid entry",
-			entry: entity.DatabaseEntry{
-				Request:  "Test request",
-				Response: entity.Response{Response: "OK"},
-				Tags:     []string{"tag1"},
-			},
+			entry: getValidEntry(),
 			expectError: false,
 		},
 
