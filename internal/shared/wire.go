@@ -18,7 +18,6 @@ import (
 // SharedProviderSet provides a set of providers that is shared between all domains.
 // nolint:gochecknoglobals
 var SharedProviderSet = wire.NewSet(
-	config.LoadConfig,
 	OpenAiClientProvider,
 	service.NewOpenAI,
 	service.NewTaglistStorage,
@@ -33,7 +32,7 @@ func OpenAiClientProvider() (repository.OpenAIClient, error) {
 // TaglistStorageProvider provides a Tagliststorage repository
 func TaglistStorageProvider(
 	logger *slog.Logger,
-	cfg *config.ConfigS,
+	cfg *config.Taglist,
 ) (repository.TaglistStorage, error) {
 	s3, err := S3WrapperProvider(logger, cfg)
 	if err != nil {
@@ -51,7 +50,7 @@ func TaglistStorageProvider(
 }
 
 // S3WrapperProvider provides an S3Wrapper configured with the shared config
-func S3WrapperProvider(logger *slog.Logger, cfg *config.ConfigS) (wrapper.S3StorageWrapper, error) {
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Taglist) (wrapper.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
