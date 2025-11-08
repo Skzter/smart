@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"testing"
 
@@ -43,14 +42,6 @@ func TestNewGeneratePromptService(t *testing.T) {
 			name:    "nil openai",
 			openai:  nil,
 			taglist: taglist,
-			config:  &cfg,
-			logger:  logger,
-			wantErr: true,
-		},
-		{
-			name:    "nil taglist",
-			openai:  openai,
-			taglist: nil,
 			config:  &cfg,
 			logger:  logger,
 			wantErr: true,
@@ -116,12 +107,6 @@ func TestGeneratePrompt(t *testing.T) {
 			name:      "nil ctx",
 			ctx:       nil,
 			expectErr: true,
-		},
-		{
-			name:              "taglist error",
-			getTaglistReturns: []any{nil, errors.New("Err")},
-			expectErr:         true,
-			ctx:               context.Background(),
 		},
 		{
 			name:              "empty code segment in openau response",

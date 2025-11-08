@@ -40,6 +40,16 @@ class Prompts {
     
     %s
     
+    If you create a new tag that is not part of the list, you must also provide a concise, human-readable description for that tag. 
+    Return each new tag together with its description in the final output, for example:
+    "reason": [
+      { "name": "no_hotelid", "description": "The response does not contain a hotelid field." },
+      { "name": "no_price_info", "description": "The price information is missing." }
+    ]
+
+    
+    You must always return a matching description for each newly created tag.
+
     4. Ethical Boundaries 
     Focus solely on the technical and structural consistency between HTTP Request and Response. 
     Do not generate legal, political, medical, or hypothetical content. 
@@ -47,11 +57,15 @@ class Prompts {
 
     5. Output Format 
     You must return a JSON object with the following structure: 
+    
+    {
+      "valid": false,
+      "reason": [
+        { "name": "no_hotelid", "description": "The response does not contain a hotelid field." },
+        { "name": "no_price_info", "description": "The price information is missing." }
+      ]
+    }
 
-    { 
-      "valid": true|false, 
-      "reason": ["tag1", "tag2", ...] 
-    } 
 
     If valid is true, reason must be an empty array. 
     If valid is false, reason must contain at least one tag from the list below. 
@@ -67,9 +81,12 @@ class Prompts {
 
     or 
 
-    { 
-      "valid": false, 
-      "reason": ["tag1", "tag2"] 
+    {
+      "valid": false,
+      "reason": [
+        { "name": "no_hotelid", "description": "The response does not contain a hotelid field." },
+        { "name": "no_price_info", "description": "The price information is missing." }
+      ]
     }
     """
 }

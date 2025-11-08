@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -43,10 +42,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 		return "", errors.ErrInternalServer
 	}
 
-	prompt, err := s.fillPrompt(ctx)
-	if err != nil {
-		return "", err
-	}
+	prompt := s.fillPrompt(ctx)
 
 	req := sharedEntity.Request{
 		Prompt:       userPrompt,
@@ -69,24 +65,29 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 }
 
 // fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config
-func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
+func (s *generatePrompt) fillPrompt(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+		return s.config.Prompts.AutoPlaywrightPromptT
 	}
 
-	taglist, err := s.taglistService.GetTaglist(ctx)
+	tagList, err := s.taglistService.GetTaglist(ctx)
 	if err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+		return s.config.Prompts.AutoPlaywrightPromptT
 	}
 
-	staglist, err := json.Marshal(taglist)
-	if err != nil {
-		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+	if tagList == nil || len(tagList.Tags) == 0 {
+		defaultTags := ""
+		defaultTaglist := sharedService.DefaultTagList()
+		for _, tag := range defaultTaglist.Tags {
+			defaultTags += tag.Name + " - " + tag.Description + "\n"
+		}
+		return fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, defaultTags)
 	}
-
-	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, string(staglist))
-	return prompt, nil
+	formattedTags := ""
+	for _, tag := range tagList.Tags {
+		formattedTags += tag.Name + " - " + tag.Description + "\n"
+	}
+	return fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, formattedTags)
 }

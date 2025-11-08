@@ -7,6 +7,6 @@ type TagList struct {
 
 // Tag represents a Tag with Name and Description
 type Tag struct {
-	Name        string
-	Description string
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }

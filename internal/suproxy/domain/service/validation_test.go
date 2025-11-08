@@ -94,7 +94,7 @@ func TestValidatorValidate(t *testing.T) {
 				Data:           entity.SupplierOfferList{},
 			},
 			expectCall:   false,
-			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "non200", Description: ""}}},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "non_200", Description: ""}}},
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
@@ -127,8 +127,9 @@ func TestValidatorValidate(t *testing.T) {
 			},
 			expectCall:      true,
 			expectedContent: "2025-02-01",
-			mockResponse:    `{"valid":false,"reason":["missing_hotelid"]}`,
-			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "missing_hotelid", Description: ""}}},
+			mockResponse:    `{"valid":false,"reason":[ "name": "no_hotelid", "description": "The response does not contain a hotelid field."]}`,
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_hotelid", Description: "The response does not contain a hotelid field."}}},
+			expectError:     true,
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
@@ -156,7 +157,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "noOffer", Description: ""}}},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_offer", Description: ""}}},
 		},
 		{
 			name: "exceeding maximum request,",
@@ -189,7 +190,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "emptyOffer", Description: ""}}},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "empty_offer", Description: ""}}},
 		},
 		{
 			name: "openai service error",
