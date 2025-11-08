@@ -294,6 +294,7 @@ tasks:
       - go tool wire ./cmd/autotester
     sources:
       - cmd/autotester/wire.go
+      - internal/shared/wire.go
 
   di-generate-suproxy:
     desc: "generate dependency injection code for suproxy"
@@ -301,6 +302,7 @@ tasks:
       - go tool wire ./cmd/suproxy
     sources:
       - cmd/suproxy/wire.go
+      - internal/shared/wire.go
 
   # --------------------------------------------------------------------------------
   # Benchmarking

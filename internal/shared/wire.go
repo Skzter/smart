@@ -22,6 +22,7 @@ var SharedProviderSet = wire.NewSet(
 	service.NewOpenAI,
 	service.NewTaglistStorage,
 	TaglistStorageProvider,
+	TagListParquetWrapperProvider,
 )
 
 // OpenAiClientProvider provides a new OpenAI client.
@@ -33,12 +34,9 @@ func OpenAiClientProvider() (repository.OpenAIClient, error) {
 func TaglistStorageProvider(
 	logger *slog.Logger,
 	cfg *config.Taglist,
+	parquet wrapper.ParquetFileWrapper[entity.TagList],
 ) (repository.TaglistStorage, error) {
 	s3, err := S3WrapperProvider(logger, cfg)
-	if err != nil {
-		panic(err)
-	}
-	parquet, err := TagListParquetWrapperProvider(logger)
 	if err != nil {
 		panic(err)
 	}
