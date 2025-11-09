@@ -16,7 +16,9 @@ const (
 	DefaultFilePerm os.FileMode = 0o644
 )
 
-// FileSystem is a minimal filesystem abstraction for repository I/O.
+// FileSystem provides a secure filesystem abstraction for local persistence of testcases.
+// All operations are confined to a configured root directory, preventing path traversal attacks.
+// Paths must be relative and any attempt to escape the root directory will result in an error.
 type FileSystem interface {
 	// MkdirAll creates a directory path (including parents) inside the
 	// configured root using the package default directory permissions.
