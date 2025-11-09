@@ -806,26 +806,24 @@ func TestValidateFilename(t *testing.T) {
 	validID := "123e4567-e89b-12d3-a456-426614174000"
 
 	tests := []struct {
-		name       string
-		filename   string
-		wantErr    bool
-		wantTestID string
+		name     string
+		filename string
+		wantErr  bool
 	}{
-		{"valid filename", validID + ".go", false, validID},
-		{"empty filename", "", true, ""},
-		{"missing extension", validID, true, ""},
-		{"empty extension", validID + ".", true, ""},
-		{"invalid UUID", "not-a-uuid.go", true, ""},
+		{"valid filename", validID + ".ts", false},
+		{"empty filename", "", true},
+		{"missing extension", validID, true},
+		{"empty extension", validID + ".", true},
+		{"invalid UUID", "not-a-uuid.ts", true},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			testID, err := validateFilename(tc.filename)
+			err := validateFilename(tc.filename)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.wantTestID, testID)
 			}
 		})
 	}

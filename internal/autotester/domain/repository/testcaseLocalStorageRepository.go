@@ -78,7 +78,7 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 	}
 
 	filename := testcase.TestID + "." + testcaseLanguageDefault
-	if _, err := validateFilename(filename); err != nil {
+	if err := validateFilename(filename); err != nil {
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -105,7 +105,7 @@ func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId s
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + testcaseLanguageDefault
-	if _, err := validateFilename(filename); err != nil {
+	if err := validateFilename(filename); err != nil {
 		return "", fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -138,7 +138,7 @@ func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId
 
 	results := make([]string, 0, len(filenames))
 	for _, filename := range filenames {
-		if _, err := validateFilename(filename); err != nil {
+		if err := validateFilename(filename); err != nil {
 			r.logger.Warn("skipping invalid testcase file", "file", filename, "err", err)
 			continue
 		}
@@ -187,7 +187,7 @@ func (r *testcaseLocalStorageRepository) Delete(testId, userId, sessionId string
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + testcaseLanguageDefault
-	if _, err := validateFilename(filename); err != nil {
+	if err := validateFilename(filename); err != nil {
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
@@ -217,7 +217,7 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 		for _, sessionId := range sessions {
 			sessionPath := filepath.Join(userId, sessionId)
 
-			files, err := r.filesystem.ReadDir(filepath.Join(userId, sessionId))
+			files, err := r.filesystem.ReadDir(sessionPath)
 			if err != nil {
 				continue
 			}
@@ -231,12 +231,7 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 				}
 
 				if fileInfo.ModTime().Before(cutoffTime) {
-					testId, err := validateFilename(filename)
-					if err != nil {
-						continue
-					}
-
-					if err := r.Delete(testId, userId, sessionId); err != nil {
+					if err := r.filesystem.Remove(filePath, false); err != nil {
 						continue
 					}
 
@@ -276,20 +271,20 @@ func validatePathNameElements(values ...string) error {
 // validateFilename parses and validates a filename in the form
 // <testId>.<language>. On success it returns the parsed
 // testId and language.
-func validateFilename(filename string) (testID string, err error) {
+func validateFilename(filename string) error {
 	if filename == "" {
-		return "", fmt.Errorf("empty filename")
+		return fmt.Errorf("empty filename")
 	}
 
 	dotPosition := strings.LastIndex(filename, ".")
 	if dotPosition <= 0 || dotPosition == len(filename)-1 {
-		return "", fmt.Errorf("missing or invalid extension")
+		return fmt.Errorf("missing or invalid extension")
 	}
 
 	testId := filename[:dotPosition]
 	if _, err := uuid.Parse(testId); err != nil {
-		return "", fmt.Errorf("invalid UUID format in testId '%s': %w", testId, err)
+		return fmt.Errorf("invalid UUID format in testId '%s': %w", testId, err)
 	}
 
-	return testId, nil
+	return nil
 }
