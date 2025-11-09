@@ -152,7 +152,7 @@ func TestExtractKeysFromFile(t *testing.T) {
 	}
 }
 
-func TestIsKeysInTag(t *testing.T) {
+func TestIsTagInKeys(t *testing.T) {
 	tests := []struct {
 		name     string
 		keys     []string
@@ -175,7 +175,7 @@ func TestIsKeysInTag(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ok := isKeysInTag(tc.keys, tc.tag)
+			ok := isTagInKeys(tc.keys, tc.tag)
 			if tc.wantTrue {
 				assert.True(t, ok)
 			} else {

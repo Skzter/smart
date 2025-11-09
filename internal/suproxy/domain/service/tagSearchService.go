@@ -33,12 +33,12 @@ func NewTagSearchService(cfg *config.Config, s3 wrapper.S3StorageWrapper) (TagSe
 	}, nil
 }
 
-// FindKeysByTag searches for parquet files whose extracted keys match the given tag.
+// FindKeysByTag searches for parquet files whose extracted keys match the given tags.
 // It scans all available parquet files, extracts meaningful keys from their filenames,
 // and returns the list of files that contain keys present in the search tag.
-func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]string, error) {
-	tag = strings.TrimSpace(tag)
-	if tag == "" {
+func (t *tagSearchService) FindKeysByTag(ctx context.Context, tags string) ([]string, error) {
+	tags = strings.TrimSpace(tags)
+	if tags == "" {
 		return nil, fmt.Errorf("tag is empty after trimming")
 	}
 
@@ -49,7 +49,7 @@ func (t *tagSearchService) FindKeysByTag(ctx context.Context, tag string) ([]str
 	var matchingKeys []string
 	for _, file := range parquetFiles {
 		keys := extractKeysFromFile(file, t.config.EntryPrefix)
-		if isKeysInTag(keys, tag) {
+		if isTagInKeys(keys, tags) {
 			matchingKeys = append(matchingKeys, file)
 		}
 	}
@@ -82,8 +82,8 @@ func extractKeysFromFile(parquetFile string, prefix string) []string {
 	return keys
 }
 
-// isKeysInTag checks if the given tag contains any of keys as a substring
-func isKeysInTag(keys []string, tag string) bool {
+// isTagInKeys checks if the given tag contains any of keys as a substring
+func isTagInKeys(keys []string, tag string) bool {
 	for _, key := range keys {
 		if strings.Contains(tag, key) {
 			return true
