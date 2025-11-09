@@ -294,8 +294,8 @@ func TestValidateDbEntry(t *testing.T) {
 		errorText   string
 	}{
 		{
-			name: "valid entry",
-			entry: getValidEntry(),
+			name:        "valid entry",
+			entry:       getValidEntry(),
 			expectError: false,
 		},
 
