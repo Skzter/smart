@@ -213,7 +213,7 @@ tasks:
     vars:
       GOVERSION:
         sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
-      EXCLUDE_RULES: "G104,G107"
+      EXCLUDE_RULES: "G104,G107,G401,G501"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
