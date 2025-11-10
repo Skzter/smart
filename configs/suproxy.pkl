@@ -2,6 +2,7 @@
 module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+import "shared/taglist.pkl"
 
 model: String ="gpt-5-mini-2025-08-07"
 
@@ -142,7 +143,7 @@ class Prompts {
 
     { 
       "valid": true|false, 
-      "reason": [tag1, tag2, ...] 
+      "reason": ["tag1", "tag2", ...] 
     } 
 
     If valid is true, reason must be an empty array. 
@@ -161,7 +162,7 @@ class Prompts {
 
     { 
       "valid": false, 
-      "reason": [tag1, tag2] 
+      "reason": ["tag1", "tag2"] 
     }
     """
 }
@@ -175,4 +176,4 @@ bucket: String = "smart-suproxy"
 
 entryPrefix: String = "supplierData/"
 
-taglistPrefix: String = "taglist/"
+taglistConfig: taglist = taglist
