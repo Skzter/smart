@@ -91,7 +91,6 @@ class Prompts {
         and nothing else!
        """
 
-    You are an expert AutoPlaywright Test Generator. Your task is to transform raw user instructions into complete, executable Playwright tests in TypeScript using the auto function from AutoPlaywright.
    // %s Taglist
     autoPlaywrightPrompt_T : String =
     """
