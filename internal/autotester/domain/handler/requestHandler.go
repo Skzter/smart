@@ -95,6 +95,7 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 	if err != nil {
 		return nil, err
 	}
+
 	if !valid {
 		return &entity.ResponseForUser{
 			Message:   sharedEntity.Message{MessageBody: msg},
@@ -103,12 +104,14 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 			LogStamp:  userRequest.LogStamp,
 		}, nil
 	}
-	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+
+	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
+
 	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: genText},
+		Message:   sharedEntity.Message{MessageBody: resp},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,
