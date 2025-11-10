@@ -40,6 +40,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		service.NewTaglistSync,
 		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
+		TagsearchServiceProvider,
 		TaglistConfigProvider,
 	)
 
@@ -90,4 +91,7 @@ func DatabaseRepositoryProvider(
 		parquetWrapper,
 		cfg.EntryPrefix,
 	)
+}
+func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
+	return service.NewTagSearchService(cfg, s3)
 }
