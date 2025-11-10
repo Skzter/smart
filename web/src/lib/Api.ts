@@ -1,5 +1,5 @@
 import axios from "axios";
-const baseURL = "/api/v1/chat";
+const baseURL = "/api/v1/";
 
 /**
  * Fetches data from the api and returns the data for the chat
