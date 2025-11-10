@@ -211,6 +211,7 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 	for _, userId := range userIds {
 		sessions, err := r.filesystem.ReadDir(userId)
 		if err != nil {
+			r.logger.Warn("failed to read user directory", "userId", userId, "err", err)
 			continue
 		}
 
@@ -218,6 +219,7 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 			sessionPath := filepath.Join(userId, sessionId)
 			files, err := r.filesystem.ReadDir(sessionPath)
 			if err != nil {
+				r.logger.Warn("failed to read session directory", "sessionPath", sessionPath, "err", err)
 				continue
 			}
 
@@ -230,9 +232,10 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 
 				if err := r.filesystem.Remove(filePath, false); err != nil {
 					r.logger.Warn("failed to delete old file", "path", filePath, "err", err)
-				} else {
-					deletedCount++
+					continue
 				}
+
+				deletedCount++
 			}
 		}
 	}
