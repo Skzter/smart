@@ -63,7 +63,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if request.Prompt != "" {
-		matchingKeys, err := s.tagSearch.FindKeysByTag(c, request.Prompt)
+		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Prompt)
 		switch {
 		case err != nil:
 			s.logger.Error("Tag-based search failed", "error", err)

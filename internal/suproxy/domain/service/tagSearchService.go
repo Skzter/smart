@@ -13,7 +13,7 @@ import (
 
 // TagSearchService defines the interface for searching S3 file keys by a given tag
 type TagSearchService interface {
-	FindKeysByTag(ctx context.Context, tag string) ([]string, error)
+	FindKeysByTags(ctx context.Context, tag string) ([]string, error)
 }
 
 // tagSearchService is the concrete implementation of TagSearchService
@@ -33,10 +33,10 @@ func NewTagSearchService(cfg *config.Config, s3 wrapper.S3StorageWrapper) (TagSe
 	}, nil
 }
 
-// FindKeysByTag searches for parquet files whose extracted keys match the given tags.
+// FindKeysByTags searches for parquet files whose extracted keys match the given tags.
 // It scans all available parquet files, extracts meaningful keys from their filenames,
 // and returns the list of files that contain keys present in the search tag.
-func (t *tagSearchService) FindKeysByTag(ctx context.Context, tags string) ([]string, error) {
+func (t *tagSearchService) FindKeysByTags(ctx context.Context, tags string) ([]string, error) {
 	tags = strings.TrimSpace(tags)
 	if tags == "" {
 		return nil, fmt.Errorf("tag is empty after trimming")

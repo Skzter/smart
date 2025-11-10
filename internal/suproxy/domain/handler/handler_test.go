@@ -69,7 +69,7 @@ func TestNewSuproxyController(t *testing.T) {
 			clt:        &http.Client{},
 			db:         mocks.NewMockDatabaseService(t),
 			syncer:     mocks.NewMockTaglistSync(t),
-			tagservice: mocks.NewTagSearchService(t),
+			tagservice: mocks.NewMockTagSearchService(t),
 			err:        false,
 		},
 		{
@@ -244,7 +244,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			validator := RejectValidator(t)
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
-			mockTagsearch := mocks.NewTagSearchService(t)
+			mockTagsearch := mocks.NewMockTagSearchService(t)
 
 			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
 
@@ -284,7 +284,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			}
 
 			if tt.tsSetup != nil {
-				mockTagsearch.On("FindKeysByTag", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
+				mockTagsearch.On("FindKeysByTags", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
 
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
@@ -373,7 +373,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
-	mockTagsearch := mocks.NewTagSearchService(t)
+	mockTagsearch := mocks.NewMockTagSearchService(t)
 	var writer slicewriter
 
 	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
@@ -435,7 +435,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
 		mocks.NewMockTaglistSync(b),
-		mocks.NewTagSearchService(b),
+		mocks.NewMockTagSearchService(b),
 	)
 
 	router := SetupRouter(ctrl)

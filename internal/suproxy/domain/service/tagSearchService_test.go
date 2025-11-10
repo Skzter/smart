@@ -51,7 +51,7 @@ func TestNewTagSearchService(t *testing.T) {
 }
 
 // TestTagSearchService_FindKeysByTag tests the FindKeysByTag method of TagSearchService with different test cases.
-func TestFindKeysByTag(t *testing.T) {
+func TestFindKeysByTags(t *testing.T) {
 	cfg, _ := config.LoadAppConfig()
 	tests := []struct {
 		name         string
@@ -100,7 +100,7 @@ func TestFindKeysByTag(t *testing.T) {
 				s3:     mockS3,
 			}
 
-			keys, err := svc.FindKeysByTag(context.Background(), tt.tag)
+			keys, err := svc.FindKeysByTags(context.Background(), tt.tag)
 
 			if tt.expectError {
 				assert.Error(t, err)
