@@ -17,7 +17,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -36,13 +36,15 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
-		TagListParquetWrapperProvider,
 		service.NewGeneratePromptService,
-		S3WrapperProvider,
-		TaglistStorageProvider,
+		TaglistConfigProvider,
 	)
 
 	return nil, nil
+}
+
+func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
+	return cfg.TaglistConfig
 }
 
 // LoggerProvider provides a new logger.
@@ -65,10 +67,6 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
 }
 
-func TagListParquetWrapperProvider(logger *slog.Logger) (wrapperService.ParquetFileWrapper[sharedEntity.TagList], error) {
-	return wrapperService.NewParquetWrapper[sharedEntity.TagList](logger, wrapperService.DefaultParquetConfig())
-}
-
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
@@ -77,19 +75,6 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.
 		SecretKey: build.AwsSecretAccessKey,
 	}
 	return wrapperService.NewS3Wrapper(logger, config)
-}
-
-func TaglistStorageProvider(
-	logger *slog.Logger,
-	cfg *config.Config,
-	s3wrapper wrapperService.S3StorageWrapper,
-	parquetWrapper wrapperService.ParquetFileWrapper[sharedEntity.TagList],
-) (sharedRepo.TaglistStorage, error) {
-	return sharedRepo.NewTaglistStorage(
-		logger,
-		s3wrapper,
-		parquetWrapper,
-		cfg.TaglistPrefix)
 }
 
 // FileSystemProvider provides a new filesystem.
