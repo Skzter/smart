@@ -12,8 +12,8 @@ import (
 
 // Default permissions used by the filesystem implementation.
 const (
-	DefaultDirPerm  os.FileMode = 0o755
-	DefaultFilePerm os.FileMode = 0o644
+	DefaultDirPerm  os.FileMode = 0o755 // rwxr-xr-x
+	DefaultFilePerm os.FileMode = 0o644 // rw-r--r--
 )
 
 // FileSystem provides a secure filesystem abstraction for local persistence of testcases.
