@@ -42,7 +42,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 		return "", errors.ErrInternalServer
 	}
 
-	prompt := s.fillPrompt(ctx)
+	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{
 		Prompt:       userPrompt,
@@ -64,30 +64,27 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	return resp.Text, nil
 }
 
-// fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config
-func (s *generatePrompt) fillPrompt(ctx context.Context) string {
+// fillPrompt fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
+func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error(err.Error())
-		return s.config.Prompts.AutoPlaywrightPromptT
+		s.logger.Error("Context is nil, using default taglist: ", "err", err.Error())
+		return formatTags(sharedService.DefaultTagList())
 	}
 
 	tagList, err := s.taglistService.GetTaglist(ctx)
-	if err != nil {
-		s.logger.Error(err.Error())
-		return s.config.Prompts.AutoPlaywrightPromptT
+	if err != nil || tagList == nil || len(tagList.Tags) == 0 {
+		s.logger.Error("Failed to fetch taglist, using default: ", "err", err.Error())
+		tagList = sharedService.DefaultTagList()
 	}
 
-	if tagList == nil || len(tagList.Tags) == 0 {
-		defaultTags := ""
-		defaultTaglist := sharedService.DefaultTagList()
-		for _, tag := range defaultTaglist.Tags {
-			defaultTags += tag.Name + " - " + tag.Description + "\n"
-		}
-		return fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, defaultTags)
-	}
-	formattedTags := ""
+	return formatTags(tagList)
+}
+
+// formatTags converts a TagList into a formatted string
+func formatTags(tagList *sharedEntity.TagList) string {
+	var formattedTags string
 	for _, tag := range tagList.Tags {
 		formattedTags += tag.Name + " - " + tag.Description + "\n"
 	}
-	return fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, formattedTags)
+	return formattedTags
 }

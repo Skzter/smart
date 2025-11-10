@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"sync"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -57,10 +58,10 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 
 	tls.mutex.Lock()
 	defer tls.mutex.Unlock()
-
 	lenghtList := len(tls.tagList.Tags)
-	for i, tag := range taglist.Tags {
-		if tag.Name != tls.tagList.Tags[i].Name {
+	for _, tag := range taglist.Tags {
+		tls.logger.Error("geht in schleife rein")
+		if !slices.Contains(tls.tagList.Tags, tag) {
 			tls.tagList.Tags = append(tls.tagList.Tags, tag)
 		}
 	}
@@ -77,6 +78,7 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 
 // GetTaglist gets Taglist
 func (tls *taglistSync) GetCurrentTaglist() *sharedEntity.TagList {
-	tagList := *tls.tagList
+	newTags := append([]sharedEntity.Tag(nil), tls.tagList.Tags...)
+	tagList := sharedEntity.TagList{Tags: newTags}
 	return &tagList
 }

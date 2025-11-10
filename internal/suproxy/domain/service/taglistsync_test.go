@@ -123,11 +123,12 @@ func TestSyncTaglist(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			newTags := append([]sharedEntity.Tag(nil), originalTaglist.Tags...)
 			mockTagListstorageSrv := mocks.NewMockTaglistStorage(t)
 			srv := taglistSync{
 				logger:         logger,
 				taglistService: mockTagListstorageSrv,
-				tagList:        &originalTaglist,
+				tagList:        &sharedEntity.TagList{Tags: newTags},
 			}
 			if tc.mockResponse != nil {
 				mockTagListstorageSrv.On("StoreTaglist", mock.Anything, mock.Anything).Return(tc.mockResponse...)

@@ -103,7 +103,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
 	newTags := make([]sharedEntity.Tag, 0, 10)
-	sysPrompt := fillPrompt(v.cfg.Prompts.ValidationPrompt, tagList)
+	sysPrompt := fmt.Sprintf(v.cfg.Prompts.ValidationPromptT, formatTaglist(tagList))
 
 	for i, offer := range offers.Data.Items {
 		v.Logger.Debug(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
@@ -125,7 +125,6 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 			Prompt:       item,
 			SystemPrompt: sysPrompt,
 		}
-		v.Logger.Info(sysPrompt)
 		result, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return nil, err
@@ -167,18 +166,13 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	return &sharedEntity.TagList{Tags: newTags}, nil
 }
 
-func fillPrompt(prompt string, tagList *sharedEntity.TagList) string {
+func formatTaglist(tagList *sharedEntity.TagList) string {
 	if tagList == nil || len(tagList.Tags) == 0 {
-		defaultTags := ""
-		defaultTaglist := sharedService.DefaultTagList()
-		for _, tag := range defaultTaglist.Tags {
-			defaultTags += tag.Name + " - " + tag.Description + "\n"
-		}
-		return fmt.Sprintf(prompt, defaultTags)
+		tagList = sharedService.DefaultTagList()
 	}
 	formattedTags := ""
 	for _, tag := range tagList.Tags {
 		formattedTags += tag.Name + " - " + tag.Description + "\n"
 	}
-	return fmt.Sprintf(prompt, formattedTags)
+	return formattedTags
 }

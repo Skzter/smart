@@ -11,8 +11,8 @@ import (
 )
 
 // DefaultTagList provides a default tag list
-func DefaultTagList() entity.TagList {
-	return entity.TagList{
+func DefaultTagList() *entity.TagList {
+	return &entity.TagList{
 		Tags: []entity.Tag{
 			{Name: "no_hotelid", Description: "The response does not contain a hotelid field."},
 			{Name: "no_outbound_flight", Description: "The response lacks outbound flight information (flight.outboundflightsegments is missing or empty)."},

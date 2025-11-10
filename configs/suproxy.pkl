@@ -12,7 +12,8 @@ maxItemsPerValidation: Int = 10
 logLevel: String = "info"
 
 class Prompts {
-    validationPrompt : String = """
+  // %s Taglist
+    validationPrompt_T : String = """
     You are a strict, technically experienced mock-data tester. Your task is to determine whether a given HTTP Response is logically and semantically consistent with its corresponding HTTP Request in the context of travel offers. 
 
     1. Behavioural Framing 
@@ -61,14 +62,14 @@ class Prompts {
     {
       "valid": false,
       "reason": [
-        { "name": "no_hotelid", "description": "The response does not contain a hotelid field." },
-        { "name": "no_price_info", "description": "The price information is missing." }
+        { "name": "tag1", "description": "" },
+        { "name": "tag2", "description": "" }
       ]
     }
 
 
     If valid is true, reason must be an empty array. 
-    If valid is false, reason must contain at least one tag from the list below. 
+    If valid is false, reason must contain at least one tag from the list above. 
     No additional text, explanations, or reformulations are allowed. 
     Tags must be exact matches from the allowed list. If no tag fits, create a new tag that is short, clearly interpretable, and uniquely describes the issue (e.g. invalid_objectid, missing_country_code). Avoid explanations or reformulations. 
 
@@ -84,8 +85,8 @@ class Prompts {
     {
       "valid": false,
       "reason": [
-        { "name": "no_hotelid", "description": "The response does not contain a hotelid field." },
-        { "name": "no_price_info", "description": "The price information is missing." }
+        { "name": "tag1", "description": "" },
+        { "name": "tag2", "description": "" }
       ]
     }
     """
