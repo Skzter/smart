@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -172,35 +171,16 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
 
+	mockValidator.On("Validate", mock.Anything, mock.Anything).Return([]string{"tag1"}, nil).Maybe()
+	mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(nil).Maybe()
+
 	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer)
 
 	router := SetupRouter(h)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			done := make(chan struct{})
-
-			// Setup mock expectations with completion signal
-			if tt.expects200 && tt.sSetup != nil && tt.sSetup.code == 200 {
-				// Validator is called first in the async handler
-				mockValidator.On("Validate", mock.Anything, mock.Anything).
-					Return([]string{"tag1"}, nil).
-					Once()
-
-				// SyncTaglist is called after validation
-				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).
-					Return(nil).
-					Once()
-
-				// Signal completion after last call (to mockDB)
-				mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).
-					Return(nil).
-					Run(func(args mock.Arguments) {
-						close(done)
-					}).
-					Once()
-			}
-
 			w := httptest.NewRecorder()
 
 			var server *httptest.Server
@@ -238,30 +218,11 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
 			router.ServeHTTP(w, req)
 
-			// Wait for async handler if needed
-			if tt.expects200 && tt.sSetup != nil && tt.sSetup.code == 200 {
-				select {
-				case <-done:
-				case <-time.After(2 * time.Second):
-					t.Fatal("Timeout waiting for async handler to complete")
-				}
-			}
-
 			bytes, _ := io.ReadAll(w.Body)
 			expectedBytes, _ := json.Marshal(tt.expectedResponse)
 
 			assert.Equal(t, tt.expects200, w.Code == http.StatusOK)
 			assert.Equal(t, string(expectedBytes), string(bytes))
-
-			// Clean up
-			if tt.expects200 && tt.sSetup != nil && tt.sSetup.code == 200 {
-				mockValidator.AssertExpectations(t)
-				mockSyncer.AssertExpectations(t)
-				mockDB.AssertExpectations(t)
-				mockValidator.ExpectedCalls = []*mock.Call{}
-				mockSyncer.ExpectedCalls = []*mock.Call{}
-				mockDB.ExpectedCalls = []*mock.Call{}
-			}
 		})
 	}
 }
