@@ -13,6 +13,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
@@ -29,7 +30,10 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
+		FileSystemProvider,
+		repository.NewTestcaseLocalStorageRepository,
 		service.NewValidatePromptService,
+		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
@@ -71,4 +75,13 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.
 		SecretKey: build.AwsSecretAccessKey,
 	}
 	return wrapperService.NewS3Wrapper(logger, config)
+}
+
+// FileSystemProvider provides a new filesystem.
+func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
+	return repository.NewOSFileSystem(cfg.TestsRootDir)
+}
+
+func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
+	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
