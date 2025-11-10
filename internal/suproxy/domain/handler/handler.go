@@ -76,7 +76,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 }
 
 func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, error) {
-	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
+	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Body)))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -86,10 +86,6 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 			panic(err)
 		}
 	}()
-
-	for key, value := range request.Header {
-		req.Header.Set(key, value)
-	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {

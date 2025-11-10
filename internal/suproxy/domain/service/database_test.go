@@ -75,10 +75,9 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 
 	entry := entity.DatabaseEntry{
 		Request: entity.Request{
-			Header:      map[string]string{"Content-Type": "application/json"},
-			Prompt:      "prompt",
+			Tags:        "prompt",
 			Destination: "http://example.com",
-			Request:     `{}`,
+			Body:        `{}`,
 		},
 		Response: entity.Response{Response: "OK"},
 		Tags:     []string{"tag1", "tag2"},

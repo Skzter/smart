@@ -29,10 +29,9 @@ const (
 func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
 		Request: entity.Request{
-			Header:      map[string]string{"Content-Type": "application/json"},
-			Prompt:      "prompt",
+			Tags:        "prompt",
 			Destination: "http://example.com",
-			Request:     `{}`,
+			Body:        `{}`,
 		},
 		Response: entity.Response{Response: "OK"},
 		Tags:     []string{"tag1", "tag2"},
@@ -302,39 +301,23 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "valid entry",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      map[string]string{"Content-Type": "application/json"},
-					Prompt:      "prompt",
+					Tags:        "prompt",
 					Destination: "http://example.com",
-					Request:     "{}",
+					Body:        "{}",
 				},
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{"tag1"},
 			},
 			expectError: false,
 		},
-		{
-			name: "invalid request - empty header",
-			entry: entity.DatabaseEntry{
-				Request: entity.Request{
-					Header:      map[string]string{},
-					Prompt:      "prompt",
-					Destination: "http://example.com",
-					Request:     "{}",
-				},
-				Response: entity.Response{Response: "OK"},
-				Tags:     []string{"tag1"},
-			},
-			expectError: true,
-			errorText:   "header must not be empty",
-		},
+
 		{
 			name: "invalid request - empty prompt",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      map[string]string{"Content-Type": "application/json"},
-					Prompt:      "",
+					Tags:        "",
 					Destination: "http://example.com",
-					Request:     "{}",
+					Body:        "{}",
 				},
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{"tag1"},
@@ -346,10 +329,9 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid response - empty response",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      map[string]string{"Content-Type": "application/json"},
-					Prompt:      "prompt",
+					Tags:        "prompt",
 					Destination: "http://example.com",
-					Request:     "{}",
+					Body:        "{}",
 				},
 				Response: entity.Response{Response: ""},
 				Tags:     []string{"tag1"},
@@ -361,10 +343,9 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid tags - empty list",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Header:      map[string]string{"Content-Type": "application/json"},
-					Prompt:      "prompt",
+					Tags:        "prompt",
 					Destination: "http://example.com",
-					Request:     "{}",
+					Body:        "{}",
 				},
 				Response: entity.Response{Response: "OK"},
 				Tags:     []string{},

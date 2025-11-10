@@ -195,11 +195,7 @@ func validateDbEntry(dbEntry entity.DatabaseEntry) error {
 
 // validateRequest validates the request part of the database entry
 func validateRequest(rq entity.Request) error {
-	if len(rq.Header) == 0 {
-		return fmt.Errorf("header must not be empty")
-	}
-
-	if err := assert.StringNotEmpty(rq.Prompt); err != nil {
+	if err := assert.StringNotEmpty(rq.Tags); err != nil {
 		return fmt.Errorf("prompt must not be empty: %w", err)
 	}
 
@@ -207,7 +203,7 @@ func validateRequest(rq entity.Request) error {
 		return fmt.Errorf("destination must not be empty: %w", err)
 	}
 
-	if err := assert.StringNotEmpty(rq.Request); err != nil {
+	if err := assert.StringNotEmpty(rq.Body); err != nil {
 		return fmt.Errorf("request must not be empty: %w", err)
 	}
 	return nil
