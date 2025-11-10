@@ -68,9 +68,40 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/shared/domain/config
       - internal/build/configs
       - cmd/autotester/wire_gen.go
       - cmd/suproxy/wire_gen.go
+
+replace_api_paths:
+  # is needed to run the application on the HTWK Server -> reverse proxy routes / to /api
+  stage: prepare
+  image:
+    name: alpine:latest
+  script:
+    # Router files - replace "/api/v1" with "/v1"
+    - sed -i 's|"/api/v1"|"/v1"|g' internal/autotester/application/router.go
+    - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/application/router.go
+    # Frontend API file - replace baseURL from "/api/v1/chat" to "/v1/chat"
+    - sed -i 's|/api/v1|/v1|g' web/src/lib/Api.ts
+    # Test files - replace all /api/v1/* routes with /v1/*
+    - sed -i 's|/api/v1/chat|/v1/chat|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/chat|/v1/chat|g' web/tests/unit/api.test.ts
+    - sed -i 's|/api/v1/Offerlist|/v1/Offerlist|g' internal/suproxy/domain/handler/handler_test.go
+    - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/domain/handler/handler_test.go
+  artifacts:
+    name: Modified_Files
+    paths:
+      - internal/autotester/application/router.go
+      - internal/suproxy/application/router.go
+      - web/src/lib/Api.ts
+      - internal/autotester/domain/handler/requestHandler_test.go
+      - web/tests/unit/api.test.ts
+      - internal/suproxy/domain/handler/handler_test.go
 
 lint_frontend:
   stage: code_analysis_and_testing
@@ -169,6 +200,9 @@ frontend_test:
 build_frontend_artifacts:
   stage: build
   extends: .pnpm_cache
+  needs:
+    - job: replace_api_paths
+      artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -195,6 +229,8 @@ build_go_artifacts:
     - job: build_frontend_artifacts
       artifacts: true
     - job: go_generate_code
+      artifacts: true
+    - job: replace_api_paths
       artifacts: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
