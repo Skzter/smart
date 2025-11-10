@@ -36,7 +36,7 @@ type FileSystem interface {
 	// configured root.
 	ReadFile(relativeFilePath string) ([]byte, error)
 
-	// ReadDir lists the non-directory entries directly under the provided
+	// ReadDir lists all entries directly under the provided
 	// path inside the configured root and returns their base names. The
 	// returned names do not include the directory path.
 	ReadDir(path string) ([]string, error)
