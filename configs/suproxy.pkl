@@ -147,7 +147,7 @@ class Prompts {
     } 
 
     If valid is true, reason must be an empty array. 
-    If valid is false, reason must contain at least one tag from the list below. 
+    If valid is false, reason must contain at least one tag from the list above. 
     No additional text, explanations, or reformulations are allowed. 
     Tags must be exact matches from the allowed list. If no tag fits, create a new tag that is short, clearly interpretable, and uniquely describes the issue (e.g. invalid_objectid, missing_country_code). Avoid explanations or reformulations. 
 
