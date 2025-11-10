@@ -220,6 +220,9 @@ region: String = "eu-central-1"
 
 bucket: String = "smart-autotester"
 
+testsRootDir: String = "tempTests"
+enableCleanUp: Boolean = true
+
 template: String = """
     Erzeuge Playwright-Tests via Autoplaywright für Check24.  
     Base-URL: {{url}}  

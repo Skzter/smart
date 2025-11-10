@@ -7,6 +7,7 @@ type TestStatus string
 // are the possible values for TestStatus.
 const (
 	TestStatusPending TestStatus = "pending"
+	TestStatusNotRun  TestStatus = "not run"
 	TestStatusRunning TestStatus = "running"
 	TestStatusPassed  TestStatus = "passed"
 	TestStatusFailed  TestStatus = "failed"
