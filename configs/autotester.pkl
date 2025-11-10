@@ -2,6 +2,7 @@
 module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+import "shared/taglist.pkl"
 
 model: String = "gpt-5-mini-2025-08-07"
 
@@ -216,10 +217,11 @@ prompts : Prompts
 timeout: Int = 60
 
 region: String = "eu-central-1"
-taglistPrefix: String = "taglist/"
+
 bucket: String = "smart-autotester"
 
-
+testsRootDir: String = "tempTests"
+enableCleanUp: Boolean = true
 
 template: String = """
     Erzeuge Playwright-Tests via Autoplaywright für Check24.  
@@ -229,3 +231,5 @@ template: String = """
     Assertions: {{Erfolgsbedingungen}}  
     Testdaten/Setup: {{Voraussetzungen an Testdaten und Teardown-Anweisungen}}
 """
+
+taglistConfig: taglist = taglist
