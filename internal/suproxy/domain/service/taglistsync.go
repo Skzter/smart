@@ -60,7 +60,6 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 	defer tls.mutex.Unlock()
 	lenghtList := len(tls.tagList.Tags)
 	for _, tag := range taglist.Tags {
-		tls.logger.Error("geht in schleife rein")
 		if !slices.Contains(tls.tagList.Tags, tag) {
 			tls.tagList.Tags = append(tls.tagList.Tags, tag)
 		}
