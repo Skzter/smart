@@ -2,6 +2,7 @@
 module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+import "shared/taglist.pkl"
 
 model: String ="gpt-5-mini-2025-08-07"
 
@@ -101,4 +102,4 @@ bucket: String = "smart-suproxy"
 
 entryPrefix: String = "supplierData/"
 
-taglistPrefix: String = "taglist/"
+taglistConfig: taglist = taglist
