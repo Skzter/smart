@@ -21,7 +21,7 @@ func TestNewValidator(t *testing.T) {
 	cfg := config.Config{
 		Timeout: 10,
 		Prompts: &config.Prompts{
-			ValidationPromptT: "validate this",
+			ValidationPrompt: "validate this",
 		},
 		Model:                 "gpt-4",
 		MaxItemsPerValidation: 5,
@@ -235,7 +235,7 @@ func TestValidatorValidate(t *testing.T) {
 		Timeout:               5,
 		MaxItemsPerValidation: 5,
 		Prompts: &config.Prompts{
-			ValidationPromptT: "validate something",
+			ValidationPrompt: "validate something",
 		},
 	}
 

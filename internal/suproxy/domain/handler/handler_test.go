@@ -126,7 +126,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "valid",
 			request: &entity.Request{
-				Prompt:  "",
 				Request: `{}`,
 			},
 			useCorrectAdress: true,
@@ -154,7 +153,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "invalid address",
 			request: &entity.Request{
-				Prompt:  "",
 				Request: `{}`,
 			},
 			useCorrectAdress: false,

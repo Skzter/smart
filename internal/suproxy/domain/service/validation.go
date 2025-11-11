@@ -103,7 +103,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
 	newTags := make([]sharedEntity.Tag, 0, 10)
-	sysPrompt := fmt.Sprintf(v.cfg.Prompts.ValidationPromptT, formatTaglist(tagList))
+	sysPrompt := fmt.Sprintf(v.cfg.Prompts.ValidationPrompt, formatTaglist(tagList))
 
 	for i, offer := range offers.Data.Items {
 		v.Logger.Debug(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
