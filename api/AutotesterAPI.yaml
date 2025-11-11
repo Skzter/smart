@@ -80,6 +80,91 @@ paths:
               schema:
                 type: string
                 example: ""
+
+  /api/v1/saveLocal:
+    post:
+      summary: "Takes a testcode and saves it locally"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavaLocalRequest'
+
+      responses:
+        '200':
+          description: The test case was successfully saved locally
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestCaseActionResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/v1/deleteLocal:
+    delete:
+      summary: "Deletes a locally stored test case by its ID"
+      parameters:
+        - name: testcaseId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Unique identifier of the test case to be deleted."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "ID of the user deleting the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        - name: conversationId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "ID of the conversation the test case belongs to."
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
+        
+      responses:
+        '200':
+          description: Successfully deleted the locally stored test case
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestCaseActionResponse'
+              examples:
+                deletedExample:
+                  summary: "Deleted test case"
+                  value:
+                    testcaseId: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+                    action: "deleted"
+
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 components:
   schemas:
     Message:
@@ -94,7 +179,7 @@ components:
     Conversation:
       type: object
       properties:
-        ConversationId:
+        conversationId:
           type: string
         Messages:
           type: array
@@ -154,6 +239,63 @@ components:
               arguments:
                 type: object
                 additionalProperties: true
+    
+    SavaLocalRequest:
+      type: object
+      required:
+        - userId
+        - conversationId
+        - code
+      properties:
+        userId:
+          type: string
+          description: "ID of the user saving the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        conversationId:
+          type: string
+          description: "ID of the conversation the test case belongs to."
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
+        code:
+          type: string
+          description: "Source code of the test case provided by the frontend."
+          example: |
+            import { test, expect } from '@playwright/test';
+
+            test('should successfully log in', async ({ page }) => {
+              await page.goto('https://example.com/login');
+              await page.fill('#username', 'user');
+              await page.fill('#password', 'pass');
+              await page.click('button[type="submit"]');
+              await expect(page).toHaveURL('https://example.com/dashboard');
+            });
+
+    DeleteLocalRequest:
+      type: object
+      properties:
+        testcaseId:
+          type: string
+          description: "Unique identifier of the test case to be deleted."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        userId:
+          type: string
+          description: "ID of the user saving the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        conversationId:
+          type: string
+          description: "ID of the conversation the test case belongs to."
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
+        
+    TestCaseActionResponse:
+      type: object
+      properties:
+        testcaseId:
+          type: string
+          description: "Unique identifier of the affected test case."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        action:
+          type: string
+          enum: [saved, deleted]
+          description: "Indicates whether the test case was saved or deleted."
 
     ErrorResponse:
       type: object

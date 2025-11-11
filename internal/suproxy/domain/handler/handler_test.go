@@ -51,40 +51,43 @@ func RejectValidator(t testing.TB) service.Validator {
 
 func TestNewSuproxyController(t *testing.T) {
 	tests := []struct {
-		name   string
-		log    *slog.Logger
-		cfg    *config.Config
-		val    service.Validator
-		clt    *http.Client
-		db     service.DatabaseService
-		syncer service.TaglistSync
-		err    bool
+		name       string
+		log        *slog.Logger
+		cfg        *config.Config
+		val        service.Validator
+		clt        *http.Client
+		db         service.DatabaseService
+		syncer     service.TaglistSync
+		tagservice service.TagSearchService
+		err        bool
 	}{
 		{
-			name:   "valid",
-			cfg:    &config.Config{},
-			log:    slog.Default(),
-			val:    RejectValidator(t),
-			clt:    &http.Client{},
-			db:     mocks.NewMockDatabaseService(t),
-			syncer: mocks.NewMockTaglistSync(t),
-			err:    false,
+			name:       "valid",
+			cfg:        &config.Config{},
+			log:        slog.Default(),
+			val:        RejectValidator(t),
+			clt:        &http.Client{},
+			db:         mocks.NewMockDatabaseService(t),
+			syncer:     mocks.NewMockTaglistSync(t),
+			tagservice: mocks.NewMockTagSearchService(t),
+			err:        false,
 		},
 		{
-			name:   "params nil",
-			log:    nil,
-			cfg:    nil,
-			val:    nil,
-			clt:    nil,
-			db:     nil,
-			syncer: nil,
-			err:    true,
+			name:       "params nil",
+			log:        nil,
+			cfg:        nil,
+			val:        nil,
+			clt:        nil,
+			db:         nil,
+			syncer:     nil,
+			tagservice: nil,
+			err:        true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -114,7 +117,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		request          *entity.Request // will use invalid request if nil
 		useCorrectAdress bool
 		sSetup           *supplierSetup // only sets up server if not nil
-		expectedResponse any            // allows for unmarshal to fail
+		tsSetup          *[]any
+		expectedResponse any // allows for unmarshal to fail
 		expects200       bool
 	}{
 		{
@@ -165,22 +169,84 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				response: nil,
 			},
 		},
+		{
+			name: "non empty prompt, failure in tagsearch",
+			request: &entity.Request{
+				Prompt:  "non empty prompt, but fails in tagsearch",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			tsSetup: &[]any{nil, errors.New("tagsearch error")},
+		},
+		{
+			name: "non empty prompt, no keys found",
+			request: &entity.Request{
+				Prompt:  "non emtpy prompt without matching keys",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			tsSetup: &[]any{[]string{}, nil},
+		},
+		{
+			name: "non empty prompt, matching keys found",
+			request: &entity.Request{
+				Prompt:  "non emtpy prompt with matching keys",
+				Request: `{}`,
+			},
+			useCorrectAdress: true,
+
+			expectedResponse: entity.SupplierResponse{
+				HTTPStatusCode: 200,
+				Data: entity.SupplierOfferList{
+					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+				},
+			},
+			expects200: true,
+
+			sSetup: &supplierSetup{
+				code:     200,
+				response: nil,
+			},
+			tsSetup: &[]any{[]string{"tag1", "tag2"}, nil},
+		},
 	}
-
-	mockValidator := mocks.NewMockValidator(t)
-	mockDB := mocks.NewMockDatabaseService(t)
-	mockSyncer := mocks.NewMockTaglistSync(t)
-
-	mockValidator.On("Validate", mock.Anything, mock.Anything).Return([]string{"tag1"}, nil).Maybe()
-	mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(nil).Maybe()
-	mockDB.On("SaveDbEntry", mock.Anything, mock.Anything).Return(nil).Maybe()
-
-	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer)
-
-	router := SetupRouter(h)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			validator := RejectValidator(t)
+			mockDB := mocks.NewMockDatabaseService(t)
+			mockSyncer := mocks.NewMockTaglistSync(t)
+			mockTagsearch := mocks.NewMockTagSearchService(t)
+
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+
+			router := SetupRouter(h)
 			w := httptest.NewRecorder()
 
 			var server *httptest.Server
@@ -213,6 +279,10 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				reqstring, _ = json.Marshal(tt.request)
 			} else {
 				reqstring = []byte("invalid")
+			}
+
+			if tt.tsSetup != nil {
+				mockTagsearch.On("FindKeysByTags", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
 
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
@@ -301,9 +371,10 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
+	mockTagsearch := mocks.NewMockTagSearchService(t)
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -362,6 +433,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
 		mocks.NewMockTaglistSync(b),
+		mocks.NewMockTagSearchService(b),
 	)
 
 	router := SetupRouter(ctrl)
