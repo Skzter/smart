@@ -103,7 +103,11 @@
             {#each convo as c}
                 <Box msg={c.question} name="User" />
                 {#if c.answer}
-                    <Box msg={c.answer} name="Bot" />
+                    <Box
+                        msg={c.answer}
+                        name="Bot"
+                        showSave={c.answer.startsWith('import')}
+                    />
                 {/if}
             {/each}
             {#if isLoading}
