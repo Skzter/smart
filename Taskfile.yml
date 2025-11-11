@@ -156,6 +156,18 @@ tasks:
     cmds:
       - docker compose -f compose.dev.yml down
 
+  build-autopw-image:
+    desc: "builds auto playwright image"
+    dir: scripts
+    cmds:
+      - ./build-image.sh
+
+  run-autopw-test:
+    desc: "runs dummy test"
+    dir: scripts
+    cmds:
+      - ./run-container.sh
+
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
