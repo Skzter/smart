@@ -147,6 +147,8 @@ func (qa *openAI) CreateRequest(ctx context.Context, request entity.Request) (*e
 	}, nil
 }
 
+//TODO: move into sepaparate file
+
 func validateRequestEntity(request entity.Request) error {
 	switch {
 	case request.Prompt == "":
