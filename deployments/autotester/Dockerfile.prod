@@ -10,7 +10,7 @@ FROM alpine:latest AS security_provider
 RUN addgroup -g 1001 -S nonroot && \
     adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
 
-FROM scratch
+FROM alpine:latest
 
 COPY --from=builder /app/bin/autotester /bin/autotester
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
