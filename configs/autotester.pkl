@@ -220,7 +220,7 @@ region: String = "eu-central-1"
 
 bucket: String = "smart-autotester"
 
-testsRootDir: String = "tempTests"
+testsRootDir: String = "/tmp/tests"
 enableCleanUp: Boolean = true
 
 template: String = """
