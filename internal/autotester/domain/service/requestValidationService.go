@@ -30,5 +30,5 @@ func ValidateRequest(ctx context.Context, req sharedEntity.Request) (bool, error
 - internal/autotester/domain/service/validatePrompt.go
 - internal/autotester/domain/handler/requestHandler.go
 - internal/shared/lib/assert/nil.go
-- internal/shared/lib/assert/generatePrompt.go  --> Zielservice
+- internal/autotester/domain/service/generatePrompt.go  --> Zielservice
 */
