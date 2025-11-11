@@ -199,6 +199,12 @@ tasks:
     cmds:
       - pnpm test
 
+  test-sysprompt:
+    desc: "run the test script for testing the current sysprompts against the given testcases"
+    dir: "scripts"
+    cmds:
+    - ./sysprompt-test.sh
+
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
   # --------------------------------------------------------------------------------
@@ -260,6 +266,7 @@ tasks:
       - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
     sources:
       - configs/autotester.pkl
+      - configs/shared/*
 
   generate-config-suproxy:
     desc: "generate code for reading suproxy config"
@@ -267,6 +274,7 @@ tasks:
       - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
     sources:
       - configs/suproxy.pkl
+      - configs/shared/*
 
   generate-mocks:
     desc: "generate all mockery mocks"
@@ -278,8 +286,7 @@ tasks:
     cmds:
       - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
     sources:
-    - configs/suproxy.pkl
-    - configs/autotester.pkl
+    - configs/**
   
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
@@ -287,6 +294,7 @@ tasks:
       - go tool wire ./cmd/autotester
     sources:
       - cmd/autotester/wire.go
+      - internal/shared/wire.go
 
   di-generate-suproxy:
     desc: "generate dependency injection code for suproxy"
@@ -294,6 +302,7 @@ tasks:
       - go tool wire ./cmd/suproxy
     sources:
       - cmd/suproxy/wire.go
+      - internal/shared/wire.go
 
   # --------------------------------------------------------------------------------
   # Benchmarking

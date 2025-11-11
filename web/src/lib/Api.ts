@@ -1,5 +1,5 @@
 import axios from "axios";
-const baseURL = "/v1";
+const baseURL = "/api/v1/";
 
 /**
  * Fetches data from the api and returns the data for the chat
@@ -27,6 +27,15 @@ export async function getUserInfo(params: object, url: string) {
         url: url,
         baseURL: baseURL,
         data: params,
+    });
+    return response;
+}
+
+export async function getTemplate(url: string) {
+    const response = await axios({
+        method: "get",
+        url: url,
+        baseURL: baseURL,
     });
     return response;
 }

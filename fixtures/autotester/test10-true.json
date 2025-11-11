@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Erzeuge Autoplaywright-Test für Check24 Login. Szenario: Nutzer-Login mit ENV-Variablen. Ablauf: Klick auf 'Anmelden', Eingabe E-Mail und Passwort, Klick 'Login'. Elementbeschreibung: Eingabefeld 'E-Mail-Adresse', Passwortfeld, Button 'Login'. Assertions: Dashboard erscheint. Testdaten/Setup: TEST_USER existiert; Teardown: Logout.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

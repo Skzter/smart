@@ -10,8 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
+	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -32,15 +33,22 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		handler.NewSuproxyController,
 		service.NewValidator,
 		HTTPClientProvider,
-		shared.SharedProviderSet,		
+		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
 		service.NewDatabaseService,
-		repository.NewDatabaseRepository,
-		ParquetWrapperProvider,
+		DatabaseRepositoryProvider,
+		service.NewTaglistSync,
+		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
+		TagsearchServiceProvider,
+		TaglistConfigProvider,
 	)
 
 	return nil, nil
+}
+
+func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
+	return cfg.TaglistConfig
 }
 
 // LoggerProvider provides a new logger.
@@ -57,7 +65,7 @@ func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
-func ParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
+func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
 }
 
@@ -69,4 +77,21 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3Stora
 		SecretKey: build.AwsSecretAccessKey,
 	}
 	return wrapper.NewS3Wrapper(logger, config)
+}
+
+func DatabaseRepositoryProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapper.S3StorageWrapper,
+	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
+) (repository.DatabaseRepository, error) {
+	return repository.NewDatabaseRepository(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.EntryPrefix,
+	)
+}
+func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
+	return service.NewTagSearchService(cfg, s3)
 }

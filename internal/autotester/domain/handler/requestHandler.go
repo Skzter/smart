@@ -1,25 +1,17 @@
 package handler
 
 import (
-	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
-)
-
-var (
-	errOpenAIFailure = errors.New("failure in the request to open ai")
 )
 
 // AutotesterController is the controller for autotesting requests.
@@ -29,6 +21,7 @@ type AutotesterController struct {
 	logger            *slog.Logger
 	validationService service.ValidatePrompt
 	generationService service.GeneratePrompt
+	saveLocalService  service.TestcaseLocalStorageService
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -38,8 +31,9 @@ func NewAutotesterController(
 	config *config.Config,
 	validationService service.ValidatePrompt,
 	generationService service.GeneratePrompt,
+	saveLocalService service.TestcaseLocalStorageService,
 ) (*AutotesterController, error) {
-	if err := assert.NotNil(logger, config, validationService, generationService); err != nil {
+	if err := assert.NotNil(logger, config, validationService, generationService, saveLocalService); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +42,19 @@ func NewAutotesterController(
 		config:            config,
 		validationService: validationService,
 		generationService: generationService,
+		saveLocalService:  saveLocalService,
 	}, nil
+}
+
+// HandleGetTemplate processes a template request from the frontend.
+func (a *AutotesterController) HandleGetTemplate(c *gin.Context) {
+	if err := assert.StringNotEmpty(a.config.Template); err != nil {
+		c.JSON(http.StatusTeapot, "")
+		a.logger.Error(err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, entity.Template{Template: a.config.Template})
 }
 
 // HandleChatRequest processes a chat request from the frontend.
@@ -65,15 +71,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {
-		frontendError := handleError(err)
-		unwrappedError := errors.Unwrap(frontendError)
-		// checks if the error need the unwrapped
-		// Unwrap() returns nil if nothing needs to be unwrapped
-		if unwrappedError != nil {
-			frontendError = unwrappedError
-		}
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: frontendError.Error()})
-		a.logger.Error(fmt.Sprintf("HANDLER serviceHandler: %s", err.Error()))
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 
@@ -97,56 +95,80 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // First validates the user prompt through validationService, then generates a response through generationService.
 // Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
-	genText, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+
+	if !valid {
+		return &entity.ResponseForUser{
+			Message:   sharedEntity.Message{MessageBody: msg},
+			UserId:    userRequest.UserId,
+			SessionId: userRequest.SessionId,
+			LogStamp:  userRequest.LogStamp,
+		}, nil
+	}
+
+	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		return nil, err
 	}
+
 	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: genText},
+		Message:   sharedEntity.Message{MessageBody: resp},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,
 	}, nil
 }
 
-// handleError handles the errors for the validate and generate functions
-// takes the given error and checks if it is a validation or generation error and looks further if its from there or deeper in the system
-// if source found decides if it can return this error or a generic error because the error message may expose sensitive data
-func handleError(err error) error {
-	if err == nil {
-		return nil
-	}
-	// Generate() returns only the repository/service errors
-	var (
-		repoError         *repository.Error
-		assertNotNilError *assert.NotNilError
-		apiErr            *openai.APIError
-		reqErr            *openai.RequestError
-	)
+// HandleSaveLocalRequest processes a request to save a test case locally.
+// Expects a JSON with LocalSaveRequest and creates a new test case with status NotRun.
+// Returns a LocalSaveResponse with the generated test case ID or an error if saving fails.
+func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
+	var localSaveRequest entity.LocalSaveRequest
 
-	// maps the given error to the target error, when success you can operate on the custom error type
-	switch {
-	case errors.As(err, &repoError):
-		switch repoError.Type {
-		case repository.Private:
-			return errOpenAIFailure
-		case repository.Public:
-			return repoError
-		}
-	case errors.As(err, &assertNotNilError),
-		errors.As(err, &apiErr),
-		errors.As(err, &reqErr):
-		// catching errors from the assert and OpenAI requests
-		return errOpenAIFailure
-	case strings.Contains(err.Error(), "Post"):
-		// error when no internet connection but bit unclean
-		return errOpenAIFailure
+	if err := c.BindJSON(&localSaveRequest); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
 	}
 
-	// Validate() returns unique errors but they dont contain sensitive information
-	return err
+	testcaseToSave := &entity.TestCase{
+		TestID: uuid.New().String(),
+		TestCode: entity.TestCode{
+			Code: localSaveRequest.Code,
+		},
+		Status: entity.TestStatusNotRun,
+	}
+
+	if err := a.saveLocalService.Save(testcaseToSave, localSaveRequest.UserId, localSaveRequest.ConversationId); err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "Saving failed due to internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, entity.LocalSaveResponse{TestcaseId: testcaseToSave.TestID, Action: "saved"})
+}
+
+// HandleDeleteLocalRequest processes a request to delete a locally stored test case.
+// Expects query parameters with testcaseId, userId and conversationId.
+// Returns a LocalDeleteResponse confirming the deletion or an error if the deletion fails.
+func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
+	var deleteLocalRequest entity.LocalDeleteRequest
+
+	if err := c.ShouldBindQuery(&deleteLocalRequest); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	if deleteLocalRequest.TestcaseId == "" || deleteLocalRequest.UserId == "" || deleteLocalRequest.ConversationId == "" {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
+		return
+	}
+
+	if err := a.saveLocalService.Delete(deleteLocalRequest.TestcaseId, deleteLocalRequest.UserId, deleteLocalRequest.ConversationId); err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "Deleting failed due to internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, entity.LocalDeleteResponse{TestcaseId: deleteLocalRequest.TestcaseId, Action: "deleted"})
 }

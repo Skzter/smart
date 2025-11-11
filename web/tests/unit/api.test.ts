@@ -1,6 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import axios from "axios";
-import { getChatResponse, getUserInfo } from "../../src/lib/Api.ts";
+import {
+    getChatResponse,
+    getUserInfo,
+    getTemplate,
+} from "../../src/lib/Api.ts";
 
 // Mock axios
 vi.mock("axios");
@@ -36,7 +40,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "/userInfo",
-                baseURL: "/v1",
+                baseURL: "/api/v1/",
                 data: mockUserParams,
             });
             expect(result.data).toEqual(mockResponseData);
@@ -64,7 +68,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "/chat",
-                baseURL: "/v1",
+                baseURL: "/api/v1/",
                 data: mockChatParams,
             });
             expect(result.data).toEqual(mockResponseData);
@@ -95,6 +99,31 @@ describe("API Functions", () => {
             await expect(
                 getChatResponse(mockChatParams, "/chat"),
             ).rejects.toThrow("Chat service unavailable");
+        });
+    });
+
+    describe("getTemplate", () => {
+        it("should make a GET request to /template and return data", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue({ data: mockResponseData });
+
+            const result = await getTemplate("/template");
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/template",
+                baseURL: "/api/v1/",
+            });
+            expect(result.data).toEqual(mockResponseData);
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockRejectedValue(new Error("Template not found"));
+
+            await expect(getTemplate("/template")).rejects.toThrow(
+                "Template not found",
+            );
         });
     });
 });

@@ -85,6 +85,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 	tags := make([]string, 0, 10)
 
 	for i, offer := range offers.Data.Items {
+		v.Logger.Debug(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
 		if i >= v.cfg.MaxItemsPerValidation {
 			break
 		}
