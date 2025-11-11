@@ -1,8 +1,8 @@
 package service
 
+// #nosec G501 - MD5 is acceptable here for non-cryptographic cache key generation
 import (
 	"context"
-	// #nosec G501 - MD5 is acceptable here for non-cryptographic cache key generation
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -13,14 +13,8 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
-
-// CacheRepository defines the interface for interacting with the cache storage (Redis)
-type CacheRepository interface {
-	Get(ctx context.Context, key string) (value []byte, hit bool, err error)
-	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
-	Delete(ctx context.Context, key string) error
-}
 
 // CacheService interface defines the business logic for caching supplier or mock responses
 type CacheService interface {
@@ -34,30 +28,13 @@ type CacheService interface {
 type cacheService struct {
 	log  *slog.Logger
 	cfg  *config.Config
-	repo CacheRepository
-	ttls ttlPolicy
-}
-
-// ttlPolicy defines TTL durations for different cache cases
-type ttlPolicy struct {
-	SupplierOK   time.Duration
-	MockOK       time.Duration
-	ErrorOrEmpty time.Duration
-}
-
-// CacheEntry represents how a single cache item is stored in Redis
-type CacheEntry struct {
-	Mock     bool            `json:"mock"`
-	Key      string          `json:"key"`
-	Request  entity.Request  `json:"request"`
-	Response json.RawMessage `json:"response"`
-	CachedAt time.Time       `json:"cached_at"`
-	Version  int             `json:"v"`
+	repo repository.CacheRepository
+	ttls entity.CacheTTLPolicy
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Config, repo CacheRepository) CacheService {
-	ttls := ttlPolicy{
+func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.CacheRepository) CacheService {
+	ttls := entity.CacheTTLPolicy{
 		// Default TTL configuration
 		SupplierOK:   10 * time.Minute,
 		MockOK:       20 * time.Minute,
@@ -65,13 +42,13 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo CacheRepository)
 	}
 
 	svc := &cacheService{
-		log:  log,
-		cfg:  cfg,
-		repo: repo,
+		log: log,
+		cfg: cfg,
+		//repo: repository.CacheRepository,
 		ttls: ttls,
 	}
 
-	log.Info("cache: service initialized",
+	log.Debug("cache: service initialized",
 		"supplier_ttl", svc.ttls.SupplierOK,
 		"mock_ttl", svc.ttls.MockOK,
 		"error_or_empty_ttl", svc.ttls.ErrorOrEmpty,
@@ -90,17 +67,17 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 
 	if err != nil {
 		// Repository / Redis error – caller kann auf Supplier-Fallback gehen
-		s.log.Error("cache: lookup failed",
+		s.log.Error("cache: lookup failed, treating as miss",
 			"key", key,
 			"mock", isMock,
 			"duration", elapsed,
 			"err", err,
 		)
-		return nil, false, err
+		return nil, false, nil
 	}
 
 	if !hit {
-		s.log.Info("cache: miss",
+		s.log.Debug("cache: miss",
 			"key", key,
 			"mock", isMock,
 			"duration", elapsed,
@@ -108,7 +85,7 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 		return nil, false, nil
 	}
 
-	var entry CacheEntry
+	var entry entity.CacheEntry
 	if err := json.Unmarshal(raw, &entry); err != nil {
 		// Defensive: ignore corrupted cache entries
 		s.log.Warn("cache: failed to unmarshal entry, ignoring",
@@ -122,7 +99,7 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 
 	age := time.Since(entry.CachedAt)
 
-	s.log.Info("cache: hit",
+	s.log.Debug("cache: hit",
 		"key", key,
 		"mock", isMock,
 		"duration", elapsed,
@@ -137,7 +114,7 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 	key := s.BuildKey(req, isMock)
 
 	// Build cache entry object with metadata
-	entry := CacheEntry{
+	entry := entity.CacheEntry{
 		Mock:     isMock,
 		Key:      key,
 		Request:  req,
@@ -173,7 +150,7 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 		return err
 	}
 
-	s.log.Info("cache: stored entry",
+	s.log.Debug("cache: stored entry",
 		"key", key,
 		"mock", isMock,
 		"ttl", ttl,
@@ -202,7 +179,7 @@ func (s *cacheService) Invalidate(ctx context.Context, req entity.Request, isMoc
 		return err
 	}
 
-	s.log.Info("cache: invalidated entry",
+	s.log.Debug("cache: invalidated entry",
 		"key", key,
 		"mock", isMock,
 		"duration", elapsed,
