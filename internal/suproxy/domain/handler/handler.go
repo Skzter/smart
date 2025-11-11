@@ -158,7 +158,7 @@ func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp
 	}
 
 	dbentry := entity.DatabaseEntry{
-		Request: *req,
+		Request: req.Request,
 		Response: entity.Response{
 			Response: string(mresp),
 		},
