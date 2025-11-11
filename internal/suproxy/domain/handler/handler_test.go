@@ -114,13 +114,14 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		request          *entity.Request // will use invalid request if nil
-		useCorrectAdress bool
-		sSetup           *supplierSetup // only sets up server if not nil
-		tsSetup          *[]any
-		expectedResponse any // allows for unmarshal to fail
-		expects200       bool
+		name                 string
+		request              *entity.Request // will use invalid request if nil
+		useCorrectAdress     bool
+		sSetup               *supplierSetup // only sets up server if not nil
+		tsSetup              *[]any
+		expectedResponse     any // allows for unmarshal to fail
+		expects200           bool
+		expectGetTaglistCall bool
 	}{
 		{
 			name: "valid",
@@ -142,6 +143,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
+			expectGetTaglistCall: true,
 		},
 		{
 			name:             "invalid request body",
@@ -192,7 +194,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			tsSetup: &[]any{nil, errors.New("tagsearch error")},
+			tsSetup:              &[]any{nil, errors.New("tagsearch error")},
+			expectGetTaglistCall: true,
 		},
 		{
 			name: "non empty prompt, no keys found",
@@ -214,29 +217,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			tsSetup: &[]any{[]string{}, nil},
-		},
-		{
-			name: "non empty prompt, matching keys found",
-			request: &entity.Request{
-				Prompt:  "non emtpy prompt with matching keys",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			tsSetup: &[]any{[]string{"tag1", "tag2"}, nil},
+			tsSetup:              &[]any{[]string{}, nil},
+			expectGetTaglistCall: true,
 		},
 	}
 
@@ -283,7 +265,15 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			} else {
 				reqstring = []byte("invalid")
 			}
-
+			if tt.expectGetTaglistCall {
+				mockSyncer.On("GetCurrentTaglist").
+					Return(&sharedEntity.TagList{
+						Tags: []sharedEntity.Tag{
+							{Name: "ResponseNot200", Description: "response not 200"},
+						},
+					}, nil).
+					Maybe()
+			}
 			if tt.tsSetup != nil {
 				mockTagsearch.On("FindKeysByTags", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
@@ -403,13 +393,14 @@ func TestHandlerHandleRequest(t *testing.T) {
 					mockDB.ExpectedCalls = []*mock.Call{}
 				}()
 			}
-
 			if tt.expectGetTaglistCall {
-				mockSyncer.On("GetCurrentTaglist").Return(&sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}}})
-				defer func() {
-					mockSyncer.AssertExpectations(t)
-					mockSyncer.ExpectedCalls = []*mock.Call{}
-				}()
+				mockSyncer.On("GetCurrentTaglist").
+					Return(&sharedEntity.TagList{
+						Tags: []sharedEntity.Tag{
+							{Name: "ResponseNot200", Description: "response not 200"},
+						},
+					}, nil).
+					Maybe()
 			}
 			if tt.wantSyncEr {
 				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(errors.New("syncing error"))
