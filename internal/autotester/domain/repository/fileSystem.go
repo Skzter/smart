@@ -3,7 +3,6 @@ package repository
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -72,9 +71,6 @@ type osFileSystem struct {
 func NewOSFileSystem(root string) (FileSystem, error) {
 	if err := assert.StringNotEmpty(root); err != nil {
 		return nil, fmt.Errorf("root must not be empty")
-	}
-	if path.IsAbs(root) {
-		return nil, fmt.Errorf("absolute paths are not allowed: %s", root)
 	}
 	if err := os.MkdirAll(root, DefaultDirPerm); err != nil {
 		return nil, fmt.Errorf("create root: %w", err)

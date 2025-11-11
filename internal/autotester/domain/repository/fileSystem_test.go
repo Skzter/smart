@@ -24,12 +24,6 @@ func TestNewOSFileSystem(t *testing.T) {
 			expectNilResult: true,
 		},
 		{
-			name:            "absolute root",
-			root:            "/test/path",
-			expectError:     true,
-			expectNilResult: true,
-		},
-		{
 			name:            "valid root",
 			root:            "temp",
 			expectError:     false,
