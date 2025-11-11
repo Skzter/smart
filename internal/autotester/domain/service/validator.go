@@ -35,6 +35,7 @@ func NewValidatorService(service sharedService.OpenAI, config *config.Config, lo
 	return &validator{service, config, logger}, nil
 }
 
+// TODO: rVS add request validation
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.

@@ -151,6 +151,7 @@ func TestGeneratePrompt(t *testing.T) {
 				validator.On("ValidateRequest", mock.Anything, mock.Anything).Return(nil)
 			}
 
+			//TODO: refactor to reduce duplication with other tests
 			if tt.requestReturns != nil {
 				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
 			}
