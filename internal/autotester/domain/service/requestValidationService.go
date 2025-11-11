@@ -15,4 +15,6 @@ type RequestValidationService interface {
 - internal/shared/domain/repository/openaiRepository.go
 - internal/autotester/domain/service/validatePrompt.go
 - internal/autotester/domain/handler/requestHandler.go
+- internal/shared/lib/assert/nil.go
+- internal/shared/lib/assert/nil.go  --> Zielservice
 */

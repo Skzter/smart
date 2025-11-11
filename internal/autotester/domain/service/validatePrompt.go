@@ -51,6 +51,7 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string, 
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
 
+	//TODO: validate request b4 sending it | Refractor to requestValidationService
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
 		return false, "", errors.ErrValidation

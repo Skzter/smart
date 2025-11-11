@@ -55,6 +55,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 		SystemPrompt: prompt,
 	}
 
+	//TODO: validate request b4 sending it | Refractor to requestValidationService
 	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		return "", err
