@@ -2,27 +2,29 @@ import { render, screen } from "@testing-library/svelte";
 import { describe, it, expect } from "vitest";
 import Box from "../../src/components/Box.svelte";
 
-describe('Box component', () => {
-	describe('when the message is from "User"', () => {
-    	it('renders the message and applies User-specific styles', () => {
-      	render(Box, { msg: 'This is a message from User!', name: 'User' });
+describe("Box component", () => {
+    describe('when the message is from "User"', () => {
+        it("renders the message and applies User-specific styles", () => {
+            render(Box, { msg: "This is a message from User!", name: "User" });
 
-      	const nameElement = screen.getByText('User');
-      	const messageElement = screen.getByText('This is a message from User!');
+            const nameElement = screen.getByText("User");
+            const messageElement = screen.getByText(
+                "This is a message from User!",
+            );
 
-      	expect(nameElement).toBeInTheDocument();
-      	expect(messageElement).toBeInTheDocument();
+            expect(nameElement).toBeInTheDocument();
+            expect(messageElement).toBeInTheDocument();
 
-      	const outerDiv = nameElement.parentElement?.parentElement;
-      	expect(outerDiv).toHaveClass('justify-end');
+            const outerDiv = nameElement.parentElement?.parentElement;
+            expect(outerDiv).toHaveClass("justify-end");
 
-      	const innerDiv = nameElement.parentElement;
-      	expect(innerDiv).toHaveClass('bg-sky-300', 'w-[75%]');
+            const innerDiv = nameElement.parentElement;
+            expect(innerDiv).toHaveClass("bg-sky-300", "w-[75%]");
+        });
     });
-	});
-	describe('when the message is from "Bot"', () => {
-		it('renders the message and applies Bot-specific styles', () => {
-			render(Box, { msg: 'This is a message from Bot!', name: 'Bot' });
+    describe('when the message is from "Bot"', () => {
+        it("renders the message and applies Bot-specific styles", () => {
+            render(Box, { msg: "This is a message from Bot!", name: "Bot" });
 
             const nameElement = screen.getByText("Bot");
             const messageElement = screen.getByText(
@@ -35,10 +37,10 @@ describe('Box component', () => {
             const outerDiv = nameElement.parentElement?.parentElement;
             expect(outerDiv).toHaveClass("justify-start");
 
-			const innerDiv = nameElement.parentElement;
-      		expect(innerDiv).toHaveClass('bg-gray-200', 'w-fit');
-		});
-	});
+            const innerDiv = nameElement.parentElement;
+            expect(innerDiv).toHaveClass("bg-gray-200", "w-fit");
+        });
+    });
 
     describe('when the sender is not "User" or "Bot"', () => {
         it("renders with default styles", () => {

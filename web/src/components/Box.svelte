@@ -14,7 +14,6 @@
         class:bg-sky-300={name === "User"}
         class:bg-gray-200={name === "Bot"}
     >
-
         <h1 class="tracking-wide uppercase font-bold text-xl">
             {name}
         </h1>
