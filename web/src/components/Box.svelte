@@ -1,11 +1,33 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
-    let { msg, name, showSave = false} = $props();
-    
-    // TODO: userid und conversationId noch dazu bekommen
-    function saveTest(testcode: string) {
-        // TODD: durch echte funktionalität mit api call ersetzen
-        console.log("Saving testcode:", testcode);
+    import { createTest } from "../lib/Api.ts";
+    let { msg, name, userId, conversationId, showSave = false} = $props();
+
+    async function saveTest(testcode: string) {
+        if (!userId || !conversationId) {
+            console.error("Failed to save test: userId or conversationId is missing", {
+                userId,
+                conversationId
+            });
+            return;
+        }
+
+        const sanitizedUserId = userId.includes('|') 
+            ? userId.split('|')[1] 
+            : userId;
+
+        const request = {
+            userId: sanitizedUserId,
+            conversationId: conversationId,
+            code: testcode,
+        };
+
+        try {
+            const response = await createTest(request);
+            console.log("Test saved successfully:", response.data);
+        } catch (error) {
+            console.error("Failed to save test:", error);
+        }
     }
 </script>
 
@@ -29,7 +51,7 @@
                 {#if showSave}
                     <Button color="purple"
                         onclick={() => saveTest(msg)}>
-                        Speichern
+                        Save
                     </Button>
                 {/if}
             </div>

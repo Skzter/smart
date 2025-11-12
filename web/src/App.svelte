@@ -13,13 +13,13 @@
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
-    var conversationId = localStorage.getItem("conversationId") || "";
+    var conversationId = $state(localStorage.getItem("conversationId") || "");
 
     onMount(async () => {
         await auth.initAuth();
     });
 
-    let userId: string | undefined;
+    let userId = $state<string | undefined>(undefined);
     $effect(() => {
         if ($auth.isAuthenticated && $auth.user) {
             userId = $auth.user.sub;
@@ -28,11 +28,11 @@
         }
     });
 
-    let paramsChatRequest = {
+    let paramsChatRequest = $derived({
         message: { data: "", agent: "user" },
         userId: userId,
         conversationId: conversationId,
-    };
+    });
     const chatUrl = "/chat";
 
     let isLoading = $state(false);
@@ -101,11 +101,18 @@
             bind:this={container}
         >
             {#each convo as c}
-                <Box msg={c.question} name="User" />
+                <Box 
+                    msg={c.question} 
+                    name="User" 
+                    userId={userId} 
+                    conversationId={conversationId} 
+                />
                 {#if c.answer}
                     <Box
                         msg={c.answer}
                         name="Bot"
+                        userId={userId} 
+                        conversationId={conversationId} 
                         showSave={c.answer.startsWith('import')}
                     />
                 {/if}
