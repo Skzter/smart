@@ -33,22 +33,22 @@
         }
     }
 
-    let flowModal = $state(false);
-    let flowModalMSG = $state("");
-    let flowRunning = $state(false);
+    let logShowModal = $state(false);
+    let logModalMSG = $state("");
+    let logRunning = $state(false);
     let size: ModalProps["size"] = $state("xl"); // Set default value
     let placement: ModalPlacementType = $state("top-center");
     async function runTest() {
         try {
-            flowModalMSG = "";
-            flowModal = true; // Show the modal instead of popup
-            flowRunning = true;
+            logModalMSG = "";
+            logShowModal = true; // Show the modal instead of popup
+            logRunning = true;
             let response = await runContainer("/run");
-            flowRunning = false;
-            flowModalMSG = response.data;
+            logRunning = false;
+            logModalMSG = response.data;
         } catch (err) {
-            flowRunning = false;
-            flowModalMSG = err.response.data;
+            logRunning = false;
+            logModalMSG = err.response.data;
         }
     }
 </script>
@@ -76,14 +76,14 @@
 
 <Popup bind:isOpen={showPopup} message={popupMessage} title={popupTitle} />
 
-<Modal title="Test Result" form bind:open={flowModal} {size} {placement}>
+<Modal title="Test Result" form bind:open={logShowModal} {size} {placement}>
     <div class="space-y-4">
-        {#if flowRunning}
+        {#if logRunning}
             <Spinner type="dots" color="purple" />
         {/if}
         <pre
             class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
-      {flowModalMSG}
+      {logModalMSG}
     </pre>
     </div>
 </Modal>
