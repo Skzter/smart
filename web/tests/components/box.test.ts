@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Box from "../../src/components/Box.svelte";
 import { saveTestLocal } from "../../src/lib/Api";
-import { AxiosError } from "axios";
+import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 vi.mock("../../src/lib/Api");
 
@@ -258,7 +258,7 @@ describe('Box component', () => {
                 status: 400,
                 statusText: "Bad Request",
                 headers: {},
-                config: {} as any
+                config: {} as InternalAxiosRequestConfig
             };
 
             vi.mocked(saveTestLocal).mockRejectedValue(axiosError);
@@ -286,7 +286,7 @@ describe('Box component', () => {
                 status: 500,
                 statusText: "Internal Server Error",
                 headers: {},
-                config: {} as any
+                config: {} as InternalAxiosRequestConfig
             };
 
             vi.mocked(saveTestLocal).mockRejectedValue(axiosError);
