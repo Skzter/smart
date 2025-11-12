@@ -42,9 +42,9 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache
 	}
 
 	svc := &cacheService{
-		log: log,
-		cfg: cfg,
-		//repo: repository.CacheRepository,
+		log:  log,
+		cfg:  cfg,
+		repo: repo,
 		ttls: ttls,
 	}
 
@@ -66,7 +66,6 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 	elapsed := time.Since(start)
 
 	if err != nil {
-		// Repository / Redis error – caller kann auf Supplier-Fallback gehen
 		s.log.Error("cache: lookup failed, treating as miss",
 			"key", key,
 			"mock", isMock,
