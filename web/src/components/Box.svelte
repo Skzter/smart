@@ -1,5 +1,51 @@
 <script lang="ts">
-    let { msg, name } = $props();
+    import { Button } from "flowbite-svelte";
+    import { saveTestLocal } from "../lib/Api.ts";
+    import { AxiosError } from "axios";
+    let { msg, name, userId, conversationId, showSave = false} = $props();
+
+    let saveState = $state<'idle' | 'saving' | 'success' | 'error'>('idle');
+    let errorMessage = $state("");
+    let testId = $state<string | undefined>(undefined);
+
+    async function saveTest(testcode: string) {
+        if (!userId || !conversationId) {
+            errorMessage = "Failed to save test: userId or conversationId is missing";
+            console.error(errorMessage, {userId,conversationId});
+            return;
+        }
+
+        const sanitizedUserId = userId.includes('|') 
+            ? userId.split('|')[1] 
+            : userId;
+
+        const request = {
+            userId: sanitizedUserId,
+            conversationId: conversationId,
+            code: testcode,
+        };
+
+        try {
+            saveState = 'saving';
+            const response = await saveTestLocal(request);
+            testId = response.data.testcaseId
+            console.log("Test saved successfully:", response.data);
+            saveState = 'success';
+        } catch (error: unknown) {
+            console.error("Failed to save test:", error);
+            saveState = 'error';
+            
+            if (error instanceof AxiosError) {
+                errorMessage = error.response?.data?.error || "Failed to save test. Please try again.";
+            } else {
+                errorMessage = "Failed to save test. Please try again.";
+            }
+
+            setTimeout(() => {
+                saveState = 'idle';
+            }, 2000);
+        }
+    }
 </script>
 
 <div
@@ -14,12 +60,37 @@
         class:bg-sky-300={name === "User"}
         class:bg-gray-200={name === "Bot"}
     >
-
-        <h1 class="tracking-wide uppercase font-bold text-xl">
-            {name}
-        </h1>
+        <div class="flex items-start justify-between">
+            <h1 class="tracking-wide uppercase font-bold text-xl">
+                {name}
+            </h1>
+           <div class="ml-2">
+                {#if showSave}
+                    <Button
+                        color={saveState === 'success' ? 'green' : saveState === 'error' ? 'red' : 'purple'}
+                        disabled={saveState === 'saving' || saveState === 'success'}
+                        onclick={() => saveTest(msg)}
+                    >
+                        {#if saveState === 'saving'}
+                            Saving...
+                        {:else if saveState === 'success'}
+                            ✓ Saved
+                        {:else if saveState === 'error'}
+                            ✗ Error
+                        {:else}
+                            Save
+                        {/if}
+                    </Button>
+                {/if}
+            </div>
+        </div>
         <p class="font-sans whitespace-pre-wrap break-words">
             {msg}
         </p>
+        {#if testId && saveState === 'success'}
+            <p class="text-xs text-gray-600 mt-2 font-mono">
+                Test ID: {testId}
+            </p>
+        {/if}
     </div>
 </div>
