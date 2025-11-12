@@ -178,9 +178,31 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 
 // HandleRunContainer handles the running of the container and returns content of logfile from test
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
+	type parameters struct {
+		UserID         string `json:"userId"`
+		ConversationID string `json:"conversationId"`
+		SessionID      string `json:"sessionId"`
+	}
+
+	var params parameters
+	if err := c.ShouldBindJSON(&params); err != nil {
+		a.logger.Info(fmt.Sprintf("currently no request body: err => %s", err.Error()))
+		// c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		// return
+	}
+
 	logFile := "docker/logs/output.log"
 
 	a.logger.Info("Running the task")
+
+	// find file to mount
+	testfile, err := a.saveLocalService.GetTestPath(params.ConversationID, params.UserID, params.SessionID)
+	if err != nil {
+		a.logger.Info(fmt.Sprintf("file not available: %s\n", testfile))
+	}
+
+	// hier als letze arg das testfile fmt.Sprintf("TEST_FILE=%s", testfile) hinzufügen
+	// so default cfg
 	cmd := exec.Command("go", "tool", "task", "run-autopw-test")
 	if err := cmd.Run(); err != nil {
 		// Command failed, but we still try to read the log file

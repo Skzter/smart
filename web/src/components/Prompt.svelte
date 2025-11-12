@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button, Modal, type ModalProps, type ModalPlacementType} from "flowbite-svelte";
+    import { Spinner,Button, Modal, type ModalProps, type ModalPlacementType} from "flowbite-svelte";
     import { getTemplate, runContainer } from "../lib/Api.ts";
     import Popup from "./Popup.svelte";
     let { input = $bindable(""), onclick } = $props();
@@ -29,17 +29,20 @@
 
     let flowModal = $state(false);
     let flowModalMSG = $state("");
+    let flowRunning = $state(false);
     let size: ModalProps["size"] = $state("xl"); // Set default value
     let placement: ModalPlacementType = $state("top-center");
     async function runTest() {
         try {
             flowModal = true; // Show the modal instead of popup
-            flowModalMSG = "running"
+            flowRunning = true
             let response = await runContainer("/run");
+            flowRunning = false 
             flowModalMSG = response.data
         } catch (err) {
             console.log(err)
-            flowModalMSG = err.data
+            flowRunning = false 
+            flowModalMSG = err.response.data
         }
     }
 
@@ -68,8 +71,11 @@
 
 <Popup bind:isOpen={showPopup} message={popupMessage} title={popupTitle} />
 
-<Modal title="Test Reuslt" form bind:open={flowModal}>
+<Modal title="Test Result" form bind:open={flowModal}>
   <div class="space-y-4">
+    {#if flowRunning}        
+            <Spinner type="dots" color="purple" />
+    {/if}
     <pre class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
       {flowModalMSG}
     </pre>

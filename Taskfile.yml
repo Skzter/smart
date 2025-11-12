@@ -15,6 +15,7 @@ vars:
   AWS_SECRET_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsSecretAccessKey"
   VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
   TESTCOVERAGE_THRESHOLD: 60
+  TEST_FILE: "test.spec.ts"
 
 tasks:
   # --------------------------------------------------------------------------------
@@ -163,10 +164,10 @@ tasks:
       - docker build -t auto-pw .
 
   run-autopw-test:
-    desc: "runs dummy test"
+    desc: Run a Playwright test in Docker with logs
     dir: scripts
     cmds:
-      - ./run-container.sh
+      - ./run-container.sh {{.TEST_FILE}}
 
   # --------------------------------------------------------------------------------
   # Testing
