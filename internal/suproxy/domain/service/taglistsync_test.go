@@ -146,3 +146,74 @@ func TestSyncTaglist(t *testing.T) {
 		})
 	}
 }
+func TestGetCurrentTaglist(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+
+	tests := []struct {
+		name        string
+		initialList sharedEntity.TagList
+		wantLen     int
+	}{
+		{
+			name: "non-empty taglist returns correct copy",
+			initialList: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG1", Description: "TAG1"},
+				{Name: "TAG2", Description: "TAG2"},
+			}},
+			wantLen: 2,
+		},
+		{
+			name:        "empty taglist returns empty copy",
+			initialList: sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
+			wantLen:     0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSrv := mocks.NewMockTaglistStorage(t)
+			srv := taglistSync{
+				logger:         logger,
+				taglistService: mockSrv,
+				tagList:        &tc.initialList,
+			}
+
+			got := srv.GetCurrentTaglist()
+
+			// gleiche Länge & Werte prüfen
+			if len(got.Tags) != tc.wantLen {
+				t.Fatalf("expected len %d, got %d", tc.wantLen, len(got.Tags))
+			}
+			if !equalTags(got.Tags, tc.initialList.Tags) {
+				t.Fatalf("expected tags %+v, got %+v", tc.initialList.Tags, got.Tags)
+			}
+
+			// sicherstellen, dass es eine Kopie ist
+			if tc.wantLen > 0 && &got.Tags[0] == &tc.initialList.Tags[0] {
+				t.Fatal("expected copy, but got reference to original")
+			}
+
+			// prüfen, dass Änderungen am Rückgabewert das Original nicht verändern
+			if tc.wantLen > 0 {
+				originalName := tc.initialList.Tags[0].Name
+				got.Tags[0].Name = "CHANGED"
+				if tc.initialList.Tags[0].Name != originalName {
+					t.Fatal("modifying returned taglist changed the original")
+				}
+			}
+		})
+	}
+}
+
+// equalTags vergleicht zwei Slices von Tags unabhängig vom Pointer
+func equalTags(a, b []sharedEntity.Tag) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Name != b[i].Name || a[i].Description != b[i].Description {
+			return false
+		}
+	}
+	return true
+}
