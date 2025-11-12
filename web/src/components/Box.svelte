@@ -3,12 +3,14 @@
     import { createTest } from "../lib/Api.ts";
     let { msg, name, userId, conversationId, showSave = false} = $props();
 
+    let saveState = $state<'idle' | 'saving' | 'success' | 'error'>('idle');
+    let errorMessage = $state("");
+    let testId = $state<string | undefined>(undefined);
+
     async function saveTest(testcode: string) {
         if (!userId || !conversationId) {
-            console.error("Failed to save test: userId or conversationId is missing", {
-                userId,
-                conversationId
-            });
+            errorMessage = "Failed to save test: userId or conversationId is missing";
+            console.error(errorMessage, {userId,conversationId});
             return;
         }
 
@@ -23,10 +25,19 @@
         };
 
         try {
+            saveState = 'saving';
             const response = await createTest(request);
+            testId = response.data.testcaseId
             console.log("Test saved successfully:", response.data);
-        } catch (error) {
+            saveState = 'success';
+        } catch (error: any) {
             console.error("Failed to save test:", error);
+            saveState = 'error';
+            errorMessage = error?.response?.data?.error || "Failed to save test. Please try again.";
+
+            setTimeout(() => {
+                saveState = 'idle';
+            }, 2000);
         }
     }
 </script>
@@ -49,9 +60,20 @@
             </h1>
            <div class="ml-2">
                 {#if showSave}
-                    <Button color="purple"
-                        onclick={() => saveTest(msg)}>
-                        Save
+                    <Button
+                        color={saveState === 'success' ? 'green' : saveState === 'error' ? 'red' : 'purple'}
+                        disabled={saveState === 'saving' || saveState === 'success'}
+                        onclick={() => saveTest(msg)}
+                    >
+                        {#if saveState === 'saving'}
+                            Saving...
+                        {:else if saveState === 'success'}
+                            ✓ Saved
+                        {:else if saveState === 'error'}
+                            ✗ Error
+                        {:else}
+                            Save
+                        {/if}
                     </Button>
                 {/if}
             </div>
@@ -59,5 +81,10 @@
         <p class="font-sans whitespace-pre-wrap break-words">
             {msg}
         </p>
+        {#if testId && saveState === 'success'}
+            <p class="text-xs text-gray-600 mt-2 font-mono">
+                Test ID: {testId}
+            </p>
+        {/if}
     </div>
 </div>
