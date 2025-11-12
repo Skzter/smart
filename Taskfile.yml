@@ -158,9 +158,9 @@ tasks:
 
   build-autopw-image:
     desc: "builds auto playwright image"
-    dir: scripts
+    dir: docker 
     cmds:
-      - ./build-image.sh
+      - docker build -t auto-pw .
 
   run-autopw-test:
     desc: "runs dummy test"
