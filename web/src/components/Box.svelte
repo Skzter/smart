@@ -1,22 +1,23 @@
 <script lang="ts">
-    import { Button, Spinner, Modal, type ModalProps} from "flowbite-svelte";
-    import { saveTestLocal,runContainer } from "../lib/Api.ts";
+    import { Button, Spinner, Modal, type ModalProps } from "flowbite-svelte";
+    import { saveTestLocal, runContainer } from "../lib/Api.ts";
     import { AxiosError } from "axios";
-    let { msg, name, userId, conversationId, showSave = false} = $props();
+    let { msg, name, userId, conversationId, showSave = false } = $props();
 
-    let saveState = $state<'idle' | 'saving' | 'success' | 'error'>('idle');
+    let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
 
     async function saveTest(testcode: string) {
         if (!userId || !conversationId) {
-            errorMessage = "Failed to save test: userId or conversationId is missing";
-            console.error(errorMessage, {userId,conversationId});
+            errorMessage =
+                "Failed to save test: userId or conversationId is missing";
+            console.error(errorMessage, { userId, conversationId });
             return;
         }
 
-        const sanitizedUserId = userId.includes('|') 
-            ? userId.split('|')[1] 
+        const sanitizedUserId = userId.includes("|")
+            ? userId.split("|")[1]
             : userId;
 
         const request = {
@@ -26,23 +27,25 @@
         };
 
         try {
-            saveState = 'saving';
+            saveState = "saving";
             const response = await saveTestLocal(request);
-            testId = response.data.testcaseId
+            testId = response.data.testcaseId;
             console.log("Test saved successfully:", response.data);
-            saveState = 'success';
+            saveState = "success";
         } catch (error: unknown) {
             console.error("Failed to save test:", error);
-            saveState = 'error';
-            
+            saveState = "error";
+
             if (error instanceof AxiosError) {
-                errorMessage = error.response?.data?.error || "Failed to save test. Please try again.";
+                errorMessage =
+                    error.response?.data?.error ||
+                    "Failed to save test. Please try again.";
             } else {
                 errorMessage = "Failed to save test. Please try again.";
             }
 
             setTimeout(() => {
-                saveState = 'idle';
+                saveState = "idle";
             }, 2000);
         }
     }
@@ -50,38 +53,47 @@
     let logShowModal = $state(false);
     let logModalMSG = $state("");
     let logRunning = $state(false);
-    let size: ModalProps["size"] = $state("xl")
-    type ModalPlacementType = "top-left" | "top-center" | "top-right" | "center-left" | "center" | "center-right" | "bottom-left" | "bottom-center" | "bottom-right";
-    let placement: ModalPlacementType = $state("top-center")
+    let size: ModalProps["size"] = $state("xl");
+    type ModalPlacementType =
+        | "top-left"
+        | "top-center"
+        | "top-right"
+        | "center-left"
+        | "center"
+        | "center-right"
+        | "bottom-left"
+        | "bottom-center"
+        | "bottom-right";
+    let placement: ModalPlacementType = $state("top-center");
     async function RunTest() {
         if (!userId || !conversationId || !testId) {
-            errorMessage = "Failed to run test: userId, conversationId or testid is missing";
-            console.error(errorMessage, {userId,conversationId});
+            errorMessage =
+                "Failed to run test: userId, conversationId or testid is missing";
+            console.error(errorMessage, { userId, conversationId });
             return;
         }
-        const sanitizedUserId = userId.includes('|') 
-            ? userId.split('|')[1] 
+        const sanitizedUserId = userId.includes("|")
+            ? userId.split("|")[1]
             : userId;
         const request = {
             userId: sanitizedUserId,
             testId: testId,
             sessionId: conversationId,
-	    }
+        };
 
-        console.log(request)
+        console.log(request);
         try {
             logModalMSG = "";
             logShowModal = true; // Show the modal instead of popup
             logRunning = true;
-            const response = await runContainer(request) 
-            console.log(response)
+            const response = await runContainer(request);
+            console.log(response);
             logRunning = false;
             logModalMSG = response.data.result;
         } catch (err) {
-            console.log(err)
+            console.log(err);
             logRunning = false;
             logModalMSG = err.response.data;
-
         }
     }
 </script>
@@ -103,28 +115,35 @@
                 {name}
             </h1>
             <div class="flex">
-               <div class="ml-2">
+                <div class="ml-2">
                     {#if showSave}
                         <Button
-                            color={saveState === 'success' ? 'green' : saveState === 'error' ? 'red' : 'purple'}
-                            disabled={saveState === 'saving' || saveState === 'success'}
+                            color={saveState === "success"
+                                ? "green"
+                                : saveState === "error"
+                                  ? "red"
+                                  : "purple"}
+                            disabled={saveState === "saving" ||
+                                saveState === "success"}
                             onclick={() => saveTest(msg)}
                         >
-                            {#if saveState === 'saving'}
+                            {#if saveState === "saving"}
                                 Saving...
-                            {:else if saveState === 'success'}
+                            {:else if saveState === "success"}
                                 ✓ Saved
-                            {:else if saveState === 'error'}
+                            {:else if saveState === "error"}
                                 ✗ Error
                             {:else}
                                 Save
                             {/if}
                         </Button>
-                    {/if} 
+                    {/if}
                 </div>
                 <div class="ml-2">
-                    {#if showSave && saveState === 'success'}
-                        <Button color="purple" onclick={RunTest}>Run Test</Button>
+                    {#if showSave && saveState === "success"}
+                        <Button color="purple" onclick={RunTest}
+                            >Run Test</Button
+                        >
                     {/if}
                 </div>
             </div>
@@ -132,7 +151,7 @@
         <p class="font-sans whitespace-pre-wrap break-words">
             {msg}
         </p>
-        {#if testId && saveState === 'success'}
+        {#if testId && saveState === "success"}
             <p class="text-xs text-gray-600 mt-2 font-mono">
                 Test ID: {testId}
             </p>

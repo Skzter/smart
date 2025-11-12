@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Box from "../../src/components/Box.svelte";
-import { saveTestLocal } from "../../src/lib/Api";
+import { saveTestLocal, runContainer } from "../../src/lib/Api";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 vi.mock("../../src/lib/Api");
@@ -422,6 +422,73 @@ describe("Box component", () => {
             await waitFor(() => {
                 expect(screen.getByText("✓ Saved")).toBeInTheDocument();
                 expect(saveButton).toBeDisabled();
+            });
+        });
+    });
+    describe("Box component - RunTest functionality", () => {
+        beforeEach(() => {
+            vi.clearAllMocks();
+        });
+
+        describe("Run button visibility", () => {
+            it("shows Run button after successful save", async () => {
+                vi.mocked(saveTestLocal).mockResolvedValue({
+                    data: { testcaseId: "test-123" },
+                });
+
+                render(Box, {
+                    msg: "test code",
+                    name: "Bot",
+                    userId: "user-123",
+                    conversationId: "conv-456",
+                    showSave: true,
+                });
+
+                const saveButton = screen.getByRole("button", {
+                    name: /save/i,
+                });
+                await fireEvent.click(saveButton);
+
+                await waitFor(() => {
+                    expect(screen.getByText("Run Test")).toBeInTheDocument();
+                });
+            });
+
+            it("does not show Run button before saving", () => {
+                render(Box, {
+                    msg: "test code",
+                    name: "Bot",
+                    userId: "user-123",
+                    conversationId: "conv-456",
+                    showSave: true,
+                });
+
+                const runButton = screen.queryByText("Run Test");
+                expect(runButton).not.toBeInTheDocument();
+            });
+
+            it("does not show Run button when save fails", async () => {
+                vi.mocked(saveTestLocal).mockRejectedValue(
+                    new Error("Save failed"),
+                );
+
+                render(Box, {
+                    msg: "test code",
+                    name: "Bot",
+                    userId: "user-123",
+                    conversationId: "conv-456",
+                    showSave: true,
+                });
+
+                const saveButton = screen.getByRole("button", {
+                    name: /save/i,
+                });
+                await fireEvent.click(saveButton);
+
+                await waitFor(() => {
+                    const runButton = screen.queryByText("Run Test");
+                    expect(runButton).not.toBeInTheDocument();
+                });
             });
         });
     });
