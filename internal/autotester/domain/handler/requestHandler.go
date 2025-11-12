@@ -179,16 +179,20 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 // HandleRunContainer handles the running of the container and returns content of logfile from test
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	type parameters struct {
-		UserID         string `json:"userId"`
-		ConversationID string `json:"conversationId"`
-		SessionID      string `json:"sessionId"`
+		UserID    string `json:"userId"`
+		TestId    string `json:"testId"`
+		SessionID string `json:"sessionId"`
+	}
+
+	type response struct {
+		Result string `json:"result"`
 	}
 
 	var params parameters
 	if err := c.ShouldBindJSON(&params); err != nil {
 		a.logger.Info(fmt.Sprintf("currently no request body: err => %s", err.Error()))
-		// c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
-		// return
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
 	}
 
 	logFile := "docker/logs/output.log"
@@ -196,14 +200,16 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	a.logger.Info("Running the task")
 
 	// find file to mount
-	testfile, err := a.saveLocalService.GetTestPath(params.ConversationID, params.UserID, params.SessionID)
+	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
+	a.logger.Info(testfile)
 	if err != nil {
-		a.logger.Info(fmt.Sprintf("file not available: %s\n", testfile))
+		a.logger.Info(fmt.Sprintf("file not available: %s\n", err.Error()))
 	}
 
 	// hier als letze arg das testfile fmt.Sprintf("TEST_FILE=%s", testfile) hinzufügen
 	// so default cfg
-	cmd := exec.Command("go", "tool", "task", "run-autopw-test")
+	// #nosec G204 - used as quick solution, later docker pkg
+	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
 	if err := cmd.Run(); err != nil {
 		// Command failed, but we still try to read the log file
 		fmt.Printf("Command execution error: %v\n", err)
@@ -211,9 +217,11 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	a.logger.Info("Reading log file")
 	content, err := os.ReadFile(logFile)
 	if err != nil {
-		c.String(500, "Failed to read log file: %v", err)
+		c.String(http.StatusInternalServerError, "Failed to read log file: %v", err)
 		return
 	}
 	a.logger.Info(string(content))
-	c.String(200, string(content))
+	c.JSON(http.StatusOK, response{
+		Result: string(content),
+	})
 }

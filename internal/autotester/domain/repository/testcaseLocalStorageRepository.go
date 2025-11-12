@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,7 +48,7 @@ type TestcaseLocalStorageRepository interface {
 	DeleteOlderThan(maxAge time.Duration) (int, error)
 }
 
-const testcaseLanguageDefault = "ts"
+const testcaseLanguageDefault = "spec.ts"
 
 type testcaseLocalStorageRepository struct {
 	filesystem FileSystem
@@ -275,8 +274,8 @@ func validateFilename(filename string) error {
 		return fmt.Errorf("empty filename")
 	}
 
-	dotPosition := strings.LastIndex(filename, ".")
-	if dotPosition <= 0 || dotPosition == len(filename)-1 {
+	dotPosition := len(filename) - len(testcaseLanguageDefault) - 1
+	if filename[dotPosition] != '.' {
 		return fmt.Errorf("missing or invalid extension")
 	}
 

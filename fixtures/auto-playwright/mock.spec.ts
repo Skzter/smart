@@ -16,6 +16,6 @@ test("Suche nach Flügen und Anzeige von Flugrouten: Mallorca ab Leipzig-Halle, 
   await auto("Wähle als Startdatum den 01.12.2025", { page, test }, options);
   await auto("Drücke auf 'Suchen'", { page, test }, options);
 
-  const offerCount = await auto("Zähle die angezeigten Flugangebote", { page, test }, options);
-  expect(offerCount).toBeGreaterThan(0);
+  const offerCount = await auto("Prüfe ob mehr als 0 Flugangebote angezeigt werden", { page, test }, options);
+  expect(offerCount).toBe(true)
 });
