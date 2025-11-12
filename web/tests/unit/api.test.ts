@@ -4,6 +4,7 @@ import {
     getChatResponse,
     getUserInfo,
     getTemplate,
+    saveTestLocal,
 } from "../../src/lib/Api.ts";
 
 // Mock axios
@@ -25,6 +26,17 @@ describe("API Functions", () => {
     };
 
     const mockResponseData = { data: "test data" };
+
+    const mockSaveLocalRequest = {
+        testcode: "fantatsic code", 
+        userId: mockUserId,
+        conversationId: mockConversationId,
+    };
+
+    const mockSaveLocalResponse = {
+        testcaseId: "testid", 
+        action: "saved",
+    }
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -123,6 +135,32 @@ describe("API Functions", () => {
 
             await expect(getTemplate("/template")).rejects.toThrow(
                 "Template not found",
+            );
+        });
+    });
+
+    describe("saveTestLocal", () => {
+        it("should make a POST request to /saveLocal and return data", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue({ data: mockSaveLocalResponse });
+
+            const result = await saveTestLocal(mockSaveLocalRequest);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/saveLocal",
+                baseURL: "/api/v1/",
+                data: mockSaveLocalRequest,
+            });
+            expect(result.data).toEqual(mockSaveLocalResponse);
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockRejectedValue(new Error("Failed to save test"));
+
+            await expect(saveTestLocal(mockSaveLocalRequest)).rejects.toThrow(
+                "Failed to save test",
             );
         });
     });

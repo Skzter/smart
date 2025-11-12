@@ -68,6 +68,10 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
+	if userRequest.SessionId == "" {
+		userRequest.SessionId = uuid.New().String()
+	}
+
 	// returns handled errors which can be given to frontend
 	resp, err := a.serviceHandler(c, userRequest)
 	if err != nil {

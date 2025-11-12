@@ -39,3 +39,13 @@ export async function getTemplate(url: string) {
     });
     return response;
 }
+
+export async function saveTestLocal(params: object, url: string = "/saveLocal") {
+    const response = await axios({
+        method: "post",
+        url,
+        baseURL: baseURL,
+        data: params,
+    });
+    return response;
+}
