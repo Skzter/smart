@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/exec"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -171,4 +174,24 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, entity.LocalDeleteResponse{TestcaseId: deleteLocalRequest.TestcaseId, Action: "deleted"})
+}
+
+// HandleRunContainer handles the running of the container and returns content of logfile from test
+func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
+	logFile := "docker/logs/output.log"
+
+	a.logger.Info("Running the task")
+	cmd := exec.Command("go", "tool", "task", "run-autopw-test")
+	if err := cmd.Run(); err != nil {
+		// Command failed, but we still try to read the log file
+		fmt.Printf("Command execution error: %v\n", err)
+	}
+	a.logger.Info("Reading log file")
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		c.String(500, "Failed to read log file: %v", err)
+		return
+	}
+	a.logger.Info(string(content))
+	c.String(200, string(content))
 }

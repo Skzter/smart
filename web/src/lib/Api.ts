@@ -39,3 +39,12 @@ export async function getTemplate(url: string) {
     });
     return response;
 }
+
+export async function runContainer(url: string) {
+    const response = await axios({
+        method: "post",
+        url: url,
+        baseURL: baseURL,
+    });
+    return response;
+}
