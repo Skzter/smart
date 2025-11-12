@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-const rootDir string = "testTemp"
+const rootDir string = "testTmp"
 
 func TestNewOSFileSystem(t *testing.T) {
 	tests := []struct {
@@ -760,18 +760,22 @@ func TestGetValidatedPath(t *testing.T) {
 
 func TestIsUnderRoot(t *testing.T) {
 	tmp := t.TempDir()
-	fs := &osFileSystem{Root: tmp}
+	tmpEvaluated, err := filepath.EvalSymlinks(tmp)
+	if err != nil {
+		t.Fatalf("setup failed")
+	}
+	fs := &osFileSystem{Root: tmpEvaluated}
 
-	subdir := filepath.Join(tmp, "subdir")
+	subdir := filepath.Join(tmpEvaluated, "subdir")
 	if err := os.Mkdir(subdir, DefaultDirPerm); err != nil {
 		t.Fatalf("setup: create subdir: %v", err)
 	}
 
-	aDir := filepath.Join(tmp, "a")
+	aDir := filepath.Join(tmpEvaluated, "a")
 	if err := os.Mkdir(aDir, DefaultDirPerm); err != nil {
 		t.Fatalf("setup: create a dir: %v", err)
 	}
-	bDir := filepath.Join(tmp, "b")
+	bDir := filepath.Join(tmpEvaluated, "b")
 	if err := os.Mkdir(bDir, DefaultDirPerm); err != nil {
 		t.Fatalf("setup: create b dir: %v", err)
 	}
@@ -783,7 +787,7 @@ func TestIsUnderRoot(t *testing.T) {
 	}{
 		{
 			name:           "path is exactly root",
-			path:           tmp,
+			path:           tmpEvaluated,
 			expectedResult: true,
 		},
 		{
@@ -793,17 +797,17 @@ func TestIsUnderRoot(t *testing.T) {
 		},
 		{
 			name:           "path escapes root",
-			path:           filepath.Join(filepath.Dir(tmp), "outside"),
+			path:           filepath.Join(filepath.Dir(tmpEvaluated), "outside"),
 			expectedResult: false,
 		},
 		{
 			name:           "path contains .. but stays inside root",
-			path:           filepath.Join(tmp, "a", "..", "b"),
+			path:           filepath.Join(tmpEvaluated, "a", "..", "b"),
 			expectedResult: true,
 		},
 		{
 			name:           "path far outside root (../..)",
-			path:           filepath.Join(tmp, "..", "..", "escape"),
+			path:           filepath.Join(tmpEvaluated, "..", "..", "escape"),
 			expectedResult: false,
 		},
 	}
