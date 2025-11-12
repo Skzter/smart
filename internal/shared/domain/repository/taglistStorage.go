@@ -167,10 +167,12 @@ func validateTaglist(taglist *entity.TagList) error {
 		return fmt.Errorf("taglist is empty: %s", taglist)
 	}
 	for _, tag := range taglist.Tags {
-		if err := assert.StringNotEmpty(tag); err != nil {
-			return err
+		if err := assert.StringNotEmpty(tag.Name); err != nil {
+			return fmt.Errorf("tag name is empty: %s", tag.Name)
+		}
+		if err := assert.StringNotEmpty(tag.Description); err != nil {
+			return fmt.Errorf("tag description is empty: %s", tag.Description)
 		}
 	}
-
 	return nil
 }

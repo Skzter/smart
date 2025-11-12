@@ -8,6 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
 // NewMockTaglistStorage creates a new instance of MockTaglistStorage. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -38,23 +39,23 @@ func (_m *MockTaglistStorage) EXPECT() *MockTaglistStorage_Expecter {
 }
 
 // GetTaglist provides a mock function for the type MockTaglistStorage
-func (_mock *MockTaglistStorage) GetTaglist(ctx context.Context) ([]string, error) {
+func (_mock *MockTaglistStorage) GetTaglist(ctx context.Context) (*entity.TagList, error) {
 	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTaglist")
 	}
 
-	var r0 []string
+	var r0 *entity.TagList
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*entity.TagList, error)); ok {
 		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *entity.TagList); ok {
 		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).(*entity.TagList)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
@@ -89,27 +90,27 @@ func (_c *MockTaglistStorage_GetTaglist_Call) Run(run func(ctx context.Context))
 	return _c
 }
 
-func (_c *MockTaglistStorage_GetTaglist_Call) Return(strings []string, err error) *MockTaglistStorage_GetTaglist_Call {
-	_c.Call.Return(strings, err)
+func (_c *MockTaglistStorage_GetTaglist_Call) Return(tagList *entity.TagList, err error) *MockTaglistStorage_GetTaglist_Call {
+	_c.Call.Return(tagList, err)
 	return _c
 }
 
-func (_c *MockTaglistStorage_GetTaglist_Call) RunAndReturn(run func(ctx context.Context) ([]string, error)) *MockTaglistStorage_GetTaglist_Call {
+func (_c *MockTaglistStorage_GetTaglist_Call) RunAndReturn(run func(ctx context.Context) (*entity.TagList, error)) *MockTaglistStorage_GetTaglist_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // StoreTaglist provides a mock function for the type MockTaglistStorage
-func (_mock *MockTaglistStorage) StoreTaglist(context1 context.Context, strings []string) error {
-	ret := _mock.Called(context1, strings)
+func (_mock *MockTaglistStorage) StoreTaglist(context1 context.Context, tagList *entity.TagList) error {
+	ret := _mock.Called(context1, tagList)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StoreTaglist")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) error); ok {
-		r0 = returnFunc(context1, strings)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TagList) error); ok {
+		r0 = returnFunc(context1, tagList)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -123,20 +124,20 @@ type MockTaglistStorage_StoreTaglist_Call struct {
 
 // StoreTaglist is a helper method to define mock.On call
 //   - context1 context.Context
-//   - strings []string
-func (_e *MockTaglistStorage_Expecter) StoreTaglist(context1 interface{}, strings interface{}) *MockTaglistStorage_StoreTaglist_Call {
-	return &MockTaglistStorage_StoreTaglist_Call{Call: _e.mock.On("StoreTaglist", context1, strings)}
+//   - tagList *entity.TagList
+func (_e *MockTaglistStorage_Expecter) StoreTaglist(context1 interface{}, tagList interface{}) *MockTaglistStorage_StoreTaglist_Call {
+	return &MockTaglistStorage_StoreTaglist_Call{Call: _e.mock.On("StoreTaglist", context1, tagList)}
 }
 
-func (_c *MockTaglistStorage_StoreTaglist_Call) Run(run func(context1 context.Context, strings []string)) *MockTaglistStorage_StoreTaglist_Call {
+func (_c *MockTaglistStorage_StoreTaglist_Call) Run(run func(context1 context.Context, tagList *entity.TagList)) *MockTaglistStorage_StoreTaglist_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []string
+		var arg1 *entity.TagList
 		if args[1] != nil {
-			arg1 = args[1].([]string)
+			arg1 = args[1].(*entity.TagList)
 		}
 		run(
 			arg0,
@@ -151,7 +152,7 @@ func (_c *MockTaglistStorage_StoreTaglist_Call) Return(err error) *MockTaglistSt
 	return _c
 }
 
-func (_c *MockTaglistStorage_StoreTaglist_Call) RunAndReturn(run func(context1 context.Context, strings []string) error) *MockTaglistStorage_StoreTaglist_Call {
+func (_c *MockTaglistStorage_StoreTaglist_Call) RunAndReturn(run func(context1 context.Context, tagList *entity.TagList) error) *MockTaglistStorage_StoreTaglist_Call {
 	_c.Call.Return(run)
 	return _c
 }

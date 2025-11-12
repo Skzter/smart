@@ -129,7 +129,7 @@ func TestStoreTaglist(t *testing.T) {
 
 			storage, _ := NewTaglistStorage(logger, repo)
 
-			err := storage.StoreTaglist(test.ctx, []string{"A", "B", "C"})
+			err := storage.StoreTaglist(test.ctx, &entity.TagList{Tags: []entity.Tag{{Name: "A", Description: "is A"}}})
 
 			if test.expectedError {
 				assert.NotNil(t, err)
@@ -148,7 +148,7 @@ func TestGetTaglist(t *testing.T) {
 		readReturns    []any
 		ctx            context.Context
 		expectedError  bool
-		expectedResult []string
+		expectedResult *entity.TagList
 	}{
 		{
 			testName:      "Nil Context",
@@ -163,10 +163,10 @@ func TestGetTaglist(t *testing.T) {
 		},
 		{
 			testName:       "Successful Taglist Read",
-			readReturns:    []any{&entity.TagList{Tags: []string{"A", "B", "C"}}, nil},
+			readReturns:    []any{&entity.TagList{Tags: []entity.Tag{{Name: "A", Description: "is A"}}}, nil},
 			ctx:            context.Background(),
 			expectedError:  false,
-			expectedResult: []string{"A", "B", "C"},
+			expectedResult: &entity.TagList{Tags: []entity.Tag{{Name: "A", Description: "is A"}}},
 		},
 	}
 
