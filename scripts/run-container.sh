@@ -2,13 +2,14 @@
 
 FILE="${1:-test.spec.ts}"
 BASEFILE=$(basename $FILE)
+
 cd ..
 
 echo "starting docker container"
 
 docker run --rm \
     --env OPENAI_API_KEY="$(doppler secrets get OPENAI_KEY --plain)" \
-    -v "$PWD/$FILE":/app/$BASEFILE \
+    -v "$FILE":/app/$BASEFILE \
     -v "$PWD/docker/logs":/app/logs/ \
     --name="auto-playwright-headless" \
     --network=host \
