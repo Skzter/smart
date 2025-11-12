@@ -35,12 +35,7 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 	assert.NoError(t, err)
 
 	entry := entity.DatabaseEntry{
-		Request: entity.Request{
-			Header:      map[string]string{"Content-Type": "application/json"},
-			Prompt:      "prompt",
-			Destination: "http://example.com",
-			Request:     `{}`,
-		},
+		Request:  "Test request",
 		Response: entity.Response{Response: "OK"},
 		Tags:     []string{"tag1", "tag2"},
 	}
