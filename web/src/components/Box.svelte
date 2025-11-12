@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
-    import { createTest } from "../lib/Api.ts";
+    import { saveTestLocal } from "../lib/Api.ts";
     let { msg, name, userId, conversationId, showSave = false} = $props();
 
     let saveState = $state<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -26,7 +26,7 @@
 
         try {
             saveState = 'saving';
-            const response = await createTest(request);
+            const response = await saveTestLocal(request);
             testId = response.data.testcaseId
             console.log("Test saved successfully:", response.data);
             saveState = 'success';
