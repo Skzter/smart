@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -181,14 +182,34 @@ func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error
 
 // validateDbEntry validates the database entry before processing it
 func validateDbEntry(dbEntry entity.DatabaseEntry) error {
-	if err := assert.StringNotEmpty(dbEntry.Request); err != nil {
-		return fmt.Errorf("request must not be empty: %w", err)
+	if err := validateRequest(dbEntry.Request); err != nil {
+		return fmt.Errorf("failed validate request: %w", err)
 	}
 	if err := validateResponse(dbEntry.Response); err != nil {
-		return fmt.Errorf("failed to validate response: %w", err)
+		return fmt.Errorf("failed validate response: %w", err)
 	}
 	if err := validateTags(dbEntry.Tags); err != nil {
-		return fmt.Errorf("failed to validate tags: %w", err)
+		return fmt.Errorf("failed validate tags: %w", err)
+	}
+	return nil
+}
+
+// validateRequest validates the request part of the database entry
+func validateRequest(rq entity.Request) error {
+	if len(rq.Header) == 0 {
+		return fmt.Errorf("header must not be empty")
+	}
+
+	if err := assert.StringNotEmpty(rq.Prompt); err != nil {
+		return fmt.Errorf("prompt must not be empty: %w", err)
+	}
+
+	if err := assert.StringNotEmpty(rq.Destination); err != nil {
+		return fmt.Errorf("destination must not be empty: %w", err)
+	}
+
+	if err := assert.StringNotEmpty(rq.Request); err != nil {
+		return fmt.Errorf("request must not be empty: %w", err)
 	}
 	return nil
 }
@@ -202,14 +223,18 @@ func validateResponse(rp entity.Response) error {
 }
 
 // validateTags validates the tags associated with the database entry
-func validateTags(t []string) error {
-	if len(t) == 0 {
+func validateTags(t *sharedEntity.TagList) error {
+	if t == nil || len(t.Tags) == 0 {
 		return fmt.Errorf("tags must not be empty")
 	}
 	return nil
 }
 
 // generateKey creates a unique key for the database entry based on its tags and a Unix timestamp
-func generateKey(tags []string, unixTimestamp string) string {
+func generateKey(taglist *sharedEntity.TagList, unixTimestamp string) string {
+	tags := make([]string, len(taglist.Tags))
+	for i, tag := range taglist.Tags {
+		tags[i] = strings.ToLower(strings.TrimSpace(tag.Name))
+	}
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }
