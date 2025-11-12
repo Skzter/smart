@@ -40,6 +40,7 @@
     let placement: ModalPlacementType = $state("top-center");
     async function runTest() {
         try {
+            flowModalMSG = "";
             flowModal = true; // Show the modal instead of popup
             flowRunning = true;
             let response = await runContainer("/run");
