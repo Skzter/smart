@@ -163,12 +163,17 @@ tasks:
     cmds:
       - docker build -t auto-pw .
 
-  run-autopw-test:
+  test-auto-playwright:
     desc: Run a Playwright test in Docker with logs
     dir: scripts
     cmds:
       - ./run-container.sh {{.TEST_FILE}}
 
+  test-ui-auto-playwright:
+    desc: Run a Playwright test in Docker with logs
+    dir: scripts
+    cmds:
+      - ./run-ui-container.sh
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
