@@ -1,6 +1,7 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
     import { saveTestLocal } from "../lib/Api.ts";
+    import { AxiosError } from "axios";
     let { msg, name, userId, conversationId, showSave = false} = $props();
 
     let saveState = $state<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -30,10 +31,15 @@
             testId = response.data.testcaseId
             console.log("Test saved successfully:", response.data);
             saveState = 'success';
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Failed to save test:", error);
             saveState = 'error';
-            errorMessage = error?.response?.data?.error || "Failed to save test. Please try again.";
+            
+            if (error instanceof AxiosError) {
+                errorMessage = error.response?.data?.error || "Failed to save test. Please try again.";
+            } else {
+                errorMessage = "Failed to save test. Please try again.";
+            }
 
             setTimeout(() => {
                 saveState = 'idle';
