@@ -201,6 +201,12 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 
 	logFile := "docker/logs/output.log"
 
+	if params.UserID == "" || params.TestId == "" || params.SessionID == "" {
+		a.logger.Info("Missing required parameters")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
+		return
+	}
+
 	// find file to mount
 	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
 	a.logger.Info(fmt.Sprintf("Testpath: %s\n", testfile))
@@ -210,8 +216,6 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	// hier als letze arg das testfile fmt.Sprintf("TEST_FILE=%s", testfile) hinzufügen
-	// so default cfg
 	// #nosec G204 - used as quick solution, later docker pkg
 	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
 	a.logger.Info(fmt.Sprintf("cmd line: %s\n", cmd))
