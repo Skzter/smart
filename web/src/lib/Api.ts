@@ -50,11 +50,12 @@ export async function saveTestLocal(params: object, url: string = "/saveLocal") 
     return response;
 }
 
-export async function runContainer(url: string) {
+export async function runContainer(params: object, url: string = "/run") {
     const response = await axios({
         method: "post",
-        url: url,
+        url,
         baseURL: baseURL,
+        data: params,
     });
     return response;
 }
