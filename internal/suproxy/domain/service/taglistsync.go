@@ -77,7 +77,10 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 
 // GetTaglist gets Taglist
 func (tls *taglistSync) GetCurrentTaglist() *sharedEntity.TagList {
-	newTags := append([]sharedEntity.Tag(nil), tls.tagList.Tags...)
-	tagList := sharedEntity.TagList{Tags: newTags}
-	return &tagList
+	tls.mutex.Lock()
+	defer tls.mutex.Unlock()
+
+	copied := make([]sharedEntity.Tag, len(tls.tagList.Tags))
+	copy(copied, tls.tagList.Tags)
+	return &sharedEntity.TagList{Tags: copied}
 }
