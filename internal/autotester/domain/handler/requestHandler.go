@@ -201,27 +201,31 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 
 	logFile := "docker/logs/output.log"
 
-	a.logger.Info("Running the task")
-
 	// find file to mount
 	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
-	a.logger.Info(testfile)
+	a.logger.Info(fmt.Sprintf("Testpath: %s\n", testfile))
 	if err != nil {
 		a.logger.Info(fmt.Sprintf("file not available: %s\n", err.Error()))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		return
 	}
 
 	// hier als letze arg das testfile fmt.Sprintf("TEST_FILE=%s", testfile) hinzufügen
 	// so default cfg
 	// #nosec G204 - used as quick solution, later docker pkg
 	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
+	a.logger.Info(fmt.Sprintf("cmd line: %s\n", cmd))
+	a.logger.Info("Starting the task")
 	if err := cmd.Run(); err != nil {
-		// Command failed, but we still try to read the log file
-		fmt.Printf("Command execution error: %v\n", err)
+		a.logger.Info(fmt.Sprintf("Command execution error: %s\n", err.Error()))
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		return
 	}
 	a.logger.Info("Reading log file")
 	content, err := os.ReadFile(logFile)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "Failed to read log file: %v", err)
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 	a.logger.Info(string(content))
