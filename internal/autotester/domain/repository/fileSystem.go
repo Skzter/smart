@@ -237,8 +237,5 @@ func (fs *osFileSystem) isUnderRoot(path string) bool {
 		pathResolved = p
 	}
 
-	fmt.Fprintf(os.Stderr, "DEBUG isUnderRoot:\n  Root: %q\n  Path: %q\n  Match: %v\n",
-		rootAbs, pathResolved, strings.HasPrefix(pathResolved, rootAbs+string(os.PathSeparator)))
-
 	return strings.HasPrefix(pathResolved, rootAbs+string(os.PathSeparator)) || pathResolved == rootAbs
 }
