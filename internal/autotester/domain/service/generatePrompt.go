@@ -68,23 +68,14 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error("Context is nil, using default taglist: ", "err", err.Error())
-		return formatTags(sharedService.DefaultTagList())
+		return sharedEntity.DefaultTagList().Format()
 	}
 
 	tagList, err := s.taglistService.GetTaglist(ctx)
 	if err != nil || tagList == nil || len(tagList.Tags) == 0 {
 		s.logger.Error("Failed to fetch taglist, using default: ", "err", err.Error())
-		tagList = sharedService.DefaultTagList()
+		tagList = sharedEntity.DefaultTagList()
 	}
 
-	return formatTags(tagList)
-}
-
-// formatTags converts a TagList into a formatted string
-func formatTags(tagList *sharedEntity.TagList) string {
-	var formattedTags string
-	for _, tag := range tagList.Tags {
-		formattedTags += tag.Name + " - " + tag.Description + "\n"
-	}
-	return formattedTags
+	return tagList.Format()
 }
