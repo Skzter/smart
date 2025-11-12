@@ -4,7 +4,8 @@ module config
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 import "shared/taglist.pkl"
 
-model: String = "gpt-5-mini-2025-08-07"
+const model: String = "gpt-5-mini-2025-08-07"
+const autoplaywright_debug: Boolean = true
 
 port: String = "8081" 
 
@@ -108,7 +109,12 @@ class Prompts {
        - Output **only** valid TypeScript code:
          - import { test, expect } from "@playwright/test";
          - import { auto } from "auto-playwright";
-         - One or more test() functions with await auto() and expect().
+         - Options looking like 
+         let options = {
+             debug = true,
+             model = \(model),
+         };
+         - One or more test() functions with await auto() where you pass the options as the third argument and expect().
        - No comments, explanations, or narrative—only code.
 
     3. Taglist
@@ -123,6 +129,11 @@ class Prompts {
           import { test, expect } from "@playwright/test";
           import { auto } from "auto-playwright";
 
+       2. ** Options Setup**
+          let options = {
+             debug = \(autoplaywright_debug),
+             model = \(model),
+          };
        2. **Test Definition**
 
           test("<Title>", async ({ page }) => { ... });
@@ -172,13 +183,16 @@ class Prompts {
 
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
-
+     let options = {
+         debug = \(autoplaywright_debug),
+         model = \(model),
+     };
     test("Filter: Price ≤ 100€ per night", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Set price filter to a maximum of 100€ per night", { page, test });
-      await auto("Click apply on the price filter", { page, test });
+      await auto("Set price filter to a maximum of 100€ per night", { page, test }, options);
+      await auto("Click apply on the price filter", { page, test }, options);
 
-      const priceOk = await auto("Are all displayed prices ≤ 100€?", { page, test });
+      const priceOk = await auto("Are all displayed prices ≤ 100€?", { page, test }, options);
       expect(priceOk).toBe(true);
     });
 
@@ -188,11 +202,15 @@ class Prompts {
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
 
+     let options = {
+         debug = \(autoplaywright_debug),
+         model = \(model),
+     };
     test("Sort by lowest price first", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Sort by \"Lowest Price\"", { page, test });
+      await auto("Sort by \"Lowest Price\"", { page, test }, options);
 
-      const sortOk = await auto("Is the first price ≤ the second price?", { page, test });
+      const sortOk = await auto("Is the first price ≤ the second price?", { page, test }, options);
       expect(sortOk).toBe(true);
     });
 
@@ -201,13 +219,17 @@ class Prompts {
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
 
+     let options = {
+         debug = \(autoplaywright_debug),
+         model = \(model),
+     };
     test("Combo filter: Price ≤100€, apartment, balcony & pet-friendly", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Set price filter to maximum 100€", { page, test });
-      await auto("Select accommodation type \"Apartment\"", { page, test });
-      await auto("Enable filters \"Balcony\" and \"Pet-friendly\"", { page, test });
+      await auto("Set price filter to maximum 100€", { page, test }, options);
+      await auto("Select accommodation type \"Apartment\"", { page, test }, options);
+      await auto("Enable filters \"Balcony\" and \"Pet-friendly\"", { page, test }, options);
 
-      const comboOk = await auto("Do all results satisfy this filter combination?", { page, test });
+      const comboOk = await auto("Do all results satisfy this filter combination?", { page, test }, options);
       expect(comboOk).toBe(true);
     });
     """
