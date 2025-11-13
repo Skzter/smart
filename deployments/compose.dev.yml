@@ -2,7 +2,7 @@ services:
   suproxy:
     build:
       context: ..
-      dockerfile: deployments/suproxy/Dockerfile.dev
+      dockerfile: deployments/suproxy/Dockerfile.prod
     ports:
       - "8080:8080"
     networks:
@@ -11,7 +11,7 @@ services:
   autotester:
     build:
       context: ..
-      dockerfile: deployments/autotester/Dockerfile.dev
+      dockerfile: deployments/autotester/Dockerfile.prod
     ports:
       - "8081:8081"
     networks:
