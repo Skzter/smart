@@ -1,0 +1,6 @@
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite. 
+   Base-URL: localhost:5173 
+   Szenario: Nutzer sucht nach reise und erhält passende Angebote. 
+   Ablauf: Zuerst gibt der Nutzer bei Reiseziel Mallorca ein. Der Abflughafen ist Leipzig-Halle. Er geht für 3 Wochen in den Urlaub und startet seine reise am 6.9.2026. Danach drückt er auf suchen. dann werden ihm mindestens ein ergebnis angezeigt. dann filtert er die ergebnisse auf kostenlose stornierung und es sind immernoch ergebnisse zu sehen. 
+   Assertions: es werden ergebnisse für die initiale suche angezeigt und nach der filter anwendung gibt es immer noch ergebnisse. 
+   Testdaten/Setup: Reiseziel Mallorca, Abflughafen Leipzig-Halle, Reisedauer 3 woche, Start 6.9.2026, Filter Stornierung->Kostenlos stoernierbar
