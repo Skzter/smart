@@ -111,8 +111,8 @@ class Prompts {
          - import { auto } from "auto-playwright";
          - Options looking like 
          let options = {
-             debug = true,
-             model = \(model),
+             debug: true,
+             model: "\(model)",
          };
          - One or more test() functions with await auto() where you pass the options as the third argument and expect().
        - No comments, explanations, or narrative—only code.
@@ -131,8 +131,8 @@ class Prompts {
 
        2. ** Options Setup**
           let options = {
-             debug = \(autoplaywright_debug),
-             model = \(model),
+             debug: \(autoplaywright_debug),
+             model: "\(model)",
           };
        2. **Test Definition**
 
@@ -184,8 +184,8 @@ class Prompts {
     import { test, expect } from "@playwright/test";
     import { auto } from "auto-playwright";
      let options = {
-         debug = \(autoplaywright_debug),
-         model = \(model),
+         debug: \(autoplaywright_debug),
+         model: "\(model)",
      };
     test("Filter: Price ≤ 100€ per night", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");
@@ -203,8 +203,8 @@ class Prompts {
     import { auto } from "auto-playwright";
 
      let options = {
-         debug = \(autoplaywright_debug),
-         model = \(model),
+         debug: \(autoplaywright_debug),
+         model: "\(model)",
      };
     test("Sort by lowest price first", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");
@@ -220,8 +220,8 @@ class Prompts {
     import { auto } from "auto-playwright";
 
      let options = {
-         debug = \(autoplaywright_debug),
-         model = \(model),
+         debug: \(autoplaywright_debug),
+         model: "\(model)",
      };
     test("Combo filter: Price ≤100€, apartment, balcony & pet-friendly", async ({ page }) => {
       await page.goto("https://urlaub.check24.de/suche/hotel");

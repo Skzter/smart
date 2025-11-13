@@ -93,7 +93,7 @@
         } catch (err) {
             console.log(err);
             logRunning = false;
-            logModalMSG = err.response.data;
+            logModalMSG = err.response.data.message;
         }
     }
 </script>
