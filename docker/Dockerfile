@@ -1,12 +1,9 @@
 FROM mcr.microsoft.com/playwright:v1.56.1-noble
 
-RUN git clone https://github.com/lucgagan/auto-playwright.git && \
+# forked image for improved usage
+RUN git clone https://gitlab.dit.htwk-leipzig.de/bruno.bittner/auto-playwright && \
     mv auto-playwright /app
 
 WORKDIR /app
-
-RUN sed -i 's/timeout: 90000/timeout: 300000/g' playwright.config.ts
-
-RUN sed -i 's/"@playwright\/test": "1\.52\.0"/"@playwright\/test": "1.56.1"/g' package.json
 
 RUN npm install && npm run build

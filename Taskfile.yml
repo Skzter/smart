@@ -161,7 +161,7 @@ tasks:
     desc: "builds auto playwright image"
     dir: docker 
     cmds:
-      - docker build -t auto-pw .
+      - docker build -t auto-pw . --no-cache
 
   test-auto-playwright:
     desc: Run a Playwright test in Docker with logs
