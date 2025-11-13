@@ -95,3 +95,11 @@ func DatabaseRepositoryProvider(
 func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
 }
+
+func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (repository.Cache, error) {
+	return repository.NewRedisCache(log, cfg)
+}
+
+func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) service.CacheService {
+	return service.NewCacheService(log, cfg, repo)
+}

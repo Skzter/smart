@@ -28,12 +28,12 @@ type CacheService interface {
 type cacheService struct {
 	log  *slog.Logger
 	cfg  *config.Config
-	repo repository.CacheRepository
+	repo repository.Cache
 	ttls entity.CacheTTLPolicy
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.CacheRepository) CacheService {
+func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache) CacheService {
 	ttls := entity.CacheTTLPolicy{
 		// Default TTL configuration
 		SupplierOK:   10 * time.Minute,

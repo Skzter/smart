@@ -55,13 +55,18 @@ func (f *fakeCacheRepository) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+// Close simulates closing the cache connection (no-op for fake)
+func (f *fakeCacheRepository) Close() error {
+	return nil
+}
+
 // newTestLogger creates a logger that discards all output for testing
 func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug}))
 }
 
 // newTestCacheService creates a cacheService with a fake repository and fixed TTLs
-func newTestCacheService(repo repository.CacheRepository) *cacheService {
+func newTestCacheService(repo repository.Cache) *cacheService {
 	return &cacheService{
 		log:  newTestLogger(),
 		cfg:  nil,
