@@ -1,7 +1,12 @@
 #!/bin/sh
 
-FILE="${1:-test.spec.ts}"
+FILE="$1"
 BASEFILE=$(basename $FILE)
+
+LOGDIR="logs/"
+
+# logs/uuid.spec.ts.log
+LOGPATH=$LOGDIR$BASEFILE.log 
 
 cd ..
 
@@ -10,16 +15,16 @@ echo "starting docker container"
 docker run --rm \
     --env OPENAI_API_KEY="$(doppler secrets get OPENAI_KEY --plain)" \
     -v "$FILE":/app/$BASEFILE \
-    -v "$PWD/docker/logs":/app/logs/ \
+    -v "$PWD/$LOGDIR":/app/$LOGDIR \
     --name="auto-playwright-headless" \
     --network=host \
     auto-pw:latest \
-    /bin/bash -c "cd /app && npx playwright test $BASEFILE --reporter=list > logs/output.log 2>&1"
+    /bin/bash -c "cd /app && npx playwright test $BASEFILE --reporter=list > $LOGPATH 2>&1"
 
 echo "docker container finished"
 
 echo "cleaning logs of color codes"
 
-sed -i "s/\x1B\[[0-9;]*[mGKHF]//g" docker/logs/output.log
+sed -i 's/\x1B\[[0-9;]*[mGKHF]//g' $LOGPATH
 
-echo "cleaned logfile in /docker/logs/output.log"
+echo "cleaned logfile in $LOGPATH"

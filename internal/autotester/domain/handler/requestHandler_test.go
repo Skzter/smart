@@ -551,17 +551,17 @@ func TestHandleRunContainer(t *testing.T) {
 					Return("/path/to/test.spec.ts", nil).Once()
 			},
 			SetupTest: func() {
-				err := os.MkdirAll("docker/logs", 0750)
+				err := os.MkdirAll(cfg.LogDirAutopw, 0750)
 				if err != nil {
 					t.Log(err)
 				}
-				err = os.WriteFile("docker/logs/output.log", []byte("Test execution successful"), 0600)
+				err = os.WriteFile(cfg.LogDirAutopw+"test.spec.ts.log", []byte("Test execution successful"), 0600)
 				if err != nil {
 					t.Log(err)
 				}
 			},
 			CleanupTest: func() {
-				err := os.Remove("docker/logs/output.log")
+				err := os.Remove(cfg.LogDirAutopw + "test.spec.ts.log")
 				if err != nil {
 					t.Log(err)
 				}

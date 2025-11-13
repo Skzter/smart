@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -189,8 +190,6 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	logFile := "docker/logs/output.log"
-
 	if params.UserID == "" || params.TestId == "" || params.SessionID == "" {
 		a.logger.Debug("Missing required parameters")
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
@@ -206,6 +205,8 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
+	// can only run on container a time - needs fix in sprint 5
+	// docker pkg should fix this
 	// #nosec G204 - used as quick solution, later docker pkg
 	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
 	a.logger.Debug(fmt.Sprintf("cmd line: %s\n", cmd))
@@ -215,8 +216,14 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
-	a.logger.Debug("Reading log file")
-	content, err := os.ReadFile(logFile)
+
+	// logdir = logs/
+	// file is /tmp/uuid/uuid/uuid.spec.ts
+	PathLogfile := a.config.LogDirAutopw + filepath.Base(testfile) + ".log"
+	a.logger.Debug(fmt.Sprintf("Reading log file => %s", PathLogfile))
+
+	// #nosec G304 -- filepath is correct
+	content, err := os.ReadFile(PathLogfile)
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
