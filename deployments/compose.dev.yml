@@ -2,7 +2,7 @@ services:
   suproxy:
     build:
       context: ..
-      dockerfile: deployments/suproxy/Dockerfile.dev
+      dockerfile: deployments/suproxy/Dockerfile.prod
     ports:
       - "8080:8080"
     networks:
@@ -11,7 +11,7 @@ services:
   autotester:
     build:
       context: ..
-      dockerfile: deployments/autotester/Dockerfile.dev
+      dockerfile: deployments/autotester/Dockerfile.prod
     ports:
       - "8081:8081"
     networks:
@@ -25,8 +25,8 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SUPPLIER_URL=http://suproxy:8080
-      - API_URL=http://frontend-mock:8082
+      - SUPPLIER_URL=http://supplier-mock:8081/api/v1/
+      - API_URL=http://suproxy:8080/api/v1
       - NODE_ENV=development
 
   supplier-mock:
