@@ -42,6 +42,8 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		S3WrapperProvider,
 		TagsearchServiceProvider,
 		TaglistConfigProvider,
+		RedisCacheProvider,
+		CacheServiceProvider,
 	)
 
 	return nil, nil

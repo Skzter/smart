@@ -25,6 +25,7 @@ type SuproxyController struct {
 	db        service.DatabaseService
 	syncer    service.TaglistSync
 	tagSearch service.TagSearchService
+	cache     service.CacheService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
@@ -36,8 +37,9 @@ func NewSuproxyController(
 	db service.DatabaseService,
 	syncer service.TaglistSync,
 	tagSearch service.TagSearchService,
+	cache service.CacheService,
 ) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db, syncer, tagSearch); err != nil {
+	if err := assert.NotNil(logger, config, val, client, db, syncer, tagSearch, cache); err != nil {
 		return nil, err
 	}
 
@@ -49,6 +51,7 @@ func NewSuproxyController(
 		db:        db,
 		syncer:    syncer,
 		tagSearch: tagSearch,
+		cache:     cache,
 	}, nil
 }
 
@@ -74,6 +77,14 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		}
 	}
 
+	ctx := c.Request.Context()
+
+	if cached, hit, err := s.cache.Lookup(ctx, request, false); err == nil && hit {
+		s.logger.Debug("cache: handler served response from cache")
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	body, code, err := s.fetchOffers(request)
 	if err != nil {
 		s.logger.Error("Failed to fetch offers", "error", err)
@@ -85,6 +96,11 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		go s.HandleRequest(c.Copy(), request, body)
 	} else {
 		s.logger.Error("supplier request failed", "code", code)
+	}
+
+	isError := code != http.StatusOK
+	if err := s.cache.Store(ctx, request, *body, false /* isMock */, isError); err != nil {
+		s.logger.Error("cache: failed to store response", "error", err)
 	}
 
 	c.Data(code, "application/json", *body)

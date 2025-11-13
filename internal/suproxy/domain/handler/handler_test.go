@@ -59,6 +59,7 @@ func TestNewSuproxyController(t *testing.T) {
 		db         service.DatabaseService
 		syncer     service.TaglistSync
 		tagservice service.TagSearchService
+		cache      service.CacheService
 		err        bool
 	}{
 		{
@@ -70,6 +71,7 @@ func TestNewSuproxyController(t *testing.T) {
 			db:         mocks.NewMockDatabaseService(t),
 			syncer:     mocks.NewMockTaglistSync(t),
 			tagservice: mocks.NewMockTagSearchService(t),
+			cache:      mocks.NewMockCacheService(t),
 			err:        false,
 		},
 		{
@@ -81,13 +83,14 @@ func TestNewSuproxyController(t *testing.T) {
 			db:         nil,
 			syncer:     nil,
 			tagservice: nil,
+			cache:      nil,
 			err:        true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice, tt.cache)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -245,8 +248,25 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
 			mockTagsearch := mocks.NewMockTagSearchService(t)
+			mockCache := mocks.NewMockCacheService(t)
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+			mockCache.On(
+				"Lookup",
+				mock.Anything, // context
+				mock.Anything, // entity.Request
+				mock.Anything, // isMock bool
+			).Return([]byte(nil), false, nil).Maybe()
+
+			mockCache.On(
+				"Store",
+				mock.Anything, // context
+				mock.Anything, // entity.Request
+				mock.Anything, // response []byte
+				mock.Anything, // isMock bool
+				mock.Anything, // isError bool
+			).Return(nil).Maybe()
+
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch, mockCache)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
@@ -374,9 +394,10 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
 	mockTagsearch := mocks.NewMockTagSearchService(t)
+	mockCache := mocks.NewMockCacheService(t)
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch, mockCache)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -428,6 +449,23 @@ func TestHandlerHandleRequest(t *testing.T) {
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
+	cache := mocks.NewMockCacheService(b)
+
+	cache.On(
+		"Lookup",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return([]byte(nil), false, nil).Maybe()
+	cache.On(
+		"Store",
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+		mock.Anything,
+	).Return(nil).Maybe()
+
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Config{},
@@ -436,6 +474,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 		mocks.NewMockDatabaseService(b),
 		mocks.NewMockTaglistSync(b),
 		mocks.NewMockTagSearchService(b),
+		cache,
 	)
 
 	router := SetupRouter(ctrl)
