@@ -550,7 +550,10 @@ describe("Box component", () => {
 
                 const axiosError = new AxiosError("Container execution failed");
                 axiosError.response = {
-                    data: "Error: Test execution timed out after 30 seconds",
+                    data: {
+                        message:
+                            "Error: Test execution timed out after 30 seconds",
+                    },
                     status: 500,
                     statusText: "Internal Server Error",
                     headers: {},
