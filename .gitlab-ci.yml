@@ -129,6 +129,8 @@ unit_test_go:
 integration_test_go:
   services:
     - docker:dind
+  tags:
+    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
@@ -219,6 +221,8 @@ build_go_no_artifacts:
 .docker_build:
   image:
     name: docker:dind
+  tags:
+    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
