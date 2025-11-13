@@ -182,19 +182,9 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 
 // HandleRunContainer handles the running of the container and returns content of logfile from test
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
-	type parameters struct {
-		UserID    string `json:"userId"`
-		TestId    string `json:"testId"`
-		SessionID string `json:"sessionId"`
-	}
-
-	type response struct {
-		Result string `json:"result"`
-	}
-
-	var params parameters
+	var params entity.RunTestRequest
 	if err := c.ShouldBindJSON(&params); err != nil {
-		a.logger.Info(fmt.Sprintf("currently no request body: err => %s", err.Error()))
+		a.logger.Debug(fmt.Sprintf("currently no request body: err => %s", err.Error()))
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
@@ -202,38 +192,38 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	logFile := "docker/logs/output.log"
 
 	if params.UserID == "" || params.TestId == "" || params.SessionID == "" {
-		a.logger.Info("Missing required parameters")
+		a.logger.Debug("Missing required parameters")
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
 		return
 	}
 
 	// find file to mount
 	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
-	a.logger.Info(fmt.Sprintf("Testpath: %s\n", testfile))
+	a.logger.Debug(fmt.Sprintf("Testpath: %s\n", testfile))
 	if err != nil {
-		a.logger.Info(fmt.Sprintf("file not available: %s\n", err.Error()))
+		a.logger.Debug(fmt.Sprintf("file not available: %s\n", err.Error()))
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 
 	// #nosec G204 - used as quick solution, later docker pkg
 	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
-	a.logger.Info(fmt.Sprintf("cmd line: %s\n", cmd))
-	a.logger.Info("Starting the task")
+	a.logger.Debug(fmt.Sprintf("cmd line: %s\n", cmd))
+	a.logger.Debug("Starting the task")
 	if err := cmd.Run(); err != nil {
-		a.logger.Info(fmt.Sprintf("Command execution error: %s\n", err.Error()))
+		a.logger.Debug(fmt.Sprintf("Command execution error: %s\n", err.Error()))
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
-	a.logger.Info("Reading log file")
+	a.logger.Debug("Reading log file")
 	content, err := os.ReadFile(logFile)
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
-	a.logger.Info(string(content))
-	c.JSON(http.StatusOK, response{
+	a.logger.Debug(string(content))
+	c.JSON(http.StatusOK, entity.RunTestResponse{
 		Result: string(content),
 	})
 }

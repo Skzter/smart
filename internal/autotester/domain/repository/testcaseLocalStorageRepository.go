@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -275,7 +276,7 @@ func validateFilename(filename string) error {
 	}
 
 	dotPosition := len(filename) - len(testcaseLanguageDefault) - 1
-	if filename[dotPosition] != '.' {
+	if !strings.HasSuffix(filename, testcaseLanguageDefault) {
 		return fmt.Errorf("missing or invalid extension")
 	}
 
