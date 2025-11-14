@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -23,11 +24,21 @@ type SuproxyController struct {
 	client    *http.Client
 	validator service.Validator
 	db        service.DatabaseService
+	syncer    service.TaglistSync
+	tagSearch service.TagSearchService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
-func NewSuproxyController(logger *slog.Logger, config *config.Config, val service.Validator, client *http.Client, db service.DatabaseService) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db); err != nil {
+func NewSuproxyController(
+	logger *slog.Logger,
+	config *config.Config,
+	val service.Validator,
+	client *http.Client,
+	db service.DatabaseService,
+	syncer service.TaglistSync,
+	tagSearch service.TagSearchService,
+) (*SuproxyController, error) {
+	if err := assert.NotNil(logger, config, val, client, db, syncer, tagSearch); err != nil {
 		return nil, err
 	}
 
@@ -37,6 +48,8 @@ func NewSuproxyController(logger *slog.Logger, config *config.Config, val servic
 		client:    client,
 		validator: val,
 		db:        db,
+		syncer:    syncer,
+		tagSearch: tagSearch,
 	}, nil
 }
 
@@ -48,6 +61,18 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		s.logger.Error("Failed to bind JSON", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
+	}
+
+	if request.Prompt != "" {
+		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Prompt)
+		switch {
+		case err != nil:
+			s.logger.Error("Tag-based search failed", "error", err)
+		case len(matchingKeys) == 0:
+			s.logger.Info("No keys found in prompt", "", nil)
+		default:
+			s.logger.Info("Matching keys found", "keys", matchingKeys)
+		}
 	}
 
 	body, code, err := s.fetchOffers(request)
@@ -108,8 +133,13 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 		s.logger.Error(err.Error())
 		return
 	}
+	tags, err := s.validator.Validate(ctx, &list, s.syncer.GetCurrentTaglist())
+	if err != nil {
+		s.logger.Error(err.Error())
+		return
+	}
 
-	tags, err := s.validator.Validate(ctx, &list)
+	err = s.syncer.SyncTaglist(ctx, tags)
 	if err != nil {
 		s.logger.Error(err.Error())
 		return
@@ -121,7 +151,7 @@ func (s *SuproxyController) HandleRequest(ctx context.Context, req entity.Reques
 	}
 }
 
-func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags []string) error {
+func (s *SuproxyController) store(ctx context.Context, req *entity.Request, resp *entity.SupplierResponse, tags *sharedEntity.TagList) error {
 	mresp, err := json.Marshal(resp)
 	if err != nil {
 		return err

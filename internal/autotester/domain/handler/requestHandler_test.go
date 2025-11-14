@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -43,9 +44,10 @@ func TestNewAutoTesterController(t *testing.T) {
 	// if it works once, it should work all the time
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			controller, err := NewAutotesterController(test.logger, test.config, mockValServ, mockGenServ)
+			controller, err := NewAutotesterController(test.logger, test.config, mockValServ, mockGenServ, mockLocalStorageServ)
 
 			if test.expectedError {
 				if err == nil {
@@ -81,32 +83,57 @@ func TestHandleChatRequest(t *testing.T) {
 		userPrompt       string
 		sessionID        string
 		expectedResponse string
+		expectedBool     bool
 		ResponseError    error
-		expectedError    bool
 	}{
 		{
 			function:         "ValidatePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: "true",
+			expectedResponse: "",
+			expectedBool:     true,
 			ResponseError:    nil,
-			expectedError:    false,
-		},
-		{
-			function:         "ValidatePrompt",
-			userPrompt:       invalidPrompt,
-			sessionID:        sessionid,
-			expectedResponse: "false",
-			ResponseError:    errors.New("prompt does not contain required information for test generation"),
-			expectedError:    true,
 		},
 		{
 			function:         "GeneratePrompt",
 			userPrompt:       validPrompt,
 			sessionID:        sessionid,
-			expectedResponse: "This is a generated Prompt",
+			expectedResponse: "some code",
 			ResponseError:    nil,
-			expectedError:    false,
+		},
+		{
+			// no need for generate mock
+			function:         "ValidatePrompt",
+			userPrompt:       invalidPrompt,
+			sessionID:        sessionid,
+			expectedResponse: "versuch doch mal das",
+			expectedBool:     false,
+			ResponseError:    nil,
+		},
+		{
+			// errors in validation
+			function:         "ValidatePrompt",
+			userPrompt:       "json gibts nicht",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			expectedBool:     false,
+			ResponseError:    sharedErrors.ErrValidation,
+		},
+		{
+			// test has to pass in validation in order to fail in generation below
+			function:         "ValidatePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			expectedBool:     true,
+			ResponseError:    nil,
+		},
+		{
+			function:         "GeneratePrompt",
+			userPrompt:       "generating err",
+			sessionID:        sessionid,
+			expectedResponse: "",
+			ResponseError:    sharedErrors.ErrGeneration,
 		},
 	}
 	tests := []struct {
@@ -142,17 +169,42 @@ func TestHandleChatRequest(t *testing.T) {
 				"userId":         "2",
 				"conversationId": "2"
 			}`,
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			TestName: "valid request, validate will return false json",
+			RequestBody: `{
+				"message": {
+					"data":  "json gibts nicht",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+		},
+		{
+			TestName: "valid request, errors when generating",
+			RequestBody: `{
+				"message": {
+					"data":  "generating err",
+					"agent": "user"
+				},
+				"userId":         "2",
+				"conversationId": "2"
+			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 		},
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 	// setup mocks
 	for _, mc := range mockSetup {
 		if mc.function == "ValidatePrompt" {
-			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.ResponseError)
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedBool, mc.expectedResponse, mc.ResponseError)
 		}
 		if mc.function == "GeneratePrompt" {
 			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
@@ -172,11 +224,12 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
 
 			if err != nil {
 				t.Errorf("build failed")
 			}
+
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
@@ -224,6 +277,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -238,12 +292,230 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
 
 			if err != nil {
 				t.Errorf("build failed")
 			}
 			controller.HandleUserInfoRequest(ctx)
+
+			if rec.Code != test.ExpectedStatus {
+				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+func TestHandleTemplate(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tests := []struct {
+		TestName       string
+		template       string
+		ctx            context.Context
+		expectedStatus int
+	}{
+		{
+			TestName:       "Request, not empty Template",
+			template:       "valid template",
+			ctx:            context.Background(),
+			expectedStatus: http.StatusOK,
+		}, {
+			TestName:       "Request, empty Template",
+			template:       "",
+			ctx:            context.Background(),
+			expectedStatus: http.StatusTeapot,
+		},
+	}
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+
+	for _, test := range tests {
+		t.Run(test.TestName, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodGet, "/api/v1/template", nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
+			ctx.Errors.Errors()
+
+			cfg.Template = test.template
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
+
+			if err != nil {
+				t.Errorf("build failed")
+			}
+			controller.HandleGetTemplate(ctx)
+
+			if rec.Code != test.expectedStatus {
+				t.Errorf("Expected status %d, got %d", test.expectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+// nolint:dupl
+func TestHandleSaveLocalRequest(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+
+	tests := []struct {
+		TestName       string
+		RequestBody    string
+		ExpectedStatus int
+		SetupMock      func(*mocks.MockTestcaseLocalStorageService)
+	}{
+		{
+			TestName: "Valid save request",
+			RequestBody: `{
+				"userId": "user123",
+				"conversationId": "conv456",
+				"code": "import { test, expect } from '@playwright/test';\n\ntest('example test', async ({ page }) => {\n  await page.goto('https://example.com');\n});"
+			}`,
+			ExpectedStatus: http.StatusOK,
+			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
+				m.EXPECT().Save(mock.Anything, "user123", "conv456").Return(nil).Once()
+			},
+		},
+		{
+			TestName:       "Invalid JSON",
+			RequestBody:    `{"invalid":json}`,
+			ExpectedStatus: http.StatusBadRequest,
+			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
+		},
+		{
+			TestName: "Save service fails",
+			RequestBody: `{
+				"userId": "user789",
+				"conversationId": "conv789",
+				"code": "test code"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
+				m.EXPECT().Save(mock.Anything, "user789", "conv789").Return(errors.New("database error")).Once()
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.TestName, func(t *testing.T) {
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+
+			test.SetupMock(mockLocalStorageServ)
+
+			req, err := http.NewRequest(http.MethodPost, "/api/v1/saveLocal", bytes.NewBufferString(test.RequestBody))
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
+
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
+			if err != nil {
+				t.Errorf("build failed")
+			}
+
+			controller.HandleSaveLocalRequest(ctx)
+
+			if rec.Code != test.ExpectedStatus {
+				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+// nolint:dupl
+func TestHandleDeleteLocalRequest(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+
+	tests := []struct {
+		TestName       string
+		QueryParams    map[string]string
+		ExpectedStatus int
+		SetupMock      func(*mocks.MockTestcaseLocalStorageService)
+	}{
+		{
+			TestName: "Valid delete request",
+			QueryParams: map[string]string{
+				"testcaseId":     "test123",
+				"userId":         "user123",
+				"conversationId": "conv456",
+			},
+			ExpectedStatus: http.StatusOK,
+			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
+				m.EXPECT().Delete("test123", "user123", "conv456").Return(nil).Once()
+			},
+		},
+		{
+			TestName: "Missing required parameters",
+			QueryParams: map[string]string{
+				"testcaseId": "test123",
+			},
+			ExpectedStatus: http.StatusBadRequest,
+			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
+		},
+		{
+			TestName: "Delete service fails",
+			QueryParams: map[string]string{
+				"testcaseId":     "test789",
+				"userId":         "user789",
+				"conversationId": "conv789",
+			},
+			ExpectedStatus: http.StatusInternalServerError,
+			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
+				m.EXPECT().Delete("test789", "user789", "conv789").Return(errors.New("database error")).Once()
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.TestName, func(t *testing.T) {
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+
+			test.SetupMock(mockLocalStorageServ)
+
+			url := "/api/v1/deleteLocal"
+			if len(test.QueryParams) > 0 {
+				url += "?"
+				first := true
+				for key, value := range test.QueryParams {
+					if !first {
+						url += "&"
+					}
+					url += key + "=" + value
+					first = false
+				}
+			}
+
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			if err != nil {
+				t.Fatalf("Failed to create request: %v", err)
+			}
+
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
+
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
+			if err != nil {
+				t.Errorf("build failed")
+			}
+
+			controller.HandleDeleteLocalRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)

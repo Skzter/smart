@@ -1,0 +1,8 @@
+{
+    "message": {
+        "data": "Autoplaywright-Tests: Login und Profileinstellungen im Check24-Konto. Base-URL: https://staging.check24.de. Szenario: Nutzer loggt sich ein, navigiert zu Profileinstellungen, ändert Adresse. Ablauf: Login beschrieben, dann Klick auf 'Profil', Eingabe neuer Adresse, Klick 'Speichern'. Assertions: Profilseite zeigt neue Adresse. Testdaten/Setup: TEST_USER existiert; Teardown: Rücksetzen der Adresse.",
+        "agent": "user"
+    },
+    "userId": "testuser",
+    "conversationId": ""
+}

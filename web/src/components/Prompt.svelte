@@ -1,12 +1,29 @@
 <script lang="ts">
     import { Button } from "flowbite-svelte";
+    import { getTemplate } from "../lib/Api.ts";
+    import Popup from "./Popup.svelte";
     let { input = $bindable(""), onclick } = $props();
+
+    let showPopup = $state(false);
+    let popupMessage = $state("");
+    let popupTitle = $state("Error");
 
     function handleKeyPress(e: KeyboardEvent) {
         if (e.key === "Enter" && input.trim() && !e.shiftKey) {
             onclick();
             input = "";
             e.preventDefault();
+        }
+    }
+
+    async function loadTemplate() {
+        try {
+            let response = await getTemplate("/template");
+            input = response.data.template;
+        } catch {
+            popupMessage = "NO TEMPLATE FOUND!";
+            popupTitle = "Template Error";
+            showPopup = true;
         }
     }
 </script>
@@ -26,4 +43,9 @@
         {onclick}
         disabled={!input.trim()}>Send</Button
     >
+    <Button color="purple" class="w-1/10 h-1/3" onclick={loadTemplate}
+        >Template</Button
+    >
 </div>
+
+<Popup bind:isOpen={showPopup} message={popupMessage} title={popupTitle} />

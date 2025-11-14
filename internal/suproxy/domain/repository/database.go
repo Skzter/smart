@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
-
-// EntryPrefix is the prefix used for database entries in the S3 storage.
-const EntryPrefix = "supplierData/"
 
 // DatabaseRepository defines the interface for database operations related to supplier data.
 type DatabaseRepository interface {
@@ -33,6 +31,7 @@ type databaseRepository struct {
 	s3Wrapper      service.S3StorageWrapper
 	parquetWrapper service.ParquetFileWrapper[entity.DatabaseEntry]
 	logger         *slog.Logger
+	entryPrefix    string
 }
 
 // NewDatabaseRepository creates a new instance of DatabaseRepository
@@ -40,6 +39,7 @@ func NewDatabaseRepository(
 	logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	parquetWrapper service.ParquetFileWrapper[entity.DatabaseEntry],
+	prefix string,
 ) (DatabaseRepository, error) {
 	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
 		return nil, err
@@ -49,6 +49,7 @@ func NewDatabaseRepository(
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
+		entryPrefix:    prefix,
 	}, nil
 }
 
@@ -75,7 +76,7 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 	key := generateKey(dbEntry.Tags, timestamp)
 
-	err = dbR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+key, parquetData, metadata)
+	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to upload existing parquet: %w", err)
 	}
@@ -92,7 +93,7 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 		return nil, fmt.Errorf("key must not be empty: %w", err)
 	}
 
-	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+key)
+	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
 	}
@@ -122,7 +123,7 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
 
-	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, EntryPrefix+key)
+	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
 		return fmt.Errorf("failed to download data: %w", err)
 	}
@@ -140,7 +141,7 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 		"updated": timestamp,
 	}
 
-	err = dbR.s3Wrapper.UploadParquetFile(ctx, EntryPrefix+key, parquetData, metadata)
+	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
@@ -157,7 +158,7 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 		return fmt.Errorf("key must not be empty: %w", err)
 	}
 
-	err := dbR.s3Wrapper.DeleteParquetFile(ctx, EntryPrefix+key)
+	err := dbR.s3Wrapper.DeleteParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
@@ -171,7 +172,7 @@ func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
-	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, EntryPrefix)
+	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, dbR.entryPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list parquet files: %w", err)
 	}
@@ -222,14 +223,18 @@ func validateResponse(rp entity.Response) error {
 }
 
 // validateTags validates the tags associated with the database entry
-func validateTags(t []string) error {
-	if len(t) == 0 {
+func validateTags(t *sharedEntity.TagList) error {
+	if t == nil || len(t.Tags) == 0 {
 		return fmt.Errorf("tags must not be empty")
 	}
 	return nil
 }
 
 // generateKey creates a unique key for the database entry based on its tags and a Unix timestamp
-func generateKey(tags []string, unixTimestamp string) string {
+func generateKey(taglist *sharedEntity.TagList, unixTimestamp string) string {
+	tags := make([]string, len(taglist.Tags))
+	for i, tag := range taglist.Tags {
+		tags[i] = strings.ToLower(strings.TrimSpace(tag.Name))
+	}
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }
