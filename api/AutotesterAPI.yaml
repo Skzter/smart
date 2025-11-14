@@ -163,7 +163,69 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /api/v1/run:
+  post:
+    summary: Run automated Playwright test in container
+    description: Executes a Playwright test file in a containerized environment and returns the test output logs
+    tags:
+      - Autotester
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - userId
+              - testId
+              - sessionId
+            properties:
+              userId:
+                type: string
+                description: Unique identifier of the user
+                example: "user123"
+              testId:
+                type: string
+                description: Unique identifier of the test to run
+                example: "test456"
+              sessionId:
+                type: string
+                description: Unique identifier of the session
+                example: "session789"
+    responses:
+      '200':
+        description: Test executed successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                result:
+                  type: string
+                  description: Test execution output logs
+                  example: "Test passed: All assertions successful"
+      '400':
+        description: Bad request - Invalid input or missing required parameters
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Error message describing the issue
+                  example: "Missing required parameters"
+      '500':
+        description: Internal server error - Command execution or file reading failed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Error message describing the internal error
+                  example: "Command execution error: exit status 1"
 
 components:
   schemas:

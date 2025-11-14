@@ -5,6 +5,7 @@ import {
     getUserInfo,
     getTemplate,
     saveTestLocal,
+    runContainer,
 } from "../../src/lib/Api.ts";
 
 // Mock axios
@@ -28,15 +29,15 @@ describe("API Functions", () => {
     const mockResponseData = { data: "test data" };
 
     const mockSaveLocalRequest = {
-        testcode: "fantatsic code", 
+        testcode: "fantatsic code",
         userId: mockUserId,
         conversationId: mockConversationId,
     };
 
     const mockSaveLocalResponse = {
-        testcaseId: "testid", 
+        testcaseId: "testid",
         action: "saved",
-    }
+    };
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -162,6 +163,74 @@ describe("API Functions", () => {
             await expect(saveTestLocal(mockSaveLocalRequest)).rejects.toThrow(
                 "Failed to save test",
             );
+        });
+    });
+
+    describe("runContainer", () => {
+        const mockParams = { image: "node:latest", command: "echo hello" };
+        const mockResponse = {
+            data: { containerId: "123", status: "running" },
+        };
+
+        it("should make a POST request to /run and return data", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockResponse);
+
+            const result = await runContainer(mockParams);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/run",
+                baseURL: "/api/v1/",
+                data: mockParams,
+            });
+            expect(result.data).toEqual(mockResponse.data);
+        });
+
+        it("should use custom URL when provided", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockResponse);
+            const customUrl = "/custom-run";
+
+            const result = await runContainer(mockParams, customUrl);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: customUrl,
+                baseURL: "/api/v1/",
+                data: mockParams,
+            });
+            expect(result.data).toEqual(mockResponse.data);
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockRejectedValue(new Error("Failed to run container"));
+
+            await expect(runContainer(mockParams)).rejects.toThrow(
+                "Failed to run container",
+            );
+        });
+
+        it("should pass the correct params as request body", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockResponse);
+            const complexParams = {
+                image: "python:3.9",
+                command: "python script.py",
+                env: { KEY: "value" },
+                resources: { cpu: 2, memory: "1GB" },
+            };
+
+            const result = await runContainer(complexParams);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/run",
+                baseURL: "/api/v1/",
+                data: complexParams,
+            });
+            expect(result.data).toEqual(mockResponse.data);
         });
     });
 });
