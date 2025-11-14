@@ -98,7 +98,7 @@ func getSaveTestCases() []saveTestCase {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
 
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"spec.ts")
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(nil).Once()
 			},
 			wantErr: false,
@@ -122,7 +122,7 @@ func getSaveTestCases() []saveTestCase {
 			setupMock: func(m *mocks.MockFileSystem) {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"spec.ts")
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(assert.AnError).Once()
 			},
 			wantErr: true,
