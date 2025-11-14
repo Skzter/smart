@@ -1,8 +1,21 @@
 #!/bin/sh
 
 FILE="$1"
-BASEFILE=$(basename $FILE)
 
+# Check if an argument was provided
+if [ -z "$FILE" ]; then
+    echo "Error: No file specified"
+    echo "Usage: $0 <file>"
+    exit 1
+fi
+
+# Check if the file exists
+if [ ! -e "$FILE" ]; then
+    echo "Error: File '$FILE' does not exist"
+    exit 1
+fi
+
+BASEFILE=$(basename $FILE)
 LOGDIR="logs/"
 
 # logs/uuid.spec.ts.log

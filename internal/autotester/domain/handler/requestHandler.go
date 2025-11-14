@@ -218,12 +218,12 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	}
 
 	// logdir = logs/
-	// file is /tmp/uuid/uuid/uuid.spec.ts
-	PathLogfile := a.config.LogDirAutopw + filepath.Base(testfile) + ".log"
-	a.logger.Debug(fmt.Sprintf("Reading log file => %s", PathLogfile))
+	// file is /tmp/userID/sessionID/testcaseID.spec.ts
+	LogFilePath := a.config.LogDirAutopw + filepath.Base(testfile) + ".log"
+	a.logger.Debug(fmt.Sprintf("Reading log file => %s", LogFilePath))
 
 	// #nosec G304 -- filepath is correct
-	content, err := os.ReadFile(PathLogfile)
+	content, err := os.ReadFile(LogFilePath)
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})

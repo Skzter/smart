@@ -15,7 +15,6 @@ vars:
   AWS_SECRET_ACCESS_KEY_VAR: "{{.MODULE_NAME}}/internal/build.AwsSecretAccessKey"
   VERSION_VAR: "{{.MODULE_NAME}}/internal/build.Version"
   TESTCOVERAGE_THRESHOLD: 60
-  TEST_FILE: "test.spec.ts"
 
 tasks:
   # --------------------------------------------------------------------------------
@@ -159,7 +158,7 @@ tasks:
 
   build-autopw-image:
     desc: "builds auto playwright image"
-    dir: docker 
+    dir: build/auto-playwright
     cmds:
       - docker build -t auto-pw . --no-cache
 
@@ -167,6 +166,7 @@ tasks:
     desc: Run a Playwright test in Docker with logs
     dir: scripts
     cmds:
+      # TEST_FILE wird bei runtime hinzugefügt
       - ./run-container.sh {{.TEST_FILE}}
 
   test-ui-auto-playwright:
