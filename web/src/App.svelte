@@ -101,19 +101,14 @@
             bind:this={container}
         >
             {#each convo as c}
-                <Box 
-                    msg={c.question} 
-                    name="User" 
-                    userId={userId} 
-                    conversationId={conversationId} 
-                />
+                <Box msg={c.question} name="User" {userId} {conversationId} />
                 {#if c.answer}
                     <Box
                         msg={c.answer}
                         name="Bot"
-                        userId={userId} 
-                        conversationId={conversationId} 
-                        showSave={c.answer.startsWith('import')}
+                        {userId}
+                        {conversationId}
+                        showSave={c.answer.startsWith("import")}
                     />
                 {/if}
             {/each}
