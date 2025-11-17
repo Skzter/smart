@@ -208,7 +208,7 @@ func validateRequest(rq entity.Request) error {
 	}
 
 	if err := assert.StringNotEmpty(rq.Body); err != nil {
-		return fmt.Errorf("request must not be empty: %w", err)
+		return fmt.Errorf("body must not be empty: %w", err)
 	}
 	return nil
 }

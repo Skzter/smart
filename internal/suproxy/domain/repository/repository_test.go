@@ -348,7 +348,7 @@ func TestValidateDbEntry(t *testing.T) {
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
 					Header:      map[string]string{"Content-Type": "application/json"},
-					Tags:        "prompt",
+					Tags:        "tags",
 					Destination: "http://example.com",
 					Body:        "{}",
 				},
