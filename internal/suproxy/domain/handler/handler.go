@@ -87,6 +87,10 @@ func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, e
 		}
 	}()
 
+	for key, value := range request.Header {
+		req.Header.Set(key, value)
+	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, 0, err

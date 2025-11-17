@@ -29,7 +29,8 @@ const (
 func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
 		Request: entity.Request{
-			Tags:        "prompt",
+			Header:      map[string]string{"Content-Type": "application/json"},
+			Tags:        "Tags",
 			Destination: "http://example.com",
 			Body:        `{}`,
 		},
@@ -301,7 +302,8 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "valid entry",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Tags:        "prompt",
+					Header:      map[string]string{"Content-Type": "application/json"},
+					Tags:        "Tags",
 					Destination: "http://example.com",
 					Body:        "{}",
 				},
@@ -310,11 +312,27 @@ func TestValidateDbEntry(t *testing.T) {
 			},
 			expectError: false,
 		},
-
 		{
-			name: "invalid request - empty prompt",
+			name: "invalid request - empty header",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
+					Header:      map[string]string{},
+					Tags:        "Tags",
+					Destination: "http://example.com",
+					Body:        "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     []string{"tag1"},
+			},
+			expectError: true,
+			errorText:   "header must not be empty",
+		},
+
+		{
+			name: "invalid request - empty tags",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Tags:        "",
 					Destination: "http://example.com",
 					Body:        "{}",
@@ -323,12 +341,13 @@ func TestValidateDbEntry(t *testing.T) {
 				Tags:     []string{"tag1"},
 			},
 			expectError: true,
-			errorText:   "prompt must not be empty",
+			errorText:   "tags must not be empty",
 		},
 		{
 			name: "invalid response - empty response",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
+					Header:      map[string]string{"Content-Type": "application/json"},
 					Tags:        "prompt",
 					Destination: "http://example.com",
 					Body:        "{}",
@@ -343,7 +362,8 @@ func TestValidateDbEntry(t *testing.T) {
 			name: "invalid tags - empty list",
 			entry: entity.DatabaseEntry{
 				Request: entity.Request{
-					Tags:        "prompt",
+					Header:      map[string]string{"Content-Type": "application/json"},
+					Tags:        "Tags",
 					Destination: "http://example.com",
 					Body:        "{}",
 				},

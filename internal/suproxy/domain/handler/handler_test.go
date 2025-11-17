@@ -99,6 +99,10 @@ type supplierSetup struct {
 
 //nolint:funlen
 func TestHandlerPostOfferlist(t *testing.T) {
+	header := map[string]string{
+		"Authorization": "Bearer asdfjsafjaölfaöfsal",
+	}
+
 	invalidRequestBody := struct {
 		Err string `json:"error"`
 	}{
@@ -202,6 +206,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				} else {
 					dest = ""
 				}
+				tt.request.Header = header
 				tt.request.Destination = dest
 				reqstring, _ = json.Marshal(tt.request)
 			} else {
@@ -374,6 +379,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 	}))
 
 	requestBody, _ := json.Marshal(entity.Request{
+		Header:      map[string]string{"Content-Type": "application/json"},
 		Tags:        "",
 		Destination: server.URL,
 		Body:        `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
