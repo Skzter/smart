@@ -79,7 +79,7 @@ func TestValidatorValidate(t *testing.T) {
 		mockResponse     string
 		mockResonseError error
 		expectError      bool
-		expectedTags     []string
+		expectedTags     *sharedEntity.TagList
 	}{
 		{
 			name:        "empty input",
@@ -94,7 +94,7 @@ func TestValidatorValidate(t *testing.T) {
 				Data:           entity.SupplierOfferList{},
 			},
 			expectCall:   false,
-			expectedTags: []string{"non200"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "non_200", Description: ""}}},
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
@@ -111,7 +111,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-01-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    []string{"valid"},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
@@ -127,8 +127,9 @@ func TestValidatorValidate(t *testing.T) {
 			},
 			expectCall:      true,
 			expectedContent: "2025-02-01",
-			mockResponse:    `{"valid":false,"reason":["missing_hotelid"]}`,
-			expectedTags:    []string{"missing_hotelid"},
+			mockResponse:    `{"valid":false,"reason":[ "name": "no_hotelid", "description": "The response does not contain a hotelid field."]}`,
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_hotelid", Description: "The response does not contain a hotelid field."}}},
+			expectError:     true,
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
@@ -156,7 +157,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: []string{"noOffer"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_offer", Description: ""}}},
 		},
 		{
 			name: "exceeding maximum request,",
@@ -176,7 +177,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-05-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    []string{"valid"},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 		},
 		{
 			name: "valid 200 response with single empty offer",
@@ -189,7 +190,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: []string{"emptyOffer"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "empty_offer", Description: ""}}},
 		},
 		{
 			name: "openai service error",
@@ -253,7 +254,7 @@ func TestValidatorValidate(t *testing.T) {
 				panic(err)
 			}
 
-			tags, err := validator.Validate(t.Context(), tt.input)
+			tags, err := validator.Validate(t.Context(), tt.input, &sharedEntity.TagList{})
 
 			assert.Equal(t, tt.expectError, err != nil)
 			if err != nil {

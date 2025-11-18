@@ -16,10 +16,13 @@ import (
 func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*gin.Engine, error) {
 	router := gin.Default()
 
-	apiV1 := router.Group("/api/v1/chat")
+	apiV1 := router.Group("/api/v1")
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
 		apiV1.GET("/template", controller.HandleGetTemplate)
+		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
+		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
+		apiV1.POST("/run", controller.HandleRunContainer)
 	}
 
 	router.GET("/auth_config.json", func(c *gin.Context) {

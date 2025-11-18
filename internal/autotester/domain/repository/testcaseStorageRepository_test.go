@@ -70,7 +70,7 @@ func testcaseCreateTestCaseProvider() []struct {
 	}{
 		{
 			name:           "happy path",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
 			expectError:    false,
@@ -89,13 +89,13 @@ func testcaseCreateTestCaseProvider() []struct {
 		},
 		{
 			name:           "parquet error",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			writeStructErr: errors.New("parquet error"),
 			expectError:    true,
 		},
 		{
 			name:           "upload error",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      errors.New("upload error"),
 			expectError:    true,
@@ -172,7 +172,7 @@ func testcaseReadTestCaseProvider() []struct {
 			key:             "valid-key",
 			downloadRet:     []byte("parquet"),
 			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.TestCase{{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed}},
+			readStructsRet:  []entity.TestCase{{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed}},
 			expectError:     false,
 			expectNilResult: false,
 		},
@@ -286,7 +286,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 	}{
 		{
 			name:           "happy path",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -306,27 +306,27 @@ func testcaseUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:        "empty key",
-			obj:         &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:         &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:         "",
 			expectError: true,
 		},
 		{
 			name:          "file exists check error",
-			obj:           &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:           &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:           "valid-key",
 			fileExistsErr: errors.New("exists error"),
 			expectError:   true,
 		},
 		{
 			name:          "file does not exist",
-			obj:           &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:           &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:           "valid-key",
 			fileExistsRet: false,
 			expectError:   true,
 		},
 		{
 			name:           "parquet write fails",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructErr: errors.New("parquet error"),
@@ -334,7 +334,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:           "s3 upload fails",
-			obj:            &entity.TestCase{TestID: "id", Description: "desc", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -412,10 +412,9 @@ func TestValidateTestCaseData(t *testing.T) {
 		{
 			name: "valid TestCase",
 			obj: &entity.TestCase{
-				TestID:      "id",
-				Description: "desc",
-				TestCode:    entity.TestCode{Code: "code"},
-				Status:      entity.TestStatusPassed,
+				TestID:   "id",
+				TestCode: entity.TestCode{Code: "code"},
+				Status:   entity.TestStatusPassed,
 			},
 			wantErr: false,
 		},
@@ -427,40 +426,27 @@ func TestValidateTestCaseData(t *testing.T) {
 		{
 			name: "empty TestID",
 			obj: &entity.TestCase{
-				TestID:      "",
-				Description: "desc",
-				TestCode:    entity.TestCode{Code: "code"},
-				Status:      entity.TestStatusPassed,
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty Description",
-			obj: &entity.TestCase{
-				TestID:      "id",
-				Description: "",
-				TestCode:    entity.TestCode{Code: "code"},
-				Status:      entity.TestStatusPassed,
+				TestID:   "",
+				TestCode: entity.TestCode{Code: "code"},
+				Status:   entity.TestStatusPassed,
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty Status",
 			obj: &entity.TestCase{
-				TestID:      "id",
-				Description: "desc",
-				TestCode:    entity.TestCode{Code: "code"},
-				Status:      "",
+				TestID:   "id",
+				TestCode: entity.TestCode{Code: "code"},
+				Status:   "",
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty TestCode.Code",
 			obj: &entity.TestCase{
-				TestID:      "id",
-				Description: "desc",
-				TestCode:    entity.TestCode{Code: ""},
-				Status:      entity.TestStatusPassed,
+				TestID:   "id",
+				TestCode: entity.TestCode{Code: ""},
+				Status:   entity.TestStatusPassed,
 			},
 			wantErr: true,
 		},

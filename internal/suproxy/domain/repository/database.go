@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -222,14 +223,18 @@ func validateResponse(rp entity.Response) error {
 }
 
 // validateTags validates the tags associated with the database entry
-func validateTags(t []string) error {
-	if len(t) == 0 {
+func validateTags(t *sharedEntity.TagList) error {
+	if t == nil || len(t.Tags) == 0 {
 		return fmt.Errorf("tags must not be empty")
 	}
 	return nil
 }
 
 // generateKey creates a unique key for the database entry based on its tags and a Unix timestamp
-func generateKey(tags []string, unixTimestamp string) string {
+func generateKey(taglist *sharedEntity.TagList, unixTimestamp string) string {
+	tags := make([]string, len(taglist.Tags))
+	for i, tag := range taglist.Tags {
+		tags[i] = strings.ToLower(strings.TrimSpace(tag.Name))
+	}
 	return fmt.Sprintf("%s-%s", strings.Join(tags, "-"), unixTimestamp)
 }
