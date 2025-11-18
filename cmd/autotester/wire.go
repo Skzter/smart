@@ -43,6 +43,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 	return nil, nil
 }
 
+// TaglistConfigProvider provides a new TaglistConfig.
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }
@@ -67,6 +68,7 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
 }
 
+// S3WrapperProvider provides a new S3Wrapper.
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
@@ -82,6 +84,7 @@ func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
+// TestcaseLocalStorageServiceProvider provides a new Storageservice.
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }

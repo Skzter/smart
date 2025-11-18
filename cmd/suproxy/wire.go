@@ -49,6 +49,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 	return nil, nil
 }
 
+// TaglistConfigProvider provides a new TaglistConfig.
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }
@@ -63,14 +64,17 @@ func OpenAiRepositoryProvider(logger *slog.Logger, client sharedRepo.OpenAIClien
 	return sharedRepo.NewOpenAiRepository(logger, client, cfg.Timeout)
 }
 
+// HTTPClientProvider provides a new HTTP Client.
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
+// DatabaseParquetWrapperProvider provides a new DatabaseParwuetWrapper.
 func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
 }
 
+// S3WrapperProvider provides a new S3Wrapper.
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
 	config := wconfig.S3Config{
 		Region:    cfg.Region,
@@ -81,6 +85,7 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3Stora
 	return wrapper.NewS3Wrapper(logger, config)
 }
 
+// DatabaseRepositoryProvider provides a new DatabaseRepository.
 func DatabaseRepositoryProvider(
 	logger *slog.Logger,
 	cfg *config.Config,
@@ -94,14 +99,18 @@ func DatabaseRepositoryProvider(
 		cfg.EntryPrefix,
 	)
 }
+
+// TagsearchServiceProvider provides a new TagsearchService
 func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
 }
 
+// RedisCacheProvider provides a new RedisCache
 func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (repository.Cache, error) {
 	return repository.NewRedisCache(log, cfg)
 }
 
+// CacheServiceProvider provides a new CacheService
 func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) service.CacheService {
 	return service.NewCacheService(log, cfg, repo)
 }

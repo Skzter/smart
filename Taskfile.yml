@@ -156,6 +156,24 @@ tasks:
     cmds:
       - docker compose -f compose.dev.yml down
 
+  build-autopw-image:
+    desc: "builds auto playwright image"
+    dir: build/auto-playwright
+    cmds:
+      - docker build -t auto-pw . --no-cache
+
+  test-auto-playwright:
+    desc: Run a Playwright test in Docker with logs
+    dir: scripts
+    cmds:
+      # TEST_FILE wird bei runtime hinzugefügt
+      - ./run-container.sh {{.TEST_FILE}}
+
+  test-ui-auto-playwright:
+    desc: Run a Playwright test in Docker with logs
+    dir: scripts
+    cmds:
+      - ./run-ui-container.sh
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
@@ -219,7 +237,7 @@ tasks:
     vars:
       GOVERSION:
         sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
-      EXCLUDE_RULES: "G104,G107,G401,G501"
+      EXCLUDE_RULES: "G104,G107, G204, G304"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...

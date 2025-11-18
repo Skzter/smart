@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -24,36 +24,42 @@ var (
 	ErrEmptyOpenAIResult = errors.New("openai returned empty result")
 )
 
+func emptyOfferTag() sharedEntity.Tag {
+	return sharedEntity.Tag{
+		Name:        "empty_offer",
+		Description: "",
+	}
+}
+
 // staticly generated tags
 const (
-	emptyOffer         = "emptyOffer"
-	NoOffersInResponse = "noOffer"
-	ReponseNot200      = "non200"
+	NoOffersInResponse = "no_offer"
+	ReponseNot200      = "non_200"
 	ValidOffer         = "valid"
 )
 
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
 type OpenAIValidationResult struct {
-	Valid  bool     `json:"valid"`
-	Reason []string `json:"reason"`
+	Valid  bool               `json:"valid"`
+	Reason []sharedEntity.Tag `json:"reason"`
 }
 
 // Validator defines an interface for validating a SupplierResponse.
 // Implementations should provide specific validation logic.
 type Validator interface {
-	Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error)
+	Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error)
 }
 
 // Validator encapsulates the logic for validating supplier offer responses
 // It sends up to MaxItems individual offer prompts to an OpenAI service for consistency checks
 type validator struct {
-	openAiService service.OpenAI
+	openAiService sharedService.OpenAI
 	Logger        *slog.Logger
 	cfg           *config.Config
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenAI) (Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI) (Validator, error) {
 	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}
@@ -67,22 +73,38 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service service.OpenA
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse) ([]string, error) {
+func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}
 
 	if offers.HTTPStatusCode != http.StatusOK {
-		return []string{ReponseNot200}, nil
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        ReponseNot200,
+					Description: "",
+				},
+			},
+		}, nil
 	}
 
 	if len(offers.Data.Items) == 0 {
-		return []string{NoOffersInResponse}, nil
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        NoOffersInResponse,
+					Description: "",
+				},
+			},
+		}, nil
 	}
 
 	v.Logger.Debug("Valid offerlist. Beginning LMM validation")
 
-	tags := make([]string, 0, 10)
+	newTags := make([]sharedEntity.Tag, 0, 10)
+
+	sysPrompt := fmt.Sprintf(v.cfg.Prompts.ValidationPrompt, tagList.Format())
 
 	for i, offer := range offers.Data.Items {
 		v.Logger.Debug(fmt.Sprintf("checking offers: %d/%d", i, v.cfg.MaxItemsPerValidation))
@@ -94,18 +116,16 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		item = strings.TrimSpace(item)
 		if item == "" {
-			if !slices.Contains(tags, emptyOffer) {
-				tags = append(tags, emptyOffer)
-			}
-			continue
+			return &sharedEntity.TagList{
+				Tags: []sharedEntity.Tag{emptyOfferTag()},
+			}, nil
 		}
 
-		req := shared.Request{
+		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
 			Prompt:       item,
-			SystemPrompt: v.cfg.Prompts.ValidationPrompt,
+			SystemPrompt: sysPrompt,
 		}
-
 		result, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return nil, err
@@ -125,15 +145,24 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		if !validationResult.Valid {
 			for _, tag := range validationResult.Reason {
-				if !slices.Contains(tags, tag) {
-					tags = append(tags, tag)
+				if !slices.ContainsFunc(newTags, func(t sharedEntity.Tag) bool {
+					return t.Name == tag.Name
+				}) {
+					newTags = append(newTags, tag)
 				}
 			}
 		}
 	}
 
-	if len(tags) == 0 {
-		return []string{ValidOffer}, nil
+	if len(newTags) == 0 {
+		return &sharedEntity.TagList{
+			Tags: []sharedEntity.Tag{
+				{
+					Name:        ValidOffer,
+					Description: "",
+				},
+			},
+		}, nil
 	}
-	return tags, nil
+	return &sharedEntity.TagList{Tags: newTags}, nil
 }
