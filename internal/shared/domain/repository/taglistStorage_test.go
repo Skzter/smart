@@ -39,10 +39,10 @@ func TestCreateTaglist(t *testing.T) {
 			ctx:          nil,
 		},
 		{
-			name:         "validation error",
-			taglist:      &entity.TagList{},
+			name:         "taglist with empty name",
+			taglist:      &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
 			expectsError: true,
-			ctx:          context.Background(),
+			ctx:          t.Context(),
 		},
 		{
 			name:         "parquet error",
@@ -202,10 +202,10 @@ func TestUpdateTaglist(t *testing.T) {
 			ctx:          nil,
 		},
 		{
-			name:         "invalid taglist",
-			taglist:      &entity.TagList{},
+			name:         "taglist with empty name",
+			taglist:      &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
 			expectsError: true,
-			ctx:          context.Background(),
+			ctx:          t.Context(),
 		},
 		{
 			name:            "s3 download error",
@@ -358,6 +358,46 @@ func TestNewTaglistStorage(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, repo)
+			}
+		})
+	}
+}
+
+func TestValidateTaglist(t *testing.T) {
+	tests := []struct {
+		name        string
+		taglist     *entity.TagList
+		expectError bool
+	}{
+		{
+			name:        "valid taglist",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
+			expectError: false,
+		},
+		{
+			name:        "nil taglist",
+			taglist:     nil,
+			expectError: true,
+		},
+		{
+			name:        "taglist with empty name",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
+			expectError: true,
+		},
+		{
+			name:        "taglist with empty description",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Name: "TAG1"}}},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateTaglist(tc.taglist)
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
