@@ -96,7 +96,7 @@ func TestSyncTaglist(t *testing.T) {
 			ctx:          context.Background(),
 			taglist:      sharedEntity.TagList{},
 			mockResponse: nil,
-			wantErr:      true,
+			wantErr:      false,
 		},
 		{
 			name:         "equal taglist",

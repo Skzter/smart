@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"slices"
 	"sync"
@@ -51,9 +50,6 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
-	}
-	if len(taglist.Tags) == 0 {
-		return errors.New("empty taglist")
 	}
 
 	tls.mutex.Lock()
