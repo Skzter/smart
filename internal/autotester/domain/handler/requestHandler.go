@@ -76,14 +76,40 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		userRequest.SessionId = uuid.New().String()
 	}
 
-	// returns handled errors which can be given to frontend
-	resp, err := a.serviceHandler(c, userRequest)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Validation failed", "error", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	if !valid {
+		newLogStamp, _ := entity.NewLogStamp("system") // only returns an error if actor ist empty, isn't the case here
+		c.JSON(http.StatusOK,
+			&entity.ResponseForUser{
+				Message:   sharedEntity.Message{MessageBody: msg},
+				UserId:    userRequest.UserId,
+				SessionId: userRequest.SessionId,
+				LogStamp:  newLogStamp,
+			})
+		return
+	}
+
+	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Test generation failed", "error", err)
+		return
+	}
+
+	newLogStamp, _ := entity.NewLogStamp("system")
+	c.JSON(http.StatusOK,
+		&entity.ResponseForUser{
+			Message:   sharedEntity.Message{MessageBody: generatedCode},
+			UserId:    userRequest.UserId,
+			SessionId: userRequest.SessionId,
+			LogStamp:  newLogStamp,
+		})
 }
 
 // HandleUserInfoRequest processes a request for user information.
@@ -96,38 +122,6 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
-}
-
-// serviceHandler calls the OpenAI service and prepares the response for the frontend.
-// It takes a gin.Context and UserRequest as input parameters.
-// First validates the user prompt through validationService, then generates a response through generationService.
-// Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
-func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !valid {
-		return &entity.ResponseForUser{
-			Message:   sharedEntity.Message{MessageBody: msg},
-			UserId:    userRequest.UserId,
-			SessionId: userRequest.SessionId,
-			LogStamp:  userRequest.LogStamp,
-		}, nil
-	}
-
-	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: resp},
-		UserId:    userRequest.UserId,
-		SessionId: userRequest.SessionId,
-		LogStamp:  userRequest.LogStamp,
-	}, nil
 }
 
 // HandleSaveLocalRequest processes a request to save a test case locally.
