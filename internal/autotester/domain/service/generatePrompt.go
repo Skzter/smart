@@ -64,7 +64,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	return resp.Text, nil
 }
 
-// fillPrompt fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
+// formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
 func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error("Context is nil, using default taglist: ", "err", err.Error())
@@ -72,7 +72,7 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	}
 
 	tagList, err := s.taglistService.GetTaglist(ctx)
-	if err != nil || tagList == nil || len(tagList.Tags) == 0 {
+	if err != nil || tagList == nil {
 		s.logger.Error("Failed to fetch taglist, using default: ", "err", err.Error())
 		tagList = sharedEntity.DefaultTagList()
 	}
