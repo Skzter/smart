@@ -5,7 +5,6 @@ includes:
 
 env:
   GOPRIVATE: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
-  LPATH: "{{.BIN_PATH}}:{{.PATH}}"
 
 vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
@@ -25,8 +24,8 @@ tasks:
     cmds:
       - git config core.hooksPath githooks
       - go mod tidy
-      - PATH=$LPATH; doppler login
-      - PATH=$LPATH; doppler setup -c dev -p htwk-projekt
+      - "{{.DOPPLER}} login"
+      - "{{.DOPPLER}} setup -c dev -p htwk-projekt"
 
   # --------------------------------------------------------------------------------
   # Build
@@ -42,11 +41,11 @@ tasks:
     deps: [generate]
     vars:
       OPENAI_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+        sh: "{{.DOPPLER}} secrets get OPENAI_KEY --plain"
       AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+        sh: "{{.DOPPLER}} secrets get AWS_ACCESS_KEY_ID --plain"
       AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
+        sh: "{{.DOPPLER}} secrets get AWS_SECRET_ACCESS_KEY --plain"
       BASE_LDFLAGS: "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
@@ -102,11 +101,11 @@ tasks:
         sh: date +"%Y-%m-%d-%H:%M:%S"
       VERSION: "{{.BUILD_BRANCH}}-{{.BUILD_DATE}}"
       OPENAI_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get OPENAI_KEY --plain"
+        sh: "{{.DOPPLER}} secrets get OPENAI_KEY --plain"
       AWS_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_ACCESS_KEY_ID --plain"
+        sh: "{{.DOPPLER}} secrets get AWS_ACCESS_KEY_ID --plain"
       AWS_SECRET_ACCESS_KEY:
-        sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
+        sh: "{{.DOPPLER}} secrets get AWS_SECRET_ACCESS_KEY --plain"
       BASE_LDFLAGS: "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'"
       PROD_LDFLAGS: "-s -w {{.BASE_LDFLAGS}}"
     cmds:
@@ -126,7 +125,7 @@ tasks:
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
     cmds:
-      - "PATH=$LPATH; doppler run -- go tool air"
+      - "{{.DOPPLER}} run -- go tool air"
 
   run-suproxy:
     desc: "Run the suproxy service"
@@ -281,7 +280,7 @@ tasks:
   generate-config-autotester:
     desc: "generate code for reading autotester config"
     cmds:
-      - PATH=$LPATH; go tool pkl-gen-go configs/autotester.pkl
+      - PKL_EXEC={{.PKL}} go tool pkl-gen-go configs/autotester.pkl
     sources:
       - configs/autotester.pkl
       - configs/shared/*
@@ -289,7 +288,7 @@ tasks:
   generate-config-suproxy:
     desc: "generate code for reading suproxy config"
     cmds:
-      - PATH=$LPATH; go tool pkl-gen-go configs/suproxy.pkl
+      - PKL_EXEC={{.PKL}} go tool pkl-gen-go configs/suproxy.pkl
     sources:
       - configs/suproxy.pkl
       - configs/shared/*
@@ -302,9 +301,9 @@ tasks:
   generate-config-embedded:
     desc: "generates the config in a binary format to use for embedding in compile time"
     cmds:
-      - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
+      - PKL_EXEC={{.PKL}} go run cmd/internal/generate-pkl-data/main.go
     sources:
-      - configs/**
+    - configs/**
 
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"

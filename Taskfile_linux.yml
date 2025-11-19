@@ -2,3 +2,6 @@ version: "3"
 
 vars:
   BIN_PATH: "{{.PWD}}/bin"
+  LPATH: "{{.BIN_PATH}}:{{.PATH}}"
+  DOPPLER: "{{.BIN_PATH}}/doppler"
+  PKL: "{{.BIN_PATH}}/pkl"
