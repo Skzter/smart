@@ -16,7 +16,7 @@ if [ ! -e "$FILE" ]; then
 fi
 
 BASEFILE=$(basename $FILE)
-LOGDIR="logs/"
+LOGDIR="/var/log/smart/"
 
 # logs/uuid.spec.ts.log
 LOGPATH=$LOGDIR$BASEFILE.log 
@@ -28,8 +28,7 @@ echo "starting docker container"
 docker run --rm \
     --env-file <(doppler secrets download --no-file --format docker)" \
     -v "$FILE":/app/$BASEFILE \
-    -v "$PWD/$LOGDIR":/app/$LOGDIR \
-    --name="auto-playwright-headless" \
+    -v "$LOGDIR":/app/logs \
     --network=host \
     gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest \
     /bin/bash -c "cd /app && npx playwright test $BASEFILE --reporter=list > $LOGPATH 2>&1"
