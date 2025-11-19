@@ -39,6 +39,12 @@ func TestCreateTaglist(t *testing.T) {
 			ctx:          nil,
 		},
 		{
+			name:         "empty taglist",
+			taglist:      &entity.TagList{},
+			expectsError: true,
+			ctx:          t.Context(),
+		},
+		{
 			name:         "taglist with empty name",
 			taglist:      &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
 			expectsError: true,
@@ -200,6 +206,12 @@ func TestUpdateTaglist(t *testing.T) {
 			taglist:      &entity.TagList{},
 			expectsError: true,
 			ctx:          nil,
+		},
+		{
+			name:         "empty taglist",
+			taglist:      &entity.TagList{},
+			expectsError: true,
+			ctx:          t.Context(),
 		},
 		{
 			name:         "taglist with empty name",

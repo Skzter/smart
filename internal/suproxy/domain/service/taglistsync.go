@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"sync"
@@ -37,6 +38,8 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 		logger.Error(err.Error())
 		return nil, err
 	}
+
+	logger.Info(fmt.Sprintf("Initiale Tagliste => %v", taglist))
 
 	// mutex requires no initialization
 	return &taglistSync{
