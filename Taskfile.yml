@@ -62,7 +62,7 @@ tasks:
       - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [windows/amd64]
     silent: true
-  
+
   install-frontend-deps:
     desc: "Install frontend dependencies"
     dir: web
@@ -145,14 +145,14 @@ tasks:
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
-    dir: 'deployments'
+    dir: "deployments"
     cmds:
       - docker login gitlab.dit.htwk-leipzig.de:5050
       - docker compose -f compose.dev.yml up -d
 
   compose-local-down:
     desc: "Stop all the containers in local environment"
-    dir: 'deployments'
+    dir: "deployments"
     cmds:
       - docker compose -f compose.dev.yml down
 
@@ -181,7 +181,7 @@ tasks:
     desc: "Run the tests"
     cmds:
       - go tool gotestsum ./...
-  
+
   test-coverage:
     desc: "Run the tests with coverage"
     cmds:
@@ -221,7 +221,7 @@ tasks:
     desc: "run the test script for testing the current sysprompts against the given testcases"
     dir: "scripts"
     cmds:
-    - ./sysprompt-test.sh
+      - ./sysprompt-test.sh
 
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
@@ -304,8 +304,8 @@ tasks:
     cmds:
       - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
     sources:
-    - configs/**
-  
+      - configs/**
+
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
     cmds:
