@@ -294,6 +294,30 @@ build_autotester_go_container:
     - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
     - docker push $IMAGE_TAG
 
+build_autotester_run_container:
+  stage: build
+  extends:
+    - .docker_build
+    - .go_cache
+  interruptible: true
+  needs:
+    - job: go_generate_code
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/auto-playwright:latest
+    DOCKER_BUILDKIT: 1
+  script:
+    - |
+      echo "$CI_JOB_TOKEN" | docker build \
+        --secret id=git_credentials,src=/dev/stdin \
+        -f build/auto-playwright/Dockerfile \
+        -t $IMAGE_TAG \
+        .
+    - docker push $IMAGE_TAG
+  rules:
+    - changes:
+        - build/auto-playwright/Dockerfile
+
 deploy_htwk:
   image:
     name: alpine:latest
@@ -312,12 +336,12 @@ deploy_htwk:
     - sshpass -f ~/.ssh/ssh_password.txt scp deployments/compose.prod.yml stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt scp -r deployments/nginx stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt ssh stud@$HTWK_IP "
-        export CI_REGISTRY_USER=$CI_REGISTRY_USER;
-        export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
-        export CI_REGISTRY=$CI_REGISTRY;
-        echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
-        podman-compose -f compose.prod.yml pull &&
-        podman-compose -f compose.prod.yml down &&
-        podman-compose -f compose.prod.yml up -d --remove-orphans && 
-        podman image prune -f
+      export CI_REGISTRY_USER=$CI_REGISTRY_USER;
+      export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
+      export CI_REGISTRY=$CI_REGISTRY;
+      echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
+      podman-compose -f compose.prod.yml pull &&
+      podman-compose -f compose.prod.yml down &&
+      podman-compose -f compose.prod.yml up -d --remove-orphans &&
+      podman image prune -f
       "
