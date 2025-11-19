@@ -11,6 +11,10 @@ describe("Box component", () => {
         vi.clearAllMocks();
     });
 
+    function getCodeElement(container: HTMLElement) {
+        return container.querySelector("code.language-typescript");
+    }
+
     describe('when the message is from "User"', () => {
         it("renders the message and applies User-specific styles", () => {
             const { container } = render(Box, {
@@ -21,12 +25,13 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("User");
-            const messageElement = screen.getByText(
+            expect(nameElement).toBeInTheDocument();
+
+            const codeElement = getCodeElement(container);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.textContent).toContain(
                 "This is a message from User!",
             );
-
-            expect(nameElement).toBeInTheDocument();
-            expect(messageElement).toBeInTheDocument();
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).toHaveClass("justify-end");
@@ -46,12 +51,13 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("Bot");
-            const messageElement = screen.getByText(
+            expect(nameElement).toBeInTheDocument();
+
+            const codeElement = getCodeElement(container);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.textContent).toContain(
                 "This is a message from Bot!",
             );
-
-            expect(nameElement).toBeInTheDocument();
-            expect(messageElement).toBeInTheDocument();
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).toHaveClass("justify-start");
@@ -71,10 +77,11 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("Test");
-            const messageElement = screen.getByText("Test Message");
-
             expect(nameElement).toBeInTheDocument();
-            expect(messageElement).toBeInTheDocument();
+
+            const codeElement = getCodeElement(container);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.textContent).toContain("Test Message");
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).not.toHaveClass("justify-end", "justify-start");
@@ -98,8 +105,9 @@ describe("Box component", () => {
                 conversationId: "test-conv-456",
             });
 
-            const messageElement = screen.getByText("Empty name test");
-            expect(messageElement).toBeInTheDocument();
+            const codeElement = getCodeElement(container);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.textContent).toContain("Empty name test");
 
             const nameElement = screen.getByRole("heading", { level: 1 });
             expect(nameElement).toBeInTheDocument();
@@ -124,10 +132,9 @@ describe("Box component", () => {
             const nameElement = screen.getByText("User");
             expect(nameElement).toBeInTheDocument();
 
-            // The message paragraph should be empty
-            const messageElement = container.querySelector("p.font-sans");
-            expect(messageElement).toBeInTheDocument();
-            expect(messageElement?.textContent).toBe("");
+            const codeElement = getCodeElement(container);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.textContent?.trim()).toBe("");
         });
     });
 
@@ -167,7 +174,7 @@ describe("Box component", () => {
                 data: { testcaseId: "test-123" },
             });
 
-            render(Box, {
+            const { container } = render(Box, {
                 msg: "test code",
                 name: "Bot",
                 userId: "user-123",
@@ -193,6 +200,10 @@ describe("Box component", () => {
                 conversationId: "conv-456",
                 code: "test code",
             });
+
+            // ensure message still rendered (optional sanity)
+            const codeElement = getCodeElement(container);
+            expect(codeElement?.textContent).toContain("test code");
         });
 
         it("sanitizes userId with pipe character before saving", async () => {
@@ -425,6 +436,7 @@ describe("Box component", () => {
             });
         });
     });
+
     describe("Box component - RunTest functionality", () => {
         beforeEach(() => {
             vi.clearAllMocks();
@@ -543,6 +555,7 @@ describe("Box component", () => {
                     sessionId: "conv-456",
                 });
             });
+
             it("opens modal and displays error message when runContainer fails", async () => {
                 vi.mocked(saveTestLocal).mockResolvedValue({
                     data: { testcaseId: "test-123" },
@@ -603,6 +616,7 @@ describe("Box component", () => {
                     sessionId: "conv-456",
                 });
             });
+
             it("does not run test and logs error when userId becomes undefined", async () => {
                 const consoleErrorSpy = vi
                     .spyOn(console, "error")
@@ -649,6 +663,7 @@ describe("Box component", () => {
 
                 consoleErrorSpy.mockRestore();
             });
+
             it("sanitizes userId with pipe character before running test", async () => {
                 vi.mocked(saveTestLocal).mockResolvedValue({
                     data: { testcaseId: "test-123" },
@@ -693,3 +708,4 @@ describe("Box component", () => {
         });
     });
 });
+

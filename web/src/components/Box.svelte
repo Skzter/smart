@@ -166,6 +166,7 @@
         </div>
         <pre class="language-typescript whitespace-pre-wrap break-words font-mono text-sm">
             <code class="language-typescript">
+                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
                 {@html highlighted}
             </code>
         </pre>
