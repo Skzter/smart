@@ -26,12 +26,12 @@ cd ..
 echo "starting docker container"
 
 docker run --rm \
-    --env OPENAI_API_KEY="$(doppler secrets get OPENAI_KEY --plain)" \
+    --env-file <(doppler secrets download --no-file --format docker)" \
     -v "$FILE":/app/$BASEFILE \
     -v "$PWD/$LOGDIR":/app/$LOGDIR \
     --name="auto-playwright-headless" \
     --network=host \
-    auto-pw:latest \
+    gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest \
     /bin/bash -c "cd /app && npx playwright test $BASEFILE --reporter=list > $LOGPATH 2>&1"
 
 echo "docker container finished"
