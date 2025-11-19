@@ -2,11 +2,25 @@
     import { Button, Spinner, Modal, type ModalProps } from "flowbite-svelte";
     import { saveTestLocal, runContainer } from "../lib/Api.ts";
     import { AxiosError } from "axios";
+    import Prism from "prismjs";
+    import "prismjs/components/prism-typescript";
+    import "prismjs/themes/prism.css";
+
     let { msg, name, userId, conversationId, showSave = false } = $props();
+
+    const highlighted = isTypeScript(msg)
+    ? Prism.highlight(msg, Prism.languages.typescript, "typescript")
+    : msg;
 
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
+
+    function isTypeScript(msg: string): boolean {
+        const codeKeywords = ["const ", "let ", "function ", "class ", "import ", "interface "];
+        const codeSymbols = ["{", "}", "=>"];
+        return codeKeywords.some(kw => msg.includes(kw)) || codeSymbols.some(sym => msg.includes(sym));
+    }
 
     async function saveTest(testcode: string) {
         if (!userId || !conversationId) {
@@ -148,9 +162,11 @@
                 </div>
             </div>
         </div>
-        <p class="font-sans whitespace-pre-wrap break-words">
-            {msg}
-        </p>
+        <pre class="language-typescript whitespace-pre-wrap break-words font-mono text-sm">
+            <code class="language-typescript">
+                {@html highlighted}
+            </code>
+        </pre>
         {#if testId && saveState === "success"}
             <p class="text-xs text-gray-600 mt-2 font-mono">
                 Test ID: {testId}
