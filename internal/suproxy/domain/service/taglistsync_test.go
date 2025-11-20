@@ -21,8 +21,6 @@ func TestNewTaglistSync(t *testing.T) {
 		name              string
 		logger            *slog.Logger
 		expectError       bool
-		expectedError     error
-		wantError         bool
 		mockResponse      []any
 		mockResponseStore []any
 	}{
@@ -30,35 +28,31 @@ func TestNewTaglistSync(t *testing.T) {
 			name:         "success - taglist loaded correctly",
 			logger:       logger,
 			expectError:  false,
-			wantError:    false,
 			mockResponse: []any{&sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}, nil},
 		},
 		{
 			name:        "error - logger is nil",
 			logger:      nil,
 			expectError: true,
-			wantError:   true,
 		},
 		{
-			name:         "error - taglistservice fails",
-			logger:       logger,
-			expectError:  true,
-			wantError:    true,
-			mockResponse: []any{nil, errors.New("taglist error")},
+			name:              "error - taglistservice fails but still continues",
+			logger:            logger,
+			expectError:       false,
+			mockResponse:      []any{nil, errors.New("taglist error")},
+			mockResponseStore: []any{nil},
 		},
 		{
 			name:              "success - taglist was nil and is the default taglist",
 			logger:            logger,
 			expectError:       false,
-			wantError:         false,
 			mockResponse:      []any{nil, nil},
 			mockResponseStore: []any{nil},
 		},
 		{
 			name:              "error - taglist was empty, storing the default fails",
 			logger:            logger,
-			expectError:       true,
-			wantError:         false,
+			expectError:       false,
 			mockResponse:      []any{&sharedEntity.TagList{}, nil},
 			mockResponseStore: []any{errors.New("storage error")},
 		},

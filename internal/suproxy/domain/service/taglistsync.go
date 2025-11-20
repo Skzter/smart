@@ -36,7 +36,6 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 	taglist, err := taglistService.GetTaglist(context.Background())
 	if err != nil {
 		logger.Error(err.Error())
-		return nil, err
 	}
 
 	logger.Debug(fmt.Sprintf("Initial Taglist => %v", taglist))
@@ -45,7 +44,6 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 		err := taglistService.StoreTaglist(context.Background(), taglist)
 		if err != nil {
 			logger.Error(err.Error())
-			return nil, err
 		}
 		logger.Debug(fmt.Sprintf("Updated Taglist => %v", taglist))
 	}
