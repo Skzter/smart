@@ -73,79 +73,113 @@ func TestNewTaglistSync(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestSyncTaglist(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
-	originalTaglist := sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}
-	differentTaglist := sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}, {Name: "TAG4", Description: "TAG4"}, {Name: "TAG5", Description: "TAG5"}}}
+
+	memory := sharedEntity.TagList{
+		Tags: []sharedEntity.Tag{
+			{Name: "TAG1", Description: "TAG1"},
+			{Name: "TAG2", Description: "TAG2"},
+		},
+	}
+
 	tests := []struct {
-		name         string
-		ctx          context.Context
-		taglist      sharedEntity.TagList
-		mockResponse []any
-		wantErr      bool
+		name            string
+		ctx             context.Context
+		incoming        sharedEntity.TagList
+		s3Response      sharedEntity.TagList
+		storeError      error
+		expectS3Load    bool
+		expectStoreCall bool
+		wantErr         bool
 	}{
 		{
-			name:         "nil context",
-			ctx:          nil,
-			taglist:      originalTaglist,
-			mockResponse: nil,
-			wantErr:      true,
+			name:     "nil context",
+			ctx:      nil,
+			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAGX"}}},
+			wantErr:  true,
 		},
 		{
-			name:         "given taglist is empty",
-			ctx:          context.Background(),
-			taglist:      sharedEntity.TagList{},
-			mockResponse: nil,
-			wantErr:      true,
+			name:     "incoming taglist empty",
+			ctx:      context.Background(),
+			incoming: sharedEntity.TagList{},
+			wantErr:  true,
 		},
 		{
-			name:         "equal taglist",
+			name: "tag already in memory → no S3 load, no upload",
+			ctx:  context.Background(),
+			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG1", Description: "TAG1"},
+			}},
+			expectS3Load: false,
+			wantErr:      false,
+		},
+
+		{
+			name:         "tag already in S3 → S3 load, no upload",
 			ctx:          context.Background(),
-			taglist:      originalTaglist,
-			mockResponse: nil,
+			incoming:     sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
+			s3Response:   sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
+			expectS3Load: true,
 			wantErr:      false,
 		},
 		{
-			name:         "different taglist, successful upload",
-			ctx:          context.Background(),
-			taglist:      differentTaglist,
-			mockResponse: []any{nil},
-			wantErr:      false,
+			name:            "new tag → upload",
+			ctx:             context.Background(),
+			incoming:        sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG999"}}},
+			s3Response:      memory,
+			expectS3Load:    true,
+			expectStoreCall: true,
+			wantErr:         false,
 		},
 		{
-			name:         "different taglist, upload failed",
-			ctx:          context.Background(),
-			taglist:      differentTaglist,
-			mockResponse: []any{errors.New("upload failed")},
-			wantErr:      true,
+			name:            "upload fails",
+			ctx:             context.Background(),
+			incoming:        sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG999"}}},
+			s3Response:      memory,
+			expectS3Load:    true,
+			expectStoreCall: true,
+			storeError:      errors.New("upload failed"),
+			wantErr:         true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			newTags := append([]sharedEntity.Tag(nil), originalTaglist.Tags...)
-			mockTagListstorageSrv := mocks.NewMockTaglistStorage(t)
+			mockSrv := mocks.NewMockTaglistStorage(t)
+
 			srv := taglistSync{
 				logger:         logger,
-				taglistService: mockTagListstorageSrv,
-				tagList:        &sharedEntity.TagList{Tags: newTags},
+				taglistService: mockSrv,
+				tagList:        &sharedEntity.TagList{Tags: append([]sharedEntity.Tag(nil), memory.Tags...)},
 			}
-			if tc.mockResponse != nil {
-				mockTagListstorageSrv.On("StoreTaglist", mock.Anything, mock.Anything).Return(tc.mockResponse...)
+
+			// --- mock S3 load ---
+			if tc.expectS3Load {
+				mockSrv.On("GetTaglist", mock.Anything).Return(&tc.s3Response, nil)
 			}
-			err := srv.SyncTaglist(tc.ctx, &tc.taglist)
+
+			// --- mock upload ---
+			if tc.expectStoreCall {
+				mockSrv.On("StoreTaglist", mock.Anything, mock.Anything).Return(tc.storeError)
+			}
+
+			err := srv.SyncTaglist(tc.ctx, &tc.incoming)
+
 			if tc.wantErr {
 				if err == nil {
-					t.Fatal("expected error, but got nil")
+					t.Fatal("expected error, got nil")
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("expected nil, got => %s", err.Error())
+					t.Fatalf("unexpected error: %s", err)
 				}
 			}
 		})
 	}
 }
+
 func TestGetCurrentTaglist(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
