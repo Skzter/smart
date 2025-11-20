@@ -77,12 +77,10 @@ func TestHandleChatRequest(t *testing.T) {
 	// context with mock.Anything
 	validPrompt := "this is a valid prompt"
 	invalidPrompt := "this is a invalid prompt"
-	sessionid := "2"
 
 	mockSetup := []struct {
 		function         string
 		userPrompt       string
-		sessionID        string
 		expectedResponse string
 		expectedBool     bool
 		ResponseError    error
@@ -90,7 +88,6 @@ func TestHandleChatRequest(t *testing.T) {
 		{
 			function:         "ValidatePrompt",
 			userPrompt:       validPrompt,
-			sessionID:        sessionid,
 			expectedResponse: "",
 			expectedBool:     true,
 			ResponseError:    nil,
@@ -98,7 +95,6 @@ func TestHandleChatRequest(t *testing.T) {
 		{
 			function:         "GeneratePrompt",
 			userPrompt:       validPrompt,
-			sessionID:        sessionid,
 			expectedResponse: "some code",
 			ResponseError:    nil,
 		},
@@ -106,7 +102,6 @@ func TestHandleChatRequest(t *testing.T) {
 			// no need for generate mock
 			function:         "ValidatePrompt",
 			userPrompt:       invalidPrompt,
-			sessionID:        sessionid,
 			expectedResponse: "versuch doch mal das",
 			expectedBool:     false,
 			ResponseError:    nil,
@@ -115,7 +110,6 @@ func TestHandleChatRequest(t *testing.T) {
 			// errors in validation
 			function:         "ValidatePrompt",
 			userPrompt:       "json gibts nicht",
-			sessionID:        sessionid,
 			expectedResponse: "",
 			expectedBool:     false,
 			ResponseError:    sharedErrors.ErrValidation,
@@ -124,7 +118,6 @@ func TestHandleChatRequest(t *testing.T) {
 			// test has to pass in validation in order to fail in generation below
 			function:         "ValidatePrompt",
 			userPrompt:       "generating err",
-			sessionID:        sessionid,
 			expectedResponse: "",
 			expectedBool:     true,
 			ResponseError:    nil,
@@ -132,7 +125,6 @@ func TestHandleChatRequest(t *testing.T) {
 		{
 			function:         "GeneratePrompt",
 			userPrompt:       "generating err",
-			sessionID:        sessionid,
 			expectedResponse: "",
 			ResponseError:    sharedErrors.ErrGeneration,
 		},
@@ -205,10 +197,10 @@ func TestHandleChatRequest(t *testing.T) {
 	// setup mocks
 	for _, mc := range mockSetup {
 		if mc.function == "ValidatePrompt" {
-			mockValServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedBool, mc.expectedResponse, mc.ResponseError)
+			mockValServ.On(mc.function, mock.Anything, mc.userPrompt).Return(mc.expectedBool, mc.expectedResponse, mc.ResponseError)
 		}
 		if mc.function == "GeneratePrompt" {
-			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt, mc.sessionID).Return(mc.expectedResponse, mc.ResponseError)
+			mockGenServ.On(mc.function, mock.Anything, mc.userPrompt).Return(mc.expectedResponse, mc.ResponseError)
 		}
 	}
 

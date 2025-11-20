@@ -246,7 +246,7 @@ func TestValidatorValidate(t *testing.T) {
 			if tt.expectCall {
 				mockservice.
 					On("Request", mock.Anything, mock.Anything).
-					Return(&sharedEntity.Response{Text: tt.mockResponse}, tt.mockResonseError)
+					Return(&sharedEntity.Message{Body: tt.mockResponse}, tt.mockResonseError)
 			}
 
 			validator, err := service.NewValidator(logger, &cfg, mockservice)

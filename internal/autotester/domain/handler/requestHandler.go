@@ -103,27 +103,27 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // First validates the user prompt through validationService, then generates a response through generationService.
 // Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
 func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if !valid {
 		return &entity.ResponseForUser{
-			Message:   sharedEntity.Message{MessageBody: msg},
+			Message:   sharedEntity.Message{Body: msg},
 			UserId:    userRequest.UserId,
 			SessionId: userRequest.SessionId,
 			LogStamp:  userRequest.LogStamp,
 		}, nil
 	}
 
-	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: resp},
+		Message:   sharedEntity.Message{Body: resp},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
 		LogStamp:  userRequest.LogStamp,

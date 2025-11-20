@@ -1,11 +1,12 @@
 package service
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -53,29 +54,31 @@ func TestNewService(t *testing.T) {
 // Test for request
 func TestRequest(t *testing.T) {
 	tests := []struct {
-		testName      string
-		request       entity.Request
-		expectedError bool
+		testName       string
+		requestReturns []any
+		request        entity.Request
+		expectedError  bool
+		ctx            context.Context
 	}{
 		{
-			testName: "Nil-Content",
-			request: entity.Request{
-				Prompt:       "Test",
-				SessionID:    "123",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
-			},
-			expectedError: true,
+			testName:       "Nil-Context",
+			requestReturns: nil,
+			expectedError:  true,
+			ctx:            nil,
 		},
 		{
 			testName: "Valid Request",
 			request: entity.Request{
-				Prompt:       "Test",
-				SessionID:    "123",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
+				Messages: []entity.Message{
+					{Role: "user", Body: "user prompt"},
+				},
+			},
+			requestReturns: []any{
+				&entity.Message{Role: "assistant", Body: "response"},
+				nil,
 			},
 			expectedError: false,
+			ctx:           context.Background(),
 		},
 	}
 
@@ -83,10 +86,8 @@ func TestRequest(t *testing.T) {
 		t.Run(test.testName, func(t *testing.T) {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			mockOpenAiRepo := repo.NewMockOpenAI(t)
-			if test.expectedError {
-				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(nil, fmt.Errorf("Expected Error"))
-			} else {
-				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
+			if test.requestReturns != nil {
+				mockOpenAiRepo.On("CreateRequest", mock.Anything, mock.Anything).Return(test.requestReturns...)
 			}
 
 			service, err := NewOpenAI(logger, mockOpenAiRepo)
@@ -95,22 +96,14 @@ func TestRequest(t *testing.T) {
 				t.Errorf("WARNING: Failed to create openAIService")
 			}
 
-			resp, err := service.Request(t.Context(), test.request)
+			resp, err := service.Request(test.ctx, test.request)
 
 			if test.expectedError {
-				if err == nil {
-					t.Errorf("WARNING: Expected Error")
-				}
-				if resp != nil {
-					t.Errorf("WARNING: Expected Error")
-				}
+				assert.Nil(t, resp)
+				assert.NotNil(t, err)
 			} else {
-				if err != nil {
-					t.Errorf("WARNING: Unexpected Error")
-				}
-				if resp == nil {
-					t.Errorf("WARNING: Unexpected Error, expected response")
-				}
+				assert.NotNil(t, resp)
+				assert.Nil(t, err)
 			}
 		})
 	}

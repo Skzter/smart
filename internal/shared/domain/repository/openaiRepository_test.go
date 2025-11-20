@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 
@@ -81,10 +82,18 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "validating incorrect request entity => empty prompt",
+			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Prompt:       "",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "", Body: "prompt"}},
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "validating incorrect request entity => empty role",
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "role", Body: ""}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -93,8 +102,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty model",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "",
 				SystemPrompt: "sys prompt",
 			},
@@ -103,28 +111,16 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty system prompt",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "",
 			},
 			expectedError: true,
 		},
 		{
-			name: "validating incorrect request entity => empty sessionId",
+			name: "happy path",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
-			},
-			expectedError: false,
-		},
-		{
-			name: "validating correct request entity",
-			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -219,10 +215,6 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 						Role:    openai.ChatMessageRoleAssistant,
 						Content: "Travis Scott",
 					},
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: "user prompt",
-					},
 				},
 			},
 			openaiResponse: openai.ChatCompletionResponse{
@@ -233,6 +225,75 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 						Message: openai.ChatCompletionMessage{
 							Role:    "assistant",
 							Content: "This is a mocked reply based on full history.",
+						},
+						FinishReason: "stop",
+					},
+				},
+			},
+			openaiError: nil,
+		},
+		{
+			name: "create Error",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "error please",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{},
+			openaiError:    errors.New("err"),
+		},
+		{
+			name: "no choices",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "no choices",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{
+				ID:      "chatcmpl-mock789",
+				Choices: []openai.ChatCompletionChoice{},
+			},
+			openaiError: nil,
+		},
+		{
+			name: "empty response",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "empty response",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{
+				ID: "chatcmpl-mock789",
+				Choices: []openai.ChatCompletionChoice{
+					{
+						Index: 0,
+						Message: openai.ChatCompletionMessage{
+							Role:    "assistant",
+							Content: "",
 						},
 						FinishReason: "stop",
 					},
@@ -252,19 +313,34 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "user", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
 			expectedError: false,
 		},
 		{
-			name: "valid, storing new respid",
+			name: "valid with history",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
+				Messages: []entity.Message{
+					{
+						Role: "user",
+						Body: "what is 3 + 2?",
+					},
+					{
+						Role: "assistant",
+						Body: "3 + 2 is 5",
+					},
+					{
+						Role: "user",
+						Body: "who is the highest in the room?",
+					},
+					{
+						Role: "assistant",
+						Body: "Travis Scott",
+					},
+				},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -279,13 +355,42 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		{
 			name: "nil context",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
+				Messages:     []entity.Message{{Role: "role", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
 			expectedError: true,
 			ctx:           nil,
+		},
+		{
+			name: "create Error",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "error please"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "no choices",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "no choices"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "empty response",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "empty response"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
 		},
 	}
 
@@ -298,48 +403,9 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			// create Repos everytime for mock calls to be correct
-			repoEmpty := openAI{
-				logger:   logger,
-				client:   mockClient,
-				timeout:  timeout,
-				messages: []entity.Message{},
-			}
 
-			repoWithMsgs := openAI{
-				logger:  logger,
-				client:  mockClient,
-				timeout: timeout,
-				messages: []entity.Message{
-					{
-						Actor:       "user",
-						MessageBody: "what is 3 + 2?",
-					},
-					{
-						Actor:       "assistant",
-						MessageBody: "3 + 2 is 5",
-					},
-					{
-						Actor:       "user",
-						MessageBody: "who is the highest in the room?",
-					},
-					{
-						Actor:       "assistant",
-						MessageBody: "Travis Scott",
-					},
-				},
-			}
-			_, err := repoEmpty.CreateRequest(test.ctx, test.request)
-			if test.expectedError {
-				if err == nil {
-					t.Errorf("expected error but go nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("did not expect error but go this: %q", err.Error())
-				}
-			}
-			_, err = repoWithMsgs.CreateRequest(test.ctx, test.request)
+			repo, _ := NewOpenAiRepository(logger, mockClient, timeout)
+			_, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error but go nil")

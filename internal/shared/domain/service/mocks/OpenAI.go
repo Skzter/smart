@@ -39,23 +39,23 @@ func (_m *MockOpenAI) EXPECT() *MockOpenAI_Expecter {
 }
 
 // Request provides a mock function for the type MockOpenAI
-func (_mock *MockOpenAI) Request(context1 context.Context, request entity.Request) (*entity.Response, error) {
+func (_mock *MockOpenAI) Request(context1 context.Context, request entity.Request) (*entity.Message, error) {
 	ret := _mock.Called(context1, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Request")
 	}
 
-	var r0 *entity.Response
+	var r0 *entity.Message
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) (*entity.Response, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) (*entity.Message, error)); ok {
 		return returnFunc(context1, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) *entity.Response); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) *entity.Message); ok {
 		r0 = returnFunc(context1, request)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.Response)
+			r0 = ret.Get(0).(*entity.Message)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, entity.Request) error); ok {
@@ -96,12 +96,12 @@ func (_c *MockOpenAI_Request_Call) Run(run func(context1 context.Context, reques
 	return _c
 }
 
-func (_c *MockOpenAI_Request_Call) Return(response *entity.Response, err error) *MockOpenAI_Request_Call {
-	_c.Call.Return(response, err)
+func (_c *MockOpenAI_Request_Call) Return(message *entity.Message, err error) *MockOpenAI_Request_Call {
+	_c.Call.Return(message, err)
 	return _c
 }
 
-func (_c *MockOpenAI_Request_Call) RunAndReturn(run func(context1 context.Context, request entity.Request) (*entity.Response, error)) *MockOpenAI_Request_Call {
+func (_c *MockOpenAI_Request_Call) RunAndReturn(run func(context1 context.Context, request entity.Request) (*entity.Message, error)) *MockOpenAI_Request_Call {
 	_c.Call.Return(run)
 	return _c
 }
