@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -57,7 +58,11 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 		return err
 	}
 	if err := validateTaglist(taglist); err != nil {
-		return fmt.Errorf("failed to validate TagList: %w", err)
+		tR.logger.Error("validation failed, for TagList",
+			slog.Any("error", err),
+			slog.String("category", "validation"),
+		)
+		return errors.ErrValidation
 	}
 
 	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
