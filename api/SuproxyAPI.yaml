@@ -53,7 +53,7 @@ components:
             type: string
             example: "text/html,application/xhtml+xml,application/xml;q=0.9,/;q=0.8"
           required: true
-        prompt:
+        tags:
           type: string
           example: "Schreibe mir einen Test für die Funktionalität Filter für Hotels mit Haustieren erlaubt, ertelle dafür Testdaten"
           required: false
@@ -61,7 +61,7 @@ components:
           type: string
           example: "IP or Hostname"
           required: true
-        request:
+        body:
           type: string
           example: "request json von supplier-d"
           required: true

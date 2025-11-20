@@ -3,7 +3,6 @@ package repository
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -68,19 +67,22 @@ type osFileSystem struct {
 }
 
 // NewOSFileSystem returns an osFileSystem rooted at the provided directory.
-// The root is created if it does not exist. Root must not be empty or absolute.
+// The root is created if it does not exist. Root must not be empty.
 func NewOSFileSystem(root string) (FileSystem, error) {
 	if err := assert.StringNotEmpty(root); err != nil {
 		return nil, fmt.Errorf("root must not be empty")
 	}
-	if path.IsAbs(root) {
-		return nil, fmt.Errorf("absolute paths are not allowed: %s", root)
-	}
 	if err := os.MkdirAll(root, DefaultDirPerm); err != nil {
 		return nil, fmt.Errorf("create root: %w", err)
 	}
+
+	resolvedRoot := root
+	if r, err := filepath.EvalSymlinks(root); err == nil {
+		resolvedRoot = r
+	}
+
 	return &osFileSystem{
-		Root: filepath.Clean(root),
+		Root: filepath.Clean(resolvedRoot),
 	}, nil
 }
 
@@ -143,18 +145,14 @@ func (fs *osFileSystem) ReadFile(relativeFilePath string) ([]byte, error) {
 		return nil, err
 	}
 
-	resolvedPath, err := filepath.Abs(fullPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolve path: %w", err)
-	}
-	if rp, err := filepath.EvalSymlinks(resolvedPath); err == nil {
-		resolvedPath = rp
+	if rp, err := filepath.EvalSymlinks(fullPath); err == nil {
+		fullPath = rp
 	}
 
-	if !fs.isUnderRoot(resolvedPath) {
+	if !fs.isUnderRoot(fullPath) {
 		return nil, fmt.Errorf("path escapes root: %s", relativeFilePath)
 	}
-	return os.ReadFile(resolvedPath)
+	return os.ReadFile(fullPath)
 }
 
 func (fs *osFileSystem) ReadDir(path string) ([]string, error) {
@@ -225,26 +223,19 @@ func (fs *osFileSystem) validateAndGetFullPath(path string) (string, error) {
 }
 
 // isUnderRoot reports whether the given path is located inside the
-// filesystem root. It resolves both the root and the path to absolute paths,
-// follows symlinks using filepath.EvalSymlinks, and then checks if the resolved
-// path has the resolved root as a prefix. Returns true if the path is under
-// the root or equal to the root, false otherwise.
+// filesystem root. It follows symlinks in the path using filepath.EvalSymlinks,
+// and then checks if the resolved path has the resolved root as a prefix.
+// Returns true if the path is under the root or equal to the root, false otherwise.
+//
+// Note: This function expects fs.Root to already be resolved (symlinks followed)
+// by NewOSFileSystem during initialization.
 func (fs *osFileSystem) isUnderRoot(path string) bool {
-	rootAbs, err := filepath.Abs(fs.Root)
-	if err != nil {
-		return false
-	}
-	if r, err := filepath.EvalSymlinks(rootAbs); err == nil {
-		rootAbs = r
+	rootAbs := fs.Root
+
+	pathResolved := path
+	if p, err := filepath.EvalSymlinks(path); err == nil {
+		pathResolved = p
 	}
 
-	pathAbs, err := filepath.Abs(path)
-	if err != nil {
-		return false
-	}
-	if p, err := filepath.EvalSymlinks(pathAbs); err == nil {
-		pathAbs = p
-	}
-
-	return strings.HasPrefix(pathAbs, rootAbs+string(os.PathSeparator)) || pathAbs == rootAbs
+	return strings.HasPrefix(pathResolved, rootAbs+string(os.PathSeparator)) || pathResolved == rootAbs
 }
