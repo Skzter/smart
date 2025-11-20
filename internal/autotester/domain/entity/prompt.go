@@ -4,5 +4,4 @@ package entity
 type Prompt struct {
 	Content      *Content
 	LanguageCode string
-	LogStamp     LogStamp
 }

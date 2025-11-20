@@ -4,7 +4,6 @@ package entity
 // It contains the session ID, log stamp, answer text, and test code.
 type LLMResponse struct {
 	SessionId  string `json:"conversationId"`
-	LogStamp   LogStamp
 	AnswerText *ModelAnswerText
 	TestCode   *TestCode
 }
