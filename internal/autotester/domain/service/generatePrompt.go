@@ -72,7 +72,7 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	}
 
 	tagList, err := s.taglistService.GetTaglist(ctx)
-	if err != nil || tagList == nil {
+	if err != nil || tagList == nil || len(tagList.Tags) == 0 {
 		s.logger.Error("Failed to fetch taglist, using default: ", "err", err.Error())
 		tagList = sharedEntity.DefaultTagList()
 	}

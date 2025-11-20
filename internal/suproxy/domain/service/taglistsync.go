@@ -39,7 +39,16 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 		return nil, err
 	}
 
-	logger.Info(fmt.Sprintf("Initiale Tagliste => %v", taglist))
+	logger.Debug(fmt.Sprintf("Initial Taglist => %v", taglist))
+	if taglist == nil || len(taglist.Tags) == 0 {
+		taglist = sharedEntity.DefaultTagList()
+		err := taglistService.StoreTaglist(context.Background(), taglist)
+		if err != nil {
+			logger.Error(err.Error())
+			return nil, err
+		}
+		logger.Debug(fmt.Sprintf("Updated Taglist => %v", taglist))
+	}
 
 	// mutex requires no initialization
 	return &taglistSync{
