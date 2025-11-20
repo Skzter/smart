@@ -4,8 +4,7 @@ import sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes
 
 // UserRequest represents a user request within a session, including prompt and log information.
 type UserRequest struct {
-	SessionId  string   `json:"conversationId"`
-	LogStamp   LogStamp `json:"-"`
+	SessionId  string `json:"conversationId"`
 	UserPrompt *UserPrompt
 	Message    sharedEntity.Message `json:"message"`
 	UserId     string               `json:"userId"`
