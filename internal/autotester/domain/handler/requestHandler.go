@@ -84,13 +84,11 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	}
 
 	if !valid {
-		newLogStamp, _ := entity.NewLogStamp("system") // only returns an error if actor ist empty, isn't the case here
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
 				Message:   sharedEntity.Message{MessageBody: msg},
 				UserId:    userRequest.UserId,
 				SessionId: userRequest.SessionId,
-				LogStamp:  newLogStamp,
 			})
 		return
 	}
@@ -102,13 +100,11 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	newLogStamp, _ := entity.NewLogStamp("system")
 	c.JSON(http.StatusOK,
 		&entity.ResponseForUser{
 			Message:   sharedEntity.Message{MessageBody: generatedCode},
 			UserId:    userRequest.UserId,
 			SessionId: userRequest.SessionId,
-			LogStamp:  newLogStamp,
 		})
 }
 
@@ -121,7 +117,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
-	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
+	c.JSON(http.StatusOK, entity.ResponseForUser{SessionId: resp.SessionId})
 }
 
 // HandleSaveLocalRequest processes a request to save a test case locally.
