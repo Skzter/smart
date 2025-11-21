@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -15,38 +16,45 @@ import (
 // nolint:funlen
 func TestNewTaglistSync(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
-	taglistError := errors.New("Taglist error")
 
 	tests := []struct {
-		name          string
-		logger        *slog.Logger
-		expectError   bool
-		expectedError error
-		wantError     bool
-		mockResponse  []any
+		name              string
+		logger            *slog.Logger
+		expectError       bool
+		mockResponse      []any
+		mockResponseStore []any
 	}{
 		{
-			name:          "success - taglist loaded correctly",
-			logger:        logger,
-			expectError:   false,
-			expectedError: nil,
-			wantError:     false,
-			mockResponse:  []any{&sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}, nil},
+			name:         "success - taglist loaded correctly",
+			logger:       logger,
+			expectError:  false,
+			mockResponse: []any{&sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}}, nil},
 		},
 		{
-			name:          "error - logger is nil",
-			logger:        nil,
-			expectError:   true,
-			expectedError: nil,
-			wantError:     true,
+			name:        "error - logger is nil",
+			logger:      nil,
+			expectError: true,
 		},
 		{
-			name:          "error - taglistservice fails",
-			logger:        logger,
-			expectError:   true,
-			expectedError: taglistError,
-			wantError:     true,
-			mockResponse:  []any{nil, taglistError},
+			name:              "error - taglistservice fails but still continues",
+			logger:            logger,
+			expectError:       false,
+			mockResponse:      []any{nil, errors.New("taglist error")},
+			mockResponseStore: []any{nil},
+		},
+		{
+			name:              "success - taglist was nil and is the default taglist",
+			logger:            logger,
+			expectError:       false,
+			mockResponse:      []any{nil, nil},
+			mockResponseStore: []any{nil},
+		},
+		{
+			name:              "error - taglist was empty, storing the default fails",
+			logger:            logger,
+			expectError:       false,
+			mockResponse:      []any{&sharedEntity.TagList{}, nil},
+			mockResponseStore: []any{errors.New("storage error")},
 		},
 	}
 
@@ -56,18 +64,16 @@ func TestNewTaglistSync(t *testing.T) {
 			if tt.mockResponse != nil {
 				serv.On("GetTaglist", mock.Anything).Return(tt.mockResponse...)
 			}
+			if tt.mockResponseStore != nil {
+				serv.On("StoreTaglist", mock.Anything, mock.Anything).Return(tt.mockResponseStore...)
+			}
 			sync, err := NewTaglistSync(tt.logger, serv)
 			if tt.expectError {
-				if err == nil {
-					t.Fatalf("expected => %s, got => nil", "not nil")
-				}
+				assert.Error(t, err)
+				assert.Nil(t, sync)
 			} else {
-				if err != nil {
-					t.Fatalf("expected error to be nil, got => %s", err.Error())
-				}
-				if sync == nil {
-					t.Fatal("expected sync to be not nil")
-				}
+				assert.NoError(t, err)
+				assert.NotNil(t, sync)
 			}
 		})
 	}
@@ -96,7 +102,7 @@ func TestSyncTaglist(t *testing.T) {
 			ctx:          context.Background(),
 			taglist:      sharedEntity.TagList{},
 			mockResponse: nil,
-			wantErr:      true,
+			wantErr:      false,
 		},
 		{
 			name:         "equal taglist",
