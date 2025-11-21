@@ -129,7 +129,6 @@ func TestGeneratePrompt(t *testing.T) {
 			openai := mocks.NewMockOpenAI(t)
 			taglist := mocks.NewMockTaglistStorage(t)
 
-			//TODO: refactor to reduce duplication with other tests
 			if tt.requestReturns != nil {
 				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
 			}

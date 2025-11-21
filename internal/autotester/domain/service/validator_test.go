@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -17,7 +16,7 @@ import (
 )
 
 //nolint:dupl
-func TestNewValidatePromptService(t *testing.T) {
+func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
 	cfg := config.Config{}
@@ -61,12 +60,12 @@ func TestNewValidatePromptService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewValidatePromptService(test.service, test.config, test.logger)
+			repo, err := NewValidatorService(test.service, test.config, test.logger)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewValidatePromptService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewValidatorService() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && repo == nil {
-				t.Errorf("NewValidatePromptService() returned nil service")
+				t.Errorf("NewValidatorService() returned nil service")
 			}
 		})
 	}
@@ -74,155 +73,195 @@ func TestNewValidatePromptService(t *testing.T) {
 
 //nolint:funlen
 func TestValidatePrompt(t *testing.T) {
+	// Setup
 	serviceMock := mocks.NewMockOpenAI(t)
 	cfg := &config.Config{
-		Model: "",
+		Model: "gpt-4",
 		Prompts: &config.Prompts{
-			ValidationPrompt: "",
+			ValidationPrompt: "You are a helpful assistant.",
 		},
 	}
 	logger := slog.New(slog.DiscardHandler)
-	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
-
-	sessionId := "die tollste Session ID"
-
-	validPrompt := "valid Prompt"
-	invalidPrompt := "invalid Prompt"
-	invalidJson := "invalid json"
-
-	validRequest := entity.Request{
-		Prompt:    validPrompt,
-		SessionID: sessionId,
-	}
-	validResponse := entity.Response{
-		Text: `{"valid": true, "message": ""}`,
+	svc, err := NewValidatorService(serviceMock, cfg, logger)
+	if err != nil {
+		t.Fatalf("failed to create validator service: %v", err)
 	}
 
-	invalidRequest := entity.Request{
-		Prompt:    invalidPrompt,
-		SessionID: sessionId,
-	}
-	invalidResponse := entity.Response{
-		Text: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
-	}
+	sessionID := "die tollste Session ID"
 
-	invalidJsonRequest := entity.Request{
-		Prompt:    invalidJson,
-		SessionID: sessionId,
-	}
-	invalidJsonResponse := entity.Response{
-		Text: "no json",
-	}
-
-	mockSetup := []struct {
-		request     entity.Request
-		response    *entity.Response
-		returnError error
-		wantErr     bool
-	}{
-		{
-			request:     validRequest,
-			response:    &validResponse,
-			returnError: nil,
-		},
-		{
-			request:     invalidRequest,
-			response:    &invalidResponse,
-			returnError: nil,
-		},
-		{
-			request:     invalidJsonRequest,
-			response:    &invalidJsonResponse,
-			returnError: nil,
-		},
-		{
-			request: entity.Request{
-				Prompt:    "",
-				SessionID: sessionId,
-			},
-			response:    &entity.Response{},
-			returnError: sharedErrors.ErrInternalServer,
-		},
-	}
-
+	// Define test cases
 	tests := []struct {
-		name        string
-		userPrompt  string
-		ctx         context.Context
-		wantErr     bool
-		isValid     bool
-		expectedErr error
+		name       string
+		userPrompt string
+		mockResp   entity.Response
+		mockErr    error
+		wantValid  bool
+		wantMsg    string
+		wantErr    error
 	}{
 		{
-			name:        "valid request without changes",
-			userPrompt:  validPrompt,
-			ctx:         context.Background(),
-			wantErr:     false,
-			isValid:     true,
-			expectedErr: nil,
+			name:       "valid prompt",
+			userPrompt: "valid Prompt",
+			mockResp:   entity.Response{Text: `{"valid": true, "message": ""}`},
+			mockErr:    nil,
+			wantValid:  true,
+			wantMsg:    "",
+			wantErr:    nil,
 		},
 		{
-			name:        "valid request but with changes",
-			userPrompt:  invalidPrompt,
-			ctx:         context.Background(),
-			wantErr:     false,
-			isValid:     false,
-			expectedErr: nil,
+			name:       "invalid prompt",
+			userPrompt: "invalid Prompt",
+			mockResp:   entity.Response{Text: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`},
+			mockErr:    nil,
+			wantValid:  false,
+			wantMsg:    "alle gründe warum es schiefgelaufen",
+			wantErr:    nil,
 		},
 		{
-			name:        "invalid json",
-			userPrompt:  invalidJson,
-			ctx:         context.Background(),
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrInternalServer,
+			name:       "invalid JSON response",
+			userPrompt: "invalid json",
+			mockResp:   entity.Response{Text: `not a json`},
+			mockErr:    nil,
+			wantValid:  false,
+			wantMsg:    "",
+			wantErr:    sharedErrors.ErrInternalServer,
 		},
 		{
-			name:        "nil ctx",
-			userPrompt:  validPrompt,
-			ctx:         nil,
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrInternalServer,
+			name:       "service error",
+			userPrompt: "service error",
+			mockResp:   entity.Response{},
+			mockErr:    sharedErrors.ErrValidation,
+			wantValid:  false,
+			wantMsg:    "",
+			wantErr:    sharedErrors.ErrValidation,
 		},
-		{
-			name:        "service error",
-			userPrompt:  "",
-			ctx:         context.Background(),
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrValidation,
-		},
-	}
-
-	for _, mc := range mockSetup {
-		serviceMock.On("Request", mock.Anything, mc.request).Return(mc.response, mc.returnError)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt, sessionId)
+			// Setup mock for this test case
+			req := entity.Request{
+				Prompt:       tt.userPrompt,
+				SessionID:    sessionID,
+				Model:        cfg.Model,
+				SystemPrompt: cfg.Prompts.ValidationPrompt,
+			}
+			serviceMock.On("Request", mock.Anything, req).Return(&tt.mockResp, tt.mockErr).Once()
+
+			// Call ValidatePrompt
+			valid, msg, err := svc.ValidatePrompt(context.Background(), tt.userPrompt, sessionID)
+
+			// Check results
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("expected error %v, got %v", tt.wantErr, err)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if valid != tt.wantValid {
+					t.Fatalf("expected valid=%v, got %v", tt.wantValid, valid)
+				}
+				if msg != tt.wantMsg {
+					t.Fatalf("expected msg=%q, got %q", tt.wantMsg, msg)
+				}
+			}
+
+			// Assert that the mock was called as expected
+			serviceMock.AssertExpectations(t)
+		})
+	}
+}
+
+func TestValidateRequest(t *testing.T) {
+	serviceMock := mocks.NewMockOpenAI(t)
+	cfg := &config.Config{}
+	logger := slog.New(slog.DiscardHandler)
+	svc, _ := NewValidatorService(serviceMock, cfg, logger)
+
+	sessionId := "die tollste Session ID"
+	model := "gpt-4"
+	systemPrompt := "You are a helpful assistant."
+
+	tests := []struct {
+		name        string
+		ctx         context.Context
+		request     entity.Request
+		wantErr     bool
+		expectedErr error
+	}{
+		{
+			name: "valid request",
+			ctx:  context.Background(),
+			request: entity.Request{
+				SessionID:    sessionId,
+				Model:        model,
+				SystemPrompt: systemPrompt,
+			},
+			wantErr:     false,
+			expectedErr: nil,
+		},
+		{
+			name: "nil ctx",
+			ctx:  nil,
+			request: entity.Request{
+				SessionID:    sessionId,
+				Model:        model,
+				SystemPrompt: systemPrompt,
+			},
+			wantErr:     true,
+			expectedErr: sharedErrors.ErrInternalServer,
+		},
+		{
+			name: "empty SessionID",
+			ctx:  context.Background(),
+			request: entity.Request{
+				SessionID:    "",
+				Model:        model,
+				SystemPrompt: systemPrompt,
+			},
+			wantErr:     true,
+			expectedErr: sharedErrors.ErrValidation,
+		},
+		{
+			name: "empty Model",
+			ctx:  context.Background(),
+			request: entity.Request{
+				SessionID:    sessionId,
+				Model:        "",
+				SystemPrompt: systemPrompt,
+			},
+			wantErr:     true,
+			expectedErr: sharedErrors.ErrValidation,
+		},
+		{
+			name: "empty SystemPrompt",
+			ctx:  context.Background(),
+			request: entity.Request{
+				SessionID:    sessionId,
+				Model:        model,
+				SystemPrompt: "",
+			},
+			wantErr:     true,
+			expectedErr: sharedErrors.ErrValidation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := svc.ValidateRequest(tt.ctx, tt.request)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("got nil error, expected => %v", tt.expectedErr)
 				} else if !errors.Is(err, tt.expectedErr) {
-					if !strings.Contains(err.Error(), tt.expectedErr.Error()) {
-						t.Fatalf("unexpected error: got => %v, wanted => %v", err, tt.expectedErr)
-					}
+					t.Fatalf("unexpected error: got => %v, wanted => %v", err, tt.expectedErr)
 				}
 			} else {
-				if tt.isValid {
-					if valid != tt.isValid {
-						t.Fatalf("expected %t, got %t", tt.isValid, valid)
-					}
-					if str != "" {
-						t.Fatalf("expected nil string, got => %v", str)
-					}
-				} else if str == "" {
-					t.Fatal("expected populated string but got nil string")
+				if err != nil {
+					t.Fatalf("unexpected error: got => %v, wanted nil", err)
 				}
 			}
-			mock.AssertExpectationsForObjects(t)
 		})
 	}
 }

@@ -44,7 +44,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	// only two version because we shouldnt be testing the functionality of the assert
 	// if it works once, it should work all the time
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -180,7 +180,7 @@ func TestHandleChatRequest(t *testing.T) {
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 	for _, test := range tests {
@@ -251,7 +251,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 	for _, test := range tests {
@@ -304,7 +304,7 @@ func TestHandleTemplate(t *testing.T) {
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 	for _, test := range tests {
@@ -381,7 +381,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockValServ := mocks.NewValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 			test.SetupMock(mockLocalStorageServ)
@@ -458,7 +458,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockValServ := mocks.NewValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 
 			test.SetupMock(mockLocalStorageServ)

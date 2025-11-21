@@ -23,7 +23,7 @@ import (
 type AutotesterController struct {
 	config            *config.Config
 	logger            *slog.Logger
-	validationService service.ValidatePrompt
+	validationService service.Validator
 	generationService service.GeneratePrompt
 	saveLocalService  service.TestcaseLocalStorageService
 }
@@ -33,7 +33,7 @@ type AutotesterController struct {
 func NewAutotesterController(
 	logger *slog.Logger,
 	config *config.Config,
-	validationService service.ValidatePrompt,
+	validationService service.Validator,
 	generationService service.GeneratePrompt,
 	saveLocalService service.TestcaseLocalStorageService,
 ) (*AutotesterController, error) {
