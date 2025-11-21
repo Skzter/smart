@@ -35,7 +35,7 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 
 	taglist, err := taglistService.GetTaglist(context.Background())
 	if err != nil {
-		logger.Error(err.Error())
+		logger.Error("Failed to get initial taglist", "error", err)
 		return nil, err
 	}
 
@@ -59,16 +59,16 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 	tls.mutex.Lock()
 	defer tls.mutex.Unlock()
 
+	slices.Reverse(taglist.Tags)
 	incomingTag := taglist.Tags[0]
 
 	if slices.Contains(tls.tagList.Tags, incomingTag) {
-		tls.logger.Info("Tag already in memory → nothing to do")
 		return nil
 	}
 
 	onlineTaglist, err := tls.taglistService.GetTaglist(ctx)
 	if err != nil {
-		tls.logger.Error("Failed to fetch taglist from S3: " + err.Error())
+		tls.logger.Error("Failed to fetch taglist from S3", "error", err)
 		return err
 	}
 
@@ -79,7 +79,6 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 	}
 
 	if slices.Contains(tls.tagList.Tags, incomingTag) {
-		tls.logger.Info("Tag was already in S3 → memory updated, no upload")
 		return nil
 	}
 
@@ -87,7 +86,7 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 
 	err = tls.taglistService.StoreTaglist(ctx, tls.tagList)
 	if err != nil {
-		tls.logger.Error("Failed to store updated taglist to S3: " + err.Error())
+		tls.logger.Error("Failed to store updated taglist to S3", "error", err)
 		return err
 	}
 	return nil

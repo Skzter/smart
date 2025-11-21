@@ -89,6 +89,7 @@ func TestSyncTaglist(t *testing.T) {
 		ctx             context.Context
 		incoming        sharedEntity.TagList
 		s3Response      sharedEntity.TagList
+		s3Error         error
 		storeError      error
 		expectS3Load    bool
 		expectStoreCall bool
@@ -143,6 +144,14 @@ func TestSyncTaglist(t *testing.T) {
 			storeError:      errors.New("upload failed"),
 			wantErr:         true,
 		},
+		{
+			name:         "s3 get fails",
+			ctx:          context.Background(),
+			incoming:     sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG_ERR"}}},
+			s3Error:      errors.New("s3 get failed"),
+			expectS3Load: true,
+			wantErr:      true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -157,7 +166,7 @@ func TestSyncTaglist(t *testing.T) {
 
 			// --- mock S3 load ---
 			if tc.expectS3Load {
-				mockSrv.On("GetTaglist", mock.Anything).Return(&tc.s3Response, nil)
+				mockSrv.On("GetTaglist", mock.Anything).Return(&tc.s3Response, tc.s3Error)
 			}
 
 			// --- mock upload ---
