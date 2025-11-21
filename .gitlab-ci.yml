@@ -6,7 +6,6 @@ stages:
 
 variables:
   GO_VERSION: 1.24
-  DOCKER_TLS_CERTDIR: "/certs"
 
 default:
   tags:
@@ -159,8 +158,6 @@ unit_test_go:
       when: on_success
 
 integration_test_go:
-  services:
-    - docker:dind
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
