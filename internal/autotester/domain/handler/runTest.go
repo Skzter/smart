@@ -3,8 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 
@@ -37,24 +35,17 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 
 	if err := a.dockerService.RunTest(c, testfile); err != nil {
 		a.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
 
-	// logdir = /var/logs/smart/
-	// file is /tmp/userID/sessionID/testcaseID.spec.ts
-	LogFilePath := a.config.LogDirAutopw + filepath.Base(testfile) + ".log"
-	a.logger.Debug(fmt.Sprintf("Reading log file => %s", LogFilePath))
-
-	// #nosec G304 -- filepath is correct
-	content, err := os.ReadFile(LogFilePath)
+	output, err := a.dockerService.ReadLog(testfile)
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
-	a.logger.Debug(string(content))
 	c.JSON(http.StatusOK, entity.RunTestResponse{
-		Result: string(content),
+		Result: output,
 	})
 }

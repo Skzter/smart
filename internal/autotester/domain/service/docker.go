@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -41,6 +43,13 @@ func NewDocker(logger *slog.Logger, config *config.Config) (Docker, error) {
 
 // RunTest takes the context and filename of the test of the current request and executes the test
 func (d *docker) RunTest(ctx context.Context, filename string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return err
+	}
+	if err := assert.StringNotEmpty(filename); err != nil {
+		return err
+	}
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return fmt.Errorf("failed to create Docker client: %v", err)
@@ -110,5 +119,16 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 
 // ReadLog returns the content of the log file from a given test
 func (d *docker) ReadLog(filename string) (string, error) {
-	return "", nil
+	// logdir = /var/logs/smart/
+	// file is /tmp/userID/sessionID/testcaseID.spec.ts
+	LogFilePath := d.logdir + filepath.Base(filename) + ".log"
+	d.logger.Debug(fmt.Sprintf("Reading log file => %s", LogFilePath))
+
+	// #nosec G304 -- filepath is correct
+	content, err := os.ReadFile(LogFilePath)
+	if err != nil {
+		return "", err
+	}
+	d.logger.Debug(string(content))
+	return string(content), nil
 }
