@@ -111,7 +111,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-01-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
@@ -177,7 +177,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-05-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
 		},
 		{
 			name: "valid 200 response with single empty offer",
