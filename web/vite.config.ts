@@ -16,7 +16,7 @@ export default defineConfig({
         outputFile: "coverage/junit.xml",
         coverage: {
             provider: "v8",
-            reporter: ["text", "cobertura", "lcov"],
+            reporter: ["text", "html", "cobertura", "lcov"],
             include: ["src/{lib,components}/**/*.{ts,js,svelte}"],
             exclude: [
                 "src/**/*.test.{ts}",

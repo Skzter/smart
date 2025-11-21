@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -43,10 +42,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 		return "", errors.ErrInternalServer
 	}
 
-	prompt, err := s.fillPrompt(ctx)
-	if err != nil {
-		return "", err
-	}
+	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{
 		Prompt:       userPrompt,
@@ -69,25 +65,18 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	return resp.Text, nil
 }
 
-// fillPrompt fetches the current Taglist and completes the AutoPlaywrightPrompt template from the config
-func (s *generatePrompt) fillPrompt(ctx context.Context) (string, error) {
+// fillPrompt fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
+func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+		s.logger.Error("Context is nil, using default taglist: ", "err", err.Error())
+		return sharedEntity.DefaultTagList().Format()
 	}
 
-	taglist, err := s.taglistService.GetTaglist(ctx)
-	if err != nil {
-		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+	tagList, err := s.taglistService.GetTaglist(ctx)
+	if err != nil || tagList == nil || len(tagList.Tags) == 0 {
+		s.logger.Error("Failed to fetch taglist, using default: ", "err", err.Error())
+		tagList = sharedEntity.DefaultTagList()
 	}
 
-	staglist, err := json.Marshal(taglist)
-	if err != nil {
-		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
-	}
-
-	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, string(staglist))
-	return prompt, nil
+	return tagList.Format()
 }

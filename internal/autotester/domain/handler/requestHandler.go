@@ -1,8 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -68,14 +72,40 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	// returns handled errors which can be given to frontend
-	resp, err := a.serviceHandler(c, userRequest)
+	if userRequest.SessionId == "" {
+		userRequest.SessionId = uuid.New().String()
+	}
+
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Validation failed", "error", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, resp)
+	if !valid {
+		c.JSON(http.StatusOK,
+			&entity.ResponseForUser{
+				Message:   sharedEntity.Message{MessageBody: msg},
+				UserId:    userRequest.UserId,
+				SessionId: userRequest.SessionId,
+			})
+		return
+	}
+
+	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Test generation failed", "error", err)
+		return
+	}
+
+	c.JSON(http.StatusOK,
+		&entity.ResponseForUser{
+			Message:   sharedEntity.Message{MessageBody: generatedCode},
+			UserId:    userRequest.UserId,
+			SessionId: userRequest.SessionId,
+		})
 }
 
 // HandleUserInfoRequest processes a request for user information.
@@ -87,39 +117,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
-	c.JSON(http.StatusOK, entity.ResponseForUser{LogStamp: resp.LogStamp, SessionId: resp.SessionId})
-}
-
-// serviceHandler calls the OpenAI service and prepares the response for the frontend.
-// It takes a gin.Context and UserRequest as input parameters.
-// First validates the user prompt through validationService, then generates a response through generationService.
-// Returns a ResponseForUser containing the generated text and user metadata, or an error if validation or generation fails.
-func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity.UserRequest) (*entity.ResponseForUser, error) {
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !valid {
-		return &entity.ResponseForUser{
-			Message:   sharedEntity.Message{MessageBody: msg},
-			UserId:    userRequest.UserId,
-			SessionId: userRequest.SessionId,
-			LogStamp:  userRequest.LogStamp,
-		}, nil
-	}
-
-	resp, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
-	if err != nil {
-		return nil, err
-	}
-
-	return &entity.ResponseForUser{
-		Message:   sharedEntity.Message{MessageBody: resp},
-		UserId:    userRequest.UserId,
-		SessionId: userRequest.SessionId,
-		LogStamp:  userRequest.LogStamp,
-	}, nil
+	c.JSON(http.StatusOK, entity.ResponseForUser{SessionId: resp.SessionId})
 }
 
 // HandleSaveLocalRequest processes a request to save a test case locally.
@@ -171,4 +169,58 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, entity.LocalDeleteResponse{TestcaseId: deleteLocalRequest.TestcaseId, Action: "deleted"})
+}
+
+// HandleRunContainer handles the running of the container and returns content of logfile from test
+func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
+	var params entity.RunTestRequest
+	if err := c.ShouldBindJSON(&params); err != nil {
+		a.logger.Debug(fmt.Sprintf("currently no request body: err => %s", err.Error()))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	if params.UserID == "" || params.TestId == "" || params.SessionID == "" {
+		a.logger.Debug("Missing required parameters")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Missing required parameters"})
+		return
+	}
+
+	// find file to mount
+	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
+	a.logger.Debug(fmt.Sprintf("Testpath: %s\n", testfile))
+	if err != nil {
+		a.logger.Debug(fmt.Sprintf("file not available: %s\n", err.Error()))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+
+	// can only run on container a time - needs fix in sprint 5
+	// docker pkg should fix this
+	// #nosec G204 - used as quick solution, later docker pkg
+	cmd := exec.Command("run-container.sh", fmt.Sprintf("TEST_FILE=%s", testfile))
+	a.logger.Debug(fmt.Sprintf("cmd line: %s\n", cmd))
+	a.logger.Debug("Starting the task")
+	if err := cmd.Run(); err != nil {
+		a.logger.Debug(fmt.Sprintf("Command execution error: %s\n", err.Error()))
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+
+	// logdir = logs/
+	// file is /tmp/userID/sessionID/testcaseID.spec.ts
+	LogFilePath := a.config.LogDirAutopw + filepath.Base(testfile) + ".log"
+	a.logger.Debug(fmt.Sprintf("Reading log file => %s", LogFilePath))
+
+	// #nosec G304 -- filepath is correct
+	content, err := os.ReadFile(LogFilePath)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+	a.logger.Debug(string(content))
+	c.JSON(http.StatusOK, entity.RunTestResponse{
+		Result: string(content),
+	})
 }
