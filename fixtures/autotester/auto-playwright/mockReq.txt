@@ -7,12 +7,13 @@ Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite.
    Testdaten/Setup: Reiseziel Mallorca, Abflughafen Leipzig-Halle, Reisedauer 3 woche, Start 6.9.2026, Filter Stornierung->Kostenlos stoernierbar
 
 // wenn gar nichts geht xD
-Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite. 
-   Base-URL: localhost:8082
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale entwicklungsumgebung für check24 Reise. 
+   Base-URL: http://localhost:5173
    Szenario: Nutzer sucht nach reise und erhält keine passenden Angebote. 
-   Ablauf: Zuerst gibt der Nutzer bei Reiseziel Mallorca ein. Der Abflughafen ist Leipzig-Halle. Er geht für 3 Wochen in den Urlaub und startet seine reise am 6.9.2026. Danach drückt er auf suchen. dann werden ihm keine ergebnisse angezeigt. dann filtert er die ergebnisse auf kostenlose stornierung und es sind immernoch keine ergebnisse zu sehen. 
+   Ablauf: Zuerst gibt der Nutzer bei Reiseziel Inputfeld Mallorca ein. Der Abflughafen ist Leipzig-Halle - ist ebenfalls ein input feld. Er geht für 3 Wochen in den Urlaub und startet seine reise am 6.9.2026 auch inputfelder. Danach drückt er auf suchen - einen button. dann werden ihm keine ergebnisse angezeigt. dann filtert er die ergebnisse auf kostenlose stornierung (checkbox an der seite) und es sind immernoch keine ergebnisse zu sehen. 
    Assertions: es werden keine ergebnisse für die initiale suche angezeigt und nach der filter anwendung gibt es immer noch keine ergebnisse. 
    Testdaten/Setup: Reiseziel Mallorca, Abflughafen Leipzig-Halle, Reisedauer 3 woche, Start 6.9.2026, Filter Stornierung->Kostenlos stoernierbar, danach browser schließen
+
 
 // Mini Test für kurze Dockercontainer Laufzeit
 Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite.
