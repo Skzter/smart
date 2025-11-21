@@ -30,7 +30,7 @@ docker run --rm \
     -v "$FILE":/app/$BASEFILE \
     -v "$LOGDIR":/app/logs \
     --network=host \
-    gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest \
+    gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest \
     /bin/bash -c "cd /app && npx playwright test $BASEFILE --reporter=list > $LOGPATH 2>&1"
 
 echo "docker container finished"
