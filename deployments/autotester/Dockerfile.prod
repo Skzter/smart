@@ -8,14 +8,8 @@ FROM docker:cli
 
 ARG DOPPLER_TOKEN
 
-ARG DOPPLER_TOKEN
-
 COPY --from=builder /app/bin/autotester /bin/autotester
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-COPY scripts/run-container.sh /bin/run-container.sh
-
-ENV DOPPLER_TOKEN=$DOPPLER_TOKEN
 
 COPY scripts/run-container.sh /bin/run-container.sh
 
