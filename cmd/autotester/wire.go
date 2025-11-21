@@ -38,6 +38,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
 		TaglistConfigProvider,
+		service.NewDocker,
 	)
 
 	return nil, nil
