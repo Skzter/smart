@@ -18,6 +18,7 @@ import (
 
 //nolint:dupl
 func TestNewValidatorService(t *testing.T) {
+func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
 	cfg := config.Config{}
