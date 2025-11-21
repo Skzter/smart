@@ -1,8 +1,8 @@
 {
-    "tags": "{\"apimode\":\"live\",\"id\":\"a0950be9-76ad-4fcb-932d-37660d10b1f8\",\"method\":\"search.getOfferList\",\"params\":[],\"requestSource\":\"pr.offerlist\"}",
+    "body": "{\"apimode\":\"live\",\"id\":\"a0950be9-76ad-4fcb-932d-37660d10b1f8\",\"method\":\"search.getOfferList\",\"params\":[],\"requestSource\":\"pr.offerlist\"}",
     "header":{
         "Authorization": "Bearer asdfjsafjaölfaöfsal"
     },
     "destination":"http://127.0.0.1:8083/api/v1/offers",
-    "body":""
+    "tags":""
 }
