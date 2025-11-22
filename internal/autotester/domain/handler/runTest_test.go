@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
@@ -17,17 +17,16 @@ import (
 
 // nolint:funlen
 func TestHandleRunContainer(t *testing.T) {
-	t.Skip("Skipping test for HandleRunContainer because its currently broken and should not call os commands in tests")
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
-		TestName       string
-		RequestBody    string
-		ExpectedStatus int
-		SetupMock      func(*mocks.MockTestcaseLocalStorageService)
-		SetupTest      func() // For file system operations
-		CleanupTest    func() // For cleanup operations
+		TestName         string
+		RequestBody      string
+		MockResponseFile []any
+		MockResponseRun  []any
+		MockResponseRead []any
+		ExpectedStatus   int
 	}{
 		{
 			TestName: "Valid run container request",
@@ -36,35 +35,15 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus: http.StatusOK,
-			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().GetTestPath("test456", "user123", "session789").
-					Return("/path/to/test.spec.ts", nil).Once()
-			},
-			SetupTest: func() {
-				err := os.MkdirAll(cfg.LogDirAutopw, 0750)
-				if err != nil {
-					t.Log(err)
-				}
-				err = os.WriteFile(cfg.LogDirAutopw+"test.spec.ts.log", []byte("Test execution successful"), 0600)
-				if err != nil {
-					t.Log(err)
-				}
-			},
-			CleanupTest: func() {
-				err := os.Remove(cfg.LogDirAutopw + "test.spec.ts.log")
-				if err != nil {
-					t.Log(err)
-				}
-			},
+			ExpectedStatus:   http.StatusOK,
+			MockResponseFile: []any{"/tmp/session789.ts", nil},
+			MockResponseRun:  []any{nil},
+			MockResponseRead: []any{"successful test", nil},
 		},
 		{
 			TestName:       "Invalid JSON",
 			RequestBody:    `{"invalid":json}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName: "Missing userId field",
@@ -73,9 +52,6 @@ func TestHandleRunContainer(t *testing.T) {
 				"sessionId": "session789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName: "Missing testId field",
@@ -84,9 +60,6 @@ func TestHandleRunContainer(t *testing.T) {
 				"sessionId": "session789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName: "Missing sessionId field",
@@ -95,17 +68,11 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName:       "Empty request body",
 			RequestBody:    `{}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName: "All fields empty strings",
@@ -115,9 +82,6 @@ func TestHandleRunContainer(t *testing.T) {
 				"sessionId": ""
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
-			SetupMock:      func(m *mocks.MockTestcaseLocalStorageService) {},
-			SetupTest:      func() {},
-			CleanupTest:    func() {},
 		},
 		{
 			TestName: "GetTestPath fails - file not found",
@@ -126,28 +90,19 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus: http.StatusBadRequest,
-			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().GetTestPath("test456", "user123", "session789").
-					Return("", errors.New("test file not found")).Once()
-			},
-			SetupTest:   func() {},
-			CleanupTest: func() {},
+			ExpectedStatus:   http.StatusBadRequest,
+			MockResponseFile: []any{"", errors.New("files not found")},
 		},
 		{
-			TestName: "Command execution fails",
+			TestName: "docker container execution fails",
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().GetTestPath("test456", "user123", "session789").
-					Return("/path/to/test.spec.ts", nil).Once()
-			},
-			SetupTest:   func() {},
-			CleanupTest: func() {},
+			ExpectedStatus:   http.StatusInternalServerError,
+			MockResponseFile: []any{"/tmp/test.spec.ts", nil},
+			MockResponseRun:  []any{errors.New("running error")},
 		},
 		{
 			TestName: "Log file read fails",
@@ -156,32 +111,30 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().GetTestPath("test456", "user123", "session789").
-					Return("/path/to/test.spec.ts", nil).Once()
-			},
-			SetupTest: func() {
-				err := os.Remove("docker/logs/output.log")
-				if err != nil {
-					t.Log(err)
-				}
-			},
-			CleanupTest: func() {},
+			ExpectedStatus:   http.StatusInternalServerError,
+			MockResponseFile: []any{"/tmp/test.spec.ts", nil},
+			MockResponseRun:  []any{nil},
+			MockResponseRead: []any{"no logs", errors.New("failed to read log")},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
-			// Setup
-			test.SetupTest()
-			defer test.CleanupTest()
-
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
 			mockValServ := mocks.NewMockValidatePrompt(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			test.SetupMock(mockLocalStorageServ)
+
+			// mock setup
+			if test.MockResponseFile != nil {
+				mockLocalStorageServ.On("GetTestPath", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseFile...)
+			}
+			if test.MockResponseRun != nil {
+				mockDockerServ.On("RunTest", mock.Anything, mock.Anything).Return(test.MockResponseRun...)
+			}
+			if test.MockResponseRead != nil {
+				mockDockerServ.On("ReadLog", mock.Anything).Return(test.MockResponseRead...)
+			}
 
 			req, err := http.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
 			if err != nil {
@@ -200,6 +153,7 @@ func TestHandleRunContainer(t *testing.T) {
 
 			// Execute
 			controller.HandleRunContainer(ctx)
+			t.Logf("TEST => %v\nRECORDER => %v", test, rec)
 
 			// Assert
 			if rec.Code != test.ExpectedStatus {
