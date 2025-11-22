@@ -47,7 +47,7 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 	}, nil
 }
 
-// SyncTaglist synchronizes the provided taglist with the in-memory taglist and updates the taglist stored in S3.
+// SyncTaglist synchronizes the current taglist with the provided taglist, ensuring all tags are up-to-date and stored.
 func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
@@ -59,10 +59,16 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 	tls.mutex.Lock()
 	defer tls.mutex.Unlock()
 
-	slices.Reverse(taglist.Tags)
-	incomingTag := taglist.Tags[0]
+	incomingTags := taglist.Tags
 
-	if slices.Contains(tls.tagList.Tags, incomingTag) {
+	allExist := true
+	for _, t := range incomingTags {
+		if !slices.Contains(tls.tagList.Tags, t) {
+			allExist = false
+			break
+		}
+	}
+	if allExist {
 		return nil
 	}
 
@@ -78,11 +84,23 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 		}
 	}
 
-	if slices.Contains(tls.tagList.Tags, incomingTag) {
+	allExist = true
+	for _, t := range incomingTags {
+		if !slices.Contains(tls.tagList.Tags, t) {
+			allExist = false
+			break
+		}
+	}
+	if allExist {
 		return nil
 	}
 
-	tls.tagList.Tags = append(tls.tagList.Tags, incomingTag)
+	// 5) fehlende incomingTags hinzufügen und upload zu S3
+	for _, t := range incomingTags {
+		if !slices.Contains(tls.tagList.Tags, t) {
+			tls.tagList.Tags = append(tls.tagList.Tags, t)
+		}
+	}
 
 	err = tls.taglistService.StoreTaglist(ctx, tls.tagList)
 	if err != nil {
