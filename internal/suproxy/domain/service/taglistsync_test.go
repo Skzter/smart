@@ -113,17 +113,18 @@ func TestSyncTaglist(t *testing.T) {
 			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{
 				{Name: "TAG1", Description: "TAG1"},
 			}},
-			expectS3Load: false,
-			wantErr:      false,
+			expectS3Load:    false,
+			expectStoreCall: false,
+			wantErr:         false,
 		},
-
 		{
-			name:         "tag already in S3 → S3 load, no upload",
-			ctx:          context.Background(),
-			incoming:     sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
-			s3Response:   sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
-			expectS3Load: true,
-			wantErr:      false,
+			name:            "tag already in S3 → S3 load, upload because merged from S3",
+			ctx:             context.Background(),
+			incoming:        sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
+			s3Response:      sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG3", Description: "TAG3"}}},
+			expectS3Load:    true,
+			expectStoreCall: true,
+			wantErr:         false,
 		},
 		{
 			name:            "new tag → upload",
@@ -151,6 +152,42 @@ func TestSyncTaglist(t *testing.T) {
 			s3Error:      errors.New("s3 get failed"),
 			expectS3Load: true,
 			wantErr:      true,
+		},
+		{
+			name: "all tags already in memory → early return, no S3 load",
+			ctx:  context.Background(),
+			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG1", Description: "TAG1"},
+			}},
+			expectS3Load:    false,
+			expectStoreCall: false,
+			wantErr:         false,
+		},
+		{
+			name: "incoming tag not in memory, but found in S3 → S3 load, upload",
+			ctx:  context.Background(),
+			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG3", Description: "TAG3"},
+			}},
+			s3Response: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG1", Description: "TAG1"},
+				{Name: "TAG2", Description: "TAG2"},
+				{Name: "TAG3", Description: "TAG3"},
+			}},
+			expectS3Load:    true,
+			expectStoreCall: true,
+			wantErr:         false,
+		},
+		{
+			name: "empty S3 response but new incoming tag → upload happens",
+			ctx:  context.Background(),
+			incoming: sharedEntity.TagList{Tags: []sharedEntity.Tag{
+				{Name: "TAG_NEW", Description: "New tag"},
+			}},
+			s3Response:      sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
+			expectS3Load:    true,
+			expectStoreCall: true,
+			wantErr:         false,
 		},
 	}
 

@@ -77,29 +77,27 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 		tls.logger.Error("Failed to fetch taglist from S3", "error", err)
 		return err
 	}
+	if len(onlineTaglist.Tags) == 0 {
+		tls.logger.Warn("onlineTaglist is empty, proceeding with local taglist")
+	}
 
+	needsUpdate := false
 	for _, tag := range onlineTaglist.Tags {
 		if !slices.Contains(tls.tagList.Tags, tag) {
 			tls.tagList.Tags = append(tls.tagList.Tags, tag)
+			needsUpdate = true
 		}
 	}
 
-	allExist = true
-	for _, t := range incomingTags {
-		if !slices.Contains(tls.tagList.Tags, t) {
-			allExist = false
-			break
-		}
-	}
-	if allExist {
-		return nil
-	}
-
-	// 5) fehlende incomingTags hinzufügen und upload zu S3
 	for _, t := range incomingTags {
 		if !slices.Contains(tls.tagList.Tags, t) {
 			tls.tagList.Tags = append(tls.tagList.Tags, t)
+			needsUpdate = true
 		}
+	}
+
+	if !needsUpdate {
+		return nil
 	}
 
 	err = tls.taglistService.StoreTaglist(ctx, tls.tagList)
