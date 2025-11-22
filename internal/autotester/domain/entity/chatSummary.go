@@ -1,9 +1,13 @@
 package entity
 
-// Chat represents a chat entity with a title and an assigned user.
+import "time"
+
+// ChatSummary represents metadata of a Chat.
 type ChatSummary struct {
-	ChatId       string
-	UserId       string
-	Title        string
-	MessageCount int
+	ChatId       string    `json:"chatId"`
+	UserId       string    `json:"userId"`
+	Title        string    `json:"title"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	MessageCount int       `json:"messageCount"`
 }

@@ -103,10 +103,10 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 	}
 
 	return &entity.Message{
-		Id:      uuid.NewString(),
-		Role:    openai.ChatMessageRoleAssistant,
-		Body:    text,
-		Created: time.Now(),
+		Id:        uuid.NewString(),
+		Role:      openai.ChatMessageRoleAssistant,
+		Body:      text,
+		CreatedAt: time.Now(),
 	}, nil
 }
 

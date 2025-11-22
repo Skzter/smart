@@ -6,16 +6,17 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
-// Session represents a user session containing session summaries, requests, and responses.
+// Chat represents a single Chat, identified by a unique id and associated with a user.
 type Chat struct {
-	Id      string `json:"id"`
-	UserId  string `json:"userId"`
-	Created time.Time
-	Updated time.Time
+	Id        string    `json:"id"`
+	UserId    string    `json:"userId"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
-	Messages []entity.Message
+	Title    string           `json:"title"`
+	Messages []entity.Message `json:"messages"`
 
-	LastTest      string
-	SystemPrompt  string
-	InitialPrompt string
+	LastTest      string `json:"-"`
+	SystemPrompt  string `json:"-"`
+	InitialPrompt string `json:"-"`
 }

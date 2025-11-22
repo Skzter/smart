@@ -113,7 +113,6 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 			Message:   sharedEntity.Message{Body: msg},
 			UserId:    userRequest.UserId,
 			SessionId: userRequest.SessionId,
-			LogStamp:  userRequest.LogStamp,
 		}, nil
 	}
 
@@ -126,7 +125,6 @@ func (a *AutotesterController) serviceHandler(c *gin.Context, userRequest entity
 		Message:   sharedEntity.Message{Body: resp},
 		UserId:    userRequest.UserId,
 		SessionId: userRequest.SessionId,
-		LogStamp:  userRequest.LogStamp,
 	}, nil
 }
 
@@ -208,7 +206,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	// can only run on container a time - needs fix in sprint 5
 	// docker pkg should fix this
 	// #nosec G204 - used as quick solution, later docker pkg
-	cmd := exec.Command("go", "tool", "task", "test-auto-playwright", fmt.Sprintf("TEST_FILE=%s", testfile))
+	cmd := exec.Command("run-container.sh", fmt.Sprintf("TEST_FILE=%s", testfile))
 	a.logger.Debug(fmt.Sprintf("cmd line: %s\n", cmd))
 	a.logger.Debug("Starting the task")
 	if err := cmd.Run(); err != nil {
