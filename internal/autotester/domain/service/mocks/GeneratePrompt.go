@@ -38,8 +38,8 @@ func (_m *MockGeneratePrompt) EXPECT() *MockGeneratePrompt_Expecter {
 }
 
 // GeneratePrompt provides a mock function for the type MockGeneratePrompt
-func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
-	ret := _mock.Called(ctx, userPrompt, sessionID)
+func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, userPrompt string) (string, error) {
+	ret := _mock.Called(ctx, userPrompt)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GeneratePrompt")
@@ -47,16 +47,16 @@ func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, userPrompt 
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
-		return returnFunc(ctx, userPrompt, sessionID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, userPrompt)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
-		r0 = returnFunc(ctx, userPrompt, sessionID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, userPrompt)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, userPrompt, sessionID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, userPrompt)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -71,12 +71,11 @@ type MockGeneratePrompt_GeneratePrompt_Call struct {
 // GeneratePrompt is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userPrompt string
-//   - sessionID string
-func (_e *MockGeneratePrompt_Expecter) GeneratePrompt(ctx interface{}, userPrompt interface{}, sessionID interface{}) *MockGeneratePrompt_GeneratePrompt_Call {
-	return &MockGeneratePrompt_GeneratePrompt_Call{Call: _e.mock.On("GeneratePrompt", ctx, userPrompt, sessionID)}
+func (_e *MockGeneratePrompt_Expecter) GeneratePrompt(ctx interface{}, userPrompt interface{}) *MockGeneratePrompt_GeneratePrompt_Call {
+	return &MockGeneratePrompt_GeneratePrompt_Call{Call: _e.mock.On("GeneratePrompt", ctx, userPrompt)}
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Context, userPrompt string, sessionID string)) *MockGeneratePrompt_GeneratePrompt_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Context, userPrompt string)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -86,14 +85,9 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Conte
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -104,7 +98,7 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(s string, err error) *M
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string, sessionID string) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

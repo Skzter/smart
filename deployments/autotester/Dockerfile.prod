@@ -1,22 +1,25 @@
-FROM golang:latest AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 
 COPY build/autotester bin/autotester
 
-# Create a stage for setting up non-root user
-FROM alpine:latest AS security_provider
+FROM docker:cli
 
-RUN addgroup -g 1001 -S nonroot && \
-    adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
-
-FROM alpine:latest
+ARG DOPPLER_TOKEN
 
 COPY --from=builder /app/bin/autotester /bin/autotester
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=security_provider /etc/passwd /etc/passwd
-COPY --from=security_provider /etc/group /etc/group
 
-USER nonroot
+COPY scripts/run-container.sh /bin/run-container.sh
+
+ENV DOPPLER_TOKEN=$DOPPLER_TOKEN
+
+RUN wget -q -t3 'https://packages.doppler.com/public/cli/rsa.8004D9FF50437357.key' -O /etc/apk/keys/cli@doppler-8004D9FF50437357.rsa.pub && \
+    echo 'https://packages.doppler.com/public/cli/alpine/any-version/main' | tee -a /etc/apk/repositories && \
+    apk add doppler
+
+RUN chmod +x /bin/run-container.sh
+RUN mkdir -p /var/log/smart/
 
 ENTRYPOINT ["/bin/autotester"]

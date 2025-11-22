@@ -31,11 +31,10 @@ func emptyOfferTag() sharedEntity.Tag {
 	}
 }
 
-// staticly generated tags
+// staticly generated tags for non-valid offers
 const (
 	NoOffersInResponse = "no_offer"
 	ReponseNot200      = "non_200"
-	ValidOffer         = "valid"
 )
 
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
@@ -123,21 +122,21 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
-			Prompt:       item,
+			Messages:     []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: item}},
 			SystemPrompt: sysPrompt,
 		}
-		result, err := v.openAiService.Request(ctx, req)
+		msg, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 
-		if strings.TrimSpace(result.Text) == "" {
+		if strings.TrimSpace(msg.Body) == "" {
 			return nil, fmt.Errorf("empty openai result for req: %v", req)
 		}
 
 		var validationResult OpenAIValidationResult
 
-		err = json.Unmarshal([]byte(result.Text), &validationResult)
+		err = json.Unmarshal([]byte(msg.Body), &validationResult)
 
 		if err != nil {
 			return nil, fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
@@ -154,14 +153,10 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 	}
 
+	// Return no tags if all offers are valid
 	if len(newTags) == 0 {
 		return &sharedEntity.TagList{
-			Tags: []sharedEntity.Tag{
-				{
-					Name:        ValidOffer,
-					Description: "",
-				},
-			},
+			Tags: []sharedEntity.Tag{},
 		}, nil
 	}
 	return &sharedEntity.TagList{Tags: newTags}, nil
