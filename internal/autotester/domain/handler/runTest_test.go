@@ -180,6 +180,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
 			mockValServ := mocks.NewMockValidatePrompt(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			test.SetupMock(mockLocalStorageServ)
 
 			req, err := http.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
@@ -192,7 +193,7 @@ func TestHandleRunContainer(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockRemoteStorageServ)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}

@@ -11,11 +11,12 @@ import (
 // AutotesterController is the controller for autotesting requests.
 // It encapsulates logging and access to the OpenAI service.
 type AutotesterController struct {
-	config            *config.Config
-	logger            *slog.Logger
-	validationService service.ValidatePrompt
-	generationService service.GeneratePrompt
-	saveLocalService  service.TestcaseLocalStorageService
+	config                *config.Config
+	logger                *slog.Logger
+	validationService     service.ValidatePrompt
+	generationService     service.GeneratePrompt
+	saveLocalService      service.TestcaseLocalStorageService
+	saveTestRemoteServcie service.TestcaseStorageService
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -26,16 +27,18 @@ func NewAutotesterController(
 	validationService service.ValidatePrompt,
 	generationService service.GeneratePrompt,
 	saveLocalService service.TestcaseLocalStorageService,
+	saveTestRemoteServcie service.TestcaseStorageService,
 ) (*AutotesterController, error) {
-	if err := assert.NotNil(logger, config, validationService, generationService, saveLocalService); err != nil {
+	if err := assert.NotNil(logger, config, validationService, generationService, saveLocalService, saveTestRemoteServcie); err != nil {
 		return nil, err
 	}
 
 	return &AutotesterController{
-		logger:            logger,
-		config:            config,
-		validationService: validationService,
-		generationService: generationService,
-		saveLocalService:  saveLocalService,
+		logger:                logger,
+		config:                config,
+		validationService:     validationService,
+		generationService:     generationService,
+		saveLocalService:      saveLocalService,
+		saveTestRemoteServcie: saveTestRemoteServcie,
 	}, nil
 }

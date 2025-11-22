@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 
@@ -61,7 +62,29 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 	a.logger.Debug(string(content))
+
+	resultStr := string(content)
+	pattern := fmt.Sprintf(`(?m)^\s*✓\s+\d+\s+%s:\d+:\d+`, regexp.QuoteMeta(filepath.Base(testfile)))
+	passPattern := regexp.MustCompile(pattern)
+	if passPattern.MatchString(resultStr) {
+		code, err := a.saveLocalService.Read(params.TestId, params.UserID, params.SessionID)
+		if err != nil {
+			a.logger.Error(err.Error())
+		}
+
+		test := &entity.TestCase{
+			TestID: params.TestId,
+			TestCode: entity.TestCode{
+				Code: code,
+			},
+			Status: entity.TestStatusPassed,
+		}
+		if err := a.saveTestRemoteServcie.SaveTestCase(c, test); err != nil {
+			a.logger.Error(err.Error())
+		}
+	}
+
 	c.JSON(http.StatusOK, entity.RunTestResponse{
-		Result: string(content),
+		Result: resultStr,
 	})
 }

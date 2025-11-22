@@ -31,8 +31,12 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		FileSystemProvider,
+		TestCaseParquetWrapperProvider,
+		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
+		repository.NewTestCaseStorageRepository,
 		service.NewValidatePromptService,
+		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
@@ -63,8 +67,8 @@ func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity
 }
 
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
-func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
-	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg)
+func TestCaseParquetWrapperProvider(logger *slog.Logger) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
+	return wrapperService.NewParquetWrapper[entity.TestCase](logger, wrapperService.DefaultParquetConfig())
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {

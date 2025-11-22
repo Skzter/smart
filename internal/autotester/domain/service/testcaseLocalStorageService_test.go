@@ -114,6 +114,63 @@ func TestSave(t *testing.T) {
 	}
 }
 
+func TestRead(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name      string
+		testId    string
+		userId    string
+		sessionId string
+		setupMock func(m *mocks.MockTestcaseLocalStorageRepository)
+		wantErr   bool
+		want      string
+	}{
+		{
+			name:      "successful read",
+			testId:    "test-1",
+			userId:    "user-1",
+			sessionId: "session-1",
+			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
+				m.EXPECT().Read("test-1", "user-1", "session-1").Return([]byte("console.log('test');"), nil)
+			},
+			wantErr: false,
+			want:    "console.log('test');",
+		},
+		{
+			name:      "repository error",
+			testId:    "test-1",
+			userId:    "user-1",
+			sessionId: "session-1",
+			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
+				m.EXPECT().Read("test-1", "user-1", "session-1").Return(nil, errors.New("repository error"))
+			},
+			wantErr: true,
+			want:    "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
+			test.setupMock(mockRepo)
+
+			service, err := NewTestcaseLocalStorageService(logger, mockRepo, false)
+			if err != nil {
+				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
+			}
+
+			got, err := service.Read(test.testId, test.userId, test.sessionId)
+			if (err != nil) != test.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if got != test.want {
+				t.Errorf("Read() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestGetTestPath(t *testing.T) {
 	logger := slog.Default()
 
