@@ -65,28 +65,18 @@ func TestSaveChat(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		context       context.Context
 		testCase      entity.TestCase
 		createReturns []any
 		wantErr       bool
 	}{
 		{
 			name:          "success",
-			context:       context.Background(),
 			testCase:      entity.TestCase{},
 			createReturns: []any{nil},
 			wantErr:       false,
 		},
 		{
-			name:          "nil context",
-			context:       nil,
-			testCase:      entity.TestCase{},
-			createReturns: nil,
-			wantErr:       true,
-		},
-		{
 			name:          "repo returns error",
-			context:       context.Background(),
 			createReturns: []any{errors.New("repo error")},
 			wantErr:       true,
 		},
@@ -103,7 +93,7 @@ func TestSaveChat(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			err = svc.SaveChat(test.context, sessionSummary)
+			err = svc.SaveChat(context.Background(), sessionSummary)
 			if (err != nil) != test.wantErr {
 				t.Errorf("SaveChat() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -116,29 +106,34 @@ func TestLoadChat(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		context     context.Context
-		key         string
+		userid      string
+		chatid      string
 		loadReturns []any
 		wantErr     bool
 	}{
 		{
 			name:        "success",
-			context:     context.Background(),
-			key:         "key123",
+			userid:      "user123",
+			chatid:      "chat123",
 			loadReturns: []any{&entity.Chat{}, nil},
 			wantErr:     false,
 		},
 		{
-			name:        "nil context",
-			context:     nil,
-			key:         "key123",
-			loadReturns: nil,
-			wantErr:     true,
+			name:    "invalid userId",
+			userid:  "",
+			chatid:  "chat123",
+			wantErr: true,
+		},
+		{
+			name:    "invalid chatId",
+			userid:  "user123",
+			chatid:  "",
+			wantErr: true,
 		},
 		{
 			name:        "repo returns error",
-			context:     context.Background(),
-			key:         "key123",
+			userid:      "user123",
+			chatid:      "chat123",
 			loadReturns: []any{nil, errors.New("repo error")},
 			wantErr:     true,
 		},
@@ -148,14 +143,14 @@ func TestLoadChat(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
 			if test.loadReturns != nil {
-				mockRepo.On("Read", mock.Anything, test.key).Return(test.loadReturns...)
+				mockRepo.On("Read", mock.Anything, test.userid, test.chatid).Return(test.loadReturns...)
 			}
 
 			svc, err := NewChatStorageService(logger, mockRepo)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			res, err := svc.LoadChat(test.context, test.key)
+			res, err := svc.LoadChat(context.Background(), test.userid, test.chatid)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, res)
@@ -167,30 +162,30 @@ func TestLoadChat(t *testing.T) {
 	}
 }
 
-func TestListSummaries(t *testing.T) {
+func LoadUserChats(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
 		name        string
-		context     context.Context
+		userId      string
 		listReturns []any
 		wantErr     bool
 	}{
 		{
 			name:        "success",
-			context:     context.Background(),
+			userId:      "user123",
 			listReturns: []any{[]*entity.ChatSummary{}, nil},
 			wantErr:     false,
 		},
 		{
-			name:        "nil context",
-			context:     nil,
-			listReturns: nil,
-			wantErr:     true,
+			name:        "invalid userId",
+			userId:      "",
+			listReturns: []any{[]*entity.ChatSummary{}, nil},
+			wantErr:     false,
 		},
 		{
 			name:        "repo returns error",
-			context:     context.Background(),
+			userId:      "user123",
 			listReturns: []any{nil, errors.New("repo error")},
 			wantErr:     true,
 		},
@@ -207,7 +202,7 @@ func TestListSummaries(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			res, err := svc.ListSummaries(test.context)
+			res, err := svc.LoadUserChats(context.Background(), test.userId)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, res)

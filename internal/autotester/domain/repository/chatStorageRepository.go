@@ -2,11 +2,8 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
-	"strconv"
-	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
@@ -19,15 +16,15 @@ type ChatStorageRepository interface {
 	Create(ctx context.Context, obj *entity.Chat) error
 
 	// Read retrieves a Chat object from storage by its key.
-	Read(ctx context.Context, key string) (*entity.Chat, error)
+	Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
 
 	// Update overwrites an existing Chat object in storage.
-	Update(ctx context.Context, obj *entity.Chat, key string) error
+	Update(ctx context.Context, obj *entity.Chat) error
 
-	// Delete removes a Chat object from storage by its key.
-	Delete(ctx context.Context, key string) error
+	// Delete removes a Chat object from storage by its id and userId.
+	Delete(ctx context.Context, userId string, chatId string) error
 
-	ListAll(ctx context.Context) ([]*entity.ChatSummary, error)
+	FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error)
 }
 
 const prefixChat = "chat"
@@ -35,57 +32,78 @@ const prefixChat = "chat"
 // chatStorageRepository implements the ChatStorageRepository interface
 // and encapsulates logic for S3 and Parquet operations.
 type chatStorageRepository struct {
-	s3Wrapper      service.S3StorageWrapper
-	parquetWrapper service.ParquetFileWrapper[entity.Chat]
-	logger         *slog.Logger
+	s3Wrapper             service.S3StorageWrapper
+	chatParquetWrapper    service.ParquetFileWrapper[entity.Chat]
+	summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary]
+	logger                *slog.Logger
 }
 
 // NewChatStorageRepository creates a new repository for Chat entities.
 // Returns the repository or an error.
 // nolint:lll
-func NewChatStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, parquetWrapper service.ParquetFileWrapper[entity.Chat]) (ChatStorageRepository, error) {
-	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
+func NewChatStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, chatParquetWrapper service.ParquetFileWrapper[entity.Chat], summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary]) (ChatStorageRepository, error) {
+	if err := assert.NotNil(logger, s3Wrapper, chatParquetWrapper, summaryParquetWrapper); err != nil {
 		return nil, err
 	}
 	return &chatStorageRepository{
-		s3Wrapper:      s3Wrapper,
-		parquetWrapper: parquetWrapper,
-		logger:         logger,
+		s3Wrapper:             s3Wrapper,
+		chatParquetWrapper:    chatParquetWrapper,
+		summaryParquetWrapper: summaryParquetWrapper,
+		logger:                logger,
 	}, nil
 }
 
 // Create serializes the given Chat object to Parquet format and uploads it to S3.
 // nolint:dupl
 func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) error {
-	if err := validateChat(obj); err != nil {
+	if err := assert.NotNil(ctx, obj); err != nil {
+		return err
+	}
+
+	if err := obj.Validate(); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
+	summary := entity.ChatSummary{
+		ChatId:       obj.Id,
+		UserId:       obj.UserId,
+		Title:        obj.Title,
+		CreatedAt:    obj.CreatedAt,
+		UpdatedAt:    obj.UpdatedAt,
+		MessageCount: len(obj.Messages),
+	}
+
+	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
 		return err
 	}
 
-	now := fmt.Sprintf("%d", time.Now().UTC().Unix())
-	metadata := map[string]string{
-		"chat-id":       obj.Id,
-		"user-id":       obj.UserId,
-		"title":         obj.Title,
-		"created-at":    now,
-		"upated-at":     now,
-		"message-count": fmt.Sprintf("%d", len(obj.Messages)),
-	}
-
-	key := generateChatKey()
-
-	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
+	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(summary)
 	if err != nil {
 		return err
 	}
 
-	r.logger.Debug("create: object successfully written and uploaded",
-		slog.String("key", key),
+	chatkey, summaryKey := generateKeys(obj.UserId, obj.Id)
+	err = r.s3Wrapper.UploadParquetFile(ctx, chatkey, chatParquet, map[string]string{})
+	if err != nil {
+		return err
+	}
+
+	if err := r.s3Wrapper.UploadParquetFile(ctx, summaryKey, summaryParquet, map[string]string{}); err != nil {
+		if err := r.s3Wrapper.DeleteParquetFile(ctx, chatkey); err != nil {
+			r.logger.Error("WARNING: chat uploaded without summary, removal not possible", "key", chatkey, "err", err)
+		}
+		return err
+	}
+
+	r.logger.Debug("create: chat successfully written and uploaded",
+		slog.String("key", chatkey),
 		slog.String("type", "chat"),
+	)
+
+	r.logger.Debug("create: chatSummary successfully written and uploaded",
+		slog.String("key", summaryKey),
+		slog.String("type", "chatSummary"),
 	)
 
 	return nil
@@ -94,24 +112,25 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 // Read downloads the Parquet file from S3 using the given key and returns the first Chat found.
 // Returns the Chat or an error.
 // nolint:dupl
-func (r *chatStorageRepository) Read(ctx context.Context, key string) (*entity.Chat, error) {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return nil, fmt.Errorf("key must not be empty")
+func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
 	}
+	key, _ := generateKeys(userId, chatId)
 
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	items, err := r.parquetWrapper.ReadStructsFromParquet(data)
+	items, err := r.chatParquetWrapper.ReadStructsFromParquet(data)
 	if err != nil {
 		return nil, err
 	}
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no data found for key %s", key)
 	}
-	if err := validateChat(&items[0]); err != nil {
+	if err := (&items[0]).Validate(); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 	return &items[0], nil
@@ -120,64 +139,60 @@ func (r *chatStorageRepository) Read(ctx context.Context, key string) (*entity.C
 // Update overwrites the existing Parquet file at the given key with the provided Chat.
 // Returns an error if the key does not exist or the operation fails.
 // nolint:dupl
-func (r *chatStorageRepository) Update(ctx context.Context, obj *entity.Chat, key string) error {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty")
+func (r *chatStorageRepository) Update(ctx context.Context, obj *entity.Chat) error {
+	if err := assert.NotNil(ctx, obj); err != nil {
+		return err
 	}
 
-	if err := validateChat(obj); err != nil {
+	if err := obj.Validate(); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	exists, err := r.s3Wrapper.FileExists(ctx, key)
+	chatkey, _ := generateKeys(obj.UserId, obj.Id)
+	exists, err := r.s3Wrapper.FileExists(ctx, chatkey)
 	if err != nil {
-		return fmt.Errorf("failed to check if key exists: %w", err)
+		return err
 	}
 	if !exists {
-		return fmt.Errorf("cannot update: key does not exist")
+		return fmt.Errorf("no files exist for session %s, user %s with key: %s", obj.Id, obj.UserId, chatkey)
 	}
-
-	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
-	if err != nil {
-		return fmt.Errorf("failed to serialize object: %w", err)
-	}
-
-	metadata := map[string]string{}
-
-	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
-	if err != nil {
-		return fmt.Errorf("failed to upload updated object: %w", err)
-	}
-
-	r.logger.Debug("update: object successfully overwritten",
-		slog.String("key", key),
-		slog.String("type", "chat"),
-	)
-
-	return nil
+	return r.Create(ctx, obj)
 }
 
 // Delete removes the Parquet file associated with the given key from S3.
 // Returns an error if the deletion fails.
 // nolint:dupl
-func (r *chatStorageRepository) Delete(ctx context.Context, key string) error {
-	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty")
+func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatId string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return err
 	}
+	chatkey, summaryKey := generateKeys(userId, chatId)
 
-	if err := r.s3Wrapper.DeleteParquetFile(ctx, key); err != nil {
+	if err := r.s3Wrapper.DeleteParquetFile(ctx, chatkey); err != nil {
 		return err
 	}
 
 	r.logger.Debug("delete: object successfully deleted",
-		slog.String("key", key),
+		slog.String("key", chatkey),
 	)
+
+	if err := r.s3Wrapper.DeleteParquetFile(ctx, summaryKey); err != nil {
+		return err
+	}
+
+	r.logger.Debug("delete: object successfully deleted",
+		slog.String("key", summaryKey),
+	)
+
 	return nil
 }
 
 // List Metadata of all parquest files with given prefix.
-func (r *chatStorageRepository) ListAll(ctx context.Context) ([]*entity.ChatSummary, error) {
-	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprint(prefixChat+"/"))
+func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
+	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprintf("%s/%s/summary", prefixChat, userId))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list session summary parquet files: %w", err)
 	}
@@ -185,89 +200,29 @@ func (r *chatStorageRepository) ListAll(ctx context.Context) ([]*entity.ChatSumm
 		return nil, fmt.Errorf("no session summary files found in storage")
 	}
 	result := make([]*entity.ChatSummary, 0, len(keys))
-
 	for _, key := range keys {
-		_, metadata, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
+		parquetData, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 		if err != nil {
-			r.logger.Warn("ListAll: failed to download parquet file",
-				slog.String("key", key),
-				slog.String("error", err.Error()))
+			r.logger.Error("ListAll: failed to download file", "key", key, "error", err)
 			continue
 		}
-
-		createdSec, err := strconv.ParseInt(metadata["created-at"], 10, 64)
+		summary, err := r.summaryParquetWrapper.ReadStructsFromParquet(parquetData)
 		if err != nil {
-			r.logger.Warn("ListAll: file has corrupt metadata",
-				slog.String("key", key),
-				slog.String("error", err.Error()))
+			r.logger.Error("ListAll: failed to read parquet data", "key", key, "error", err)
 			continue
 		}
-
-		updatedSec, err := strconv.ParseInt(metadata["updated-at"], 10, 64)
-		if err != nil {
-			r.logger.Warn("ListAll: file has corrupt metadata",
-				slog.String("key", key),
-				slog.String("error", err.Error()))
+		if len(summary) != 1 {
+			r.logger.Error("ListAll: incorrect number of structs in parquet file", "key", key, "number", len(summary))
 			continue
 		}
-
-		mcount, err := strconv.Atoi(metadata["message-count"])
-		if err != nil {
-			r.logger.Warn("ListAll: file is missing metadata",
-				slog.String("key", key),
-				slog.String("error", err.Error()))
-			continue
-		}
-
-		summary := &entity.ChatSummary{
-			ChatId:       metadata["chat-id"],
-			UserId:       metadata["user-id"],
-			Title:        metadata["title"],
-			CreatedAt:    time.Unix(createdSec, 0),
-			UpdatedAt:    time.Unix(updatedSec, 0),
-			MessageCount: mcount,
-		}
-		result = append(result, summary)
+		result = append(result, &summary[0])
 	}
 
 	r.logger.Debug("ListAll: finished loading chat summaries", slog.Int("count", len(result)))
 	return result, nil
 }
 
-// generateChatKey creates a unique S3 key for a Chat object.
-// The format is: "chat/chat_<timestamp>"
-func generateChatKey() string {
-	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d", prefixChat, prefixChat, timestamp)
-}
-
-// validateChat validates a Chat entity.
-// Returns an error if any required field is empty or invalid.
-func validateChat(chat *entity.Chat) error {
-	switch {
-	case chat == nil:
-		return errors.New("pointer is nil")
-	case chat.InitialPrompt == "":
-		return errors.New("initial prompt is empty")
-	case chat.SystemPrompt == "":
-		return errors.New("system prompt is empty")
-	case chat.Id == "":
-		return errors.New("id is empty")
-	case chat.UserId == "":
-		return errors.New("userId is empty")
-	case len(chat.Messages) == 0:
-		return errors.New("contains no messages")
-	}
-
-	for _, msg := range chat.Messages {
-		switch {
-		case msg.Body == "":
-			return errors.New("contains empty messages")
-		case msg.Id == "":
-			return errors.New("contains messages with empty id")
-		case msg.Role == "":
-			return errors.New("contains message with empty role")
-		}
-	}
-	return nil
+func generateKeys(userId string, chatId string) (string, string) {
+	return fmt.Sprintf("%s/%s/full/%s.parquet", prefixChat, userId, chatId),
+		fmt.Sprintf("%s/%s/summary/%s.parquet", prefixChat, userId, chatId)
 }

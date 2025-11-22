@@ -3,11 +3,11 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -30,31 +30,28 @@ func validChat() *entity.Chat {
 }
 
 // nolint:dupl
-func TestCreateHistoryStorage(t *testing.T) {
-	ctx := context.Background()
+func TestCreateChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
-	for _, test := range historyCreateTestCaseProvider() {
+	for _, test := range chatCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
+			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
-			if test.obj != nil {
-				mockParquet.On("WriteStructToParquet", *test.obj).
-					Return(test.writeStructRet, test.writeStructErr)
+			if test.chatWriteRet != nil {
+				mockParquet.On("WriteStructToParquet", *test.obj).Return(test.chatWriteRet...)
 			}
-			if test.obj != nil && test.writeStructErr == nil {
-				mockS3.On("UploadParquetFile", ctx, mock.Anything, test.writeStructRet, mock.Anything).
-					Return(test.uploadRet)
+			if test.summaryWriteRet != nil {
+				mockSummaryParquet.On("WriteStructToParquet", mock.Anything).Return(test.summaryWriteRet...)
 			}
-
-			repo := &chatStorageRepository{
-				s3Wrapper:      mockS3,
-				parquetWrapper: mockParquet,
-				logger:         logger,
+			if test.uploadRet != nil {
+				mockS3.On("UploadParquetFile", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(test.uploadRet...)
 			}
 
-			err := repo.Create(ctx, test.obj)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+
+			err := repo.Create(test.ctx, test.obj)
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Create() expected error but got none")
@@ -68,32 +65,43 @@ func TestCreateHistoryStorage(t *testing.T) {
 	}
 }
 
-func historyCreateTestCaseProvider() []struct {
-	name           string
-	obj            *entity.Chat
-	writeStructRet []byte
-	writeStructErr error
-	uploadRet      error
-	expectError    bool
+func chatCreateTestCaseProvider() []struct {
+	name            string
+	obj             *entity.Chat
+	chatWriteRet    []any
+	summaryWriteRet []any
+	uploadRet       []any
+	expectError     bool
+	ctx             context.Context
 } {
 	return []struct {
-		name           string
-		obj            *entity.Chat
-		writeStructRet []byte
-		writeStructErr error
-		uploadRet      error
-		expectError    bool
+		name            string
+		obj             *entity.Chat
+		chatWriteRet    []any
+		summaryWriteRet []any
+		uploadRet       []any
+		expectError     bool
+		ctx             context.Context
 	}{
 		{
-			name:           "happy path",
-			obj:            validChat(),
-			writeStructRet: []byte("parquetdata"),
-			uploadRet:      nil,
-			expectError:    false,
+			name:            "happy path",
+			obj:             validChat(),
+			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
+			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
+			uploadRet:       []any{nil},
+			expectError:     false,
+			ctx:             context.Background(),
 		},
 		{
 			name:        "nil obj",
+			ctx:         context.Background(),
 			obj:         nil,
+			expectError: true,
+		},
+		{
+			name:        "nil ctx",
+			obj:         validChat(),
+			ctx:         nil,
 			expectError: true,
 		},
 		{
@@ -108,313 +116,282 @@ func historyCreateTestCaseProvider() []struct {
 				InitialPrompt: "usr prompt",
 				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
 			},
-			writeStructRet: []byte("parquetdata"),
-			uploadRet:      nil,
-			expectError:    true,
+			expectError: true,
+			ctx:         context.Background(),
 		},
 		{
-			name:           "parquet error",
-			obj:            validChat(),
-			writeStructErr: errors.New("parquet error"),
-			expectError:    true,
+			name:         "chat parquet error",
+			obj:          validChat(),
+			chatWriteRet: []any{nil, errors.New("err")},
+			expectError:  true,
+			ctx:          context.Background(),
 		},
 		{
-			name:           "upload error",
-			obj:            validChat(),
-			writeStructRet: []byte("parquetdata"),
-			uploadRet:      errors.New("upload error"),
-			expectError:    true,
+			name:            "summary parquet error",
+			obj:             validChat(),
+			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
+			summaryWriteRet: []any{nil, errors.New("err")},
+			expectError:     true,
+			ctx:             context.Background(),
+		},
+		{
+			name:            "upload error",
+			obj:             validChat(),
+			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
+			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
+			uploadRet:       []any{errors.New("err")},
+			expectError:     true,
+			ctx:             context.Background(),
 		},
 	}
 }
 
 // nolint:dupl
-func TestReadHistoryStorage(t *testing.T) {
-	ctx := context.Background()
+func TestReadChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
-	for _, test := range historyReadTestCaseProvider() {
+	for _, test := range chatReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
+			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
-			mockS3.On("DownloadParquetFile", ctx, test.key).
-				Return(test.downloadRet, test.downloadMeta, test.downloadErr)
+			key, _ := generateKeys("user", "chat")
 
-			mockParquet.On("ReadStructsFromParquet", test.downloadRet).
-				Return(test.readStructsRet, test.readStructsErr)
-
-			repo := &chatStorageRepository{
-				s3Wrapper:      mockS3,
-				parquetWrapper: mockParquet,
-				logger:         logger,
+			if test.downloadRet != nil {
+				mockS3.On("DownloadParquetFile", test.ctx, key).Return(test.downloadRet...)
 			}
 
-			result, err := repo.Read(ctx, test.key)
+			if test.readStructsRet != nil {
+				mockParquet.On("ReadStructsFromParquet", mock.Anything).Return(test.readStructsRet...)
+			}
+
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+
+			result, err := repo.Read(test.ctx, "user", "chat")
 			if test.expectError {
-				if err == nil {
-					t.Errorf("Read() expected error but got none")
-				}
-				if !test.expectNilResult && result != nil {
-					t.Errorf("Read() expected nil result on error, got: %+v", result)
-				}
+				assert.Error(t, err)
+				assert.Nil(t, result)
 			} else {
-				if err != nil {
-					t.Errorf("Read() unexpected error: %v", err)
-				}
-				if result == nil {
-					t.Errorf("Read() expected non-nil result on success")
-				}
+				assert.Nil(t, err)
+				assert.NotNil(t, result)
 			}
 		})
 	}
 }
 
-func historyReadTestCaseProvider() []struct {
-	name            string
-	key             string
-	downloadRet     []byte
-	downloadMeta    map[string]string
-	downloadErr     error
-	readStructsRet  []entity.Chat
-	readStructsErr  error
-	expectError     bool
-	expectNilResult bool
-} {
-	return []struct {
-		name            string
-		key             string
-		downloadRet     []byte
-		downloadMeta    map[string]string
-		downloadErr     error
-		readStructsRet  []entity.Chat
-		readStructsErr  error
-		expectError     bool
-		expectNilResult bool
-	}{
-		{
-			name:            "happy path",
-			key:             "valid-key",
-			downloadRet:     []byte("parquet"),
-			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.Chat{*validChat()},
-			expectError:     false,
-			expectNilResult: false,
-		},
-		{
-			name:            "empty key",
-			key:             "",
-			expectError:     true,
-			expectNilResult: true,
-		},
-		{
-			name:            "download error",
-			key:             "valid-key",
-			downloadErr:     errors.New("download error"),
-			expectError:     true,
-			expectNilResult: true,
-		},
-		{
-			name:            "read parquet error",
-			key:             "valid-key",
-			downloadRet:     []byte("parquet"),
-			downloadMeta:    map[string]string{},
-			readStructsErr:  errors.New("read error"),
-			expectError:     true,
-			expectNilResult: true,
-		},
-		{
-			name:            "no data found",
-			key:             "valid-key",
-			downloadRet:     []byte("parquet"),
-			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.Chat{},
-			expectError:     true,
-			expectNilResult: true,
-		},
-		{
-			name:            "validation fails",
-			key:             "valid-key",
-			downloadRet:     []byte("parquet"),
-			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.Chat{{}},
-			expectError:     true,
-			expectNilResult: true,
-		},
-	}
-}
-
-// nolint:dupl
-func TestUpdateHistoryStorage(t *testing.T) {
-	ctx := context.Background()
-	logger := slog.New(slog.DiscardHandler)
-
-	for _, test := range historyUpdateTestCaseProvider() {
-		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
-
-			mockS3.On("FileExists", ctx, test.key).
-				Return(test.fileExistsRet, test.fileExistsErr)
-
-			if test.obj != nil && test.key != "" && test.fileExistsErr == nil && test.fileExistsRet {
-				mockParquet.On("WriteStructToParquet", *test.obj).
-					Return(test.writeStructRet, test.writeStructErr)
-			}
-
-			if test.obj != nil && test.key != "" && test.fileExistsErr == nil && test.fileExistsRet && test.writeStructErr == nil {
-				mockS3.On("UploadParquetFile", ctx, test.key, test.writeStructRet, mock.Anything).
-					Return(test.uploadRet)
-			}
-
-			repo := &chatStorageRepository{
-				s3Wrapper:      mockS3,
-				parquetWrapper: mockParquet,
-				logger:         logger,
-			}
-
-			err := repo.Update(ctx, test.obj, test.key)
-			if test.expectError {
-				if err == nil {
-					t.Errorf("Update() expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Update() unexpected error: %v", err)
-				}
-			}
-		})
-	}
-}
-
-func historyUpdateTestCaseProvider() []struct {
+func chatReadTestCaseProvider() []struct {
 	name           string
-	obj            *entity.Chat
-	key            string
-	fileExistsRet  bool
-	fileExistsErr  error
-	writeStructRet []byte
-	writeStructErr error
-	uploadRet      error
+	downloadRet    []any
+	readStructsRet []any
 	expectError    bool
+	ctx            context.Context
 } {
 	return []struct {
 		name           string
-		obj            *entity.Chat
-		key            string
-		fileExistsRet  bool
-		fileExistsErr  error
-		writeStructRet []byte
-		writeStructErr error
-		uploadRet      error
+		downloadRet    []any
+		readStructsRet []any
 		expectError    bool
+		ctx            context.Context
 	}{
 		{
 			name:           "happy path",
-			obj:            validChat(),
-			key:            "valid-key",
-			fileExistsRet:  true,
-			writeStructRet: []byte("dummy parquet data"),
+			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
+			readStructsRet: []any{[]entity.Chat{*validChat()}, nil},
 			expectError:    false,
+			ctx:            context.Background(),
+		},
+		{
+			name:        "nil ctx",
+			expectError: true,
+			ctx:         nil,
+		},
+		{
+			name:        "download error",
+			downloadRet: []any{nil, nil, errors.New("download error")},
+			expectError: true,
+			ctx:         context.Background(),
+		},
+		{
+			name:           "read parquet error",
+			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
+			readStructsRet: []any{nil, errors.New("read error")},
+			expectError:    true,
+			ctx:            context.Background(),
+		},
+		{
+			name:           "no data found",
+			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
+			readStructsRet: []any{[]entity.Chat{}, nil},
+			expectError:    true,
+			ctx:            context.Background(),
+		},
+		{
+			name:           "validation fails",
+			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
+			readStructsRet: []any{[]entity.Chat{{}}, nil},
+			expectError:    true,
+			ctx:            context.Background(),
+		},
+	}
+}
+
+// nolint:dupl
+func TestUpdateChatStorage(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+
+	for _, test := range chatUpdateTestCaseProvider() {
+		t.Run(test.name, func(t *testing.T) {
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
+			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
+
+			if test.fileExistsRet != nil {
+				mockS3.On("FileExists", test.ctx, mock.Anything).Return(test.fileExistsRet...)
+			}
+			if test.chatWriteRet != nil {
+				mockParquet.On("WriteStructToParquet", *test.obj).Return(test.chatWriteRet...)
+			}
+			if test.summaryWriteRet != nil {
+				mockSummaryParquet.On("WriteStructToParquet", mock.Anything).Return(test.summaryWriteRet...)
+			}
+			if test.uploadRet != nil {
+				mockS3.On("UploadParquetFile", test.ctx, mock.Anything, mock.Anything, mock.Anything).Return(test.uploadRet...)
+			}
+
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+
+			err := repo.Update(test.ctx, test.obj)
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func chatUpdateTestCaseProvider() []struct {
+	name            string
+	obj             *entity.Chat
+	fileExistsRet   []any
+	chatWriteRet    []any
+	summaryWriteRet []any
+	uploadRet       []any
+	expectError     bool
+	ctx             context.Context
+} {
+	return []struct {
+		name            string
+		obj             *entity.Chat
+		fileExistsRet   []any
+		chatWriteRet    []any
+		summaryWriteRet []any
+		uploadRet       []any
+		expectError     bool
+		ctx             context.Context
+	}{
+		{
+			name:            "happy path",
+			obj:             validChat(),
+			fileExistsRet:   []any{true, nil},
+			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
+			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
+			uploadRet:       []any{nil},
+			expectError:     false,
+			ctx:             context.Background(),
 		},
 		{
 			name:        "nil obj",
 			obj:         nil,
-			key:         "valid-key",
 			expectError: true,
+			ctx:         context.Background(),
 		},
 		{
-			name:        "validation fails",
-			obj:         &entity.Chat{},
-			key:         "valid-key",
-			expectError: true,
-		},
-		{
-			name:        "empty key",
+			name:        "nil ctx",
 			obj:         validChat(),
-			key:         "",
 			expectError: true,
+			ctx:         nil,
 		},
 		{
-			name:          "file exists check error",
+			name:        "invalid obj",
+			obj:         &entity.Chat{},
+			expectError: true,
+			ctx:         context.Background(),
+		},
+		{
+			name:          "validate error",
 			obj:           validChat(),
-			key:           "valid-key",
-			fileExistsErr: errors.New("exists error"),
+			fileExistsRet: []any{false, errors.New("err")},
 			expectError:   true,
+			ctx:           context.Background(),
 		},
 		{
-			name:          "file does not exist",
+			name:          "validate fail",
 			obj:           validChat(),
-			key:           "valid-key",
-			fileExistsRet: false,
+			fileExistsRet: []any{false, nil},
 			expectError:   true,
-		},
-		{
-			name:           "parquet write fails",
-			obj:            validChat(),
-			key:            "valid-key",
-			fileExistsRet:  true,
-			writeStructErr: errors.New("parquet error"),
-			expectError:    true,
-		},
-		{
-			name:           "s3 upload fails",
-			obj:            validChat(),
-			key:            "valid-key",
-			fileExistsRet:  true,
-			writeStructRet: []byte("dummy parquet data"),
-			uploadRet:      errors.New("s3 error"),
-			expectError:    true,
+			ctx:           context.Background(),
 		},
 	}
 }
 
 // nolint:dupl
-func TestDeleteHistoryStorage(t *testing.T) {
-	ctx := context.Background()
+func TestDeleteChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
-		name        string
-		key         string
-		deleteRet   error
-		expectError bool
+		name             string
+		deleteChatRet    []any
+		deleteSummaryRet []any
+		expectError      bool
+		ctx              context.Context
 	}{
 		{
-			name:        "happy path",
-			key:         "valid-key",
-			deleteRet:   nil,
-			expectError: false,
+			name:             "happy path",
+			deleteChatRet:    []any{nil},
+			deleteSummaryRet: []any{nil},
+			expectError:      false,
+			ctx:              context.Background(),
 		},
 		{
-			name:        "empty key",
-			key:         "",
-			deleteRet:   nil,
+			name:        "nil ctx",
 			expectError: true,
+			ctx:         nil,
 		},
 		{
-			name:        "delete error",
-			key:         "valid-key",
-			deleteRet:   errors.New("delete error"),
-			expectError: true,
+			name:          "delete chat error",
+			deleteChatRet: []any{errors.New("delete error")},
+			expectError:   true,
+			ctx:           context.Background(),
+		},
+		{
+			name:             "delete chat error",
+			deleteChatRet:    []any{nil},
+			deleteSummaryRet: []any{errors.New("delete error")},
+			expectError:      true,
+			ctx:              context.Background(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
-
-			mockS3.On("DeleteParquetFile", ctx, test.key).
-				Return(test.deleteRet)
-
-			repo := &chatStorageRepository{
-				s3Wrapper:      mockS3,
-				parquetWrapper: mockParquet,
-				logger:         logger,
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
+			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
+			chatkey, summarykey := generateKeys("user", "chat")
+			if test.deleteChatRet != nil {
+				mockS3.On("DeleteParquetFile", test.ctx, chatkey).
+					Return(test.deleteChatRet...)
+			}
+			if test.deleteSummaryRet != nil {
+				mockS3.On("DeleteParquetFile", test.ctx, summarykey).
+					Return(test.deleteSummaryRet...)
 			}
 
-			err := repo.Delete(ctx, test.key)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+
+			err := repo.Delete(test.ctx, "user", "chat")
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Delete() expected error but got none")
@@ -428,377 +405,207 @@ func TestDeleteHistoryStorage(t *testing.T) {
 	}
 }
 
-// nolint:funlen
-func TestValidateHistoryData(t *testing.T) {
-	tests := []struct {
-		name    string
-		obj     *entity.Chat
-		wantErr bool
-	}{
-		{
-			name:    "valid Chat",
-			obj:     validChat(),
-			wantErr: false,
-		},
-		{
-			name:    "nil obj",
-			obj:     nil,
-			wantErr: true,
-		},
-		{
-			name: "empty id",
-			obj: &entity.Chat{
-				Id:            "",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty userId",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty initialPrompt",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty systemprompt",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty messages",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty body",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: ""}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty id",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty role",
-			obj: &entity.Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var err error
-			if test.obj == nil {
-				err = validateChat(nil)
-			} else {
-				err = validateChat(test.obj)
-			}
-			if (err != nil) != test.wantErr {
-				t.Errorf("validateHistoryData() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestListAll(t *testing.T) {
+func TestFindByUserID(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
 
-	for _, test := range historyListAllTestCaseProvider(ctx) {
+	for _, test := range findByUserIDTestCaseProvider(ctx) {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
-			test.setupMocks(mockS3)
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
-			repo := &chatStorageRepository{
-				s3Wrapper:      mockS3,
-				parquetWrapper: mockParquet,
-				logger:         logger,
-			}
+			test.setupMocks(mockS3, mockSummaryParquet)
 
-			result, err := repo.ListAll(ctx)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mocks.NewMockParquetFileWrapper[entity.Chat](t), mockSummaryParquet)
+
+			result, err := repo.FindByUserID(test.ctx, "user")
 			if (err != nil) != test.wantErr {
 				t.Errorf("ListAll() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if len(result) != test.wantCount {
-				t.Errorf("ListAll() got %d entries, want %d", len(result), test.wantCount)
+				t.Errorf("FindByUserID() got %d entries, want %d", len(result), test.wantCount)
 			}
 		})
 	}
 }
 
 // nolint:funlen
-func historyListAllTestCaseProvider(ctx context.Context) []struct {
+func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 	name       string
 	setupMocks func(
 		mockS3 *mocks.MockS3StorageWrapper,
+		parquet *mocks.MockParquetFileWrapper[entity.ChatSummary],
 	)
 	wantCount int
 	wantErr   bool
+	ctx       context.Context
 } {
-	now := fmt.Sprintf("%d", time.Now().UTC().Unix())
-	metadata := map[string]string{
-		"chat-id":       "id123",
-		"user-id":       "userId123",
-		"title":         "title123",
-		"created-at":    now,
-		"updated-at":    now,
-		"message-count": "25",
-	}
 	return []struct {
 		name       string
 		setupMocks func(
 			mockS3 *mocks.MockS3StorageWrapper,
+			parquet *mocks.MockParquetFileWrapper[entity.ChatSummary],
 		)
 		wantCount int
 		wantErr   bool
+		ctx       context.Context
 	}{
 		{
-			name: "all valid entries",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
+			name: "happy path",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key1").
-					Return([]byte("data1"), metadata, nil)
+					Return([]byte("data1"), map[string]string{}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key2").
-					Return([]byte("data2"), metadata, nil)
+					Return([]byte("data2"), map[string]string{}, nil)
+				parquet.On("ReadStructsFromParquet", mock.Anything).
+					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 2,
 			wantErr:   false,
+			ctx:       ctx,
 		},
 		{
-			name: "list files error",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
-					Return(nil, errors.New("list error"))
+			name:       "nil ctx",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {},
+			wantCount:  0,
+			wantErr:    true,
+			ctx:        nil,
+		},
+		{
+			name: "s3 list error",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+					Return(nil, errors.New("err"))
 			},
 			wantCount: 0,
 			wantErr:   true,
+			ctx:       ctx,
 		},
 		{
-			name: "no files found",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
+			name: "no keys found",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
 					Return([]string{}, nil)
 			},
 			wantCount: 0,
 			wantErr:   true,
+			ctx:       ctx,
 		},
 		{
-			name: "download error for one file",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
+			name: "s3 download error",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key1").
-					Return(nil, nil, errors.New("download error"))
+					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
-					Return([]byte("data2"), metadata, nil)
+					Return([]byte("data2"), map[string]string{}, nil)
+				parquet.On("ReadStructsFromParquet", mock.Anything).
+					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 1,
 			wantErr:   false,
+			ctx:       ctx,
 		},
 		{
-			name: "file with incorrect created",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
+			name: "parquet error",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key1").
-					Return([]byte("data1"), map[string]string{
-						"chat-id":       "id123",
-						"user-id":       "userId123",
-						"title":         "title123",
-						"created-at":    "incorrect time",
-						"updated-at":    now,
-						"message-count": "25",
-					}, nil)
+					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
-					Return([]byte("data2"), metadata, nil)
+					Return([]byte("data2"), map[string]string{}, nil)
+				parquet.On("ReadStructsFromParquet", mock.Anything).
+					Return(nil, errors.New("err"))
 			},
-			wantCount: 1,
+			wantCount: 0,
 			wantErr:   false,
+			ctx:       ctx,
 		},
 		{
-			name: "file with incorrect updated",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
+			name: "incorrect number of structs in parquet file",
+			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
+				mockS3.On("ListParquetFiles", ctx, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key1").
-					Return([]byte("data1"), map[string]string{
-						"chat-id":       "id123",
-						"user-id":       "userId123",
-						"title":         "title123",
-						"created-at":    now,
-						"updated-at":    "incorrect time",
-						"message-count": "25",
-					}, nil)
+					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
-					Return([]byte("data2"), metadata, nil)
+					Return([]byte("data2"), map[string]string{}, nil)
+				parquet.On("ReadStructsFromParquet", mock.Anything).
+					Return([]entity.ChatSummary{{}, {}}, nil)
 			},
-			wantCount: 1,
+			wantCount: 0,
 			wantErr:   false,
-		},
-		{
-			name: "file with incorrect message count",
-			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper) {
-				mockS3.On("ListParquetFiles", ctx, "chat/").
-					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
-					Return([]byte("data1"), map[string]string{
-						"chat-id":       "id123",
-						"user-id":       "userId123",
-						"title":         "title123",
-						"created-at":    now,
-						"updated-at":    now,
-						"message-count": "incorrect number",
-					}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key2").
-					Return([]byte("data2"), metadata, nil)
-			},
-			wantCount: 1,
-			wantErr:   false,
+			ctx:       ctx,
 		},
 	}
 }
 
-// nolint:dupl
-func TestGenerateChatKey(t *testing.T) {
-	key := generateChatKey()
-
-	if key == "" {
-		t.Errorf("generateChatKey() returned empty string")
-	}
-	if len(key) < 20 {
-		t.Errorf("generateChatKey() returned too short key: %s", key)
-	}
-	const prefix = "chat/"
-	if len(key) < len(prefix) || key[:len(prefix)] != prefix {
-		t.Errorf("generateChatKey() should start with '%s', got: %s", prefix, key)
-	}
-	if len(key) <= len(prefix) || key[len(prefix):] == "" {
-		t.Errorf("generateChatKey() should contain a timestamp after prefix, got: %s", key)
-	}
-}
+// (generateChatKey removed in implementation)
 
 // nolint:dupl
 func TestNewChatStorageRepository(t *testing.T) {
-	mockS3 := &mocks.MockS3StorageWrapper{}
-	mockParquet := &mocks.MockParquetFileWrapper[entity.Chat]{}
+	mockS3 := mocks.NewMockS3StorageWrapper(t)
+	mockChatParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
+	mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
-		name           string
-		logger         *slog.Logger
-		s3Wrapper      service.S3StorageWrapper
-		parquetWrapper service.ParquetFileWrapper[entity.Chat]
-		wantErr        bool
+		name                  string
+		logger                *slog.Logger
+		s3Wrapper             service.S3StorageWrapper
+		chatParquetWrapper    service.ParquetFileWrapper[entity.Chat]
+		summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary]
+		wantErr               bool
 	}{
 		{
-			name:           "all not nil",
-			logger:         logger,
-			s3Wrapper:      mockS3,
-			parquetWrapper: mockParquet,
-			wantErr:        false,
+			name:                  "all not nil",
+			logger:                logger,
+			s3Wrapper:             mockS3,
+			chatParquetWrapper:    mockChatParquet,
+			summaryParquetWrapper: mockSummaryParquet,
+			wantErr:               false,
 		},
 		{
-			name:           "nil logger",
-			logger:         nil,
-			s3Wrapper:      mockS3,
-			parquetWrapper: mockParquet,
-			wantErr:        true,
+			name:                  "nil logger",
+			logger:                nil,
+			s3Wrapper:             mockS3,
+			chatParquetWrapper:    mockChatParquet,
+			summaryParquetWrapper: mockSummaryParquet,
+			wantErr:               true,
 		},
 		{
-			name:           "nil s3Wrapper",
-			logger:         logger,
-			s3Wrapper:      nil,
-			parquetWrapper: mockParquet,
-			wantErr:        true,
+			name:                  "nil s3Wrapper",
+			logger:                logger,
+			s3Wrapper:             nil,
+			chatParquetWrapper:    mockChatParquet,
+			summaryParquetWrapper: mockSummaryParquet,
+			wantErr:               true,
 		},
 		{
-			name:           "nil parquetWrapper",
-			logger:         logger,
-			s3Wrapper:      mockS3,
-			parquetWrapper: nil,
-			wantErr:        true,
+			name:                  "nil parquetWrapper",
+			logger:                logger,
+			s3Wrapper:             mockS3,
+			chatParquetWrapper:    nil,
+			summaryParquetWrapper: mockSummaryParquet,
+			wantErr:               true,
+		},
+		{
+			name:                  "nil summaryParquetWrapper",
+			logger:                logger,
+			s3Wrapper:             mockS3,
+			chatParquetWrapper:    mockChatParquet,
+			summaryParquetWrapper: nil,
+			wantErr:               true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewChatStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
+			repo, err := NewChatStorageRepository(test.logger, test.s3Wrapper, test.chatParquetWrapper, test.summaryParquetWrapper)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewChatStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}

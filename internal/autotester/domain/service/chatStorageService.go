@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -14,8 +15,9 @@ type ChatStorageService interface {
 	// SaveChat persists the provided Chat entity into the storage.
 	// Returns an error if the operation fails.
 	SaveChat(ctx context.Context, summary *entity.Chat) error
-	LoadChat(ctx context.Context, key string) (*entity.Chat, error)
-	ListSummaries(ctx context.Context) ([]*entity.ChatSummary, error)
+	LoadChat(ctx context.Context, chatId string, userId string) (*entity.Chat, error)
+	UpdateChat(ct context.Context, chat *entity.Chat) error
+	LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error)
 }
 
 // chatStorageService implements the ChatStorageService interface
@@ -41,22 +43,27 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 // SaveChat saves the given Chat entity using the configured repository.
 // Validates the input context and returns an error if it is nil or if the repository operation fails.
 func (s *chatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
-	if err := assert.NotNil(ctx); err != nil {
-		return err
-	}
 	return s.repo.Create(ctx, summary)
 }
 
-func (s *chatStorageService) LoadChat(ctx context.Context, key string) (*entity.Chat, error) {
-	if err := assert.NotNil(ctx); err != nil {
-		return nil, err
+func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+	if err := assert.StringNotEmpty(userId); err != nil {
+		return nil, fmt.Errorf("userId must not be empty")
 	}
-	return s.repo.Read(ctx, key)
+	if err := assert.StringNotEmpty(chatId); err != nil {
+		return nil, fmt.Errorf("chatId must not be empty")
+	}
+
+	return s.repo.Read(ctx, userId, chatId)
 }
 
-func (s *chatStorageService) ListSummaries(ctx context.Context) ([]*entity.ChatSummary, error) {
-	if err := assert.NotNil(ctx); err != nil {
-		return nil, err
+func (s *chatStorageService) UpdateChat(ctx context.Context, chat *entity.Chat) error {
+	return s.repo.Update(ctx, chat)
+}
+
+func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
+	if err := assert.StringNotEmpty(userId); err != nil {
+		return nil, fmt.Errorf("key must not be empty")
 	}
-	return s.repo.ListAll(ctx)
+	return s.repo.FindByUserID(ctx, userId)
 }
