@@ -56,6 +56,11 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 	if err := assert.NotNil(ctx, taglist); err != nil {
 		return err
 	}
+
+	if len(taglist.Tags) == 0 {
+		return fmt.Errorf("empty taglist")
+	}
+
 	if err := validateTaglist(taglist); err != nil {
 		return fmt.Errorf("failed to validate TagList: %w", err)
 	}
@@ -119,6 +124,10 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 		return err
 	}
 
+	if len(taglist.Tags) == 0 {
+		return fmt.Errorf("empty taglist")
+	}
+
 	if err := validateTaglist(taglist); err != nil {
 		return fmt.Errorf("failed to validate TagList: %w", err)
 	}
@@ -163,9 +172,6 @@ func validateTaglist(taglist *entity.TagList) error {
 		return err
 	}
 
-	if len(taglist.Tags) == 0 {
-		return fmt.Errorf("taglist is empty: %s", taglist)
-	}
 	for _, tag := range taglist.Tags {
 		if err := assert.StringNotEmpty(tag.Name); err != nil {
 			return fmt.Errorf("tag name is empty: %s", tag.Name)

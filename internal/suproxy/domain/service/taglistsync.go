@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 	"sync"
@@ -35,8 +35,17 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 
 	taglist, err := taglistService.GetTaglist(context.Background())
 	if err != nil {
-		logger.Error("Failed to get initial taglist", "error", err)
-		return nil, err
+		logger.Error(err.Error())
+	}
+
+	logger.Debug(fmt.Sprintf("Initial Taglist => %v", taglist))
+	if taglist == nil || len(taglist.Tags) == 0 {
+		taglist = sharedEntity.DefaultTagList()
+		err := taglistService.StoreTaglist(context.Background(), taglist)
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		logger.Debug(fmt.Sprintf("Updated Taglist => %v", taglist))
 	}
 
 	// mutex requires no initialization
@@ -51,9 +60,6 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
-	}
-	if len(taglist.Tags) == 0 {
-		return errors.New("empty taglist")
 	}
 
 	tls.mutex.Lock()

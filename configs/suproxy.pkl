@@ -74,22 +74,33 @@ class Prompts {
     No additional text, explanations, or reformulations are allowed. 
     Tags must be exact matches from the allowed list. If no tag fits, create a new tag that is short, clearly interpretable, and uniquely describes the issue (e.g. invalid_objectid, missing_country_code). Avoid explanations or reformulations. 
 
-    Your output must always strictly follow this schema: 
-
-    { 
-      "valid": true, 
-      "reason": [] 
-    } 
-
-    or 
-
+    You MUST output ONLY valid JSON.
+    You MUST follow the EXACT JSON schema below.
+    The field "reason" MUST ALWAYS be an array of objects matching the structure:
     {
-      "valid": false,
-      "reason": [
-        { "name": "tag1", "description": "" },
-        { "name": "tag2", "description": "" }
-      ]
+    "name": string,
+    "description": string
     }
+    
+    "reason" MUST NEVER be:
+    - a string
+    - null
+    - an object
+    - an array of strings
+    If the input is valid, return:
+    { "valid": true, "reason": [] }
+    
+    If invalid, ALWAYS return
+    {
+    "valid": false,
+    "reason": [
+    { "name": "...", "description": "..." }
+    ]
+    }
+    DO NOT return any text outside the JSON.
+    DO NOT wrap the JSON in markdown.
+    DO NOT explain your answer.
+    DO NOT include trailing commas.
     """
 }
 prompts : Prompts

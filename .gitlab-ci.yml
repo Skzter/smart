@@ -8,6 +8,8 @@ variables:
   GO_VERSION: 1.24
 
 default:
+  tags:
+    - aws
   image:
     name: golang:$GO_VERSION
 
@@ -85,11 +87,11 @@ replace_api_paths:
     # Frontend API file - replace baseURL from "/api/v1/chat" to "/v1/chat"
     - sed -i 's|/api/v1|/v1|g' web/src/lib/Api.ts
     # Test files - replace all /api/v1/* routes with /v1/*
-    - sed -i 's|/api/v1/|/v1/|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/requestHandler_test.go
+    - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/chat_test.go
+    - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/template_test.go
+    - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/localStorage_test.go
+    - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/localStorage_test.go
+    - sed -i 's|/api/v1/run|/v1/run|g' internal/autotester/domain/handler/runTest_test.go
     - sed -i 's|/api/v1/|/v1/|g' web/tests/unit/api.test.ts
     - sed -i 's|/api/v1/Offerlist|/v1/Offerlist|g' internal/suproxy/domain/handler/handler_test.go
     - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/domain/handler/handler_test.go
@@ -99,7 +101,10 @@ replace_api_paths:
       - internal/autotester/application/router.go
       - internal/suproxy/application/router.go
       - web/src/lib/Api.ts
-      - internal/autotester/domain/handler/requestHandler_test.go
+      - internal/autotester/domain/handler/chat_test.go
+      - internal/autotester/domain/handler/template_test.go
+      - internal/autotester/domain/handler/localStorage_test.go
+      - internal/autotester/domain/handler/runTest_test.go
       - web/tests/unit/api.test.ts
       - internal/suproxy/domain/handler/handler_test.go
 
@@ -126,8 +131,6 @@ static_analysis_go:
 
 sonarqube-check:
   stage: code_analysis_and_testing
-  tags:
-    - fdit
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -158,10 +161,6 @@ unit_test_go:
       when: on_success
 
 integration_test_go:
-  services:
-    - docker:dind
-  tags:
-    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
@@ -260,8 +259,6 @@ build_go_no_artifacts:
 .docker_build:
   image:
     name: docker:dind
-  tags:
-    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
