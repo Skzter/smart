@@ -32,7 +32,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		OpenAiRepositoryProvider,
 		FileSystemProvider,
 		repository.NewTestcaseLocalStorageRepository,
-		service.NewValidatePromptService,
+		service.NewValidatorService,
 		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,

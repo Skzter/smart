@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	autotesterMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
@@ -21,52 +22,67 @@ func TestNewGeneratePromptService(t *testing.T) {
 	taglist := mocks.NewMockTaglistStorage(t)
 	logger := slog.Default()
 	cfg := config.Config{}
+	validator := autotesterMocks.NewMockValidator(t)
 
 	tests := []struct {
-		name    string
-		openai  srv.OpenAI
-		taglist srv.TaglistStorage
-		config  *config.Config
-		logger  *slog.Logger
-		wantErr bool
+		name      string
+		openai    srv.OpenAI
+		taglist   srv.TaglistStorage
+		config    *config.Config
+		logger    *slog.Logger
+		validator Validator
+		wantErr   bool
 	}{
 		{
-			name:    "all not nil",
-			openai:  openai,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  logger,
-			wantErr: false,
+			name:      "all not nil",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: validator,
+			wantErr:   false,
 		},
 		{
-			name:    "nil openai",
-			openai:  nil,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  logger,
-			wantErr: true,
+			name:      "nil openai",
+			openai:    nil,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: validator,
+			wantErr:   true,
 		},
 		{
-			name:    "nil config",
-			openai:  openai,
-			taglist: taglist,
-			config:  nil,
-			logger:  logger,
-			wantErr: true,
+			name:      "nil config",
+			openai:    openai,
+			taglist:   taglist,
+			config:    nil,
+			logger:    logger,
+			validator: validator,
+			wantErr:   true,
 		},
 		{
-			name:    "nil logger",
-			openai:  openai,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  nil,
-			wantErr: true,
+			name:      "nil logger",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    nil,
+			validator: validator,
+			wantErr:   true,
+		},
+		{
+			name:      "nil validator",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: nil,
+			wantErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger)
+			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger, test.validator)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewGeneratePromptService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -128,6 +144,11 @@ func TestGeneratePrompt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			openai := mocks.NewMockOpenAI(t)
 			taglist := mocks.NewMockTaglistStorage(t)
+			validator := autotesterMocks.NewMockValidator(t)
+
+			if tt.ctx != nil {
+				validator.On("ValidateRequest", mock.Anything, mock.Anything).Return(nil)
+			}
 
 			if tt.requestReturns != nil {
 				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
@@ -137,7 +158,7 @@ func TestGeneratePrompt(t *testing.T) {
 				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
+			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator)
 			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
 
 			if tt.expectErr {
