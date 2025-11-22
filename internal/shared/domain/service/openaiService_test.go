@@ -2,39 +2,38 @@ package service
 
 import (
 	"context"
-	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	repo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
 // Test for Service
 func TestNewService(t *testing.T) {
 	tests := []struct {
 		testName      string
-		logger        *slog.Logger
+		repo          repository.OpenAI
 		expectedError bool
 	}{
 		{
-			testName:      "Invalid Logger",
-			logger:        nil,
+			testName:      "nil repo",
+			repo:          nil,
 			expectedError: true,
 		},
 		{
 			testName:      "Valid Parameter",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			repo:          mocks.NewMockOpenAI(t),
 			expectedError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			service, err := NewOpenAI(test.logger, repo.NewMockOpenAI(t))
+			service, err := NewOpenAI(test.repo)
 
 			if test.expectedError {
 				if err == nil {
@@ -84,13 +83,12 @@ func TestRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			mockOpenAiRepo := repo.NewMockOpenAI(t)
+			mockOpenAiRepo := mocks.NewMockOpenAI(t)
 			if test.requestReturns != nil {
 				mockOpenAiRepo.On("CreateRequest", mock.Anything, mock.Anything).Return(test.requestReturns...)
 			}
 
-			service, err := NewOpenAI(logger, mockOpenAiRepo)
+			service, err := NewOpenAI(mockOpenAiRepo)
 
 			if err != nil {
 				t.Errorf("WARNING: Failed to create openAIService")

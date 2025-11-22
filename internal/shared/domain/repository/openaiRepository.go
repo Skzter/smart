@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,14 +28,13 @@ type OpenAIClient interface {
 
 // openAI represents an openAI API client wrapper and logger-system
 type openAI struct {
-	logger  *slog.Logger // logger for Errors and Responses
 	client  OpenAIClient
 	timeout int // timeout in seconds
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) (OpenAI, error) {
-	if err := assert.NotNil(logger, client); err != nil {
+func NewOpenAiRepository(client OpenAIClient, timeout int) (OpenAI, error) {
+	if err := assert.NotNil(client); err != nil {
 		return nil, err
 	}
 
@@ -45,7 +43,6 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 	}
 
 	return &openAI{
-		logger:  logger,
 		client:  client,
 		timeout: timeout,
 	}, nil

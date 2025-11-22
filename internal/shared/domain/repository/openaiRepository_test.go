@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -15,40 +14,22 @@ import (
 
 // Test for creating new OpenAiRepository
 func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
 		name            string
-		logger          *slog.Logger
 		timeout         int
 		expectedOutcome any
 		expectedError   bool
 	}{
 		{
-			name:            "creating repo with nil logger, correct timeout",
-			logger:          nil,
-			timeout:         5,
-			expectedOutcome: nil,
-			expectedError:   true,
-		},
-		{
-			name:            "creating repo with negative timeout, correct logger",
-			logger:          logger,
+			name:            "creating repo with negative timeout",
 			timeout:         -1,
 			expectedOutcome: nil,
 			expectedError:   true,
 		},
 		{
-			name:          "creating repo with correct logger, correct timeout",
-			logger:        logger,
+			name:          "correct timeout",
 			timeout:       5,
 			expectedError: false,
-		},
-		{
-			name:            "creating repo with nil logger, negative timeout",
-			logger:          nil,
-			timeout:         -1,
-			expectedOutcome: nil,
-			expectedError:   true,
 		},
 	}
 
@@ -57,7 +38,7 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := NewOpenAiRepository(test.logger, mockClient, test.timeout)
+			repo, err := NewOpenAiRepository(mockClient, test.timeout)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")
@@ -149,7 +130,6 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 // nolint:funlen
 func TestOpenaiReposCreateRequest(t *testing.T) {
 	model := openai.GPT4Dot1Nano20250414
-	logger := slog.New(slog.DiscardHandler)
 	timeout := 5
 
 	mockClient := mocks.NewMockOpenAIClient(t)
@@ -404,7 +384,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, _ := NewOpenAiRepository(logger, mockClient, timeout)
+			repo, _ := NewOpenAiRepository(mockClient, timeout)
 			_, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {
