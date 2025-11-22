@@ -24,6 +24,7 @@ type generatePrompt struct {
 	config         *config.Config
 	logger         *slog.Logger
 	validator      Validator
+	validator      Validator
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
@@ -56,7 +57,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 		return "", err
 	}
 
-	msg, err := s.openAIService.Request(ctx, req)
+	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		return "", err
 	}

@@ -159,8 +159,8 @@ func TestGeneratePrompt(t *testing.T) {
 				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
+			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator)
+			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
 
 			if tt.expectErr {
 				assert.NotNil(t, err)
