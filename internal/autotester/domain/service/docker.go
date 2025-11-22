@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 	"path"
 	"path/filepath"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/docker/docker/client"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -24,20 +24,21 @@ type Docker interface {
 }
 
 type docker struct {
-	logger *slog.Logger
-	config *config.Config
-	logdir string
+	logger     *slog.Logger
+	config     *config.Config
+	filesystem repository.LogFileSystem
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config) (Docker, error) {
-	if err := assert.NotNil(logger, config); err != nil {
+func NewDocker(logger *slog.Logger, config *config.Config, filesystem repository.LogFileSystem) (Docker, error) {
+	if err := assert.NotNil(logger, config, filesystem); err != nil {
 		return nil, err
 	}
+
 	return &docker{
-		logger: logger,
-		config: config,
-		logdir: config.LogDirAutopw,
+		logger:     logger,
+		config:     config,
+		filesystem: filesystem,
 	}, nil
 }
 
@@ -84,7 +85,7 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 			},
 			{
 				Type:   mount.TypeBind,
-				Source: d.logdir,
+				Source: d.config.LogDirAutopw,
 				Target: "/logs",
 			},
 		},
@@ -121,11 +122,10 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 func (d *docker) ReadLog(filename string) (string, error) {
 	// logdir = /var/logs/smart/
 	// file is /tmp/userID/sessionID/testcaseID.spec.ts
-	LogFilePath := d.logdir + filepath.Base(filename) + ".log"
+	LogFilePath := filepath.Base(filename) + ".log"
 	d.logger.Debug(fmt.Sprintf("Reading log file => %s", LogFilePath))
 
-	// #nosec G304 -- filepath is correct
-	content, err := os.ReadFile(LogFilePath)
+	content, err := d.filesystem.ReadFile(LogFilePath)
 	if err != nil {
 		return "", err
 	}
