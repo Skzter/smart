@@ -1,39 +1,39 @@
 package service
 
 import (
-	"fmt"
-	"log/slog"
-	"os"
+	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	repo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
 // Test for Service
 func TestNewService(t *testing.T) {
 	tests := []struct {
 		testName      string
-		logger        *slog.Logger
+		repo          repository.OpenAI
 		expectedError bool
 	}{
 		{
-			testName:      "Invalid Logger",
-			logger:        nil,
+			testName:      "nil repo",
+			repo:          nil,
 			expectedError: true,
 		},
 		{
 			testName:      "Valid Parameter",
-			logger:        slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			repo:          mocks.NewMockOpenAI(t),
 			expectedError: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			service, err := NewOpenAI(test.logger, repo.NewMockOpenAI(t))
+			service, err := NewOpenAI(test.repo)
 
 			if test.expectedError {
 				if err == nil {
@@ -53,64 +53,55 @@ func TestNewService(t *testing.T) {
 // Test for request
 func TestRequest(t *testing.T) {
 	tests := []struct {
-		testName      string
-		request       entity.Request
-		expectedError bool
+		testName       string
+		requestReturns []any
+		request        entity.Request
+		expectedError  bool
+		ctx            context.Context
 	}{
 		{
-			testName: "Nil-Content",
-			request: entity.Request{
-				Prompt:       "Test",
-				SessionID:    "123",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
-			},
-			expectedError: true,
+			testName:       "Nil-Context",
+			requestReturns: nil,
+			expectedError:  true,
+			ctx:            nil,
 		},
 		{
 			testName: "Valid Request",
 			request: entity.Request{
-				Prompt:       "Test",
-				SessionID:    "123",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
+				Messages: []entity.Message{
+					{Role: "user", Body: "user prompt"},
+				},
+			},
+			requestReturns: []any{
+				&entity.Message{Role: "assistant", Body: "response"},
+				nil,
 			},
 			expectedError: false,
+			ctx:           context.Background(),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			mockOpenAiRepo := repo.NewMockOpenAI(t)
-			if test.expectedError {
-				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(nil, fmt.Errorf("Expected Error"))
-			} else {
-				mockOpenAiRepo.On("CreateRequest", mock.Anything, test.request).Return(&entity.Response{Text: "Test", SessionID: "123 Test"}, nil)
+			mockOpenAiRepo := mocks.NewMockOpenAI(t)
+			if test.requestReturns != nil {
+				mockOpenAiRepo.On("CreateRequest", mock.Anything, mock.Anything).Return(test.requestReturns...)
 			}
 
-			service, err := NewOpenAI(logger, mockOpenAiRepo)
+			service, err := NewOpenAI(mockOpenAiRepo)
 
 			if err != nil {
 				t.Errorf("WARNING: Failed to create openAIService")
 			}
 
-			resp, err := service.Request(t.Context(), test.request)
+			resp, err := service.Request(test.ctx, test.request)
 
 			if test.expectedError {
-				if err == nil {
-					t.Errorf("WARNING: Expected Error")
-				}
-				if resp != nil {
-					t.Errorf("WARNING: Expected Error")
-				}
+				assert.Nil(t, resp)
+				assert.NotNil(t, err)
 			} else {
-				if err != nil {
-					t.Errorf("WARNING: Unexpected Error")
-				}
-				if resp == nil {
-					t.Errorf("WARNING: Unexpected Error, expected response")
-				}
+				assert.NotNil(t, resp)
+				assert.Nil(t, err)
 			}
 		})
 	}

@@ -29,7 +29,7 @@
     });
 
     let paramsChatRequest = $derived({
-        message: { data: "", agent: "user" },
+        message: { body: "", role: "user" },
         userId: userId,
         conversationId: conversationId,
     });
@@ -49,13 +49,12 @@
             answer: "",
         });
         isLoading = true;
-        paramsChatRequest.message.data = userQuestion;
+        paramsChatRequest.message.body = userQuestion;
         paramsChatRequest.userId = userId;
 
         try {
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
-            convo[convo.length - 1].answer = answer.data.message.data;
-            setConversationId(answer.data.conversationId);
+            convo[convo.length - 1].answer = answer.data.message.body;
         } catch (err) {
             if (err.isAxiosError) {
                 convo[convo.length - 1].answer = err.response.data.message;
@@ -65,14 +64,6 @@
             }
         } finally {
             isLoading = false;
-        }
-    }
-
-    function setConversationId(newConversationId: string) {
-        if (conversationId === "") {
-            conversationId = newConversationId;
-            localStorage.setItem("conversationId", conversationId);
-            paramsChatRequest.conversationId = conversationId;
         }
     }
 

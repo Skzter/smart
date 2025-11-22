@@ -24,12 +24,10 @@ func TestHandleChatRequest(t *testing.T) {
 
 	validPrompt := "this is a valid prompt"
 	invalidPrompt := "this is a invalid prompt"
-	sessionid := "2"
 
 	type MockSetup struct {
 		Function         string
 		UserPrompt       string
-		SessionID        interface{}
 		ExpectedResponse string
 		ExpectedBool     bool
 		ResponseError    error
@@ -51,78 +49,78 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "valid request",
 			RequestBody: `{
 				"message": {
-					"data":"this is a valid prompt",
-					"agent":"user"
+					"body":"this is a valid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: validPrompt, SessionID: mock.Anything, ExpectedBool: true},
-				{Function: "GeneratePrompt", UserPrompt: validPrompt, SessionID: sessionid, ExpectedResponse: "some code"},
+				{Function: "ValidatePrompt", UserPrompt: validPrompt, ExpectedBool: true},
+				{Function: "GeneratePrompt", UserPrompt: validPrompt, ExpectedResponse: "some code"},
 			},
 		},
 		{
 			TestName: "sessionId is missing and controller must generate one",
 			RequestBody: `{
 				"message": {
-					"data":"this is a valid prompt",
-					"agent":"user"
+					"body":"this is a valid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":""
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: validPrompt, SessionID: mock.Anything, ExpectedBool: true},
-				{Function: "GeneratePrompt", UserPrompt: validPrompt, SessionID: mock.Anything, ExpectedResponse: "some code"},
+				{Function: "ValidatePrompt", UserPrompt: validPrompt, ExpectedBool: true},
+				{Function: "GeneratePrompt", UserPrompt: validPrompt, ExpectedResponse: "some code"},
 			},
 		},
 		{
 			TestName: "invalid request => invalid prompt",
 			RequestBody: `{
 				"message": {
-					"data":"this is a invalid prompt",
-					"agent":"user"
+					"body":"this is a invalid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: invalidPrompt, SessionID: sessionid, ExpectedBool: false, ExpectedResponse: "versuch doch mal das"},
+				{Function: "ValidatePrompt", UserPrompt: invalidPrompt, ExpectedBool: false, ExpectedResponse: "versuch doch mal das"},
 			},
 		},
 		{
 			TestName: "valid request, validate will return false json",
 			RequestBody: `{
 				"message": {
-					"data":"json gibts nicht",
-					"agent":"user"
+					"body":"json gibts nicht",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: "json gibts nicht", SessionID: sessionid, ExpectedBool: false, ResponseError: sharedErrors.ErrValidation},
+				{Function: "ValidatePrompt", UserPrompt: "json gibts nicht", ExpectedBool: false, ResponseError: sharedErrors.ErrValidation},
 			},
 		},
 		{
 			TestName: "valid request, errors when generating",
 			RequestBody: `{
 				"message": {
-					"data":"generating err",
-					"agent":"user"
+					"body":"generating err",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: "generating err", SessionID: sessionid, ExpectedBool: true},
-				{Function: "GeneratePrompt", UserPrompt: "generating err", SessionID: sessionid, ResponseError: sharedErrors.ErrGeneration},
+				{Function: "ValidatePrompt", UserPrompt: "generating err", ExpectedBool: true},
+				{Function: "GeneratePrompt", UserPrompt: "generating err", ResponseError: sharedErrors.ErrGeneration},
 			},
 		},
 	}
@@ -137,11 +135,11 @@ func TestHandleChatRequest(t *testing.T) {
 				switch mc.Function {
 				case "ValidatePrompt":
 					mockValServ.EXPECT().
-						ValidatePrompt(mock.Anything, mc.UserPrompt, mc.SessionID).
+						ValidatePrompt(mock.Anything, mc.UserPrompt).
 						Return(mc.ExpectedBool, mc.ExpectedResponse, mc.ResponseError)
 				case "GeneratePrompt":
 					mockGenServ.EXPECT().
-						GeneratePrompt(mock.Anything, mc.UserPrompt, mc.SessionID).
+						GeneratePrompt(mock.Anything, mc.UserPrompt).
 						Return(mc.ExpectedResponse, mc.ResponseError)
 				}
 			}
