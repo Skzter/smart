@@ -31,11 +31,10 @@ func emptyOfferTag() sharedEntity.Tag {
 	}
 }
 
-// staticly generated tags
+// staticly generated tags for non-valid offers
 const (
 	NoOffersInResponse = "no_offer"
 	ReponseNot200      = "non_200"
-	ValidOffer         = "valid"
 )
 
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
@@ -154,14 +153,10 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 	}
 
+	// Return no tags if all offers are valid
 	if len(newTags) == 0 {
 		return &sharedEntity.TagList{
-			Tags: []sharedEntity.Tag{
-				{
-					Name:        ValidOffer,
-					Description: "",
-				},
-			},
+			Tags: []sharedEntity.Tag{},
 		}, nil
 	}
 	return &sharedEntity.TagList{Tags: newTags}, nil

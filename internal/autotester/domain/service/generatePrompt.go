@@ -63,7 +63,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 	return msg.Body, nil
 }
 
-// fillPrompt fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
+// formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
 func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error("Context is nil, using default taglist: ", "err", err.Error())

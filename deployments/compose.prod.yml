@@ -10,6 +10,9 @@ services:
   autotester:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
     restart: always
+    volumes:
+      - /run/user/1001/podman/podman.sock:/var/run/docker.sock
+      - /var/log/smart/:/var/log/smart/
     ports:
       - "8079:8081"
     networks:
