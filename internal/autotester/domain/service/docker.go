@@ -9,7 +9,8 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/network"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
@@ -23,14 +24,23 @@ type Docker interface {
 	ReadLog(filename string) (string, error)
 }
 
+// DockerClient is an Interface to interact with a docker client
+type DockerClient interface {
+	// nolint:lll
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
+	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+	ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.WaitResponse, <-chan error)
+}
+
 type docker struct {
 	logger     *slog.Logger
 	config     *config.Config
 	filesystem repository.LogFileSystem
+	client     DockerClient
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config, filesystem repository.LogFileSystem) (Docker, error) {
+func NewDocker(logger *slog.Logger, config *config.Config, filesystem repository.LogFileSystem, client DockerClient) (Docker, error) {
 	if err := assert.NotNil(logger, config, filesystem); err != nil {
 		return nil, err
 	}
@@ -39,6 +49,7 @@ func NewDocker(logger *slog.Logger, config *config.Config, filesystem repository
 		logger:     logger,
 		config:     config,
 		filesystem: filesystem,
+		client:     client,
 	}, nil
 }
 
@@ -50,16 +61,6 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 	if err := assert.StringNotEmpty(filename); err != nil {
 		return err
 	}
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("failed to create Docker client: %v", err)
-	}
-	defer func() {
-		if err := cli.Close(); err != nil {
-			d.logger.Error(fmt.Sprintf("couldnt close client => %s", err.Error()))
-		}
-	}()
 
 	basefile := path.Base(filename)
 	logFileName := basefile + ".log"
@@ -91,18 +92,18 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 		},
 	}
 
-	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
+	resp, err := d.client.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
 		return fmt.Errorf("failed to create container: %w", err)
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return fmt.Errorf("failed to start container: %w", err)
 	}
 
 	d.logger.Debug("Container started, waiting for completion...")
 
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := d.client.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {

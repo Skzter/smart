@@ -64,3 +64,4 @@ packages:
       ValidatePrompt:
       TestcaseLocalStorageService:
       Docker:
+      DockerClient:
