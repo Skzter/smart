@@ -1,10 +1,12 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
@@ -98,4 +100,137 @@ func TestReadLog(t *testing.T) {
 			}
 		})
 	}
+}
+
+// nolint:funlen
+func TestRunTest(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	cfg, _ := config.LoadConfig()
+	fs := autoRepoMocks.NewMockFileSystem(t)
+
+	tests := []struct {
+		name               string
+		ctx                context.Context
+		filename           string
+		mockResponseCreate []any
+		mockResponseStart  []any
+		mockResponseWait   []any
+		wantErr            bool
+	}{
+		{
+			name:     "error - nil ctx",
+			ctx:      nil,
+			filename: "test.log",
+			wantErr:  true,
+		},
+		{
+			name:     "error - empty filename",
+			ctx:      t.Context(),
+			filename: "",
+			wantErr:  true,
+		},
+		{
+			name:     "error - container creation fails",
+			ctx:      t.Context(),
+			filename: "test.log",
+			mockResponseCreate: []any{container.CreateResponse{
+				ID:       "1",
+				Warnings: []string{"not safe"},
+			}, errors.New("failure in container creation")},
+			wantErr: true,
+		},
+		{
+			name:     "error - container starting fails",
+			ctx:      t.Context(),
+			filename: "test.log",
+			mockResponseCreate: []any{container.CreateResponse{
+				ID:       "1",
+				Warnings: nil,
+			}, nil},
+			mockResponseStart: []any{errors.New("failure when starting container")},
+			wantErr:           true,
+		},
+		{
+			name:     "error - waiting for container fails",
+			ctx:      t.Context(),
+			filename: "test.log",
+			mockResponseCreate: []any{container.CreateResponse{
+				ID:       "1",
+				Warnings: nil,
+			}, nil},
+			mockResponseStart: []any{nil},
+			mockResponseWait:  []any{nil, createErrorChannel(errors.New("error in channel"))},
+			wantErr:           true,
+		},
+		{
+			name:     "error - container exits with non zero stauscode",
+			ctx:      t.Context(),
+			filename: "test.log",
+			mockResponseCreate: []any{container.CreateResponse{
+				ID:       "1",
+				Warnings: nil,
+			}, nil},
+			mockResponseStart: []any{nil},
+			mockResponseWait: []any{createStatusChannel(container.WaitResponse{
+				Error: &container.WaitExitError{
+					Message: "something went wrong",
+				},
+				StatusCode: 1,
+			}), nil},
+			wantErr: true,
+		},
+		{
+			name:     "successful - container executes without errors",
+			ctx:      t.Context(),
+			filename: "test.log",
+			mockResponseCreate: []any{container.CreateResponse{
+				ID:       "1",
+				Warnings: nil,
+			}, nil},
+			mockResponseStart: []any{nil},
+			mockResponseWait: []any{createStatusChannel(container.WaitResponse{
+				StatusCode: 0,
+			}), createErrorChannel(nil)},
+			wantErr: false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockDockerClient := mocks.NewMockDockerClient(t)
+			t.Logf("TESTCASE:\nMockCreate: %v\nMockStart: %v\nMockWait: %v\n", tc.mockResponseCreate, tc.mockResponseStart, tc.mockResponseWait)
+			if tc.mockResponseCreate != nil {
+				mockDockerClient.On("ContainerCreate", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseCreate...)
+			}
+			if tc.mockResponseStart != nil {
+				mockDockerClient.On("ContainerStart", mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseStart...)
+			}
+			if tc.mockResponseWait != nil {
+				mockDockerClient.On("ContainerWait", mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseWait...)
+			}
+			dockerServ := &docker{
+				logger:     logger,
+				config:     cfg,
+				filesystem: fs,
+				client:     mockDockerClient,
+			}
+			err := dockerServ.RunTest(tc.ctx, tc.filename)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func createErrorChannel(err error) <-chan error {
+	errorC := make(chan error, 1) // Create bidirectional channel
+	errorC <- err
+	return errorC // Automatically converts to receive-only on return
+}
+
+func createStatusChannel(resp container.WaitResponse) <-chan container.WaitResponse {
+	respC := make(chan container.WaitResponse, 1)
+	respC <- resp
+	return respC
 }
