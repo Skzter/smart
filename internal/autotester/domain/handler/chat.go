@@ -25,7 +25,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		userRequest.SessionId = uuid.New().String()
 	}
 
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		a.logger.Error("Validation failed", "error", err)
@@ -35,14 +35,14 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	if !valid {
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
-				Message:   sharedEntity.Message{MessageBody: msg},
+				Message:   sharedEntity.Message{Body: msg},
 				UserId:    userRequest.UserId,
 				SessionId: userRequest.SessionId,
 			})
 		return
 	}
 
-	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.MessageBody, userRequest.SessionId)
+	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		a.logger.Error("Test generation failed", "error", err)
@@ -51,7 +51,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK,
 		&entity.ResponseForUser{
-			Message:   sharedEntity.Message{MessageBody: generatedCode},
+			Message:   sharedEntity.Message{Body: generatedCode},
 			UserId:    userRequest.UserId,
 			SessionId: userRequest.SessionId,
 		})

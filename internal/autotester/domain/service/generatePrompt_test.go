@@ -83,11 +83,12 @@ func TestNewGeneratePromptService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger, test.validator)
-			if (err != nil) != test.wantErr {
-				t.Errorf("NewGeneratePromptService() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if !test.wantErr && repo == nil {
-				t.Errorf("NewGeneratePromptService() returned nil service")
+			if test.wantErr {
+				assert.NotNil(t, err)
+				assert.Nil(t, repo)
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, repo)
 			}
 		})
 	}
@@ -114,7 +115,7 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:              "success",
 			expectedResult:    code,
-			requestReturns:    []any{&sharedEntity.Response{Text: code}, nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         false,
 			ctx:               context.Background(),
@@ -126,7 +127,7 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "empty code segment in openau response",
-			requestReturns:    []any{&sharedEntity.Response{Text: ""}, nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: ""}, nil},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
 			ctx:               context.Background(),
@@ -158,8 +159,8 @@ func TestGeneratePrompt(t *testing.T) {
 				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
+			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
+			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
 
 			if tt.expectErr {
 				assert.NotNil(t, err)

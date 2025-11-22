@@ -122,21 +122,21 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
-			Prompt:       item,
+			Messages:     []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: item}},
 			SystemPrompt: sysPrompt,
 		}
-		result, err := v.openAiService.Request(ctx, req)
+		msg, err := v.openAiService.Request(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 
-		if strings.TrimSpace(result.Text) == "" {
+		if strings.TrimSpace(msg.Body) == "" {
 			return nil, fmt.Errorf("empty openai result for req: %v", req)
 		}
 
 		var validationResult OpenAIValidationResult
 
-		err = json.Unmarshal([]byte(result.Text), &validationResult)
+		err = json.Unmarshal([]byte(msg.Body), &validationResult)
 
 		if err != nil {
 			return nil, fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)

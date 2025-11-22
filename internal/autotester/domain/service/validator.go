@@ -15,7 +15,7 @@ import (
 
 // Validator defines the interface for validating user prompts and requests.
 type Validator interface {
-	ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error)
+	ValidatePrompt(ctx context.Context, userPrompt string) (bool, string, error)
 	ValidateRequest(ctx context.Context, req entity.Request) error
 }
 
@@ -38,15 +38,14 @@ func NewValidatorService(service sharedService.OpenAI, config *config.Config, lo
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
-func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string, sessionID string) (bool, string, error) {
+func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool, string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
 
 	req := entity.Request{
-		Prompt:       userPrompt,
-		SessionID:    sessionID,
+		Messages:     []entity.Message{{Role: entity.RoleUser, Body: userPrompt}},
 		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
@@ -55,13 +54,18 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string, sessi
 		return false, "Invalid Request", err
 	}
 
-	resp, err := s.service.Request(ctx, req)
+	if err := s.ValidateRequest(ctx, req); err != nil {
+		return false, "Invalid Request", err
+	}
+
+	msg, err := s.service.Request(ctx, req)
 	if err != nil {
+		s.logger.Error(err.Error())
 		return false, "", errors.ErrValidation
 	}
 
 	llmResponse := autotesterEntity.LlmValidationResponse{}
-	if err = json.Unmarshal([]byte(resp.Text), &llmResponse); err != nil {
+	if err = json.Unmarshal([]byte(msg.Body), &llmResponse); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
