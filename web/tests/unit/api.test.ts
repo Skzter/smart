@@ -14,7 +14,7 @@ vi.mock("axios");
 describe("API Functions", () => {
     const mockUserId = "user123";
     const mockConversationId = "conv456";
-    const mockMessage = { data: "test message", agent: "user" };
+    const mockMessage = { body: "test message", role: "user" };
 
     const mockUserParams = {
         userId: mockUserId,
