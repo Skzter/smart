@@ -49,8 +49,8 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "valid request",
 			RequestBody: `{
 				"message": {
-					"data":"this is a valid prompt",
-					"agent":"user"
+					"body":"this is a valid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
@@ -65,8 +65,8 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "sessionId is missing and controller must generate one",
 			RequestBody: `{
 				"message": {
-					"data":"this is a valid prompt",
-					"agent":"user"
+					"body":"this is a valid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":""
@@ -81,8 +81,8 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "invalid request => invalid prompt",
 			RequestBody: `{
 				"message": {
-					"data":"this is a invalid prompt",
-					"agent":"user"
+					"body":"this is a invalid prompt",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
@@ -96,8 +96,8 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "valid request, validate will return false json",
 			RequestBody: `{
 				"message": {
-					"data":"json gibts nicht",
-					"agent":"user"
+					"body":"json gibts nicht",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"
@@ -111,8 +111,8 @@ func TestHandleChatRequest(t *testing.T) {
 			TestName: "valid request, errors when generating",
 			RequestBody: `{
 				"message": {
-					"data":"generating err",
-					"agent":"user"
+					"body":"generating err",
+					"role":"user"
 				},
 				"userId":"2",
 				"conversationId":"2"

@@ -232,11 +232,15 @@ components:
     Message:
       type: object
       properties:
-        data:
+        id:
           type: string
-        agent:
+        body:
+          type: string
+        role:
           type: string 
           enum: [user, system]
+        createdAt:
+          type: "number"
           
     Conversation:
       type: object

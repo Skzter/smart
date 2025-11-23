@@ -16,7 +16,7 @@ type Chat struct {
 	Title    string           `json:"title"`
 	Messages []entity.Message `json:"messages"`
 
-	LastTest      string `json:"-"`
-	SystemPrompt  string `json:"-"`
-	InitialPrompt string `json:"-"`
+	LastTest      string `json:"lastTest"`
+	SystemPrompt  string `json:"systemPrompt"`
+	InitialPrompt string `json:"initialPrompt"`
 }
