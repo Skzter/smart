@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -62,11 +62,13 @@ func TestNewValidatePromptService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			repo, err := NewValidatePromptService(test.service, test.config, test.logger)
-			if (err != nil) != test.wantErr {
-				t.Errorf("NewValidatePromptService() error = %v, wantErr %v", err, test.wantErr)
+			if test.wantErr {
+				assert.Nil(t, repo)
+				assert.NotNil(t, err)
 			}
 			if !test.wantErr && repo == nil {
-				t.Errorf("NewValidatePromptService() returned nil service")
+				assert.NotNil(t, repo)
+				assert.Nil(t, err)
 			}
 		})
 	}
@@ -84,39 +86,34 @@ func TestValidatePrompt(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
 
-	sessionId := "die tollste Session ID"
-
 	validPrompt := "valid Prompt"
 	invalidPrompt := "invalid Prompt"
 	invalidJson := "invalid json"
 
 	validRequest := entity.Request{
-		Prompt:    validPrompt,
-		SessionID: sessionId,
+		Messages: []entity.Message{{Role: "user", Body: validPrompt}},
 	}
-	validResponse := entity.Response{
-		Text: `{"valid": true, "message": ""}`,
+	validResponse := entity.Message{
+		Body: `{"valid": true, "message": ""}`,
 	}
 
 	invalidRequest := entity.Request{
-		Prompt:    invalidPrompt,
-		SessionID: sessionId,
+		Messages: []entity.Message{{Role: "user", Body: invalidPrompt}},
 	}
-	invalidResponse := entity.Response{
-		Text: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
+	invalidResponse := entity.Message{
+		Body: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
 	}
 
 	invalidJsonRequest := entity.Request{
-		Prompt:    invalidJson,
-		SessionID: sessionId,
+		Messages: []entity.Message{{Role: "user", Body: invalidJson}},
 	}
-	invalidJsonResponse := entity.Response{
-		Text: "no json",
+	invalidJsonResponse := entity.Message{
+		Body: "no json",
 	}
 
 	mockSetup := []struct {
 		request     entity.Request
-		response    *entity.Response
+		response    *entity.Message
 		returnError error
 		wantErr     bool
 	}{
@@ -137,10 +134,9 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			request: entity.Request{
-				Prompt:    "",
-				SessionID: sessionId,
+				Messages: []entity.Message{{Role: "user", Body: ""}},
 			},
-			response:    &entity.Response{},
+			response:    nil,
 			returnError: sharedErrors.ErrInternalServer,
 		},
 	}
@@ -201,25 +197,19 @@ func TestValidatePrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt, sessionId)
+			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt)
 			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("got nil error, expected => %v", tt.expectedErr)
-				} else if !errors.Is(err, tt.expectedErr) {
-					if !strings.Contains(err.Error(), tt.expectedErr.Error()) {
-						t.Fatalf("unexpected error: got => %v, wanted => %v", err, tt.expectedErr)
-					}
+				assert.NotNil(t, err)
+				if !errors.Is(err, tt.expectedErr) {
+					assert.Contains(t, err.Error(), tt.expectedErr.Error())
 				}
 			} else {
+				assert.Nil(t, err)
 				if tt.isValid {
-					if valid != tt.isValid {
-						t.Fatalf("expected %t, got %t", tt.isValid, valid)
-					}
-					if str != "" {
-						t.Fatalf("expected nil string, got => %v", str)
-					}
-				} else if str == "" {
-					t.Fatal("expected populated string but got nil string")
+					assert.Equal(t, tt.isValid, valid)
+					assert.Empty(t, str)
+				} else {
+					assert.NotEmpty(t, str)
 				}
 			}
 			mock.AssertExpectationsForObjects(t)

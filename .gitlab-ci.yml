@@ -8,6 +8,8 @@ variables:
   GO_VERSION: 1.24
 
 default:
+  tags:
+    - aws
   image:
     name: golang:$GO_VERSION
 
@@ -129,8 +131,6 @@ static_analysis_go:
 
 sonarqube-check:
   stage: code_analysis_and_testing
-  tags:
-    - fdit
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -161,10 +161,6 @@ unit_test_go:
       when: on_success
 
 integration_test_go:
-  services:
-    - docker:dind
-  tags:
-    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
@@ -263,8 +259,6 @@ build_go_no_artifacts:
 .docker_build:
   image:
     name: docker:dind
-  tags:
-    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -325,6 +319,8 @@ deploy_htwk:
   image:
     name: alpine:latest
   stage: deploy
+  tags:
+    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success

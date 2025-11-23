@@ -56,7 +56,7 @@ func NewTaglistSync(logger *slog.Logger, taglistService service.TaglistStorage) 
 	}, nil
 }
 
-// SyncTaglist syncs given taglist with in-memory and pushes new taglist to s3
+// SyncTaglist synchronizes the current taglist with the provided taglist, ensuring all tags are up-to-date and stored.
 func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
@@ -64,19 +64,52 @@ func (tls *taglistSync) SyncTaglist(ctx context.Context, taglist *sharedEntity.T
 
 	tls.mutex.Lock()
 	defer tls.mutex.Unlock()
-	lenghtList := len(tls.tagList.Tags)
-	for _, tag := range taglist.Tags {
+
+	incomingTags := taglist.Tags
+
+	allExist := true
+	for _, t := range incomingTags {
+		if !slices.Contains(tls.tagList.Tags, t) {
+			allExist = false
+			break
+		}
+	}
+	if allExist {
+		return nil
+	}
+
+	onlineTaglist, err := tls.taglistService.GetTaglist(ctx)
+	if err != nil {
+		tls.logger.Error("Failed to fetch taglist from S3", "error", err)
+		return err
+	}
+	if len(onlineTaglist.Tags) == 0 {
+		tls.logger.Warn("onlineTaglist is empty, proceeding with local taglist")
+	}
+
+	needsUpdate := false
+	for _, tag := range onlineTaglist.Tags {
 		if !slices.Contains(tls.tagList.Tags, tag) {
 			tls.tagList.Tags = append(tls.tagList.Tags, tag)
+			needsUpdate = true
 		}
 	}
 
-	if lenghtList != len(tls.tagList.Tags) {
-		tls.logger.Info("UPDATES")
-		err := tls.taglistService.StoreTaglist(ctx, tls.tagList)
-		if err != nil {
-			return err
+	for _, t := range incomingTags {
+		if !slices.Contains(tls.tagList.Tags, t) {
+			tls.tagList.Tags = append(tls.tagList.Tags, t)
+			needsUpdate = true
 		}
+	}
+
+	if !needsUpdate {
+		return nil
+	}
+
+	err = tls.taglistService.StoreTaglist(ctx, tls.tagList)
+	if err != nil {
+		tls.logger.Error("Failed to store updated taglist to S3", "error", err)
+		return err
 	}
 	return nil
 }

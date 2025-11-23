@@ -14,7 +14,7 @@ import (
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
-	GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error)
+	GeneratePrompt(ctx context.Context, userPrompt string) (string, error)
 }
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
@@ -36,7 +36,7 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
-func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, sessionID string) (string, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrInternalServer
@@ -45,23 +45,22 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string, 
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{
-		Prompt:       userPrompt,
-		SessionID:    sessionID,
+		Messages:     []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: userPrompt}},
 		Model:        s.config.Model,
 		SystemPrompt: prompt,
 	}
 
-	resp, err := s.openAIService.Request(ctx, req)
+	msg, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		return "", err
 	}
 
-	if err = assert.StringNotEmpty(resp.Text); err != nil {
+	if err = assert.StringNotEmpty(msg.Body); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrGeneration
 	}
 
-	return resp.Text, nil
+	return msg.Body, nil
 }
 
 // formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
