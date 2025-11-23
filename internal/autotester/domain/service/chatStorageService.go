@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
@@ -65,5 +66,14 @@ func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) (
 	if err := assert.StringNotEmpty(userId); err != nil {
 		return nil, fmt.Errorf("key must not be empty")
 	}
-	return s.repo.FindByUserID(ctx, userId)
+	summaries, err := s.repo.FindByUserID(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	// sort in descending order by UpdatedAt
+	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
+		return -a.UpdatedAt.Compare(b.UpdatedAt)
+	})
+	return summaries, nil
 }
