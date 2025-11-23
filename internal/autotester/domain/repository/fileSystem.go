@@ -86,18 +86,6 @@ func NewOSFileSystem(root string) (FileSystem, error) {
 	}, nil
 }
 
-// LogFileSystem is seperate Filesystem for logs
-type LogFileSystem FileSystem
-
-// NewLogFileSystem creates a filesystem for log files
-func NewLogFileSystem(logDir string) (LogFileSystem, error) {
-	if err := assert.StringNotEmpty(logDir); err != nil {
-		return nil, fmt.Errorf("root must not be empty")
-	}
-	fs, err := NewOSFileSystem(logDir)
-	return LogFileSystem(fs), err
-}
-
 func (fs *osFileSystem) MkdirAll(path string) error {
 	fullPath, err := fs.validateAndGetFullPath(path)
 	if err != nil {
