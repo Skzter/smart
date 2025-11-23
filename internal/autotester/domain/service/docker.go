@@ -27,9 +27,21 @@ type Docker interface {
 // DockerClient is an Interface to interact with a docker client
 type DockerClient interface {
 	// nolint:lll
-	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
-	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
-	ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.WaitResponse, <-chan error)
+	ContainerCreate(ctx context.Context,
+		config *container.Config,
+		hostConfig *container.HostConfig,
+		networkingConfig *network.NetworkingConfig,
+		platform *ocispec.Platform,
+		containerName string,
+	) (container.CreateResponse, error)
+	ContainerStart(ctx context.Context,
+		containerID string,
+		options container.StartOptions,
+	) error
+	ContainerWait(ctx context.Context,
+		containerID string,
+		condition container.WaitCondition,
+	) (<-chan container.WaitResponse, <-chan error)
 }
 
 type docker struct {
