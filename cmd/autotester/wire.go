@@ -54,8 +54,8 @@ func LoggerProvider(cfg *config.Config) *slog.Logger {
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(logger *slog.Logger, client sharedRepo.OpenAIClient, cfg *config.Config) (sharedRepo.OpenAI, error) {
-	return sharedRepo.NewOpenAiRepository(logger, client, cfg.Timeout)
+func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config) (sharedRepo.OpenAI, error) {
+	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout)
 }
 
 // SessionSummaryParquetWrapperProvider provides a new session summary parquet wrapper.
