@@ -2,15 +2,14 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
+	tcRedis "github.com/testcontainers/testcontainers-go/modules/redis"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -22,38 +21,22 @@ func newIntegrationLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
 
-// TestCacheService_Integration_WithRedis verifies end-to-end cache behavior using a real Redis container
+// TestCacheService_Integration_WithRedis verifies end-to-end cache behavior using a Redis Testcontainers module instance
 func TestCacheService_Integration_WithRedis(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
-	// Start Redis test container (image + exposed port + readiness check)
-	req := testcontainers.ContainerRequest{
-		Image:        "redis:7-alpine",
-		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForListeningPort("6379/tcp"),
-	}
-
-	// Launch container with Testcontainers
-	redisC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	// Start Redis via testcontainers module
+	redisC, err := tcRedis.Run(ctx, "redis:7-alpine")
 	require.NoError(t, err)
-	defer func() {
-		_ = redisC.Terminate(ctx)
-	}()
+	defer func() { _ = redisC.Terminate(ctx) }()
 
-	// Resolve host and mapped Redis port
-	host, err := redisC.Host(ctx)
+	rawAddr, err := redisC.ConnectionString(ctx)
 	require.NoError(t, err)
 
-	mappedPort, err := redisC.MappedPort(ctx, "6379/tcp")
-	require.NoError(t, err)
-
-	// Build full Redis address
-	addr := fmt.Sprintf("%s:%s", host, mappedPort.Port())
+	// Remove "redis://" prefix → go-redis needs plain "host:port"
+	addr := strings.TrimPrefix(rawAddr, "redis://")
 
 	// Create Redis config pointing to the test container
 	logger := newIntegrationLogger()
