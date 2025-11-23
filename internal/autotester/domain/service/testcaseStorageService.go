@@ -13,7 +13,7 @@ import (
 type TestcaseStorageService interface {
 	// SaveTestCase persists the provided TestCase entity into the storage.
 	// Returns an error if the operation fails.
-	SaveTestCase(context.Context, *entity.TestCase) error
+	SaveTestCase(ctx context.Context, testcase *entity.TestCase, userId string) error
 }
 
 // testcaseStorageService implements the TestcaseStorageService interface
@@ -38,22 +38,22 @@ func NewTestcaseStorageService(logger *slog.Logger, repo repository.TestCaseStor
 
 // SaveTestCase saves the given TestCase entity using the configured repository.
 // Validates the input context and returns an error if it is nil or if the repository operation fails.
-func (t *testcaseStorageService) SaveTestCase(ctx context.Context, testCase *entity.TestCase) error {
+func (t *testcaseStorageService) SaveTestCase(ctx context.Context, testcase *entity.TestCase, userId string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
 	}
 
-	err := t.repo.Create(ctx, testCase)
+	err := t.repo.Create(ctx, testcase, userId)
 	if err != nil {
 		t.logger.Error("failed to save testcase",
-			slog.String("testID", testCase.TestID),
+			slog.String("testID", testcase.TestID),
 			slog.String("error", err.Error()),
 		)
 		return err
 	}
 
 	t.logger.Debug("testcase successfully saved",
-		slog.String("testID", testCase.TestID),
+		slog.String("testID", testcase.TestID),
 	)
 	return nil
 }

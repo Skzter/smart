@@ -38,7 +38,7 @@ func TestCreateTestCaseStorage(t *testing.T) {
 				logger:         logger,
 			}
 
-			err := repo.Create(ctx, test.obj)
+			err := repo.Create(ctx, test.obj, test.userId)
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Create() expected error but got none")
@@ -55,6 +55,7 @@ func TestCreateTestCaseStorage(t *testing.T) {
 func testcaseCreateTestCaseProvider() []struct {
 	name           string
 	obj            *entity.TestCase
+	userId         string
 	writeStructRet []byte
 	writeStructErr error
 	uploadRet      error
@@ -63,6 +64,7 @@ func testcaseCreateTestCaseProvider() []struct {
 	return []struct {
 		name           string
 		obj            *entity.TestCase
+		userId         string
 		writeStructRet []byte
 		writeStructErr error
 		uploadRet      error
@@ -71,6 +73,7 @@ func testcaseCreateTestCaseProvider() []struct {
 		{
 			name:           "happy path",
 			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:         "valid user",
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
 			expectError:    false,
@@ -88,14 +91,24 @@ func testcaseCreateTestCaseProvider() []struct {
 			expectError:    true,
 		},
 		{
+			name:           "userId validation fails",
+			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:         "",
+			writeStructRet: []byte("parquetdata"),
+			uploadRet:      nil,
+			expectError:    true,
+		},
+		{
 			name:           "parquet error",
 			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:         "valid user",
 			writeStructErr: errors.New("parquet error"),
 			expectError:    true,
 		},
 		{
 			name:           "upload error",
 			obj:            &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:         "valid user",
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      errors.New("upload error"),
 			expectError:    true,

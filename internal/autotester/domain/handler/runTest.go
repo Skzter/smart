@@ -79,7 +79,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 			},
 			Status: entity.TestStatusPassed,
 		}
-		if err := a.saveTestRemoteServcie.SaveTestCase(c, test); err != nil {
+		if err := a.saveTestRemoteServcie.SaveTestCase(c, test, params.UserID); err != nil {
 			a.logger.Error(err.Error())
 		}
 	}

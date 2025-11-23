@@ -14,7 +14,7 @@ import (
 // TestCaseStorageRepository defines the interface for a repository managing TestCase entities.
 type TestCaseStorageRepository interface {
 	// Create stores a new TestCase object in the underlying storage system.
-	Create(ctx context.Context, obj *entity.TestCase) error
+	Create(ctx context.Context, obj *entity.TestCase, userId string) error
 
 	// Read retrieves a TestCase object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.TestCase, error)
@@ -52,9 +52,12 @@ func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3Stora
 
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
 // nolint:dupl
-func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase) error {
+func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) error {
 	if err := validateTestCaseData(obj); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
+	}
+	if err := assert.StringNotEmpty(userId); err != nil {
+		return fmt.Errorf("userId must not be empty")
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
@@ -64,6 +67,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 	key := generateTestCaseKey(obj.TestID)
 	metadata := map[string]string{
 		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
+		"author":  userId,
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)

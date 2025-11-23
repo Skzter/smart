@@ -6,8 +6,6 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository/mocks"
@@ -62,27 +60,32 @@ func TestSaveTestCase(t *testing.T) {
 	tests := []struct {
 		name      string
 		context   context.Context
-		testCase  entity.TestCase
+		testCase  *entity.TestCase
+		userId    string
 		createErr error
 		wantErr   bool
 	}{
 		{
 			name:      "success",
 			context:   context.Background(),
-			testCase:  entity.TestCase{},
+			testCase:  &entity.TestCase{},
+			userId:    "valid user",
 			createErr: nil,
 			wantErr:   false,
 		},
 		{
 			name:      "nil context",
 			context:   nil,
-			testCase:  entity.TestCase{},
+			testCase:  &entity.TestCase{},
+			userId:    "valid user",
 			createErr: nil,
 			wantErr:   true,
 		},
 		{
 			name:      "repo returns error",
 			context:   context.Background(),
+			testCase:  &entity.TestCase{},
+			userId:    "valid user",
 			createErr: errors.New("repo error"),
 			wantErr:   true,
 		},
@@ -91,13 +94,13 @@ func TestSaveTestCase(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := &mocks.MockTestCaseStorageRepository{}
-			mockRepo.On("Create", mock.Anything, mock.Anything).Return(test.createErr)
+			mockRepo.On("Create", test.context, test.testCase, test.userId).Return(test.createErr)
 
 			svc, err := NewTestcaseStorageService(logger, mockRepo)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			err = svc.SaveTestCase(test.context, &test.testCase)
+			err = svc.SaveTestCase(test.context, test.testCase, test.userId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("SaveTestCase() error = %v, wantErr %v", err, test.wantErr)
 			}
