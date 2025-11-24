@@ -6,6 +6,7 @@ package main
 import (
 	"log/slog"
 
+	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
@@ -31,6 +32,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		FileSystemProvider,
+		LogFileSystemProvider,
 		repository.NewTestcaseLocalStorageRepository,
 		service.NewValidatePromptService,
 		TestcaseLocalStorageServiceProvider,
@@ -38,6 +40,8 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
 		TaglistConfigProvider,
+		DockerClientProvider,
+		service.NewDocker,
 	)
 
 	return nil, nil
@@ -84,7 +88,15 @@ func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
-// TestcaseLocalStorageServiceProvider provides a new Storageservice.
+// LogFileSystemProvider provides a filesystem for logs
+func LogFileSystemProvider(cfg *config.Config) (repository.LogFileSystem, error) {
+	return repository.NewLogFileSystem(cfg.LogDirAutopw)
+}
+
+func DockerClientProvider() (service.DockerClient, error) {
+	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+}
+
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
