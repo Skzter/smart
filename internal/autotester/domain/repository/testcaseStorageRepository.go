@@ -167,7 +167,7 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 }
 
 // generateTestCaseKey creates a unique S3 key for a TestCase object.
-// The format is: "testCase/testCase_<timestamp>"
+// The format is: "autotester/testCase/<testCaseID>_<timestamp>"
 func generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
 	return fmt.Sprintf("%s/%s_%d", prefixTestCase, testcaseId, timestamp)
