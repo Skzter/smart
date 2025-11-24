@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -224,6 +225,63 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+func TestGetUserChats(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tests := []struct {
+		TestName  string
+		RequestID string
+		// fix to struct later
+		ResponseForUser []entity.ChatSummary
+		Context         context.Context
+		ExpectedStatus  int
+	}{
+		{
+			TestName:       "success - Valid ID",
+			RequestID:      uuid.NewString(),
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			TestName:       "error - Invalid ID",
+			RequestID:      "124",
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			TestName:       "error - No ID",
+			RequestID:      "",
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusNotFound,
+		},
+	}
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+
+	for _, tc := range tests {
+		t.Run(tc.TestName, func(t *testing.T) {
+			gin.SetMode(gin.TestMode)
+			router := gin.New()
+
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ)
+			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
+
+			endpoint := "/api/v1/chats/" + tc.RequestID
+			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+			rec := httptest.NewRecorder()
+
+			router.ServeHTTP(rec, req)
+
+			if rec.Code != tc.ExpectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s", tc.ExpectedStatus, rec.Code, rec.Body.String())
 			}
 		})
 	}

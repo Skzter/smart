@@ -8,6 +8,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // HandleChatRequest processes a chat request from the frontend.
@@ -67,4 +68,28 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
+}
+
+// HandleGetUserChats processes a request for all chats of a given user
+// Expects a valid uuid as url parameter
+// valid example: /chats/0bc024d1-5e82-435b-8b2e-dc88493a8a28
+// invalid example: /chats/1234 or /chats/hahahihi
+func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
+	paramID := c.Param("UserID")
+	// nach einigen tests sehr sicher, dass das hier eig nie failen wird da man keine request an die url schicken kann ohne id
+	// failt einfach direkt weil 404 not found
+	if err := assert.StringNotEmpty(paramID); err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+
+	userUUID, err := uuid.Parse(paramID)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, userUUID)
 }
