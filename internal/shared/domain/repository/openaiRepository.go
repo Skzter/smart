@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	openai "github.com/sashabaranov/go-openai"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
@@ -30,10 +32,11 @@ type OpenAIClient interface {
 type openAI struct {
 	client  OpenAIClient
 	timeout int // timeout in seconds
+	tracer  trace.Tracer
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(client OpenAIClient, timeout int) (OpenAI, error) {
+func NewOpenAiRepository(client OpenAIClient, timeout int, tracer trace.Tracer) (OpenAI, error) {
 	if err := assert.NotNil(client); err != nil {
 		return nil, err
 	}
@@ -45,17 +48,25 @@ func NewOpenAiRepository(client OpenAIClient, timeout int) (OpenAI, error) {
 	return &openAI{
 		client:  client,
 		timeout: timeout,
+		tracer:  tracer,
 	}, nil
 }
 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entity.Message, error) {
+	ctx, span := qa.tracer.Start(ctx, "openAI.CreateRequest")
+	defer span.End()
+
 	if err := assert.NotNil(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "context validation failed")
 		return nil, err
 	}
 
 	if err := validateRequestEntity(req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "request validation failed")
 		return nil, err
 	}
 
@@ -85,18 +96,26 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 		})
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "OpenAI API request failed")
 		return nil, err
 	}
 
 	// check if there are responses from api
 	if len(resp.Choices) == 0 {
-		return nil, errors.ErrInternalServer
+		err := errors.ErrInternalServer
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "empty response array")
+		return nil, err
 	}
 
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, errors.ErrEmptyResponse
+		err := errors.ErrEmptyResponse
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "empty response content")
+		return nil, err
 	}
 
 	return &entity.Message{

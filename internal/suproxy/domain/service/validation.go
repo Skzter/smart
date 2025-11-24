@@ -10,6 +10,9 @@ import (
 	"slices"
 	"strings"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -55,10 +58,11 @@ type validator struct {
 	openAiService sharedService.OpenAI
 	Logger        *slog.Logger
 	cfg           *config.Config
+	tracer        trace.Tracer
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI) (Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI, tracer trace.Tracer) (Validator, error) {
 	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}
@@ -67,13 +71,19 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService
 		openAiService: service,
 		Logger:        logger,
 		cfg:           cfg,
+		tracer:        tracer,
 	}, nil
 }
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
 func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
+	ctx, span := v.tracer.Start(ctx, "validator.Validate")
+	defer span.End()
+
 	if err := assert.NotNil(ctx, offers); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "validation failed")
 		return nil, err
 	}
 
@@ -127,11 +137,16 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 		msg, err := v.openAiService.Request(ctx, req)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "OpenAI request failed")
 			return nil, err
 		}
 
 		if strings.TrimSpace(msg.Body) == "" {
-			return nil, fmt.Errorf("empty openai result for req: %v", req)
+			err := fmt.Errorf("empty openai result for req: %v", req)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "empty OpenAI result")
+			return nil, err
 		}
 
 		var validationResult OpenAIValidationResult
@@ -139,7 +154,10 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		err = json.Unmarshal([]byte(msg.Body), &validationResult)
 
 		if err != nil {
-			return nil, fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
+			err := fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "invalid OpenAI response format")
+			return nil, err
 		}
 
 		if !validationResult.Valid {
@@ -155,9 +173,11 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 	// Return no tags if all offers are valid
 	if len(newTags) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return &sharedEntity.TagList{
 			Tags: []sharedEntity.Tag{},
 		}, nil
 	}
+	span.SetStatus(codes.Ok, "")
 	return &sharedEntity.TagList{Tags: newTags}, nil
 }

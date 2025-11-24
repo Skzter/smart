@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,9 @@ import (
 	"github.com/parquet-go/parquet-go"
 	"github.com/parquet-go/parquet-go/compress/gzip"
 	"github.com/parquet-go/parquet-go/compress/snappy"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -41,28 +45,29 @@ var (
 // ParquetFileWrapper defines an interface for working with Parquet serialization and deserialization for a generic struct type T.
 type ParquetFileWrapper[T any] interface {
 	// WriteStructsToParquet serializes a slice of structs into a Parquet-encoded byte slice.
-	WriteStructsToParquet(data []T) ([]byte, error)
+	WriteStructsToParquet(ctx context.Context, data []T) ([]byte, error)
 
 	// ReadStructsFromParquet deserializes a Parquet-encoded byte slice into a slice of structs.
-	ReadStructsFromParquet(parquetData []byte) ([]T, error)
+	ReadStructsFromParquet(ctx context.Context, parquetData []byte) ([]T, error)
 
 	// WriteStructToParquet serializes a single struct into a Parquet-encoded byte slice.
-	WriteStructToParquet(data T) ([]byte, error)
+	WriteStructToParquet(ctx context.Context, data T) ([]byte, error)
 
 	// ValidateStruct checks whether the struct conforms to the expected schema for Parquet serialization.
-	ValidateStruct(data T) error
+	ValidateStruct(ctx context.Context, data T) error
 
 	// GetParquetFileInfo extracts metadata information (e.g., row count, schema) from a Parquet-encoded byte slice.
-	GetParquetFileInfo(parquetData []byte) (*entity.ParquetFileInfo, error)
+	GetParquetFileInfo(ctx context.Context, parquetData []byte) (*entity.ParquetFileInfo, error)
 
 	// GetParquetSchema returns the Parquet schema for the struct type T.
-	GetParquetSchema() (*parquet.Schema, error)
+	GetParquetSchema(ctx context.Context) (*parquet.Schema, error)
 }
 
 // ParquetWrapper provides generic methods to handle parquet files with Go structs
 type ParquetWrapper[T any] struct {
 	logger *slog.Logger
 	config entity.ParquetConfig
+	tracer trace.Tracer
 }
 
 // DefaultParquetConfig returns a default configuration for parquet operations
@@ -75,7 +80,7 @@ func DefaultParquetConfig() entity.ParquetConfig {
 }
 
 // NewParquetWrapper creates a new ParquetWrapper instance
-func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig) (ParquetFileWrapper[T], error) {
+func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig, tracer trace.Tracer) (ParquetFileWrapper[T], error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, ErrNilLogger
 	}
@@ -83,6 +88,7 @@ func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig) 
 	wrapper := &ParquetWrapper[T]{
 		logger: logger,
 		config: config,
+		tracer: tracer,
 	}
 
 	logger.Info("ParquetWrapper initialized")
@@ -110,9 +116,15 @@ func getCompressionOptions(codec string) []parquet.WriterOption {
 }
 
 // WriteStructsToParquet converts a slice of structs to parquet format
-func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
+func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T) ([]byte, error) {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.WriteStructsToParquet")
+	defer span.End()
+
 	if len(data) == 0 {
-		return nil, ErrEmptyData
+		err := ErrEmptyData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return nil, err
 	}
 
 	// Get the type of the struct
@@ -139,6 +151,8 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 	// Write the data
 	_, err := writer.Write(data)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to write data to parquet")
 		p.logger.Error("Failed to write data to parquet",
 			slog.String("type", structType.Name()),
 			slog.String("error", err.Error()),
@@ -149,6 +163,8 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 	// Close the writer to finalize the file
 	err = writer.Close()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to close parquet writer")
 		p.logger.Error("Failed to close parquet writer",
 			slog.String("error", err.Error()),
 		)
@@ -162,14 +178,21 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(data []T) ([]byte, error) {
 		slog.Int("count", len(data)),
 		slog.Int("size_bytes", len(parquetData)),
 	)
+	span.SetStatus(codes.Ok, "")
 
 	return parquetData, nil
 }
 
 // ReadStructsFromParquet reads parquet data and converts it to a slice of structs
-func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, error) {
+func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetData []byte) ([]T, error) {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.ReadStructsFromParquet")
+	defer span.End()
+
 	if len(parquetData) == 0 {
-		return nil, ErrEmptyParquetData
+		err := ErrEmptyParquetData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return nil, err
 	}
 
 	// Get the type of the struct for logging
@@ -196,6 +219,8 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, err
 		rows := make([]T, 100) // Read in smaller batches
 		n, err := parquetReader.Read(rows)
 		if err != nil && err != io.EOF {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to read parquet data")
 			p.logger.Error("Failed to read parquet data",
 				slog.String("type", structType.Name()),
 				slog.String("error", err.Error()),
@@ -215,11 +240,19 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, err
 	// Close the reader
 	err := parquetReader.Close()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to close parquet reader")
 		p.logger.Error("Failed to close parquet reader",
 			slog.String("error", err.Error()),
 		)
 		return nil, ErrFailedToCloseReader
 	}
+
+	span.AddEvent("Structs read from parquet", trace.WithAttributes(
+		attribute.String("type", structType.Name()),
+		attribute.Int("count", len(result)),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	p.logger.Info("Successfully read structs from parquet",
 		slog.String("type", structType.Name()),
@@ -230,12 +263,33 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(parquetData []byte) ([]T, err
 }
 
 // WriteStructToParquet converts a single struct to parquet format (convenience function)
-func (p *ParquetWrapper[T]) WriteStructToParquet(data T) ([]byte, error) {
-	return p.WriteStructsToParquet([]T{data})
+func (p *ParquetWrapper[T]) WriteStructToParquet(ctx context.Context, data T) ([]byte, error) {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.WriteStructToParquet")
+	defer span.End()
+
+	var zero T
+	structType := reflect.TypeOf(zero)
+
+	result, err := p.WriteStructsToParquet(ctx, []T{data})
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to write struct to parquet")
+		return nil, err
+	}
+
+	span.AddEvent("Struct written to parquet", trace.WithAttributes(
+		attribute.String("type", structType.Name()),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	return result, nil
 }
 
 // GetParquetSchema returns the parquet schema for a given struct type
-func (p *ParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
+func (p *ParquetWrapper[T]) GetParquetSchema(ctx context.Context) (*parquet.Schema, error) {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.GetParquetSchema")
+	defer span.End()
+
 	var zero T
 	structType := reflect.TypeOf(zero)
 
@@ -249,8 +303,16 @@ func (p *ParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
 	schema := writer.Schema()
 	err := writer.Close()
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to close parquet writer")
 		return nil, ErrFailedToCloseWriter
 	}
+
+	span.AddEvent("Parquet schema generated", trace.WithAttributes(
+		attribute.String("type", structType.Name()),
+		attribute.Int("fields", len(schema.Fields())),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	p.logger.Info("Generated parquet schema",
 		slog.String("type", structType.Name()),
@@ -261,14 +323,20 @@ func (p *ParquetWrapper[T]) GetParquetSchema() (*parquet.Schema, error) {
 }
 
 // ValidateStruct validates that a struct is suitable for parquet serialization
-func (p *ParquetWrapper[T]) ValidateStruct(data T) error {
+func (p *ParquetWrapper[T]) ValidateStruct(ctx context.Context, data T) error {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.ValidateStruct")
+	defer span.End()
+
 	structType := reflect.TypeOf(data)
 	if structType.Kind() == reflect.Ptr {
 		structType = structType.Elem()
 	}
 
 	if structType.Kind() != reflect.Struct {
-		return ErrInvalidStructType
+		err := fmt.Errorf(ErrInvalidStructType.Error(), structType.Kind())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid struct type")
+		return err
 	}
 
 	p.logger.Debug("Validating struct for parquet compatibility",
@@ -287,16 +355,30 @@ func (p *ParquetWrapper[T]) ValidateStruct(data T) error {
 	}
 
 	if !hasExportedFields {
-		return ErrInvalidStructType
+		err := fmt.Errorf(ErrInvalidStructType.Error(), structType.Kind())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "struct has no exported fields")
+		return err
 	}
+
+	span.AddEvent("Struct validated", trace.WithAttributes(
+		attribute.String("type", structType.Name()),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
 
 // GetParquetFileInfo extracts information from parquet data without fully reading it
-func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.ParquetFileInfo, error) {
+func (p *ParquetWrapper[T]) GetParquetFileInfo(ctx context.Context, parquetData []byte) (*entity.ParquetFileInfo, error) {
+	_, span := p.tracer.Start(ctx, "ParquetWrapper.GetParquetFileInfo")
+	defer span.End()
+
 	if len(parquetData) == 0 {
-		return nil, ErrEmptyParquetData
+		err := ErrEmptyParquetData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return nil, err
 	}
 
 	reader := bytes.NewReader(parquetData)
@@ -304,6 +386,8 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.Parq
 	// Create a generic reader to access file metadata
 	file, err := parquet.OpenFile(reader, int64(len(parquetData)))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to open parquet file")
 		return nil, fmt.Errorf("failed to open parquet file: %w", err)
 	}
 
@@ -332,6 +416,19 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.Parq
 		slog.Int64("size_bytes", info.FileSize),
 		slog.String("compression", info.Compression),
 	)
+
+	var zero T
+	structType := reflect.TypeOf(zero)
+
+	span.AddEvent("Parquet file info extracted", trace.WithAttributes(
+		attribute.String("type", structType.Name()), // TODO: check if this is correct
+		attribute.Int64("rows", info.NumRows),
+		attribute.Int64("columns", info.NumColumns),
+		attribute.Int64("row_groups", info.NumRowGroups),
+		attribute.Int64("size_bytes", info.FileSize),
+		attribute.String("compression", info.Compression),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	return info, nil
 }

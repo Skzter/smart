@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -23,15 +26,16 @@ type validatePrompt struct {
 	service sharedService.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
+	tracer  trace.Tracer
 }
 
 // NewValidatePromptService creates a new validatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewValidatePromptService(service sharedService.OpenAI, config *config.Config, logger *slog.Logger) (ValidatePrompt, error) {
-	if err := assert.NotNil(service, config, logger); err != nil {
+func NewValidatePromptService(service sharedService.OpenAI, config *config.Config, logger *slog.Logger, tracer trace.Tracer) (ValidatePrompt, error) {
+	if err := assert.NotNil(service, config, logger, tracer); err != nil {
 		return nil, err
 	}
-	return &validatePrompt{service, config, logger}, nil
+	return &validatePrompt{service, config, logger, tracer}, nil
 }
 
 // ValidatePrompt checks if the user prompt contains required information for test generation.
@@ -43,6 +47,9 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string) 
 		return false, "", errors.ErrInternalServer
 	}
 
+	ctx, span := s.tracer.Start(ctx, "validatePrompt.ValidatePrompt")
+	defer span.End()
+
 	req := entity.Request{
 		Messages:     []entity.Message{{Role: entity.RoleUser, Body: userPrompt}},
 		Model:        s.config.Model,
@@ -51,14 +58,19 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, userPrompt string) 
 
 	msg, err := s.service.Request(ctx, req)
 	if err != nil {
-		s.logger.Error(err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation
 	}
 
 	llmResponse := autotesterEntity.LlmValidationResponse{}
 	if err = json.Unmarshal([]byte(msg.Body), &llmResponse); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "json unmarshalling failed")
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return llmResponse.Valid, llmResponse.Message, nil
 }

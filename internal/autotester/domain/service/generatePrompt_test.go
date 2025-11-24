@@ -7,12 +7,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
 
 // nolint: dupl
@@ -21,6 +22,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 	taglist := mocks.NewMockTaglistStorage(t)
 	logger := slog.Default()
 	cfg := config.Config{}
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -66,7 +68,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger)
+			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger, tracer)
 			if test.wantErr {
 				assert.NotNil(t, err)
 				assert.Nil(t, repo)
@@ -87,6 +89,7 @@ func TestGeneratePrompt(t *testing.T) {
 	}
 	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
 	code := "some code"
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name              string
@@ -138,7 +141,7 @@ func TestGeneratePrompt(t *testing.T) {
 				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
+			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, tracer)
 			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
 
 			if tt.expectErr {

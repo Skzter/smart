@@ -7,13 +7,15 @@ import (
 
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 )
 
 // Test for creating new OpenAiRepository
 func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name            string
 		timeout         int
@@ -38,7 +40,7 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := NewOpenAiRepository(mockClient, test.timeout)
+			repo, err := NewOpenAiRepository(mockClient, test.timeout, tracer)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")

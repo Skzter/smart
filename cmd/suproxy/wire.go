@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
@@ -26,7 +27,7 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error) {
 	wire.Build(
 		LoggerProvider,
 		application.NewRouter,
@@ -57,26 +58,43 @@ func LoggerProvider(cfg *config.Config) *slog.Logger {
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config) (sharedRepo.OpenAI, error) {
-	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout)
+func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
+	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
-func DatabaseParquetWrapperProvider(logger *slog.Logger) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
-	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig())
+func DatabaseParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
+	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig(), tracer)
 }
 
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapper.S3StorageWrapper, error) {
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
 	config := wconfig.S3Config{
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
-	return wrapper.NewS3Wrapper(logger, config)
+	return wrapper.NewS3Wrapper(logger, config, tracer)
+}
+
+func DatabaseRepositoryProvider(
+	logger *slog.Logger,
+	cfg *config.Config,
+	s3wrapper wrapper.S3StorageWrapper,
+	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
+) (repository.DatabaseRepository, error) {
+	return repository.NewDatabaseRepository(
+		logger,
+		s3wrapper,
+		parquetWrapper,
+		cfg.EntryPrefix,
+	)
+}
+func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
+	return service.NewTagSearchService(cfg, s3)
 }
 
 func DatabaseRepositoryProvider(

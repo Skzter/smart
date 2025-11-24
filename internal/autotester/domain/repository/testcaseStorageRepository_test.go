@@ -7,21 +7,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
 // nolint:dupl
 func TestCreateTestCaseStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range testcaseCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+			mockS3 := &wrapper.MockS3StorageWrapper{}
+			mockParquet := &wrapper.MockParquetFileWrapper[entity.TestCase]{}
 
 			if test.obj != nil {
 				mockParquet.On("WriteStructToParquet", *test.obj).
@@ -36,6 +38,7 @@ func TestCreateTestCaseStorage(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			err := repo.Create(ctx, test.obj)
@@ -110,8 +113,8 @@ func TestReadTestCaseStorage(t *testing.T) {
 
 	for _, test := range testcaseReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+			mockS3 := &wrapper.MockS3StorageWrapper{}
+			mockParquet := &wrapper.MockParquetFileWrapper[entity.TestCase]{}
 
 			mockS3.On("DownloadParquetFile", ctx, test.key).
 				Return(test.downloadRet, test.downloadMeta, test.downloadErr)
@@ -226,8 +229,8 @@ func TestUpdateTestCaseStorage(t *testing.T) {
 
 	for _, test := range testcaseUpdateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+			mockS3 := &wrapper.MockS3StorageWrapper{}
+			mockParquet := &wrapper.MockParquetFileWrapper[entity.TestCase]{}
 
 			mockS3.On("FileExists", ctx, test.key).
 				Return(test.fileExistsRet, test.fileExistsErr)
@@ -377,8 +380,8 @@ func TestDeleteTestStorage(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+			mockS3 := &wrapper.MockS3StorageWrapper{}
+			mockParquet := &wrapper.MockParquetFileWrapper[entity.TestCase]{}
 
 			mockS3.On("DeleteParquetFile", ctx, test.key).
 				Return(test.deleteRet)
@@ -483,9 +486,10 @@ func TestGenerateTestCaseKey(t *testing.T) {
 
 // nolint:dupl
 func TestNewTestCaseStorageRepository(t *testing.T) {
-	mockS3 := &mocks.MockS3StorageWrapper{}
-	mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+	mockS3 := &wrapper.MockS3StorageWrapper{}
+	mockParquet := &wrapper.MockParquetFileWrapper[entity.TestCase]{}
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -526,7 +530,7 @@ func TestNewTestCaseStorageRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewTestCaseStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper)
+			repo, err := NewTestCaseStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewTestCaseStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}

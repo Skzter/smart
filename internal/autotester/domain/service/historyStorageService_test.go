@@ -15,14 +15,15 @@ import (
 )
 
 // nolint: dupl
-func TestNewTestcaseStorageService(t *testing.T) {
+func TestNewHistoryStorageService(t *testing.T) {
 	logger := slog.Default()
-	mockRepo := &mocks.MockTestCaseStorageRepository{}
+	mockRepo := &mocks.MockSessionSummaryStorageRepository{}
 	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		repo    repository_intf.TestCaseStorageRepository
+		repo    repository_intf.SessionSummaryStorageRepository
 		wantErr bool
 	}{
 		{
@@ -44,22 +45,24 @@ func TestNewTestcaseStorageService(t *testing.T) {
 			wantErr: true,
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewTestcaseStorageService(test.logger, test.repo, tracer)
+			svc, err := NewHistoryStorageService(test.logger, test.repo, tracer)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewTestcaseStorageService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && svc == nil {
-				t.Errorf("NewTestcaseStorageService() returned nil service")
+				t.Errorf("NewSessionSummaryStorageService() returned nil service")
 			}
 		})
 	}
 }
 
 // nolint: dupl
-func TestSaveTestCase(t *testing.T) {
+func TestSaveHistory(t *testing.T) {
 	logger := slog.Default()
+	sessionSummary := &entity.SessionSummary{}
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -93,16 +96,16 @@ func TestSaveTestCase(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockRepo := &mocks.MockTestCaseStorageRepository{}
-			mockRepo.On("Create", mock.Anything, mock.Anything).Return(test.createErr)
+			mockRepo := &mocks.MockSessionSummaryStorageRepository{}
+			mockRepo.On("Create", mock.Anything, sessionSummary).Return(test.createErr)
 
-			svc, err := NewTestcaseStorageService(logger, mockRepo, tracer)
+			svc, err := NewHistoryStorageService(logger, mockRepo, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			err = svc.SaveTestCase(test.context, &test.testCase)
+			err = svc.SaveHistory(test.context, sessionSummary)
 			if (err != nil) != test.wantErr {
-				t.Errorf("SaveTestCase() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("SaveHistory() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

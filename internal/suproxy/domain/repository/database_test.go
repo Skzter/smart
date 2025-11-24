@@ -9,10 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 )
 
@@ -44,6 +45,7 @@ func getValidEntry() entity.DatabaseEntry {
 }
 
 func TestNewDatabaseRepository(t *testing.T) {
+	tracer := otel.Tracer("test")
 	_, mockS3, mockParquet := setupMocks(t)
 	logger := newTestLogger()
 
@@ -62,7 +64,7 @@ func TestNewDatabaseRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper, EntryPrefix)
+			repo, err := NewDatabaseRepository(test.logger, test.s3Wrapper, test.parquetWrapper, tracer, EntryPrefix)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewDatabaseRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -91,7 +93,7 @@ func TestCreateRequest(t *testing.T) {
 			repo, mockS3, mockParquet := setupMocks(t)
 			fakeData := []byte("parquet")
 
-			mockParquet.On("WriteStructToParquet", tt.entry).Return(fakeData, tt.mockParquetError)
+			mockParquet.On("WriteStructToParquet", mock.Anything, tt.entry).Return(fakeData, tt.mockParquetError)
 			if tt.mockParquetError == nil {
 				mockS3.On("UploadParquetFile", mock.Anything, mock.AnythingOfType("string"), fakeData, mock.Anything).Return(tt.mockS3Error)
 			}
@@ -126,7 +128,7 @@ func TestReadRequest(t *testing.T) {
 
 			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+testKey).Return(fakeData, metadata, tt.mockDownloadError)
 			if tt.mockDownloadError == nil {
-				mockParquet.On("ReadStructsFromParquet", fakeData).Return([]entity.DatabaseEntry{getValidEntry()}, tt.mockParquetReadError)
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, fakeData).Return([]entity.DatabaseEntry{getValidEntry()}, tt.mockParquetReadError)
 			}
 
 			_, err := repo.ReadRequest(context.Background(), testKey)
@@ -163,7 +165,7 @@ func TestUpdateRequest(t *testing.T) {
 
 			mockS3.On("DownloadParquetFile", mock.Anything, EntryPrefix+key).Return(fakeData, metadata, tt.mockDownloadErr)
 			if tt.mockDownloadErr == nil {
-				mockParquet.On("WriteStructToParquet", tt.entry).Return(fakeData, tt.mockParquetErr)
+				mockParquet.On("WriteStructToParquet", mock.Anything, tt.entry).Return(fakeData, tt.mockParquetErr)
 			}
 			if tt.mockDownloadErr == nil && tt.mockParquetErr == nil {
 				mockS3.On("UploadParquetFile", mock.Anything, EntryPrefix+key, fakeData, mock.Anything).Return(tt.mockS3UploadErr)
@@ -314,11 +316,11 @@ func TestListAllKeys(t *testing.T) {
 
 func setupMocks(t *testing.T) (
 	*databaseRepository,
-	*mocks.MockS3StorageWrapper,
-	*mocks.MockParquetFileWrapper[entity.DatabaseEntry],
+	*wrapper.MockS3StorageWrapper,
+	*wrapper.MockParquetFileWrapper[entity.DatabaseEntry],
 ) {
-	mockS3 := mocks.NewMockS3StorageWrapper(t)
-	mockParquet := mocks.NewMockParquetFileWrapper[entity.DatabaseEntry](t)
+	mockS3 := wrapper.NewMockS3StorageWrapper(t)
+	mockParquet := wrapper.NewMockParquetFileWrapper[entity.DatabaseEntry](t)
 	logger := newTestLogger()
 
 	repo := &databaseRepository{

@@ -7,6 +7,11 @@ services:
       - "8080:8080"
     networks:
       - default
+    environment:
+      - OPEN_AI_KEY=${OPEN_AI_KEY}
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com
 
   autotester:
     build:
@@ -16,6 +21,11 @@ services:
       - "8081:8081"
     networks:
       - default
+    environment:
+      - OPEN_AI_KEY=${OPEN_AI_KEY}
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com
 
   frontend-mock:
     platform: linux/amd64
@@ -41,3 +51,25 @@ services:
     image: valkey/valkey:alpine
     networks:
       - default
+
+  datadog:
+    image: datadog/agent:latest
+    networks:
+      - default
+    ports:
+      - 8126:8126/tcp
+    volumes:
+      - /var/run/datadog:/var/run/datadog
+      - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
+    environment:
+      - DD_API_KEY=${DATADOG_KEY}
+      - DD_HOSTNAME=dev-container
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_SITE=us5.datadoghq.com
+      - DD_APM_RECEIVER_SOCKET=/var/run/datadog/apm.socket
+      - DD_DOGSTATSD_SOCKET=/var/run/datadog/dsd.socket
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE_LOGS="name:dd-agent"

@@ -8,12 +8,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
 
 //nolint:dupl
@@ -21,6 +22,7 @@ func TestNewValidatePromptService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
 	cfg := config.Config{}
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -61,7 +63,7 @@ func TestNewValidatePromptService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewValidatePromptService(test.service, test.config, test.logger)
+			repo, err := NewValidatePromptService(test.service, test.config, test.logger, tracer)
 			if test.wantErr {
 				assert.Nil(t, repo)
 				assert.NotNil(t, err)
@@ -140,6 +142,7 @@ func TestValidatePrompt(t *testing.T) {
 			returnError: sharedErrors.ErrInternalServer,
 		},
 	}
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -197,7 +200,20 @@ func TestValidatePrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt)
+			serviceMock := mocks.NewMockOpenAI(t)
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+
+			tt.mockSetup((*mocks.MockOpenAI)(serviceMock), ctx)
+
+			svc := &validatePrompt{
+				service: serviceMock,
+				config:  cfg,
+				logger:  logger,
+				tracer:  tracer,
+			}
+			valid, str, err := svc.ValidatePrompt(ctx, tt.userPrompt)
+
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				if !errors.Is(err, tt.expectedErr) {

@@ -6,6 +6,10 @@ services:
       - "8080:8080"
     networks:
       - default
+    environment:
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com
 
   autotester:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
@@ -17,6 +21,10 @@ services:
       - "8079:8081"
     networks:
       - default
+    environment:
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com
 
   frontend-mock:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/frontend-mock
@@ -54,3 +62,25 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - autotester
+
+  datadog:
+    image: datadog/agent:latest
+    networks:
+      - default
+    ports:
+      - "127.0.0.1:8126:8126/tcp"
+    env_file: .env
+    volumes:
+      - /var/run/datadog:/var/run/datadog
+      - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
+    environment:
+      - DD_HOSTNAME=prod-container
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_SITE=us5.datadoghq.com
+      - DD_APM_RECEIVER_SOCKET=/var/run/datadog/apm.socket
+      - DD_DOGSTATSD_SOCKET=/var/run/datadog/dsd.socket
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE_LOGS="name:dd-agent"
