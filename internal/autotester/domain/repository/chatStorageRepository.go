@@ -61,10 +61,6 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		return err
 	}
 
-	if err := obj.Validate(); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
-	}
-
 	summary := entity.ChatSummary{
 		ChatId:       obj.Id,
 		UserId:       obj.UserId,
@@ -130,9 +126,6 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 	}
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
-	}
-	if err := (&items[0]).Validate(); err != nil {
-		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 	return &items[0], nil
 }

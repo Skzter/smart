@@ -45,6 +45,12 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 
 // SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 func (s *chatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
+	if err := assert.NotNil(summary); err != nil {
+		return err
+	}
+	if err := summary.Validate(); err != nil {
+		return err
+	}
 	return s.repo.Create(ctx, summary)
 }
 
@@ -57,7 +63,16 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
-	return s.repo.Read(ctx, userId, chatId)
+	chat, err := s.repo.Read(ctx, userId, chatId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := chat.Validate(); err != nil {
+		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
+	}
+
+	return chat, nil
 }
 
 // FindByUserId retrieves an all ChatSummarys associated with the given userId

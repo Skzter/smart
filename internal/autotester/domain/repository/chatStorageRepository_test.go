@@ -5,29 +5,14 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
-
-func validChat() *entity.Chat {
-	return &entity.Chat{
-		Id:            "chat123",
-		UserId:        "user123",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		LastTest:      "test123",
-		SystemPrompt:  "sys prompt",
-		InitialPrompt: "usr prompt",
-		Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-	}
-}
 
 // nolint:dupl
 func TestCreateChatStorage(t *testing.T) {
@@ -85,7 +70,7 @@ func chatCreateTestCaseProvider() []struct {
 	}{
 		{
 			name:            "happy path",
-			obj:             validChat(),
+			obj:             &entity.Chat{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
 			uploadRet:       []any{nil},
@@ -100,35 +85,20 @@ func chatCreateTestCaseProvider() []struct {
 		},
 		{
 			name:        "nil ctx",
-			obj:         validChat(),
+			obj:         &entity.Chat{},
 			ctx:         nil,
 			expectError: true,
 		},
 		{
-			name: "validation fails",
-			obj: &entity.Chat{
-				Id:            "",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			expectError: true,
-			ctx:         context.Background(),
-		},
-		{
 			name:         "chat parquet error",
-			obj:          validChat(),
+			obj:          &entity.Chat{},
 			chatWriteRet: []any{nil, errors.New("err")},
 			expectError:  true,
 			ctx:          context.Background(),
 		},
 		{
 			name:            "summary parquet error",
-			obj:             validChat(),
+			obj:             &entity.Chat{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{nil, errors.New("err")},
 			expectError:     true,
@@ -136,7 +106,7 @@ func chatCreateTestCaseProvider() []struct {
 		},
 		{
 			name:            "upload error",
-			obj:             validChat(),
+			obj:             &entity.Chat{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
 			uploadRet:       []any{errors.New("err")},
@@ -197,7 +167,7 @@ func chatReadTestCaseProvider() []struct {
 		{
 			name:           "happy path",
 			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
-			readStructsRet: []any{[]entity.Chat{*validChat()}, nil},
+			readStructsRet: []any{[]entity.Chat{{}}, nil},
 			expectError:    false,
 			ctx:            context.Background(),
 		},
@@ -223,13 +193,6 @@ func chatReadTestCaseProvider() []struct {
 			name:           "no data found",
 			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
 			readStructsRet: []any{[]entity.Chat{}, nil},
-			expectError:    true,
-			ctx:            context.Background(),
-		},
-		{
-			name:           "validation fails",
-			downloadRet:    []any{[]byte("parquet"), map[string]string{}, nil},
-			readStructsRet: []any{[]entity.Chat{{}}, nil},
 			expectError:    true,
 			ctx:            context.Background(),
 		},
