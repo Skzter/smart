@@ -13,11 +13,13 @@ import (
 
 // ChatStorageService provides an interface to persist Chat entities.
 type ChatStorageService interface {
-	// SaveChat persists the provided Chat entity into the storage.
+	// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 	// Returns an error if the operation fails.
 	SaveChat(ctx context.Context, summary *entity.Chat) error
+	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 	LoadChat(ctx context.Context, chatId string, userId string) (*entity.Chat, error)
-	UpdateChat(ct context.Context, chat *entity.Chat) error
+	// FindByUserId retrieves an all ChatSummarys associated with the given userId
+	// The resulting slice is ordered by updatedAt in descending order
 	LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error)
 }
 
@@ -41,12 +43,12 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 	}, nil
 }
 
-// SaveChat saves the given Chat entity using the configured repository.
-// Validates the input context and returns an error if it is nil or if the repository operation fails.
+// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 func (s *chatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
 	return s.repo.Create(ctx, summary)
 }
 
+// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
 	if err := assert.StringNotEmpty(userId); err != nil {
 		return nil, fmt.Errorf("userId must not be empty")
@@ -58,10 +60,8 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 	return s.repo.Read(ctx, userId, chatId)
 }
 
-func (s *chatStorageService) UpdateChat(ctx context.Context, chat *entity.Chat) error {
-	return s.repo.Update(ctx, chat)
-}
-
+// FindByUserId retrieves an all ChatSummarys associated with the given userId
+// The resulting slice is ordered by updatedAt in descending order
 func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
 	if err := assert.StringNotEmpty(userId); err != nil {
 		return nil, fmt.Errorf("key must not be empty")

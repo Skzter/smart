@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -162,8 +163,9 @@ func TestLoadChat(t *testing.T) {
 	}
 }
 
-func LoadUserChats(t *testing.T) {
+func TestLoadUserChats(t *testing.T) {
 	logger := slog.Default()
+	orderedResult := []*entity.ChatSummary{{UpdatedAt: time.Unix(200, 0)}, {UpdatedAt: time.Unix(100, 0)}}
 
 	tests := []struct {
 		name        string
@@ -174,14 +176,19 @@ func LoadUserChats(t *testing.T) {
 		{
 			name:        "success",
 			userId:      "user123",
-			listReturns: []any{[]*entity.ChatSummary{}, nil},
+			listReturns: []any{orderedResult, nil},
 			wantErr:     false,
 		},
 		{
-			name:        "invalid userId",
-			userId:      "",
-			listReturns: []any{[]*entity.ChatSummary{}, nil},
+			name:        "inverse order",
+			userId:      "user123",
+			listReturns: []any{[]*entity.ChatSummary{{UpdatedAt: time.Unix(100, 0)}, {UpdatedAt: time.Unix(200, 0)}}, nil},
 			wantErr:     false,
+		},
+		{
+			name:    "invalid userId",
+			userId:  "",
+			wantErr: true,
 		},
 		{
 			name:        "repo returns error",
@@ -195,7 +202,7 @@ func LoadUserChats(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
 			if test.listReturns != nil {
-				mockRepo.On("ListAll", mock.Anything).Return(test.listReturns...)
+				mockRepo.On("FindByUserID", mock.Anything, test.userId).Return(test.listReturns...)
 			}
 
 			svc, err := NewChatStorageService(logger, mockRepo)
@@ -208,7 +215,7 @@ func LoadUserChats(t *testing.T) {
 				assert.Nil(t, res)
 			} else {
 				assert.Nil(t, err)
-				assert.NotNil(t, res)
+				assert.Equal(t, orderedResult, res)
 			}
 		})
 	}

@@ -12,18 +12,17 @@ import (
 
 // ChatStorageRepository defines the interface for a repository managing Chat entities.
 type ChatStorageRepository interface {
-	// Create stores a new Chat object in the underlying storage system.
+	// Create stores the provided Chat object, as well as a generated ChatSummary Object in the underlying storage system.
+	// The Storage key is generated from the entites userId and chatId, so duplicate entities will be overwriten
 	Create(ctx context.Context, obj *entity.Chat) error
 
-	// Read retrieves a Chat object from storage by its key.
+	// Read retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 	Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
 
-	// Update overwrites an existing Chat object in storage.
-	Update(ctx context.Context, obj *entity.Chat) error
-
-	// Delete removes a Chat object from storage by its id and userId.
+	// Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
 	Delete(ctx context.Context, userId string, chatId string) error
 
+	// FindByUserId retrieves an slice of all ChatSummarys associated with the given userId
 	FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error)
 }
 
@@ -53,7 +52,9 @@ func NewChatStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWr
 	}, nil
 }
 
-// Create serializes the given Chat object to Parquet format and uploads it to S3.
+// Create stores the provided Chat object, as well as a generated ChatSummary Object in the underlying storage system.
+// The Storage key is generated from the entites userId and chatId, so duplicate entities will be overwriten
+// Returns an error if unsuccessfull, or nil otherwise
 // nolint:dupl
 func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) error {
 	if err := assert.NotNil(ctx, obj); err != nil {
@@ -109,7 +110,7 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 	return nil
 }
 
-// Read downloads the Parquet file from S3 using the given key and returns the first Chat found.
+// Read retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 // Returns the Chat or an error.
 // nolint:dupl
 func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
@@ -128,7 +129,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, fmt.Errorf("no data found for key %s", key)
+		return nil, fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
 	}
 	if err := (&items[0]).Validate(); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
@@ -136,30 +137,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 	return &items[0], nil
 }
 
-// Update overwrites the existing Parquet file at the given key with the provided Chat.
-// Returns an error if the key does not exist or the operation fails.
-// nolint:dupl
-func (r *chatStorageRepository) Update(ctx context.Context, obj *entity.Chat) error {
-	if err := assert.NotNil(ctx, obj); err != nil {
-		return err
-	}
-
-	if err := obj.Validate(); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
-	}
-
-	chatkey, _ := generateKeys(obj.UserId, obj.Id)
-	exists, err := r.s3Wrapper.FileExists(ctx, chatkey)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return fmt.Errorf("no files exist for session %s, user %s with key: %s", obj.Id, obj.UserId, chatkey)
-	}
-	return r.Create(ctx, obj)
-}
-
-// Delete removes the Parquet file associated with the given key from S3.
+// Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
 // Returns an error if the deletion fails.
 // nolint:dupl
 func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatId string) error {
@@ -187,7 +165,8 @@ func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatI
 	return nil
 }
 
-// List Metadata of all parquest files with given prefix.
+// FindByUserId retrieves an all ChatSummarys associated with the given userId
+// Returns a slice of ChatSummary Objects or an error
 func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
