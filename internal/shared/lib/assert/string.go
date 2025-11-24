@@ -29,6 +29,17 @@ func StringNotEmpty(value string) error {
 	return StringLength(value, 1, -1, nil)
 }
 
+// StringsNotEmpty checks if all of the given strings are not empty.
+// Returns an error if any string is empty.
+func StringsNotEmpty(values ...string) error {
+	for i, val := range values {
+		if StringNotEmpty(val) != nil {
+			return errors.Errorf("Assert failed: given string at index %d is empty", i)
+		}
+	}
+	return nil
+}
+
 // StringLength checks if the string length is within the given range and optionally if it is in the allowed values.
 // Returns an error if the string does not meet the requirements.
 func StringLength(value string, minLength int, maxLength int, allowedValues *[]string) error {
