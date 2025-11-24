@@ -38,6 +38,7 @@ func TestHandleTemplate(t *testing.T) {
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 	for _, test := range tests {
@@ -54,7 +55,7 @@ func TestHandleTemplate(t *testing.T) {
 			ctx.Errors.Errors()
 
 			cfg.Template = test.template
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockRemoteStorageServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockRemoteStorageServ)
 
 			if err != nil {
 				t.Errorf("build failed")

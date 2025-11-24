@@ -128,6 +128,7 @@ func TestHandleChatRequest(t *testing.T) {
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 	for _, test := range tests {
@@ -151,7 +152,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockRemoteStorageServ)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockRemoteStorageServ)
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
@@ -200,6 +201,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 	for _, test := range tests {
@@ -215,7 +217,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockRemoteStorageServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockRemoteStorageServ)
 
 			if err != nil {
 				t.Errorf("build failed")

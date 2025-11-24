@@ -63,4 +63,6 @@ packages:
       GeneratePrompt:
       ValidatePrompt:
       TestcaseLocalStorageService:
+      Docker:
+      DockerClient:
       TestcaseStorageService:

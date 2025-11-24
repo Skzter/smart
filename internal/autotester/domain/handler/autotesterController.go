@@ -16,6 +16,7 @@ type AutotesterController struct {
 	validationService     service.ValidatePrompt
 	generationService     service.GeneratePrompt
 	saveLocalService      service.TestcaseLocalStorageService
+	dockerService         service.Docker
 	saveTestRemoteServcie service.TestcaseStorageService
 }
 
@@ -27,9 +28,10 @@ func NewAutotesterController(
 	validationService service.ValidatePrompt,
 	generationService service.GeneratePrompt,
 	saveLocalService service.TestcaseLocalStorageService,
+	dockerService service.Docker,
 	saveTestRemoteServcie service.TestcaseStorageService,
 ) (*AutotesterController, error) {
-	if err := assert.NotNil(logger, config, validationService, generationService, saveLocalService, saveTestRemoteServcie); err != nil {
+	if err := assert.NotNil(logger, config, validationService, generationService, saveLocalService, dockerService, saveTestRemoteServcie); err != nil {
 		return nil, err
 	}
 
@@ -39,6 +41,7 @@ func NewAutotesterController(
 		validationService:     validationService,
 		generationService:     generationService,
 		saveLocalService:      saveLocalService,
+		dockerService:         dockerService,
 		saveTestRemoteServcie: saveTestRemoteServcie,
 	}, nil
 }
