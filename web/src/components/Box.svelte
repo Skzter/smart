@@ -11,7 +11,7 @@
     let { msg, name, userId, conversationId, showSave = false } = $props();
 
     const highlighted = isTypeScript(msg)
-    ? Prism.highlight(msg, Prism.languages.typescript, "typescript")
+    ? Prism.highlight(msg.trim(), Prism.languages.typescript, "typescript")
     : msg;
 
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
@@ -164,12 +164,7 @@
                 </div>
             </div>
         </div>
-        <pre class="language-typescript whitespace-pre-wrap break-words font-mono text-sm">
-            <code class="language-typescript">
-                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html highlighted}
-            </code>
-        </pre>
+        <pre class="language-typescript whitespace-pre-wrap break-words font-mono text-sm"><code class="language-typescript">{@html highlighted}</code></pre>
         {#if testId && saveState === "success"}
             <p class="text-xs text-gray-600 mt-2 font-mono">
                 Test ID: {testId}
