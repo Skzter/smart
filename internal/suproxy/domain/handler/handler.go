@@ -69,7 +69,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		case err != nil:
 			s.logger.Error("Tag-based search failed", "error", err)
 		case len(matchingKeys) == 0:
-			s.logger.Info("No keys found in ", "tags", nil)
+			s.logger.Info("No keys found in tags")
 		default:
 			s.logger.Info("Matching keys found", "keys", matchingKeys)
 		}
