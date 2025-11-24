@@ -48,13 +48,14 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	resultStr := string(output)
 	pattern := fmt.Sprintf(`(?m)^\s*✓\s+\d+\s+%s:\d+:\d+`, regexp.QuoteMeta(filepath.Base(testfile)))
 	passPattern := regexp.MustCompile(pattern)
-	if passPattern.MatchString(resultStr) {
+	if passPattern.MatchString(output) {
 		code, err := a.saveLocalService.Read(params.TestId, params.UserID, params.SessionID)
 		if err != nil {
-			a.logger.Error(err.Error())
+			a.logger.Error(fmt.Sprintf("Reading local test code failed, skipping remote save: %s", err.Error()))
+			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+			return
 		}
 
 		test := &entity.TestCase{
@@ -66,10 +67,12 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		}
 		if err := a.saveTestRemoteServcie.SaveTestCase(c, test, params.UserID); err != nil {
 			a.logger.Error(err.Error())
+			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+			return
 		}
 	}
 
 	c.JSON(http.StatusOK, entity.RunTestResponse{
-		Result: resultStr,
+		Result: output,
 	})
 }
