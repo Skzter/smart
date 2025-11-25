@@ -5,7 +5,8 @@
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
 </script>
 
-<Sidebar.Provider>
+<!-- Example: override the default sidebar width locally using CSS variables -->
+<Sidebar.Provider style="--sidebar-width: 20rem; --sidebar-width-icon: 4rem;">
 	<AppSidebar />
 	<Sidebar.Inset>
 		<header
