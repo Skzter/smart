@@ -78,17 +78,11 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // valid example: /chats/0bc024d1-5e82-435b-8b2e-dc88493a8a28
 // invalid example: /chats/1234 or /chats/hahahihi
 func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
-	paramID := c.Param("UserID")
+	userID := c.Param("UserID")
+	a.logger.Info(userID)
 	// nach einigen tests sehr sicher, dass das hier eig nie failen wird da man keine request an die url schicken kann ohne id
 	// failt einfach direkt weil 404 not found
-	if err := assert.StringNotEmpty(paramID); err != nil {
-		a.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
-		return
-	}
-
-	userUUID, err := uuid.Parse(paramID)
-	if err != nil {
+	if err := assert.StringNotEmpty(userID); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
 		return
@@ -96,7 +90,7 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 
 	limitStr := c.Query("limit")
 	if limitStr == "" {
-		limitStr = a.config.DefaultLimitChats
+		limitStr = "0"
 	}
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
@@ -105,20 +99,22 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		return
 	}
 
-	if limit <= 0 {
+	if limit < 0 {
 		a.logger.Error(fmt.Sprintf("%d, limit has to be greater than zero", limit))
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: fmt.Sprintf("%d, limit has to be greater than zero", limit)})
 		return
 	}
 
-	chats, err := a.chatStorageService.LoadUserChats(c, userUUID.String())
+	a.logger.Info(fmt.Sprintf("Limit => %d", limit))
+
+	chats, err := a.chatStorageService.LoadUserChats(c, userID)
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "no history found for this user"})
 		return
 	}
 
-	if limit > len(chats) {
+	if limit > len(chats) || limit == 0 {
 		limit = len(chats)
 	}
 

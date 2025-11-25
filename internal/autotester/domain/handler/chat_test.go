@@ -256,11 +256,6 @@ func TestGetUserChats(t *testing.T) {
 		expectedStatus   int
 	}{
 		{
-			name:           "error - Invalid ID",
-			requestID:      "124",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
 			name:           "error - No ID",
 			requestID:      "",
 			expectedStatus: http.StatusNotFound,
