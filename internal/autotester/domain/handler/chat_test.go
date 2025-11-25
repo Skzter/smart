@@ -3,10 +3,12 @@ package handler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -234,53 +236,75 @@ func TestHandleUserInfoRequest(t *testing.T) {
 }
 
 func TestGetUserChats(t *testing.T) {
+	correctSortedResponse := []*entity.ChatSummary{
+		{
+			ChatId:    "1",
+			UpdatedAt: time.Now(),
+		},
+		{
+			ChatId:    "2",
+			UpdatedAt: time.Now().Add(-10 * time.Hour),
+		},
+	}
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
-		TestName       string
-		RequestID      string
-		Limit          string
-		Context        context.Context
-		ExpectedStatus int
+		name             string
+		requestID        string
+		limit            string
+		mockResponseLoad []any
+		expectedStatus   int
 	}{
 		{
-			TestName:       "success - Valid ID, default limit",
-			RequestID:      uuid.NewString(),
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusOK,
+			name:           "error - Invalid ID",
+			requestID:      "124",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			TestName:       "error - Invalid ID",
-			RequestID:      "124",
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusBadRequest,
+			name:           "error - No ID",
+			requestID:      "",
+			expectedStatus: http.StatusNotFound,
 		},
 		{
-			TestName:       "error - No ID",
-			RequestID:      "",
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusNotFound,
+			name:           "error - limit is not a number",
+			requestID:      uuid.NewString(),
+			limit:          "hallo",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			TestName:       "error - Valid ID, limit is not a number",
-			RequestID:      uuid.NewString(),
-			Limit:          "hallo",
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusBadRequest,
+			name:           "error - limit is a negative number",
+			requestID:      uuid.NewString(),
+			limit:          "-131",
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			TestName:       "error - Valid ID, limit is a negative number",
-			RequestID:      uuid.NewString(),
-			Limit:          "-131",
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusBadRequest,
+			name:             "error - no chat history for given user found",
+			requestID:        uuid.NewString(),
+			limit:            "123",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			TestName:       "success - Valid ID, limit is a number",
-			RequestID:      uuid.NewString(),
-			Limit:          "5",
-			Context:        t.Context(),
-			ExpectedStatus: http.StatusOK,
+			name:             "success",
+			requestID:        uuid.NewString(),
+			limit:            "5",
+			mockResponseLoad: []any{correctSortedResponse, nil},
+			expectedStatus:   http.StatusOK,
+		},
+		{
+			name:      "success - unsorted array",
+			requestID: uuid.NewString(),
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+			}, nil},
+			expectedStatus: http.StatusOK,
 		},
 	}
 
@@ -288,24 +312,27 @@ func TestGetUserChats(t *testing.T) {
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 
 	for _, tc := range tests {
-		t.Run(tc.TestName, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			if tc.mockResponseLoad != nil {
+				mockChatStorageServ.On("LoadUserChats", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+			}
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
 			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ)
 			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
 
-			endpoint := "/api/v1/chats/" + tc.RequestID + "?limit=" + tc.Limit
+			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
 			router.ServeHTTP(rec, req)
 
-			if rec.Code != tc.ExpectedStatus {
-				t.Errorf("Expected status %d, got %d. Body: %s", tc.ExpectedStatus, rec.Code, rec.Body.String())
+			if rec.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
 			}
 		})
 	}

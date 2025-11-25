@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -110,5 +111,24 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, userUUID)
+	chats, err := a.chatStorageService.LoadUserChats(c, userUUID.String())
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "no history found for this user"})
+		return
+	}
+
+	if limit > len(chats) {
+		limit = len(chats)
+	}
+
+	chats = chats[:limit]
+
+	sort.Slice(chats, func(i, j int) bool {
+		return chats[i].UpdatedAt.After(chats[j].UpdatedAt)
+	})
+
+	c.JSON(http.StatusOK, entity.Chats{
+		Chats: chats,
+	})
 }
