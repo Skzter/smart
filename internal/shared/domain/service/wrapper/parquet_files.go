@@ -13,6 +13,7 @@ import (
 	"github.com/parquet-go/parquet-go/compress/snappy"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -304,7 +305,8 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(parquetData []byte) (*entity.Parq
 	// Create a generic reader to access file metadata
 	file, err := parquet.OpenFile(reader, int64(len(parquetData)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to open parquet file: %w", err)
+		p.logger.Error(fmt.Sprintf("failed to open parquet file: %s", err))
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	schema := file.Schema()

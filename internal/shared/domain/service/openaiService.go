@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -32,8 +31,7 @@ func NewOpenAI(logger *slog.Logger, repo repository.OpenAI) (OpenAI, error) {
 // Request sends a request to the OpenAI repository and returns the response.
 func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Response, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		c.logger.Error(err.Error())
-		return nil, errors.ErrInternalServer
+		return nil, err
 	}
 
 	return c.repo.CreateRequest(ctx, request)

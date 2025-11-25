@@ -53,7 +53,8 @@ func NewOpenAiRepository(logger *slog.Logger, client OpenAIClient, timeout int) 
 	}
 
 	if timeout <= 0 {
-		return nil, fmt.Errorf("invalid timout: %d seconds", timeout)
+		logger.Error(fmt.Sprintf("invalid timout: %d seconds", timeout))
+		return nil, sharedError.ErrInternalServer
 	}
 
 	return &openAI{

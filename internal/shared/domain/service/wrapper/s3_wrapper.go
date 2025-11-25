@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
+	sharedError "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -83,7 +84,8 @@ type S3Wrapper struct {
 // NewS3Wrapper creates a new S3Wrapper instance
 func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper, error) {
 	if err := assert.NotNil(logger); err != nil {
-		return nil, ErrNilLogger
+		logger.Error(fmt.Sprintf("S3 Wrapper is nil, cannot be created: %s", ErrNilLogger))
+		return nil, sharedError.ErrInternalServer
 	}
 
 	if config.Bucket == "" {
@@ -195,7 +197,8 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return fmt.Errorf("failed to upload parquet file: %w", err)
+		s.logger.Error(fmt.Sprintf("failed to upload parquet file: %s", err))
+		return sharedError.ErrInternalServer
 	}
 
 	s.logger.Info("Successfully uploaded parquet file",
@@ -234,7 +237,8 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return nil, nil, fmt.Errorf("failed to download parquet file: %w", err)
+		s.logger.Error(fmt.Sprintf("failed to download parquet file: %s", err))
+		return nil, nil, sharedError.ErrInternalServer
 	}
 	defer func() {
 		if closeErr := result.Body.Close(); closeErr != nil {
@@ -252,7 +256,8 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return nil, nil, fmt.Errorf("failed to read downloaded file: %w", err)
+		s.logger.Error(fmt.Sprintf("failed to read downloaded file: %s", err))
+		return nil, nil, sharedError.ErrInternalServer
 	}
 
 	s.logger.Info("Successfully downloaded parquet file",
@@ -293,7 +298,8 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 				slog.String("bucket", s.config.Bucket),
 				slog.String("error", err.Error()),
 			)
-			return nil, fmt.Errorf("failed to list objects: %w", err)
+			s.logger.Error(fmt.Sprintf("failed to list objects: %s", err))
+			return nil, sharedError.ErrInternalServer
 		}
 
 		for _, obj := range output.Contents {
@@ -340,7 +346,8 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return fmt.Errorf("failed to delete parquet file: %w", err)
+		s.logger.Error(fmt.Sprintf("failed to delete parquet file: %s", err))
+		return sharedError.ErrInternalServer
 	}
 
 	s.logger.Info("Successfully deleted parquet file",
