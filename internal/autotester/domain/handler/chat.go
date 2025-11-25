@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -88,6 +90,23 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	if err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+		return
+	}
+
+	limitStr := c.Query("limit")
+	if limitStr == "" {
+		limitStr = a.config.DefaultLimitChats
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "limit has to be a number"})
+		return
+	}
+
+	if limit <= 0 {
+		a.logger.Error(fmt.Sprintf("%d, limit has to be greater than zero", limit))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: fmt.Sprintf("%d, limit has to be greater than zero", limit)})
 		return
 	}
 

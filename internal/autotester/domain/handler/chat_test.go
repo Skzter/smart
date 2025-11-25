@@ -237,15 +237,14 @@ func TestGetUserChats(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
-		TestName  string
-		RequestID string
-		// fix to struct later
-		ResponseForUser []entity.ChatSummary
-		Context         context.Context
-		ExpectedStatus  int
+		TestName       string
+		RequestID      string
+		Limit          string
+		Context        context.Context
+		ExpectedStatus int
 	}{
 		{
-			TestName:       "success - Valid ID",
+			TestName:       "success - Valid ID, default limit",
 			RequestID:      uuid.NewString(),
 			Context:        t.Context(),
 			ExpectedStatus: http.StatusOK,
@@ -261,6 +260,27 @@ func TestGetUserChats(t *testing.T) {
 			RequestID:      "",
 			Context:        t.Context(),
 			ExpectedStatus: http.StatusNotFound,
+		},
+		{
+			TestName:       "error - Valid ID, limit is not a number",
+			RequestID:      uuid.NewString(),
+			Limit:          "hallo",
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			TestName:       "error - Valid ID, limit is a negative number",
+			RequestID:      uuid.NewString(),
+			Limit:          "-131",
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			TestName:       "success - Valid ID, limit is a number",
+			RequestID:      uuid.NewString(),
+			Limit:          "5",
+			Context:        t.Context(),
+			ExpectedStatus: http.StatusOK,
 		},
 	}
 
@@ -278,7 +298,7 @@ func TestGetUserChats(t *testing.T) {
 			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ)
 			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
 
-			endpoint := "/api/v1/chats/" + tc.RequestID
+			endpoint := "/api/v1/chats/" + tc.RequestID + "?limit=" + tc.Limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
