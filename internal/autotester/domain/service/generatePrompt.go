@@ -44,8 +44,6 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, messages []sharedEn
 
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
-	s.logger.Debug(fmt.Sprint(messages))
-
 	req := sharedEntity.Request{
 		Messages:     messages,
 		Model:        s.config.Model,
