@@ -29,9 +29,9 @@ func getValidEntry() entity.DatabaseEntry {
 	return entity.DatabaseEntry{
 		Request: entity.Request{
 			Header:      map[string]string{"Content-Type": "application/json"},
-			Prompt:      "prompt",
+			Tags:        "Tags",
 			Destination: "http://example.com",
-			Request:     `{}`,
+			Body:        `{}`,
 		},
 		Response: entity.Response{Response: "OK"},
 		Tags: &sharedEntity.TagList{
@@ -41,10 +41,6 @@ func getValidEntry() entity.DatabaseEntry {
 			},
 		},
 	}
-}
-
-func getEmptyTags() *sharedEntity.TagList {
-	return &sharedEntity.TagList{Tags: []sharedEntity.Tag{}}
 }
 
 func TestNewDatabaseRepository(t *testing.T) {
@@ -216,25 +212,46 @@ func TestValidateDbEntry(t *testing.T) {
 		errorText   string
 	}{
 		{
-			name:  "valid entry",
-			entry: getValidEntry(),
+			name: "valid entry",
+			entry: entity.DatabaseEntry{
+				Request: entity.Request{
+					Header:      map[string]string{"Content-Type": "application/json"},
+					Tags:        "Tags",
+					Destination: "http://example.com",
+					Body:        "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     getValidEntry().Tags,
+			},
+			expectError: false,
 		},
 		{
 			name: "invalid request - empty header",
 			entry: entity.DatabaseEntry{
-				Request:  entity.Request{Header: map[string]string{}, Prompt: "prompt", Destination: "url", Request: "{}"},
+				Request: entity.Request{
+					Header:      map[string]string{},
+					Tags:        "Tags",
+					Destination: "http://example.com",
+					Body:        "{}",
+				},
 				Response: entity.Response{Response: "OK"},
 				Tags:     getValidEntry().Tags,
 			},
 			expectError: true,
 			errorText:   "header must not be empty",
 		},
+
 		{
-			name: "invalid tags - empty",
+			name: "invalid request - empty tags",
 			entry: entity.DatabaseEntry{
-				Request:  getValidEntry().Request,
-				Response: getValidEntry().Response,
-				Tags:     getEmptyTags(),
+				Request: entity.Request{
+					Header:      map[string]string{"Content-Type": "application/json"},
+					Tags:        "",
+					Destination: "http://example.com",
+					Body:        "{}",
+				},
+				Response: entity.Response{Response: "OK"},
+				Tags:     getValidEntry().Tags,
 			},
 			expectError: true,
 			errorText:   "tags must not be empty",

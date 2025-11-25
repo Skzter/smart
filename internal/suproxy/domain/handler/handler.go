@@ -63,13 +63,13 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		return
 	}
 
-	if request.Prompt != "" {
-		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Prompt)
+	if request.Tags != "" {
+		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Tags)
 		switch {
 		case err != nil:
 			s.logger.Error("Tag-based search failed", "error", err)
 		case len(matchingKeys) == 0:
-			s.logger.Info("No keys found in prompt", "", nil)
+			s.logger.Info("No keys found in tags")
 		default:
 			s.logger.Info("Matching keys found", "keys", matchingKeys)
 		}
@@ -92,7 +92,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 }
 
 func (s *SuproxyController) fetchOffers(request entity.Request) (*[]byte, int, error) {
-	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Request)))
+	req, err := http.NewRequest(http.MethodPost, request.Destination, bytes.NewBuffer([]byte(request.Body)))
 	if err != nil {
 		return nil, 0, err
 	}
