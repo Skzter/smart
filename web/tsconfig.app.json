@@ -17,7 +17,12 @@
         "checkJs": true,
         "isolatedModules": true,
         "moduleDetection": "force",
-        "strict": true
+        "strict": true,
+        "baseUrl": ".",
+        "paths": {
+              "$lib": ["./src/lib"],
+              "$lib/*": ["./src/lib/*"]
+        }
     },
     "include": [
         "src/**/*.ts",

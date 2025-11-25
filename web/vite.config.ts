@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
 import { svelteTesting } from "@testing-library/svelte/vite";
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -32,4 +33,9 @@ export default defineConfig({
             },
         },
     },
+  resolve: {
+    alias: {
+      $lib: path.resolve("./src/lib"),
+    },
+  },
 });
