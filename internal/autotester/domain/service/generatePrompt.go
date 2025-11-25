@@ -24,7 +24,6 @@ type generatePrompt struct {
 	config         *config.Config
 	logger         *slog.Logger
 	validator      Validator
-	validator      Validator
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
@@ -62,12 +61,12 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 		return "", err
 	}
 
-	if err = assert.StringNotEmpty(msg.Body); err != nil {
+	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrGeneration
 	}
 
-	return msg.Body, nil
+	return resp.Body, nil
 }
 
 // formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template

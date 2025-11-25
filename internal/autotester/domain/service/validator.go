@@ -53,7 +53,6 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		return false, "Invalid Request", err
 	}
 
-
 	if err := s.ValidateRequest(ctx, req); err != nil {
 		return false, "Invalid Request", err
 	}
@@ -65,7 +64,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 	}
 
 	llmResponse := autotesterEntity.LlmValidationResponse{}
-	if err = json.Unmarshal([]byte(msg.Body), &llmResponse); err != nil {
+	if err = json.Unmarshal([]byte(resp.Body), &llmResponse); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
@@ -80,10 +79,6 @@ func (s *validator) ValidateRequest(ctx context.Context, req entity.Request) err
 		return errors.ErrInternalServer
 	}
 
-	if req.SessionID == "" {
-		s.logger.Error("SessionID empty")
-		return errors.ErrValidation
-	}
 	if req.Model == "" {
 		s.logger.Error("Model empty")
 		return errors.ErrValidation

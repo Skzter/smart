@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -17,7 +17,6 @@ import (
 )
 
 //nolint:dupl
-func TestNewValidatorService(t *testing.T) {
 func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
@@ -89,14 +88,12 @@ func TestValidatePrompt(t *testing.T) {
 		t.Fatalf("failed to create validator service: %v", err)
 	}
 
-	sessionID := "die tollste Session ID"
-
 	// Define test cases
 	tests := []struct {
 		name       string
 		userPrompt string
-		mockResp   entity.Response
 		mockErr    error
+		mockResp   entity.Message
 		wantValid  bool
 		wantMsg    string
 		wantErr    error
@@ -104,35 +101,47 @@ func TestValidatePrompt(t *testing.T) {
 		{
 			name:       "valid prompt",
 			userPrompt: "valid Prompt",
-			mockResp:   entity.Response{Text: `{"valid": true, "message": ""}`},
 			mockErr:    nil,
-			wantValid:  true,
-			wantMsg:    "",
-			wantErr:    nil,
+			mockResp: entity.Message{
+				Body: `{
+					"valid": true,
+					"message": ""
+				}`,
+			},
+			wantValid: true,
+			wantMsg:   "",
+			wantErr:   nil,
 		},
 		{
 			name:       "invalid prompt",
 			userPrompt: "invalid Prompt",
-			mockResp:   entity.Response{Text: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`},
 			mockErr:    nil,
-			wantValid:  false,
-			wantMsg:    "alle gründe warum es schiefgelaufen",
-			wantErr:    nil,
+			mockResp: entity.Message{
+				Body: `{
+					"valid": false,
+					"message": "alle gründe warum es schiefgelaufen"
+				}`,
+			},
+			wantValid: false,
+			wantMsg:   "alle gründe warum es schiefgelaufen",
+			wantErr:   nil,
 		},
 		{
 			name:       "invalid JSON response",
 			userPrompt: "invalid json",
-			mockResp:   entity.Response{Text: `not a json`},
 			mockErr:    nil,
-			wantValid:  false,
-			wantMsg:    "",
-			wantErr:    sharedErrors.ErrInternalServer,
+			mockResp: entity.Message{
+				Body: `invalid json`,
+			},
+			wantValid: false,
+			wantMsg:   "",
+			wantErr:   sharedErrors.ErrInternalServer,
 		},
 		{
 			name:       "service error",
 			userPrompt: "service error",
-			mockResp:   entity.Response{},
 			mockErr:    sharedErrors.ErrValidation,
+			mockResp:   entity.Message{},
 			wantValid:  false,
 			wantMsg:    "",
 			wantErr:    sharedErrors.ErrValidation,
@@ -141,17 +150,11 @@ func TestValidatePrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup mock for this test case
-			req := entity.Request{
-				Prompt:       tt.userPrompt,
-				SessionID:    sessionID,
-				Model:        cfg.Model,
-				SystemPrompt: cfg.Prompts.ValidationPrompt,
-			}
-			serviceMock.On("Request", mock.Anything, req).Return(&tt.mockResp, tt.mockErr).Once()
+			serviceMock.EXPECT().Request(mock.Anything, mock.Anything).
+				Return(&tt.mockResp, tt.mockErr).Times(1)
 
 			// Call ValidatePrompt
-			valid, msg, err := svc.ValidatePrompt(context.Background(), tt.userPrompt, sessionID)
+			valid, msg, err := svc.ValidatePrompt(context.Background(), tt.userPrompt)
 
 			// Check results
 			if tt.wantErr != nil {
@@ -182,9 +185,16 @@ func TestValidateRequest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	svc, _ := NewValidatorService(serviceMock, cfg, logger)
 
-	sessionId := "die tollste Session ID"
 	model := "gpt-4"
 	systemPrompt := "You are a helpful assistant."
+	msg = []entity.Message{
+		{
+			Id:        "",
+			Role:      entity.RoleUser,
+			Body:      "some message",
+			CreatedAt: time.Now(),
+		},
+	}
 
 	tests := []struct {
 		name        string
@@ -197,7 +207,7 @@ func TestValidateRequest(t *testing.T) {
 			name: "valid request",
 			ctx:  context.Background(),
 			request: entity.Request{
-				SessionID:    sessionId,
+				Messages:     msg,
 				Model:        model,
 				SystemPrompt: systemPrompt,
 			},
@@ -208,7 +218,7 @@ func TestValidateRequest(t *testing.T) {
 			name: "nil ctx",
 			ctx:  nil,
 			request: entity.Request{
-				SessionID:    sessionId,
+				Messages:     msg,
 				Model:        model,
 				SystemPrompt: systemPrompt,
 			},
@@ -216,21 +226,10 @@ func TestValidateRequest(t *testing.T) {
 			expectedErr: sharedErrors.ErrInternalServer,
 		},
 		{
-			name: "empty SessionID",
-			ctx:  context.Background(),
-			request: entity.Request{
-				SessionID:    "",
-				Model:        model,
-				SystemPrompt: systemPrompt,
-			},
-			wantErr:     true,
-			expectedErr: sharedErrors.ErrValidation,
-		},
-		{
 			name: "empty Model",
 			ctx:  context.Background(),
 			request: entity.Request{
-				SessionID:    sessionId,
+				Messages:     msg,
 				Model:        "",
 				SystemPrompt: systemPrompt,
 			},
@@ -241,7 +240,7 @@ func TestValidateRequest(t *testing.T) {
 			name: "empty SystemPrompt",
 			ctx:  context.Background(),
 			request: entity.Request{
-				SessionID:    sessionId,
+				Messages:     msg,
 				Model:        model,
 				SystemPrompt: "",
 			},

@@ -160,7 +160,7 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
+			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
 
 			if tt.expectErr {
 				assert.NotNil(t, err)
