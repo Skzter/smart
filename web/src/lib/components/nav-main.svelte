@@ -1,7 +1,12 @@
 <script lang="ts">
 	import * as Collapsible from "$lib/components/ui/collapsible/index.js";
 	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+	import NewChat from "@lucide/svelte/icons/plus";
+	import Calendar from "@lucide/svelte/icons/calendar";
+	import { Button } from "$lib/components/ui/button/index.js";
 	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+	import * as Popover from "$lib/components/ui/popover/index.js";
+	import { buttonVariants } from "$lib/components/ui/button/index.js";
 
 	let {
 		items,
@@ -19,7 +24,36 @@
 			}[];
 		}[];
 	} = $props();
+    
+	// Change this to any lucide icon to swap the icon used for the Login button
+	let loginIcon: any = NewChat;
 </script>
+
+<!-- Add a top button above the Platform group -->
+<Sidebar.Menu>
+	<Sidebar.MenuItem class="px-3 py-2">
+		<!-- Use the Button UI component inside a MenuItem; avoid nested buttons by not using Sidebar.MenuButton here -->
+		<div class="px-1">
+			<Button variant="outline" size="lg" class="w-full justify-start gap-3 h-14">
+				<!-- static icon usage (simple) -->
+				<NewChat class="size-5" />
+				New Chat
+			</Button>
+		</div>
+	</Sidebar.MenuItem>
+
+	<Sidebar.MenuItem class="px-3 py-2">
+		<!-- Use the Button UI component inside a MenuItem; avoid nested buttons by not using Sidebar.MenuButton here -->
+		<div class="px-1">
+			<Button variant="outline" size="lg" class="w-full justify-start gap-3 h-14">
+				<!-- static icon usage (simple) -->
+				<Calendar class="size-5" />
+				Calendar
+			</Button>
+		</div>
+	</Sidebar.MenuItem>
+
+</Sidebar.Menu>
 
 <Sidebar.Group>
 	<Sidebar.GroupLabel>Platform</Sidebar.GroupLabel>
