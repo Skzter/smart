@@ -61,9 +61,9 @@ func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout)
 }
 
-// SessionSummaryParquetWrapperProvider provides a new session summary parquet wrapper.
-func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.SessionSummary], error) {
-	return wrapperService.NewParquetWrapper[entity.SessionSummary](logger, cfg)
+// ChatParquetWrapperProvider provides a new session summary parquet wrapper.
+func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
+	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg)
 }
 
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.

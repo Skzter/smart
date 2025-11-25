@@ -200,16 +200,16 @@ func validateRequest(rq entity.Request) error {
 		return fmt.Errorf("header must not be empty")
 	}
 
-	if err := assert.StringNotEmpty(rq.Prompt); err != nil {
-		return fmt.Errorf("prompt must not be empty: %w", err)
+	if err := assert.StringNotEmpty(rq.Tags); err != nil {
+		return fmt.Errorf("tags must not be empty: %w", err)
 	}
 
 	if err := assert.StringNotEmpty(rq.Destination); err != nil {
 		return fmt.Errorf("destination must not be empty: %w", err)
 	}
 
-	if err := assert.StringNotEmpty(rq.Request); err != nil {
-		return fmt.Errorf("request must not be empty: %w", err)
+	if err := assert.StringNotEmpty(rq.Body); err != nil {
+		return fmt.Errorf("body must not be empty: %w", err)
 	}
 	return nil
 }

@@ -21,8 +21,8 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	if userRequest.SessionId == "" {
-		userRequest.SessionId = uuid.New().String()
+	if userRequest.ChatId == "" {
+		userRequest.ChatId = uuid.New().String()
 	}
 
 	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
@@ -35,9 +35,9 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	if !valid {
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
-				Message:   sharedEntity.Message{Body: msg},
-				UserId:    userRequest.UserId,
-				SessionId: userRequest.SessionId,
+				Message: sharedEntity.Message{Body: msg},
+				UserId:  userRequest.UserId,
+				ChatId:  userRequest.ChatId,
 			})
 		return
 	}
@@ -51,9 +51,9 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 
 	c.JSON(http.StatusOK,
 		&entity.ResponseForUser{
-			Message:   sharedEntity.Message{Body: generatedCode},
-			UserId:    userRequest.UserId,
-			SessionId: userRequest.SessionId,
+			Message: sharedEntity.Message{Body: generatedCode},
+			UserId:  userRequest.UserId,
+			ChatId:  userRequest.ChatId,
 		})
 }
 
@@ -66,7 +66,7 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
-	c.JSON(http.StatusOK, entity.ResponseForUser{SessionId: resp.SessionId})
+	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
 }
 
 // GetChatById returns a full chat including all messages for a given chatId and userId.
