@@ -58,10 +58,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 		return err
 	}
 	if err := validateTaglist(taglist); err != nil {
-		tR.logger.Error("validation failed, for TagList",
-			slog.Any("error", err),
-			slog.String("category", "validation"),
-		)
+		tR.logger.Error(fmt.Sprintf("validation failed, for TagList: %s", err))
 		return errors.ErrValidation
 	}
 
