@@ -187,7 +187,7 @@ func TestValidateRequest(t *testing.T) {
 
 	model := "gpt-4"
 	systemPrompt := "You are a helpful assistant."
-	msg = []entity.Message{
+	msg := []entity.Message{
 		{
 			Id:        "",
 			Role:      entity.RoleUser,
