@@ -2,27 +2,87 @@
     import { Button, Spinner, Modal, type ModalProps } from "flowbite-svelte";
     import { saveTestLocal, runContainer } from "../lib/Api.ts";
     import { AxiosError } from "axios";
-    import Prism from "prismjs/components/prism-core";
-    import "prismjs/components/prism-clike";
-    import "prismjs/components/prism-javascript";
-    import "prismjs/components/prism-typescript";
-    import "prismjs/themes/prism.css";
+    import moo from "moo";
 
     let { msg, name, userId, conversationId, showSave = false } = $props();
-
-    const highlighted = isTypeScript(msg)
-    ? Prism.highlight(msg.trim(), Prism.languages.typescript, "typescript")
-    : msg;
 
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
 
-    function isTypeScript(msg: string): boolean {
-        const codeKeywords = ["const ", "let ", "function ", "class ", "import ", "interface "];
-        const codeSymbols = ["{", "}", "=>"];
-        return codeKeywords.some(kw => msg.includes(kw)) || codeSymbols.some(sym => msg.includes(sym));
+    // Moo lexer configuration
+    const lexer = moo.compile({
+        comment: /\/\/.*?$/,
+        string: /"(?:\\["\\]|[^\n"\\])*"|'(?:\\['\\]|[^\n'\\])*'|`(?:\\[`\\]|[^`\\])*`/,
+        keyword: [
+            "import",
+            "from",
+            "const",
+            "let",
+            "var",
+            "function",
+            "async",
+            "await",
+            "if",
+            "else",
+            "for",
+            "while",
+            "return",
+            "export",
+            "default",
+            "class",
+            "extends",
+            "new",
+            "this",
+            "super",
+            "try",
+            "catch",
+            "throw",
+            "finally",
+            "break",
+            "continue",
+            "switch",
+            "case",
+            "typeof",
+            "instanceof",
+            "void",
+            "delete",
+            "in",
+            "of",
+            "interface",
+            "type",
+            "enum",
+            "namespace",
+            "module",
+            "declare",
+            "public",
+            "private",
+            "protected",
+            "static",
+            "readonly",
+            "abstract",
+        ],
+        functionCall: /[a-zA-Z_$][a-zA-Z0-9_$]*(?=\s*\()/,
+        identifier: /[a-zA-Z_$][a-zA-Z0-9_$]*/,
+        number: /0x[a-fA-F0-9]+|[0-9]+\.?[0-9]*/,
+        operator: /=>|[+\-*/%=<>!&|^~?:]+/,
+        punctuation: /[{}[\]();,.]/,
+        whitespace: { match: /\s+/, lineBreaks: true },
+    });
+
+    function tokenize(text: string) {
+        lexer.reset(text);
+        const tokens = [];
+        let token;
+
+        while ((token = lexer.next())) {
+            tokens.push(token);
+        }
+
+        return tokens;
     }
+
+    let tokens = $derived(tokenize(msg));
 
     async function saveTest(testcode: string) {
         if (!userId || !conversationId) {
@@ -124,10 +184,14 @@
         class:w-[75%]={name === "User"}
         class:w-fit={name === "Bot"}
         class:bg-sky-300={name === "User"}
-        class:bg-gray-200={name === "Bot"}
+        class:bg-gray-200={name === "Bot" && !showSave}
+        class:bg-(--catppuccin-background)={name === "Bot" && showSave}
     >
         <div class="flex items-start justify-between">
-            <h1 class="tracking-wide uppercase font-bold text-xl">
+            <h1
+                class="tracking-wide uppercase font-bold text-xl"
+                class:text-white={name === "Bot" && showSave}
+            >
                 {name}
             </h1>
             <div class="flex">
@@ -164,7 +228,17 @@
                 </div>
             </div>
         </div>
-        <pre class="language-typescript whitespace-pre-wrap break-words font-mono text-sm"><code class="language-typescript">{@html highlighted}</code></pre>
+        {#if showSave}
+            <pre
+                class="font-sans text-base leading-relaxed whitespace-pre-wrap break-words">{#each tokens as token}<span
+                        class="token-{token.type}">{token.value}</span
+                    >{/each}</pre>
+        {:else}
+            <p class="font-sans whitespace-pre-wrap break-words">
+                {msg}
+            </p>
+        {/if}
+
         {#if testId && saveState === "success"}
             <p class="text-xs text-gray-600 mt-2 font-mono">
                 Test ID: {testId}

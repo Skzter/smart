@@ -20,6 +20,9 @@ importers:
       flowbite-svelte:
         specifier: ^1.28.0
         version: 1.28.0(rollup@4.53.2)(svelte@5.43.6)(tailwindcss@4.1.17)
+      moo:
+        specifier: ^0.5.2
+        version: 0.5.2
       prismjs:
         specifier: ^1.30.0
         version: 1.30.0
@@ -1713,6 +1716,9 @@ packages:
   minipass@7.1.2:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
     engines: {node: '>=16 || 14 >=14.17'}
+
+  moo@0.5.2:
+    resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -3931,6 +3937,8 @@ snapshots:
       brace-expansion: 2.0.2
 
   minipass@7.1.2: {}
+
+  moo@0.5.2: {}
 
   mri@1.2.0: {}
 

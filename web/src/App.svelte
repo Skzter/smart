@@ -15,6 +15,20 @@
     // Note: We should ideally get this from a backend state associated with the user
     var conversationId = $state(localStorage.getItem("conversationId") || "");
 
+    onMount(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const updateTheme = () => {
+            document.documentElement.setAttribute(
+                "data-theme",
+                media.matches ? "dark" : "light",
+            );
+        };
+
+        media.addEventListener("change", updateTheme);
+        updateTheme();
+    });
+
     onMount(async () => {
         await auth.initAuth();
     });

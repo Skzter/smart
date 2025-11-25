@@ -11,8 +11,18 @@ describe("Box component", () => {
         vi.clearAllMocks();
     });
 
-    function getCodeElement(container: HTMLElement) {
-        return container.querySelector("code.language-typescript");
+    // Updated helper function to handle both showSave cases
+    function getMessageElement(
+        container: HTMLElement,
+        showSave: boolean = false,
+    ) {
+        if (showSave) {
+            // When showSave is true, content is in <pre> with tokenized spans
+            return container.querySelector("pre");
+        } else {
+            // When showSave is false, content is in <p> tag
+            return container.querySelector("p");
+        }
     }
 
     describe('when the message is from "User"', () => {
@@ -27,9 +37,9 @@ describe("Box component", () => {
             const nameElement = screen.getByText("User");
             expect(nameElement).toBeInTheDocument();
 
-            const codeElement = getCodeElement(container);
-            expect(codeElement).toBeInTheDocument();
-            expect(codeElement?.textContent).toContain(
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain(
                 "This is a message from User!",
             );
 
@@ -53,9 +63,9 @@ describe("Box component", () => {
             const nameElement = screen.getByText("Bot");
             expect(nameElement).toBeInTheDocument();
 
-            const codeElement = getCodeElement(container);
-            expect(codeElement).toBeInTheDocument();
-            expect(codeElement?.textContent).toContain(
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain(
                 "This is a message from Bot!",
             );
 
@@ -79,9 +89,9 @@ describe("Box component", () => {
             const nameElement = screen.getByText("Test");
             expect(nameElement).toBeInTheDocument();
 
-            const codeElement = getCodeElement(container);
-            expect(codeElement).toBeInTheDocument();
-            expect(codeElement?.textContent).toContain("Test Message");
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain("Test Message");
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).not.toHaveClass("justify-end", "justify-start");
@@ -105,9 +115,9 @@ describe("Box component", () => {
                 conversationId: "test-conv-456",
             });
 
-            const codeElement = getCodeElement(container);
-            expect(codeElement).toBeInTheDocument();
-            expect(codeElement?.textContent).toContain("Empty name test");
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain("Empty name test");
 
             const nameElement = screen.getByRole("heading", { level: 1 });
             expect(nameElement).toBeInTheDocument();
@@ -132,9 +142,9 @@ describe("Box component", () => {
             const nameElement = screen.getByText("User");
             expect(nameElement).toBeInTheDocument();
 
-            const codeElement = getCodeElement(container);
-            expect(codeElement).toBeInTheDocument();
-            expect(codeElement?.textContent?.trim()).toBe("");
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent?.trim()).toBe("");
         });
     });
 
@@ -150,6 +160,21 @@ describe("Box component", () => {
 
             const saveButton = screen.getByRole("button", { name: /save/i });
             expect(saveButton).toBeInTheDocument();
+        });
+
+        it("renders code with syntax highlighting in pre element", () => {
+            const { container } = render(Box, {
+                msg: "const x = 5;",
+                name: "Bot",
+                userId: "test-user-123",
+                conversationId: "test-conv-456",
+                showSave: true,
+            });
+
+            const codeElement = getMessageElement(container, true);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.tagName).toBe("PRE");
+            expect(codeElement?.textContent).toContain("const x = 5;");
         });
     });
 
@@ -201,8 +226,8 @@ describe("Box component", () => {
                 code: "test code",
             });
 
-            // ensure message still rendered (optional sanity)
-            const codeElement = getCodeElement(container);
+            // Ensure message still rendered (optional sanity check)
+            const codeElement = getMessageElement(container, true);
             expect(codeElement?.textContent).toContain("test code");
         });
 
@@ -708,4 +733,3 @@ describe("Box component", () => {
         });
     });
 });
-

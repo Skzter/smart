@@ -45,3 +45,72 @@
 @import "@skeletonlabs/skeleton/themes/cerberus";
 
 @source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
+
+/* Tokenizer Setup */
+:root {
+    --token-keyword-color: #569cd6;
+    --token-keyword-weight: 600;
+
+    --token-function-color: #dcdcaa;
+
+    --token-string-color: #ce9178;
+    --token-comment-color: #6a9955;
+    --token-comment-style: italic;
+
+    --token-identifier-color: #9cdcfe;
+    --token-number-color: #b5cea8;
+    --token-operator-color: #d4d4d4;
+    --token-punctuation-color: #d4d4d4;
+}
+
+/* Catppuccin Mocha Dark Theme */
+[data-theme="dark"] {
+    --catppuccin-background: #1e1e2e;
+    --token-keyword-color: #cba6f7; /* Mauve */
+    --token-function-color: #89b4fa; /* Blue */
+    --token-string-color: #a6e3a1; /* Green */
+    --token-comment-color: #6c7086; /* Overlay0 */
+    --token-comment-style: italic;
+    --token-identifier-color: #f38ba8; /* Red */
+    --token-number-color: #fab387; /* Peach */
+    --token-operator-color: #f5c2e7; /* Pink */
+    --token-punctuation-color: #bac2de; /* Subtext1 */
+}
+
+.token-keyword {
+    color: var(--token-keyword-color);
+    font-weight: var(--token-keyword-weight);
+}
+
+.token-functionCall {
+    color: var(--token-function-color);
+}
+
+.token-string {
+    color: var(--token-string-color);
+}
+
+.token-comment {
+    color: var(--token-comment-color);
+    font-style: var(--token-comment-style);
+}
+
+.token-identifier {
+    color: var(--token-identifier-color);
+}
+
+.token-number {
+    color: var(--token-number-color);
+}
+
+.token-operator {
+    color: var(--token-operator-color);
+}
+
+.token-punctuation {
+    color: var(--token-punctuation-color);
+}
+
+.token-whitespace {
+    white-space: pre;
+}
