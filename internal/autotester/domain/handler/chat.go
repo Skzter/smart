@@ -68,3 +68,34 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, entity.ResponseForUser{SessionId: resp.SessionId})
 }
+
+// GetChatById returns a full chat including all messages for a given chatId and userId.
+// Route: GET /api/v1/chats/{chatId}?userId=...
+func (a *AutotesterController) GetChatById(c *gin.Context) {
+	chatID := c.Param("chatId")
+	userID := c.Query("userId")
+
+	// Validate required parameters
+	if chatID == "" || userID == "" {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "chatId and userId are required"})
+		return
+	}
+
+	// TODO (#131): Hier später den echten Service-Aufruf einbauen:
+	// chat, err := a.chatService.LoadChat(c.Request.Context(), chatID, userID)
+	// if errors.Is(err, domainErr.ErrNotFound) {
+	//     c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
+	//     return
+	// }
+	// if err != nil {
+	//     a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+	//     c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
+	//     return
+	// }
+	// c.JSON(http.StatusOK, chat)
+
+	// Platzhalter, bis #131 den Storage+Service liefert:
+	c.JSON(http.StatusNotImplemented, entity.ErrorMessage{
+		Error: "LoadChat not implemented yet (blocked by #131)",
+	})
+}
