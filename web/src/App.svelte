@@ -13,7 +13,7 @@
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
-    var conversationId = $state(localStorage.getItem("conversationId") || "");
+    var conversationId = $state("");
 
     onMount(async () => {
         await auth.initAuth();
@@ -29,7 +29,7 @@
     });
 
     let paramsChatRequest = $derived({
-        message: { body: "", role: "user" },
+        prompt: "",
         userId: userId,
         conversationId: conversationId,
     });
@@ -49,12 +49,14 @@
             answer: "",
         });
         isLoading = true;
-        paramsChatRequest.message.body = userQuestion;
+        paramsChatRequest.prompt = userQuestion;
         paramsChatRequest.userId = userId;
+        paramsChatRequest.conversationId = conversationId;
 
         try {
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
             convo[convo.length - 1].answer = answer.data.message.body;
+            conversationId = answer.data.conversationId ?? ""
         } catch (err) {
             if (err.isAxiosError) {
                 convo[convo.length - 1].answer = err.response.data.message;

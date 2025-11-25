@@ -65,3 +65,4 @@ packages:
       TestcaseLocalStorageService:
       Docker:
       DockerClient:
+      Chat:

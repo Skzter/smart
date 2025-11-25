@@ -139,7 +139,7 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
+			got, err := svc.GeneratePrompt(tt.ctx, []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: "prompt"}})
 
 			if tt.expectErr {
 				assert.NotNil(t, err)

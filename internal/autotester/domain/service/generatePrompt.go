@@ -14,7 +14,7 @@ import (
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
-	GeneratePrompt(ctx context.Context, userPrompt string) (string, error)
+	GeneratePrompt(ctx context.Context, messages []sharedEntity.Message) (string, error)
 }
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
@@ -36,7 +36,7 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
-func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) (string, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, messages []sharedEntity.Message) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrInternalServer
@@ -44,8 +44,10 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
+	s.logger.Debug(fmt.Sprint(messages))
+
 	req := sharedEntity.Request{
-		Messages:     []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: userPrompt}},
+		Messages:     messages,
 		Model:        s.config.Model,
 		SystemPrompt: prompt,
 	}

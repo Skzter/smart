@@ -86,26 +86,26 @@ func TestValidatePrompt(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
 
-	validPrompt := "valid Prompt"
-	invalidPrompt := "invalid Prompt"
-	invalidJson := "invalid json"
+	validMessages := []entity.Message{{Role: entity.RoleUser, Body: "valid prompt"}}
+	invalidMessages := []entity.Message{{Role: entity.RoleUser, Body: "invalid prompt"}}
+	invalidJsonMessages := []entity.Message{{Role: entity.RoleUser, Body: "invalid json"}}
 
 	validRequest := entity.Request{
-		Messages: []entity.Message{{Role: "user", Body: validPrompt}},
+		Messages: validMessages,
 	}
 	validResponse := entity.Message{
 		Body: `{"valid": true, "message": ""}`,
 	}
 
 	invalidRequest := entity.Request{
-		Messages: []entity.Message{{Role: "user", Body: invalidPrompt}},
+		Messages: invalidMessages,
 	}
 	invalidResponse := entity.Message{
 		Body: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
 	}
 
 	invalidJsonRequest := entity.Request{
-		Messages: []entity.Message{{Role: "user", Body: invalidJson}},
+		Messages: invalidJsonMessages,
 	}
 	invalidJsonResponse := entity.Message{
 		Body: "no json",
@@ -134,7 +134,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			request: entity.Request{
-				Messages: []entity.Message{{Role: "user", Body: ""}},
+				Messages: []entity.Message{{Role: "user", Body: "service err"}},
 			},
 			response:    nil,
 			returnError: sharedErrors.ErrInternalServer,
@@ -143,7 +143,7 @@ func TestValidatePrompt(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		userPrompt  string
+		messages    []entity.Message
 		ctx         context.Context
 		wantErr     bool
 		isValid     bool
@@ -151,7 +151,7 @@ func TestValidatePrompt(t *testing.T) {
 	}{
 		{
 			name:        "valid request without changes",
-			userPrompt:  validPrompt,
+			messages:    validMessages,
 			ctx:         context.Background(),
 			wantErr:     false,
 			isValid:     true,
@@ -159,7 +159,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:        "valid request but with changes",
-			userPrompt:  invalidPrompt,
+			messages:    invalidMessages,
 			ctx:         context.Background(),
 			wantErr:     false,
 			isValid:     false,
@@ -167,7 +167,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:        "invalid json",
-			userPrompt:  invalidJson,
+			messages:    invalidJsonMessages,
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
@@ -175,7 +175,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:        "nil ctx",
-			userPrompt:  validPrompt,
+			messages:    validMessages,
 			ctx:         nil,
 			wantErr:     true,
 			isValid:     false,
@@ -183,7 +183,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:        "service error",
-			userPrompt:  "",
+			messages:    []entity.Message{{Role: "user", Body: "service err"}},
 			ctx:         context.Background(),
 			wantErr:     true,
 			isValid:     false,
@@ -197,7 +197,7 @@ func TestValidatePrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt)
+			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.messages)
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				if !errors.Is(err, tt.expectedErr) {

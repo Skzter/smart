@@ -18,14 +18,15 @@ import (
 
 func validChat() *entity.Chat {
 	return &entity.Chat{
-		Id:            "chat123",
-		UserId:        "user123",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		LastTest:      "test123",
-		SystemPrompt:  "sys prompt",
-		InitialPrompt: "usr prompt",
-		Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
+		Id:                       "chat123",
+		UserId:                   "user123",
+		CreatedAt:                time.Now(),
+		UpdatedAt:                time.Now(),
+		LastTest:                 "test123",
+		LastAutoPlaywrightPrompt: "apw prompt",
+		LastValidationPrompt:     "val prompt",
+		InitialUserPrompt:        "usr prompt",
+		Messages:                 []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
 	}
 }
 
