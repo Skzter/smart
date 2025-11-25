@@ -22,6 +22,7 @@ import (
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 )
@@ -32,6 +33,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
+		OpenAiServiceProvider,
 		FileSystemProvider,
 		LogFileSystemProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -62,6 +64,11 @@ func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
+// OpenAiServiceProvider provides a new OpenAI service.
+func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedService.OpenAI, error) {
+	return sharedService.NewOpenAI(repo, tracer)
+}
+
 // ChatParquetWrapperProvider provides a new session summary parquet wrapper.
 func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
 	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg, tracer)
@@ -72,42 +79,15 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
 }
 
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
+
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
-	return wrapperService.NewS3Wrapper(logger, config)
-}
-
-// FileSystemProvider provides a new filesystem.
-func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
-	return repository.NewOSFileSystem(cfg.TestsRootDir)
-}
-
-// LogFileSystemProvider provides a filesystem for logs
-func LogFileSystemProvider(cfg *config.Config) (repository.LogFileSystem, error) {
-	return repository.NewLogFileSystem(cfg.LogDirAutopw)
-}
-
-func DockerClientProvider() (service.DockerClient, error) {
-	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-}
-
-func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
-	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
-}
-
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {
-	config := wrapperEntity.S3Config{
-		Region:    cfg.Region,
-		Bucket:    cfg.Bucket,
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
-	}
-	return wrapperService.NewS3Wrapper(logger, config)
+	return wrapperService.NewS3Wrapper(logger, config, tracer)
 }
 
 // FileSystemProvider provides a new filesystem.

@@ -31,7 +31,14 @@ type generatePrompt struct {
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService sharedService.TaglistStorage, config *config.Config, logger *slog.Logger, tracer trace.Tracer) (GeneratePrompt, error) {
+// nolint:lll
+func NewGeneratePromptService(
+	openaiService sharedService.OpenAI,
+	taglistService sharedService.TaglistStorage,
+	config *config.Config,
+	logger *slog.Logger,
+	tracer trace.Tracer,
+) (GeneratePrompt, error) {
 	if err := assert.NotNil(openaiService, taglistService, config, logger, tracer); err != nil {
 		return nil, err
 	}
@@ -42,13 +49,13 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
 func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) (string, error) {
-	ctx, span := s.tracer.Start(ctx, "generatePrompt.GeneratePrompt")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrInternalServer
 	}
+
+	ctx, span := s.tracer.Start(ctx, "generatePrompt.GeneratePrompt")
+	defer span.End()
 
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 

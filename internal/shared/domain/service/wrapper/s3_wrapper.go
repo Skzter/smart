@@ -156,14 +156,12 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 
 // UploadParquetFile uploads a parquet file to S3
 func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.UploadParquetFile")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.UploadParquetFile")
+	defer span.End()
 
 	if key == "" {
 		err := ErrEmptyKey
@@ -235,14 +233,12 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 
 // DownloadParquetFile downloads a parquet file from S3
 func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte, map[string]string, error) {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DownloadParquetFile")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return nil, nil, ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DownloadParquetFile")
+	defer span.End()
 
 	if key == "" {
 		err := ErrEmptyKey
@@ -312,14 +308,12 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 
 // ListParquetFiles lists all parquet files in the bucket with optional prefix
 func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]string, error) {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.ListParquetFiles")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return nil, ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.ListParquetFiles")
+	defer span.End()
 
 	s.logger.Info("Listing parquet files",
 		slog.String("bucket", s.config.Bucket),
@@ -374,14 +368,12 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 
 // DeleteParquetFile deletes a parquet file from S3
 func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DeleteParquetFile")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DeleteParquetFile")
+	defer span.End()
 
 	if key == "" {
 		err := ErrEmptyKey
@@ -428,14 +420,12 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 
 // FileExists checks if a parquet file exists in S3
 func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.FileExists")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return false, ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.FileExists")
+	defer span.End()
 
 	if key == "" {
 		err := ErrEmptyKey
@@ -472,14 +462,12 @@ func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
 
 // GetFileSize returns the size of a parquet file in S3
 func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) {
-	ctx, span := s.tracer.Start(ctx, "S3Wrapper.GetFileSize")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return 0, ErrNilContext
 	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.GetFileSize")
+	defer span.End()
 
 	if key == "" {
 		err := ErrEmptyKey

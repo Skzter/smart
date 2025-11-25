@@ -32,14 +32,12 @@ func NewOpenAI(repo repository.OpenAI, tracer trace.Tracer) (OpenAI, error) {
 
 // Request sends a request to the OpenAI repository and returns the response.
 func (c *openAI) Request(ctx context.Context, request entity.Request) (*entity.Message, error) {
-	ctx, span := c.tracer.Start(ctx, "openAI.Request")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return nil, err
 	}
+
+	ctx, span := c.tracer.Start(ctx, "openAI.Request")
+	defer span.End()
 
 	resp, err := c.repo.CreateRequest(ctx, request)
 	if err != nil {

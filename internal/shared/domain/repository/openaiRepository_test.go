@@ -133,6 +133,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 func TestOpenaiReposCreateRequest(t *testing.T) {
 	model := openai.GPT4Dot1Nano20250414
 	timeout := 5
+	tracer := otel.Tracer("test")
 
 	mockClient := mocks.NewMockOpenAIClient(t)
 
@@ -386,7 +387,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, _ := NewOpenAiRepository(mockClient, timeout)
+			repo, _ := NewOpenAiRepository(mockClient, timeout, tracer)
 			_, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {

@@ -70,12 +70,12 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		MessageCount: len(obj.Messages),
 	}
 
-	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(*obj)
+	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(ctx, *obj)
 	if err != nil {
 		return err
 	}
 
-	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(summary)
+	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(ctx, summary)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 		return nil, err
 	}
 
-	items, err := r.chatParquetWrapper.ReadStructsFromParquet(data)
+	items, err := r.chatParquetWrapper.ReadStructsFromParquet(ctx, data)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string)
 			r.logger.Error("ListAll: failed to download file", "key", key, "error", err)
 			continue
 		}
-		summary, err := r.summaryParquetWrapper.ReadStructsFromParquet(parquetData)
+		summary, err := r.summaryParquetWrapper.ReadStructsFromParquet(ctx, parquetData)
 		if err != nil {
 			r.logger.Error("ListAll: failed to read parquet data", "key", key, "error", err)
 			continue

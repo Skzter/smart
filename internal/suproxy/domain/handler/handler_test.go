@@ -21,8 +21,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
-	service_intf "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 type slicewriter struct {
@@ -46,7 +45,7 @@ func (s *slicewriter) len() int {
 	return len(s.data)
 }
 
-func RejectValidator(t testing.TB) service_intf.Validator {
+func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
 	discardValidator.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
@@ -59,9 +58,9 @@ func TestNewSuproxyController(t *testing.T) {
 		name       string
 		log        *slog.Logger
 		cfg        *config.Config
-		val        service_intf.Validator
+		val        service.Validator
 		clt        *http.Client
-		db         service_intf.DatabaseService
+		db         service.DatabaseService
 		syncer     service.TaglistSync
 		tagservice service.TagSearchService
 		err        bool
@@ -92,7 +91,7 @@ func TestNewSuproxyController(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice, tracer)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tracer, tt.syncer, tt.tagservice)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -226,22 +225,15 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		},
 	}
 
-	validator := RejectValidator(t)
-	mockDB := mocks.NewMockDatabaseService(t)
-	tracer := otel.Tracer("test")
-
-	h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, tracer)
-
-	router := SetupRouter(h)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			validator := RejectValidator(t)
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
 			mockTagsearch := mocks.NewMockTagSearchService(t)
+			tracer := otel.Tracer("test")
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
@@ -391,7 +383,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch, tracer)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -459,9 +451,9 @@ func BenchmarkPostOfferList(b *testing.B) {
 		RejectValidator(b),
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
+		tracer,
 		mocks.NewMockTaglistSync(b),
 		mocks.NewMockTagSearchService(b),
-		tracer,
 	)
 
 	router := SetupRouter(ctrl)

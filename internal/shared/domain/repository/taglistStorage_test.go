@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 )
 
 const EntryPrefix = "taglist/"
@@ -79,7 +79,7 @@ func TestCreateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
@@ -164,7 +164,7 @@ func TestReadTaglist(t *testing.T) {
 			}
 
 			if tt.readReturns != nil {
-				parquet.On("ReadStructsFromParquet", mock.Anything).Return(*tt.readReturns...)
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).Return(*tt.readReturns...)
 			}
 
 			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
@@ -257,7 +257,7 @@ func TestUpdateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
 			if tt.downloadReturns != nil {

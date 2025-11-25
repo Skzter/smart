@@ -16,6 +16,7 @@ import (
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	wconfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	wrapper "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/application"
@@ -36,6 +37,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		HTTPClientProvider,
 		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
+		OpenAiServiceProvider,
 		service.NewDatabaseService,
 		DatabaseRepositoryProvider,
 		service.NewTaglistSync,
@@ -62,6 +64,11 @@ func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
+// OpenAiServiceProvider provides a new OpenAI service.
+func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedService.OpenAI, error) {
+	return sharedService.NewOpenAI(repo, tracer)
+}
+
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
@@ -85,31 +92,17 @@ func DatabaseRepositoryProvider(
 	cfg *config.Config,
 	s3wrapper wrapper.S3StorageWrapper,
 	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
+	tracer trace.Tracer,
 ) (repository.DatabaseRepository, error) {
 	return repository.NewDatabaseRepository(
 		logger,
 		s3wrapper,
 		parquetWrapper,
+		tracer,
 		cfg.EntryPrefix,
 	)
-}
-func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
-	return service.NewTagSearchService(cfg, s3)
 }
 
-func DatabaseRepositoryProvider(
-	logger *slog.Logger,
-	cfg *config.Config,
-	s3wrapper wrapper.S3StorageWrapper,
-	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
-) (repository.DatabaseRepository, error) {
-	return repository.NewDatabaseRepository(
-		logger,
-		s3wrapper,
-		parquetWrapper,
-		cfg.EntryPrefix,
-	)
-}
 func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
 }

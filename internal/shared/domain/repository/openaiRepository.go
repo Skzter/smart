@@ -55,14 +55,12 @@ func NewOpenAiRepository(client OpenAIClient, timeout int, tracer trace.Tracer) 
 // CreateRequest sends a request to the OpenAI API and returns the response.
 // It takes a Request entity containing the model and prompts, a context for cancellation,
 func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entity.Message, error) {
-	ctx, span := qa.tracer.Start(ctx, "openAI.CreateRequest")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return nil, err
 	}
+
+	ctx, span := qa.tracer.Start(ctx, "openAI.CreateRequest")
+	defer span.End()
 
 	if err := validateRequestEntity(req); err != nil {
 		span.RecordError(err)

@@ -77,6 +77,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
+// nolint:funlen
 func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
 	ctx, span := v.tracer.Start(ctx, "validator.Validate")
 	defer span.End()

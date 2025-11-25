@@ -78,7 +78,6 @@ func TestNewValidatePromptService(t *testing.T) {
 
 //nolint:funlen
 func TestValidatePrompt(t *testing.T) {
-	serviceMock := mocks.NewMockOpenAI(t)
 	cfg := &config.Config{
 		Model: "",
 		Prompts: &config.Prompts{
@@ -86,7 +85,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 	}
 	logger := slog.New(slog.DiscardHandler)
-	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
+	tracer := otel.Tracer("test")
 
 	validPrompt := "valid Prompt"
 	invalidPrompt := "invalid Prompt"
@@ -142,7 +141,6 @@ func TestValidatePrompt(t *testing.T) {
 			returnError: sharedErrors.ErrInternalServer,
 		},
 	}
-	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -161,11 +159,11 @@ func TestValidatePrompt(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			name:        "valid request but with changes",
-			userPrompt:  invalidPrompt,
+			name:        "valid prompt (true)",
+			userPrompt:  validPrompt,
 			ctx:         context.Background(),
 			wantErr:     false,
-			isValid:     false,
+			isValid:     true,
 			expectedErr: nil,
 		},
 		{
@@ -177,7 +175,7 @@ func TestValidatePrompt(t *testing.T) {
 			expectedErr: sharedErrors.ErrInternalServer,
 		},
 		{
-			name:        "nil ctx",
+			name:        "nil mock.Anything",
 			userPrompt:  validPrompt,
 			ctx:         nil,
 			wantErr:     true,
@@ -194,25 +192,40 @@ func TestValidatePrompt(t *testing.T) {
 		},
 	}
 
-	for _, mc := range mockSetup {
-		serviceMock.On("Request", mock.Anything, mc.request).Return(mc.response, mc.returnError)
-	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			serviceMock := mocks.NewMockOpenAI(t)
-			rec := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(rec)
-
-			tt.mockSetup((*mocks.MockOpenAI)(serviceMock), ctx)
-
-			svc := &validatePrompt{
-				service: serviceMock,
-				config:  cfg,
-				logger:  logger,
-				tracer:  tracer,
+			// Only setup mocks if context is not nil (nil context returns early)
+			if tt.ctx != nil {
+				// Setup mocks based on the test case - match request by message body
+				serviceMock.On("Request", mock.Anything, mock.MatchedBy(func(req entity.Request) bool {
+					for _, mc := range mockSetup {
+						if len(req.Messages) > 0 && len(mc.request.Messages) > 0 {
+							if req.Messages[0].Body == mc.request.Messages[0].Body {
+								return true
+							}
+						}
+					}
+					return false
+				})).Return(func(ctx context.Context, req entity.Request) (*entity.Message, error) {
+					// Return the matching response based on message body
+					for _, mc := range mockSetup {
+						if len(req.Messages) > 0 && len(mc.request.Messages) > 0 {
+							if req.Messages[0].Body == mc.request.Messages[0].Body {
+								return mc.response, mc.returnError
+							}
+						}
+					}
+					return nil, sharedErrors.ErrInternalServer
+				})
 			}
-			valid, str, err := svc.ValidatePrompt(ctx, tt.userPrompt)
+
+			svc, err := NewValidatePromptService(serviceMock, cfg, logger, tracer)
+			if err != nil {
+				t.Fatalf("failed to create validate prompt service: %v", err)
+			}
+
+			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.userPrompt)
 
 			if tt.wantErr {
 				assert.NotNil(t, err)

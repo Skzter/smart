@@ -28,11 +28,11 @@ func TestCreateHistoryStorage(t *testing.T) {
 			mockParquet := &wrapper.MockParquetFileWrapper[entity.SessionSummary]{}
 
 			if test.obj != nil {
-				mockParquet.On("WriteStructToParquet", *test.obj).
+				mockParquet.On("WriteStructToParquet", mock.Anything, *test.obj).
 					Return(test.writeStructRet, test.writeStructErr)
 			}
 			if test.obj != nil && test.writeStructErr == nil {
-				mockS3.On("UploadParquetFile", ctx, mock.Anything, test.writeStructRet, mock.Anything).
+				mockS3.On("UploadParquetFile", mock.Anything, mock.AnythingOfType("string"), test.writeStructRet, mock.Anything).
 					Return(test.uploadRet)
 			}
 
@@ -78,7 +78,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
@@ -94,7 +94,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      nil,
@@ -127,7 +127,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			writeStructErr: errors.New("parquet error"),
 			expectError:    true,
@@ -137,7 +137,7 @@ func historyCreateTestCaseProvider() []struct {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			writeStructRet: []byte("parquetdata"),
 			uploadRet:      errors.New("upload error"),
@@ -150,22 +150,24 @@ func historyCreateTestCaseProvider() []struct {
 func TestReadHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range historyReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &wrapper.MockS3StorageWrapper{}
 			mockParquet := &wrapper.MockParquetFileWrapper[entity.SessionSummary]{}
 
-			mockS3.On("DownloadParquetFile", ctx, test.key).
+			mockS3.On("DownloadParquetFile", mock.Anything, test.key).
 				Return(test.downloadRet, test.downloadMeta, test.downloadErr)
 
-			mockParquet.On("ReadStructsFromParquet", test.downloadRet).
+			mockParquet.On("ReadStructsFromParquet", mock.Anything, test.downloadRet).
 				Return(test.readStructsRet, test.readStructsErr)
 
 			repo := &sessionSummaryStorageRepository{
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			result, err := repo.Read(ctx, test.key)
@@ -215,7 +217,7 @@ func historyReadTestCaseProvider() []struct {
 			key:             "valid-key",
 			downloadRet:     []byte("parquet"),
 			downloadMeta:    map[string]string{},
-			readStructsRet:  []entity.SessionSummary{{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}}},
+			readStructsRet:  []entity.SessionSummary{{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}}},
 			expectError:     false,
 			expectNilResult: false,
 		},
@@ -266,22 +268,23 @@ func historyReadTestCaseProvider() []struct {
 func TestUpdateHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range historyUpdateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &wrapper.MockS3StorageWrapper{}
 			mockParquet := &wrapper.MockParquetFileWrapper[entity.SessionSummary]{}
 
-			mockS3.On("FileExists", ctx, test.key).
+			mockS3.On("FileExists", mock.Anything, test.key).
 				Return(test.fileExistsRet, test.fileExistsErr)
 
 			if test.obj != nil && test.key != "" && test.fileExistsErr == nil && test.fileExistsRet {
-				mockParquet.On("WriteStructToParquet", *test.obj).
+				mockParquet.On("WriteStructToParquet", mock.Anything, *test.obj).
 					Return(test.writeStructRet, test.writeStructErr)
 			}
 
 			if test.obj != nil && test.key != "" && test.fileExistsErr == nil && test.fileExistsRet && test.writeStructErr == nil {
-				mockS3.On("UploadParquetFile", ctx, test.key, test.writeStructRet, mock.Anything).
+				mockS3.On("UploadParquetFile", mock.Anything, test.key, test.writeStructRet, mock.Anything).
 					Return(test.uploadRet)
 			}
 
@@ -289,6 +292,7 @@ func TestUpdateHistoryStorage(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			err := repo.Update(ctx, test.obj, test.key)
@@ -329,7 +333,7 @@ func historyUpdateTestCaseProvider() []struct {
 	}{
 		{
 			name:           "happy path",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -349,27 +353,27 @@ func historyUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:        "empty key",
-			obj:         &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:         &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:         "",
 			expectError: true,
 		},
 		{
 			name:          "file exists check error",
-			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:           "valid-key",
 			fileExistsErr: errors.New("exists error"),
 			expectError:   true,
 		},
 		{
 			name:          "file does not exist",
-			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:           &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:           "valid-key",
 			fileExistsRet: false,
 			expectError:   true,
 		},
 		{
 			name:           "parquet write fails",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructErr: errors.New("parquet error"),
@@ -377,7 +381,7 @@ func historyUpdateTestCaseProvider() []struct {
 		},
 		{
 			name:           "s3 upload fails",
-			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}}},
+			obj:            &entity.SessionSummary{Summary: "summary", CreatedAt: time.Now(), Messages: []*sharedEntity.Message{{Role: "user", Body: "msg"}}},
 			key:            "valid-key",
 			fileExistsRet:  true,
 			writeStructRet: []byte("dummy parquet data"),
@@ -391,6 +395,7 @@ func historyUpdateTestCaseProvider() []struct {
 func TestDeleteHistoryStorage(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -423,13 +428,14 @@ func TestDeleteHistoryStorage(t *testing.T) {
 			mockS3 := &wrapper.MockS3StorageWrapper{}
 			mockParquet := &wrapper.MockParquetFileWrapper[entity.SessionSummary]{}
 
-			mockS3.On("DeleteParquetFile", ctx, test.key).
+			mockS3.On("DeleteParquetFile", mock.Anything, test.key).
 				Return(test.deleteRet)
 
 			repo := &sessionSummaryStorageRepository{
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			err := repo.Delete(ctx, test.key)
@@ -457,7 +463,7 @@ func TestValidateHistoryData(t *testing.T) {
 			obj: &entity.SessionSummary{
 				Summary:   "summary",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			wantErr: false,
 		},
@@ -471,7 +477,7 @@ func TestValidateHistoryData(t *testing.T) {
 			obj: &entity.SessionSummary{
 				Summary:   "",
 				CreatedAt: time.Now(),
-				Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+				Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 			},
 			wantErr: true,
 		},
@@ -513,8 +519,9 @@ func TestValidateHistoryData(t *testing.T) {
 func TestListAll(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
-	for _, test := range historyListAllTestCaseProvider(ctx) {
+	for _, test := range historyListAllTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := &wrapper.MockS3StorageWrapper{}
 			mockParquet := &wrapper.MockParquetFileWrapper[entity.SessionSummary]{}
@@ -524,6 +531,7 @@ func TestListAll(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			result, err := repo.ListAll(ctx)
@@ -538,7 +546,7 @@ func TestListAll(t *testing.T) {
 }
 
 // nolint:funlen
-func historyListAllTestCaseProvider(ctx context.Context) []struct {
+func historyListAllTestCaseProvider() []struct {
 	name       string
 	setupMocks func(
 		mockS3 *wrapper.MockS3StorageWrapper,
@@ -551,12 +559,12 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 	validSummary := entity.SessionSummary{
 		Summary:   "valid",
 		CreatedAt: now,
-		Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+		Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 	}
 	invalidSummary := entity.SessionSummary{
 		Summary:   "",
 		CreatedAt: now,
-		Messages:  []*sharedEntity.Message{{Actor: "user", MessageBody: "msg"}},
+		Messages:  []*sharedEntity.Message{{Role: "user", Body: "msg"}},
 	}
 
 	return []struct {
@@ -571,15 +579,15 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "all valid entries",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return([]byte("data1"), map[string]string{}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data1")).
 					Return([]entity.SessionSummary{validSummary}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data2")).
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 2,
@@ -588,7 +596,7 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "list files error",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return(nil, errors.New("list error"))
 			},
 			wantCount: 0,
@@ -597,7 +605,7 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "no files found",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return([]string{}, nil)
 			},
 			wantCount: 0,
@@ -606,13 +614,13 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "download error for one file",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return(nil, nil, errors.New("download error"))
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data2")).
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,
@@ -621,15 +629,15 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "parquet read error for one file",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return([]byte("data1"), map[string]string{}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data1")).
 					Return(nil, errors.New("parquet error"))
-				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data2")).
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,
@@ -638,15 +646,15 @@ func historyListAllTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "invalid summary is skipped",
 			setupMocks: func(mockS3 *wrapper.MockS3StorageWrapper, mockParquet *wrapper.MockParquetFileWrapper[entity.SessionSummary]) {
-				mockS3.On("ListParquetFiles", ctx, "sessionSummary/").
+				mockS3.On("ListParquetFiles", mock.Anything, "sessionSummary/").
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return([]byte("data1"), map[string]string{}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data1")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data1")).
 					Return([]entity.SessionSummary{invalidSummary}, nil)
-				mockParquet.On("ReadStructsFromParquet", []byte("data2")).
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, []byte("data2")).
 					Return([]entity.SessionSummary{validSummary}, nil)
 			},
 			wantCount: 1,

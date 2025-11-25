@@ -44,14 +44,12 @@ func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository,
 
 // SaveDbEntry saves a database entry by calling the repository's CreateRequest method.
 func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.DatabaseEntry) error {
-	ctx, span := d.tracer.Start(ctx, "databaseService.SaveDbEntry")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
+
+	ctx, span := d.tracer.Start(ctx, "databaseService.SaveDbEntry")
+	defer span.End()
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to save request")
@@ -64,14 +62,12 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 
 // GetAllKeys retrieves all keys from the database.
 func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
-	ctx, span := d.tracer.Start(ctx, "databaseService.GetAllKeys")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
 		return nil, fmt.Errorf("context cannot be nil")
 	}
+
+	ctx, span := d.tracer.Start(ctx, "databaseService.GetAllKeys")
+	defer span.End()
 	keys, err := d.repo.ListAllKeys(ctx)
 	if err != nil {
 		span.RecordError(err)

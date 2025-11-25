@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
 // nolint:dupl
@@ -25,10 +25,10 @@ func TestCreateChatStorage(t *testing.T) {
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
 			if test.chatWriteRet != nil {
-				mockParquet.On("WriteStructToParquet", *test.obj).Return(test.chatWriteRet...)
+				mockParquet.On("WriteStructToParquet", mock.Anything, *test.obj).Return(test.chatWriteRet...)
 			}
 			if test.summaryWriteRet != nil {
-				mockSummaryParquet.On("WriteStructToParquet", mock.Anything).Return(test.summaryWriteRet...)
+				mockSummaryParquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(test.summaryWriteRet...)
 			}
 			if test.uploadRet != nil {
 				mockS3.On("UploadParquetFile", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(test.uploadRet...)
@@ -133,7 +133,7 @@ func TestReadChatStorage(t *testing.T) {
 			}
 
 			if test.readStructsRet != nil {
-				mockParquet.On("ReadStructsFromParquet", mock.Anything).Return(test.readStructsRet...)
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).Return(test.readStructsRet...)
 			}
 
 			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
@@ -322,7 +322,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 					Return([]byte("data1"), map[string]string{}, nil)
 				mockS3.On("DownloadParquetFile", ctx, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 2,
@@ -365,7 +365,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 1,
@@ -381,7 +381,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return(nil, errors.New("err"))
 			},
 			wantCount: 0,
@@ -397,7 +397,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 					Return(nil, nil, errors.New("err"))
 				mockS3.On("DownloadParquetFile", ctx, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}, {}}, nil)
 			},
 			wantCount: 0,

@@ -65,7 +65,7 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 		return fmt.Errorf("failed to validate TagList: %w", err)
 	}
 
-	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
+	parquetData, err := tR.parquetWrapper.WriteStructToParquet(ctx, *taglist)
 	if err != nil {
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}
@@ -99,7 +99,7 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 		slog.Int("size", len(parquetData)),
 		slog.Any("metadata", metadata),
 	)
-	taglists, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
+	taglists, err := tR.parquetWrapper.ReadStructsFromParquet(ctx, parquetData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read parquet data: %w", err)
 	}
@@ -137,7 +137,7 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 		return fmt.Errorf("failed to download data: %w", err)
 	}
 
-	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
+	parquetData, err := tR.parquetWrapper.WriteStructToParquet(ctx, *taglist)
 	if err != nil {
 		return fmt.Errorf("failed to write parquet: %w", err)
 	}

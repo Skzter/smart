@@ -322,11 +322,13 @@ func setupMocks(t *testing.T) (
 	mockS3 := wrapper.NewMockS3StorageWrapper(t)
 	mockParquet := wrapper.NewMockParquetFileWrapper[entity.DatabaseEntry](t)
 	logger := newTestLogger()
+	tracer := otel.Tracer("test")
 
 	repo := &databaseRepository{
 		s3Wrapper:      mockS3,
 		parquetWrapper: mockParquet,
 		logger:         logger,
+		tracer:         tracer,
 		entryPrefix:    EntryPrefix,
 	}
 	return repo, mockS3, mockParquet
