@@ -60,6 +60,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
 		s.logger.Error(err.Error())
+		s.logger.Error(err.Error())
 		return false, "", errors.ErrValidation
 	}
 
