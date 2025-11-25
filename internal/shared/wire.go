@@ -51,7 +51,7 @@ func TaglistStorageProvider(
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Taglist) (wrapper.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
-		Bucket:    cfg.Bucket,
+		Bucket:    cfg.TaglistBucket,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
