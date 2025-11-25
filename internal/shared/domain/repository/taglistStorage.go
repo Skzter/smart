@@ -64,7 +64,8 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 
 	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
 	if err != nil {
-		return fmt.Errorf("failed to write parquet: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to write parquet: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -76,7 +77,8 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 
 	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
-		return fmt.Errorf("failed to upload existing parquet: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to upload existing parquet: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	return nil
@@ -85,12 +87,14 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 // ReadTaglist retrieves the taglist from the database, downloading the Parquet file and reading its content.
 func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("context cannot be nil, %w", err)
+		tR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
+		return nil, errors.ErrInternalServer
 	}
 
 	parquetData, metadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to download existing parquet: %s", err))
+		return nil, errors.ErrInternalServer
 	}
 	tR.logger.Debug("file downloaded",
 		slog.Int("size", len(parquetData)),
@@ -98,18 +102,21 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 	)
 	taglists, err := tR.parquetWrapper.ReadStructsFromParquet(parquetData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read parquet data: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to read parquet data: %s", err))
+		return nil, errors.ErrInternalServer
 	}
 	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglists)))
 
 	if len(taglists) == 0 {
-		return nil, fmt.Errorf("no taglist found with key: %s", tR.entryPrefix+tR.key)
+		tR.logger.Error(fmt.Sprintf("no taglist found with key: %s", tR.entryPrefix+tR.key))
+		return nil, errors.ErrInternalServer
 	}
 
 	firstEntry := taglists[0]
 
 	if err := validateTaglist(&firstEntry); err != nil {
-		return nil, fmt.Errorf("read invalid taglist: %w", err)
+		tR.logger.Error(fmt.Sprintf("read invalid taglist: %s", err))
+		return nil, errors.ErrInternalServer
 	}
 
 	return &firstEntry, nil
@@ -122,17 +129,20 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 	}
 
 	if err := validateTaglist(taglist); err != nil {
-		return fmt.Errorf("failed to validate TagList: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to validate TagList: %s", err))
+		return errors.ErrValidation
 	}
 
 	_, oldmetadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
-		return fmt.Errorf("failed to download data: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to download data: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	parquetData, err := tR.parquetWrapper.WriteStructToParquet(*taglist)
 	if err != nil {
-		return fmt.Errorf("failed to write parquet: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to write parquet: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -145,7 +155,8 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 
 	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
+		tR.logger.Error(fmt.Sprintf("failed to upload file: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	return nil
