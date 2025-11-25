@@ -4,13 +4,11 @@
         { "path": "./tsconfig.app.json" },
         { "path": "./tsconfig.node.json" }
     ],
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "$lib": ["./src/lib"],
-            "$lib/*": ["./src/lib/*"],
-            "types": ["./src/types"],
-            "$types/*": ["./src/types/*"]
-        }
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"]
     }
+  }
 }

@@ -16,11 +16,11 @@
         "allowJs": true,
         "checkJs": true,
         "moduleDetection": "force",
+        "strict": true,
+        "baseUrl": ".",
         "paths": {
-            "$lib": ["./src/lib"],
-            "$lib/*": ["./src/lib/*"],
-            "$types": ["./src/types"],
-            "$types/*": ["./src/types/*"]
+              "$lib": ["./src/lib"],
+              "$lib/*": ["./src/lib/*"]
         }
     },
     "include": [

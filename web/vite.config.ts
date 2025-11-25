@@ -5,6 +5,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import path from "path";
 import mkcert from "vite-plugin-mkcert";
 import { svelteTesting } from "@testing-library/svelte/vite";
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -39,10 +40,9 @@ export default defineConfig({
             },
         },
     },
-    resolve: {
-        alias: {
-            $lib: path.resolve("./src/lib"),
-            $types: path.resolve("./src/types"),
-        },
+  resolve: {
+    alias: {
+      $lib: path.resolve("./src/lib"),
     },
+  },
 });
