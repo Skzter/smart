@@ -262,7 +262,7 @@ func TestGetUserChats(t *testing.T) {
 		},
 		{
 			name:           "error - limit is not a number",
-			requestID:      uuid.NewString(),
+			requestID:      "123",
 			limit:          "hallo",
 			expectedStatus: http.StatusBadRequest,
 		},
@@ -274,21 +274,21 @@ func TestGetUserChats(t *testing.T) {
 		},
 		{
 			name:             "error - no chat history for given user found",
-			requestID:        uuid.NewString(),
+			requestID:        "456",
 			limit:            "123",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "success",
-			requestID:        uuid.NewString(),
+			requestID:        "789",
 			limit:            "5",
 			mockResponseLoad: []any{correctSortedResponse, nil},
 			expectedStatus:   http.StatusOK,
 		},
 		{
 			name:      "success - unsorted array",
-			requestID: uuid.NewString(),
+			requestID: "123456",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
 				{
 					ChatId:    "2",

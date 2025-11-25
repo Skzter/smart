@@ -79,7 +79,6 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // invalid example: /chats/1234 or /chats/hahahihi
 func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	userID := c.Param("UserID")
-	a.logger.Info(userID)
 	// nach einigen tests sehr sicher, dass das hier eig nie failen wird da man keine request an die url schicken kann ohne id
 	// failt einfach direkt weil 404 not found
 	if err := assert.StringNotEmpty(userID); err != nil {
@@ -104,8 +103,6 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: fmt.Sprintf("%d, limit has to be greater than zero", limit)})
 		return
 	}
-
-	a.logger.Info(fmt.Sprintf("Limit => %d", limit))
 
 	chats, err := a.chatStorageService.LoadUserChats(c, userID)
 	if err != nil {
