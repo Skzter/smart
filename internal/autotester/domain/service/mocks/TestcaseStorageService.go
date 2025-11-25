@@ -38,37 +38,46 @@ func (_m *MockTestcaseStorageService) EXPECT() *MockTestcaseStorageService_Expec
 	return &MockTestcaseStorageService_Expecter{mock: &_m.Mock}
 }
 
-// SaveTestCase provides a mock function for the type MockTestcaseStorageService
-func (_mock *MockTestcaseStorageService) SaveTestCase(ctx context.Context, testcase *entity.TestCase, userId string) error {
+// SaveTestcase provides a mock function for the type MockTestcaseStorageService
+func (_mock *MockTestcaseStorageService) SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error) {
 	ret := _mock.Called(ctx, testcase, userId)
 
 	if len(ret) == 0 {
-		panic("no return value specified for SaveTestCase")
+		panic("no return value specified for SaveTestcase")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase, string) error); ok {
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase, string) (string, error)); ok {
+		return returnFunc(ctx, testcase, userId)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase, string) string); ok {
 		r0 = returnFunc(ctx, testcase, userId)
 	} else {
-		r0 = ret.Error(0)
+		r0 = ret.Get(0).(string)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.TestCase, string) error); ok {
+		r1 = returnFunc(ctx, testcase, userId)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
-// MockTestcaseStorageService_SaveTestCase_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveTestCase'
-type MockTestcaseStorageService_SaveTestCase_Call struct {
+// MockTestcaseStorageService_SaveTestcase_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SaveTestcase'
+type MockTestcaseStorageService_SaveTestcase_Call struct {
 	*mock.Call
 }
 
-// SaveTestCase is a helper method to define mock.On call
+// SaveTestcase is a helper method to define mock.On call
 //   - ctx context.Context
 //   - testcase *entity.TestCase
 //   - userId string
-func (_e *MockTestcaseStorageService_Expecter) SaveTestCase(ctx interface{}, testcase interface{}, userId interface{}) *MockTestcaseStorageService_SaveTestCase_Call {
-	return &MockTestcaseStorageService_SaveTestCase_Call{Call: _e.mock.On("SaveTestCase", ctx, testcase, userId)}
+func (_e *MockTestcaseStorageService_Expecter) SaveTestcase(ctx interface{}, testcase interface{}, userId interface{}) *MockTestcaseStorageService_SaveTestcase_Call {
+	return &MockTestcaseStorageService_SaveTestcase_Call{Call: _e.mock.On("SaveTestcase", ctx, testcase, userId)}
 }
 
-func (_c *MockTestcaseStorageService_SaveTestCase_Call) Run(run func(ctx context.Context, testcase *entity.TestCase, userId string)) *MockTestcaseStorageService_SaveTestCase_Call {
+func (_c *MockTestcaseStorageService_SaveTestcase_Call) Run(run func(ctx context.Context, testcase *entity.TestCase, userId string)) *MockTestcaseStorageService_SaveTestcase_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -91,12 +100,12 @@ func (_c *MockTestcaseStorageService_SaveTestCase_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockTestcaseStorageService_SaveTestCase_Call) Return(err error) *MockTestcaseStorageService_SaveTestCase_Call {
-	_c.Call.Return(err)
+func (_c *MockTestcaseStorageService_SaveTestcase_Call) Return(s string, err error) *MockTestcaseStorageService_SaveTestcase_Call {
+	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *MockTestcaseStorageService_SaveTestCase_Call) RunAndReturn(run func(ctx context.Context, testcase *entity.TestCase, userId string) error) *MockTestcaseStorageService_SaveTestCase_Call {
+func (_c *MockTestcaseStorageService_SaveTestcase_Call) RunAndReturn(run func(ctx context.Context, testcase *entity.TestCase, userId string) (string, error)) *MockTestcaseStorageService_SaveTestcase_Call {
 	_c.Call.Return(run)
 	return _c
 }

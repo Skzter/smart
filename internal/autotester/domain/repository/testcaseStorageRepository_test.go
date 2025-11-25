@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -38,7 +40,7 @@ func TestCreateTestCaseStorage(t *testing.T) {
 				logger:         logger,
 			}
 
-			err := repo.Create(ctx, test.obj, test.userId)
+			_, err := repo.Create(ctx, test.obj, test.userId)
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Create() expected error but got none")
@@ -482,19 +484,24 @@ func TestGenerateTestCaseKey(t *testing.T) {
 	if key == "" {
 		t.Errorf("generateTestCaseKey() returned empty string")
 	}
-	if len(key) < 25 {
-		t.Errorf("generateTestCaseKey() returned too short key: %s", key)
-	}
 	const prefix = "autotester/testcase/"
 	if len(key) < len(prefix) || key[:len(prefix)] != prefix {
 		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", prefix, key)
 	}
-	if len(key) <= len(prefix) || key[len(prefix):] == "" {
-		t.Errorf("generateTestCaseKey() should contain a timestamp after prefix, got: %s", key)
+
+	expectedStart := prefix + testID + "_"
+	if len(key) < len(expectedStart) || key[:len(expectedStart)] != expectedStart {
+		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", expectedStart, key)
 	}
-	expectedPrefix := "autotester/testcase/" + testID + "_"
-	if len(key) < len(expectedPrefix) || key[:len(expectedPrefix)] != expectedPrefix {
-		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", expectedPrefix, key)
+
+	if !strings.HasSuffix(key, ".parquet") {
+		t.Errorf("generateTestCaseKey() should end with '.parquet', got: %s", key)
+	}
+
+	rest := key[len(expectedStart):]
+	rest = strings.TrimSuffix(rest, ".parquet")
+	if _, err := strconv.ParseInt(rest, 10, 64); err != nil {
+		t.Errorf("generateTestCaseKey() should contain a valid timestamp, got: %s", rest)
 	}
 }
 

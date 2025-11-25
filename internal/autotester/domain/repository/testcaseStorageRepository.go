@@ -14,7 +14,7 @@ import (
 // TestCaseStorageRepository defines the interface for a repository managing TestCase entities.
 type TestCaseStorageRepository interface {
 	// Create stores a new TestCase object in the underlying storage system.
-	Create(ctx context.Context, obj *entity.TestCase, userId string) error
+	Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error)
 
 	// Read retrieves a TestCase object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.TestCase, error)
@@ -52,17 +52,17 @@ func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3Stora
 
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
 // nolint:dupl
-func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) error {
+func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
 	if err := validateTestCaseData(obj); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
+		return "", fmt.Errorf("validation failed: %w", err)
 	}
 	if err := assert.StringNotEmpty(userId); err != nil {
-		return fmt.Errorf("userId must not be empty")
+		return "", fmt.Errorf("userId must not be empty")
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		return err
+		return "", err
 	}
 	key := generateTestCaseKey(obj.TestID)
 	metadata := map[string]string{
@@ -72,7 +72,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	r.logger.Debug("create: object successfully written and uploaded",
@@ -80,7 +80,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 		slog.String("type", "testcase"),
 	)
 
-	return nil
+	return key, nil
 }
 
 // Read downloads the Parquet file from S3 using the given key and returns the first TestCase found.
@@ -167,10 +167,10 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 }
 
 // generateTestCaseKey creates a unique S3 key for a TestCase object.
-// The format is: "autotester/testCase/<testCaseID>_<timestamp>"
+// The format is: "autotester/testCase/<testCaseID>_<timestamp>.parquet"
 func generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d", prefixTestCase, testcaseId, timestamp)
+	return fmt.Sprintf("%s/%s_%d.parquet", prefixTestCase, testcaseId, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.

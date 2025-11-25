@@ -156,7 +156,7 @@ func TestHandleRunContainer(t *testing.T) {
 				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
 				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
 				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
-				remote.EXPECT().SaveTestCase(mock.Anything, mock.Anything, mock.Anything).Return(errors.New("save failed"))
+				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("save failed"))
 			},
 		},
 		{
@@ -172,7 +172,7 @@ func TestHandleRunContainer(t *testing.T) {
 				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
 				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
 				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
-				remote.EXPECT().SaveTestCase(mock.Anything, mock.Anything, mock.Anything).Return(nil)
+				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("key", nil)
 			},
 		},
 	}
