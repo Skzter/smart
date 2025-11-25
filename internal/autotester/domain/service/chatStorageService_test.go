@@ -75,7 +75,7 @@ func TestNewChatStorageService(t *testing.T) {
 }
 
 // nolint: dupl
-func TestSaveChat(t *testing.T) {
+func TestChatStorageSaveChat(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
@@ -127,7 +127,7 @@ func TestSaveChat(t *testing.T) {
 	}
 }
 
-func TestLoadChat(t *testing.T) {
+func TestChatStorageLoadChat(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
