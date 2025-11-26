@@ -9,7 +9,7 @@ import (
 	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
-	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	openAIService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -21,14 +21,14 @@ type Validator interface {
 
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
 type validator struct {
-	service sharedService.OpenAI
+	service openAIService.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewValidatorService creates a new instance of Validator.
 // Returns an error if any required dependencies are nil.
-func NewValidatorService(service sharedService.OpenAI, config *config.Config, logger *slog.Logger) (Validator, error) {
+func NewValidatorService(service openAIService.OpenAI, config *config.Config, logger *slog.Logger) (Validator, error) {
 	if err := assert.NotNil(service, config, logger); err != nil {
 		return nil, err
 	}
@@ -53,13 +53,8 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		return false, "Invalid Request", err
 	}
 
-	if err := s.ValidateRequest(ctx, req); err != nil {
-		return false, "Invalid Request", err
-	}
-
 	resp, err := s.service.Request(ctx, req)
 	if err != nil {
-		s.logger.Error(err.Error())
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrValidation
 	}

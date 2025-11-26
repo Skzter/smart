@@ -107,8 +107,6 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 	}, nil
 }
 
-//TODO: move into sepaparate file
-
 func validateRequestEntity(request entity.Request) error {
 	for _, req := range request.Messages {
 		switch {
