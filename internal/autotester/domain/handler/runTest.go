@@ -48,6 +48,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
+	// Checks for a line like: "✓  <number> <testId>.spec.ts:<line>:<column>" in the log output.
 	pattern := fmt.Sprintf(`(?m)^\s*✓\s+\d+\s+%s:\d+:\d+`, regexp.QuoteMeta(filepath.Base(testfile)))
 	passPattern := regexp.MustCompile(pattern)
 	if passPattern.MatchString(output) {

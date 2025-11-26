@@ -18,7 +18,8 @@ type TestcaseLocalStorageService interface {
 	// Returns an error when validation or storage fails.
 	Save(testcase *entity.TestCase, userId, sessionId string) error
 
-	// ...
+	// Read loads the content of a specific testcase identified by testId for the given user and session.
+	// Returns the file content as a string, or an error if reading or validation fails.
 	Read(testId, userId, sessionId string) (string, error)
 
 	// GetTestPath returns the relative file path to a specific TestCase file,

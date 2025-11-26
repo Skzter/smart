@@ -70,7 +70,7 @@ func SessionSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity
 	return wrapperService.NewParquetWrapper[entity.SessionSummary](logger, cfg)
 }
 
-// TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
+// TestCaseParquetWrapperProvider provides a new test case parquet wrapper with default parquet config.
 func TestCaseParquetWrapperProvider(logger *slog.Logger) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, wrapperService.DefaultParquetConfig())
 }
