@@ -100,7 +100,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	isError := code != http.StatusOK
-	if err := s.cache.Store(ctx, request, *body, false /* isMock */, isError); err != nil {
+	if err := s.cache.Store(ctx, request, *body, false, isError); err != nil {
 		s.logger.Error("cache: failed to store response", "error", err)
 	}
 
