@@ -59,12 +59,14 @@
                     {#snippet child({props})}
                         <Button
                                 variant="outline"
-                                size="lg"
-                                class="w-full justify-start gap-3 h-13"
+                                size={sidebar.state === "collapsed" ? "icon" : "lg"}
+                                class={sidebar.state === "collapsed" ? "w-full justify-center gap-0 pointer-events-none" : "w-full justify-start gap-3 h-13"}
                                 {...props}
                         >
                             <Calendar class="size-5"/>
-                            Calendar
+                            {#if sidebar.state !== "collapsed"}
+                                Calendar
+                            {/if}
                         </Button>
                     {/snippet}
                 </Collapsible.Trigger>
