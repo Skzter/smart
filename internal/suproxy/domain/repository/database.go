@@ -97,7 +97,7 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 	}
 	if err := assert.StringNotEmpty(key); err != nil {
 		dbR.logger.Error(fmt.Sprintf("key must not be empty: %s", err))
-		return nil, fmt.Errorf("key must not be empty: %w", err)
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
