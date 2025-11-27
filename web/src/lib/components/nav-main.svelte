@@ -11,6 +11,8 @@
     import Calendar from "@lucide/svelte/icons/calendar";
     import Filter from "@lucide/svelte/icons/filter";
     import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+	import Bookmark from "@lucide/svelte/icons/bookmark";
+	import History from "@lucide/svelte/icons/history";
 
     let {
 		items,
@@ -93,10 +95,27 @@
             </Button>
         </div>
     </Sidebar.MenuItem>
+	<!-- History Icon nur im collapsed Zustand -->
+	<Sidebar.MenuItem class="px-3 py-1 hidden group-data-[collapsible=icon]:flex">
+		<div class="px-1 w-full">
+			<Sidebar.MenuButton tooltipContent="History" class="w-full justify-center">
+				<History class="size-5" />
+			</Sidebar.MenuButton>
+		</div>
+	</Sidebar.MenuItem>
+
+	<!-- Saved Tests Icon nur im collapsed Zustand -->
+	<Sidebar.MenuItem class="px-3 py-1 hidden group-data-[collapsible=icon]:flex">
+		<div class="px-1 w-full">
+			<Sidebar.MenuButton tooltipContent="Saved Tests" class="w-full justify-center">
+				<Bookmark class="size-5" />
+			</Sidebar.MenuButton>
+		</div>
+	</Sidebar.MenuItem>
 </Sidebar.Menu>
 
-<Sidebar.Group>
-	<Sidebar.GroupLabel>History</Sidebar.GroupLabel>
+<Sidebar.Group class="group-data-[collapsible=icon]:hidden">
+	<Sidebar.GroupLabel class="flex items-center gap-2"><History class="w-4 h-4" />History</Sidebar.GroupLabel>
 	<Sidebar.Menu>
 		{#each items as item (item.title)}
 			<Collapsible.Root open={item.isActive} class="group/collapsible">
@@ -133,4 +152,11 @@
 			</Collapsible.Root>
 		{/each}
 	</Sidebar.Menu>
+</Sidebar.Group>
+
+<Sidebar.Group class="group-data-[collapsible=icon]:hidden">
+  <Sidebar.GroupLabel class="flex items-center gap-2"><Bookmark class="w-4 h-4" />Saved Tests</Sidebar.GroupLabel>
+  <Sidebar.Menu>
+	<!-- Leer als Platzhalter -->
+  </Sidebar.Menu>
 </Sidebar.Group>
