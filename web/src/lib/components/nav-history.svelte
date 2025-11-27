@@ -43,19 +43,8 @@
 
 <!-- Full history group visible when the sidebar is expanded -->
 <Sidebar.Group class={`${className ?? ""} group-data-[collapsible=icon]:hidden`} {...restProps}>
-  <Sidebar.GroupLabel>History</Sidebar.GroupLabel>
+  <Sidebar.GroupLabel>Saved Tests</Sidebar.GroupLabel>
   <Sidebar.Menu>
-    {#each $chats as chat (chat.id)}
-      <Sidebar.MenuItem>
-        <Sidebar.MenuButton isActive={$selectedChat === chat.id} tooltipContent={chat.title}>
-          {#snippet child({ props }: { props: Record<string, unknown> })}
-            <button {...props} onclick={() => selectChat(chat.id)}>
-              <MessageSquareIcon />
-              <span>{chat.title}</span>
-            </button>
-          {/snippet}
-        </Sidebar.MenuButton>
-      </Sidebar.MenuItem>
-    {/each}
+    <!-- Leer als Platzhalter -->
   </Sidebar.Menu>
 </Sidebar.Group>

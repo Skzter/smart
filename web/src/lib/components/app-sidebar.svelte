@@ -18,68 +18,47 @@
 	import TeamSwitcher from "./team-switcher.svelte";
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import type { ComponentProps } from "svelte";
+    import { Title } from "./ui/sheet";
+	import { chats } from "$lib/stores/chats";
 
 	/* ---------------- Sidebar Data ---------------- */
 	const sidebarData = {
 		user: {
-			name: "shadcn",
-			email: "m@example.com",
+			name: "Johannes",
+			email: "johannes@check24.com",
 			avatar: "/avatars/shadcn.jpg"
 		},
 		teams: [
-			{ name: "Acme Inc", logo: GalleryVerticalEndIcon, plan: "Enterprise" },
-			{ name: "Acme Corp.", logo: AudioWaveformIcon, plan: "Startup" },
-			{ name: "Evil Corp.", logo: CommandIcon, plan: "Free" }
+			{ name: "Check24", logo: GalleryVerticalEndIcon, plan: "Frontend Tests" },
 		],
 		navMain: [
 			{
-				title: "Playground",
+				title: "Today",
+				url: "#",
+				icon: SquareTerminalIcon,
+				isActive: true,
+				get items() { return $chats.map(chat => ({ title: chat.title, url: "#" })); }
+			},
+			{
+				title: "Yesterday",
 				url: "#",
 				icon: SquareTerminalIcon,
 				isActive: true,
 				items: [
-					{ title: "History", url: "#" },
-					{ title: "Starred", url: "#" },
-					{ title: "Settings", url: "#" }
+					{ title: "Sidebar Test", url: "#",},
+
 				]
 			},
 			{
-				title: "Models",
+				title: "Last week",
 				url: "#",
-				icon: BotIcon,
+				icon: SquareTerminalIcon,
+				isActive: true,
 				items: [
-					{ title: "Genesis", url: "#" },
-					{ title: "Explorer", url: "#" },
-					{ title: "Quantum", url: "#" }
-				]
-			},
-			{
-				title: "Documentation",
-				url: "#",
-				icon: BookOpenIcon,
-				items: [
-					{ title: "Introduction", url: "#" },
-					{ title: "Get Started", url: "#" },
-					{ title: "Tutorials", url: "#" },
-					{ title: "Changelog", url: "#" }
-				]
-			},
-			{
-				title: "Settings",
-				url: "#",
-				icon: Settings2Icon,
-				items: [
-					{ title: "General", url: "#" },
-					{ title: "Team", url: "#" },
-					{ title: "Billing", url: "#" },
-					{ title: "Limits", url: "#" }
+					{ title: "Login Test", url: "#",},
+
 				]
 			}
-		],
-		projects: [
-			{ name: "Design Engineering", url: "#", icon: FrameIcon },
-			{ name: "Sales & Marketing", url: "#", icon: ChartPieIcon },
-			{ name: "Travel", url: "#", icon: MapIcon }
 		]
 	};
 
