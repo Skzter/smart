@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
@@ -70,32 +72,27 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 }
 
 // GetChatById returns a full chat including all messages for a given chatId and userId.
-// Route: GET /api/v1/chats/{chatId}?userId=...
 func (a *AutotesterController) GetChatById(c *gin.Context) {
 	chatID := c.Param("chatId")
 	userID := c.Query("userId")
 
-	// Validate required parameters
 	if chatID == "" || userID == "" {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "chatId and userId are required"})
 		return
 	}
 
-	// TODO (#131): Hier später den echten Service-Aufruf einbauen:
-	// chat, err := a.chatService.LoadChat(c.Request.Context(), chatID, userID)
-	// if errors.Is(err, domainErr.ErrNotFound) {
-	//     c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
-	//     return
-	// }
-	// if err != nil {
-	//     a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
-	//     c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
-	//     return
-	// }
-	// c.JSON(http.StatusOK, chat)
+	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), userID, chatID)
+	if err != nil {
+		if errors.Is(err, service.ErrChatNotFound) {
+			a.logger.Info("chat not found", "chatId", chatID, "userId", userID)
+			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
+			return
+		}
 
-	// Platzhalter, bis #131 den Storage+Service liefert:
-	c.JSON(http.StatusNotImplemented, entity.ErrorMessage{
-		Error: "LoadChat not implemented yet (blocked by #131)",
-	})
+		a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
+		return
+	}
+
+	c.JSON(http.StatusOK, chat)
 }

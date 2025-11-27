@@ -124,6 +124,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockValServ := mocks.NewMockValidatePrompt(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			dummyChatStorageServ := &dummyChatStorageService{}
 
 			// mock setup
 			if test.MockResponseFile != nil {
@@ -146,7 +147,7 @@ func TestHandleRunContainer(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, dummyChatStorageServ)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}

@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	autotesterService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
@@ -129,6 +131,7 @@ func TestHandleChatRequest(t *testing.T) {
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
+	dummyChatStorageServ := &dummyChatStorageService{}
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -151,7 +154,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, dummyChatStorageServ)
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
@@ -201,6 +204,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
+	dummyChatStorageServ := &dummyChatStorageService{}
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -215,7 +219,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, dummyChatStorageServ)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -226,5 +230,130 @@ func TestHandleUserInfoRequest(t *testing.T) {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
 			}
 		})
+	}
+}
+
+// stubChatStorageService is a small test double for ChatStorageService used
+// to control the behaviour of GetChatById in tests.
+type stubChatStorageService struct {
+	chat *entity.Chat
+	err  error
+}
+
+func (s *stubChatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
+	return nil
+}
+
+func (s *stubChatStorageService) LoadChat(ctx context.Context, userID, chatID string) (*entity.Chat, error) {
+	return s.chat, s.err
+}
+
+func (s *stubChatStorageService) LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error) {
+	return nil, nil
+}
+
+func newTestControllerWithChatStub(t *testing.T, chatStub *stubChatStorageService) *AutotesterController {
+	t.Helper()
+
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+
+	controller, err := NewAutotesterController(
+		logger,
+		cfg,
+		mockValServ,
+		mockGenServ,
+		mockLocalStorageServ,
+		mockDockerServ,
+		chatStub,
+	)
+	if err != nil {
+		t.Fatalf("failed to build controller: %v", err)
+	}
+
+	return controller
+}
+
+func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	controller := newTestControllerWithChatStub(t, &stubChatStorageService{})
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/someChat", nil)
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+
+	controller.GetChatById(ctx)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
+	}
+}
+
+func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	chatStub := &stubChatStorageService{
+		chat: nil,
+		err:  autotesterService.ErrChatNotFound,
+	}
+	controller := newTestControllerWithChatStub(t, chatStub)
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/chat-123?userId=user-42", nil)
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	ctx.Params = gin.Params{
+		{Key: "chatId", Value: "chat-123"},
+	}
+
+	controller.GetChatById(ctx)
+
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d", http.StatusNotFound, rec.Code)
+	}
+}
+
+func TestGetChatById_Success_ReturnsChat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	expectedChat := &entity.Chat{
+		Id:     "chat-123",
+		UserId: "user-42",
+	}
+
+	chatStub := &stubChatStorageService{
+		chat: expectedChat,
+		err:  nil,
+	}
+	controller := newTestControllerWithChatStub(t, chatStub)
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/chat-123?userId=user-42", nil)
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	ctx.Params = gin.Params{
+		{Key: "chatId", Value: "chat-123"},
+	}
+
+	controller.GetChatById(ctx)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+
+	var resp entity.Chat
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	if resp.Id != expectedChat.Id || resp.UserId != expectedChat.UserId {
+		t.Fatalf("unexpected chat in response: %+v", resp)
 	}
 }

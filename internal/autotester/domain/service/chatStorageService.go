@@ -2,14 +2,19 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
+
+// ErrChatNotFound is returned when no chat exists for the given userId/chatId.
+var ErrChatNotFound = errors.New("chat not found")
 
 // ChatStorageService provides an interface to persist Chat entities.
 type ChatStorageService interface {
@@ -65,6 +70,9 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 
 	chat, err := s.repo.Read(ctx, userId, chatId)
 	if err != nil {
+		if strings.HasPrefix(err.Error(), "no data found for key=") {
+			return nil, ErrChatNotFound
+		}
 		return nil, err
 	}
 

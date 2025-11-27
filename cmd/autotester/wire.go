@@ -42,6 +42,14 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
+
+		// Chat-Storage
+		S3WrapperProvider,
+		ChatParquetConfigProvider,
+		ChatParquetWrapperProvider,
+		ChatSummaryParquetWrapperProvider,
+		repository.NewChatStorageRepository,
+		service.NewChatStorageService,
 	)
 
 	return nil, nil
@@ -97,4 +105,14 @@ func DockerClientProvider() (service.DockerClient, error) {
 
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
+}
+
+// ChatSummaryParquetWrapperProvider provides a new chat summary parquet wrapper.
+func ChatSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
+	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, cfg)
+}
+
+// ChatParquetConfigProvider provides a ParquetConfig for chat parquet files.
+func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
+	return wrapperEntity.ParquetConfig{}
 }
