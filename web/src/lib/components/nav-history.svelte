@@ -23,7 +23,7 @@
         // Select the most recent chat, or create a new one
         // Use the exported `chats` store to get the first item (latest)
         // We have to subscribe since we are in a callback; use a short-lived subscription
-        let selected = null as any;
+        let selected = null;
         const unsubscribe = chats.subscribe(($c) => {
           selected = $c[0];
         });

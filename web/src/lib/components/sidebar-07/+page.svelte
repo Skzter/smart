@@ -8,8 +8,7 @@
   	import { Button } from "$lib/components/ui/button/index.js";
   	import * as ButtonGroup from "$lib/components/ui/button-group/index.js";
   	import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  	import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-    let voiceEnabled = false;
+
     let textarea: HTMLTextAreaElement;
 </script>
 <Sidebar.Provider>
@@ -54,7 +53,7 @@
                                                 }
                                             }}
                                         />
-                                        <p class="text-muted-foreground text-sm">
+                                        <p class="text-muted-foreground text-sm"></p>
                                     <script lang="ts">
                                         let textarea: HTMLTextAreaElement;
                                     </script>
