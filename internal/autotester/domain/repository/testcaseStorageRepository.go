@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -54,12 +55,14 @@ func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3Stora
 // nolint:dupl
 func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase) error {
 	if err := validateTestCaseData(obj); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
+		r.logger.Error(fmt.Sprintf("validation failed: %s", err))
+		return errors.ErrValidation
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		return err
+		r.logger.Error(fmt.Sprintf("failed to write parquet: %s", err))
+		return errors.ErrInternalServer
 	}
 	key := generateTestCaseKey()
 	metadata := map[string]string{
@@ -84,7 +87,8 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
 	if err := assert.StringNotEmpty(key); err != nil {
-		return nil, fmt.Errorf("key must not be empty")
+		r.logger.Error(fmt.Sprintf("key must not be empty: %s", err))
+		return nil, errors.ErrValidation
 	}
 
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
@@ -97,10 +101,12 @@ func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*enti
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, fmt.Errorf("no data found for key %s", key)
+		r.logger.Error(fmt.Sprintf("no data found for key %s", key))
+		return nil, errors.ErrInternalServer
 	}
 	if err := validateTestCaseData(&items[0]); err != nil {
-		return nil, fmt.Errorf("validation failed: %w", err)
+		r.logger.Error(fmt.Sprintf("validation failed: %s", err))
+		return nil, errors.ErrValidation
 	}
 	return &items[0], nil
 }
@@ -110,31 +116,37 @@ func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*enti
 // nolint:dupl
 func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty")
+		r.logger.Error(fmt.Sprintf("key must not be empty, %s", err))
+		return errors.ErrValidation
 	}
 
 	if err := validateTestCaseData(obj); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
+		r.logger.Error(fmt.Sprintf("validation failed: %s", err))
+		return errors.ErrValidation
 	}
 
 	exists, err := r.s3Wrapper.FileExists(ctx, key)
 	if err != nil {
-		return fmt.Errorf("failed to check if key exists: %w", err)
+		r.logger.Error(fmt.Sprintf("failed to check if key exists: %s", err))
+		return errors.ErrInternalServer
 	}
 	if !exists {
-		return fmt.Errorf("cannot update: key does not exist")
+		r.logger.Error(fmt.Sprintf("cannot update: key does not exist %s", key))
+		return errors.ErrGeneration
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(*obj)
 	if err != nil {
-		return fmt.Errorf("failed to serialize object: %w", err)
+		r.logger.Error(fmt.Sprintf("failed to serialize object: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	metadata := map[string]string{}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		return fmt.Errorf("failed to upload updated object: %w", err)
+		r.logger.Error(fmt.Sprintf("failed to upload updated object: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	r.logger.Debug("update: object successfully overwritten",
@@ -149,7 +161,8 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
-		return fmt.Errorf("key must not be empty")
+		r.logger.Error(fmt.Sprintf("key must not be empty: %s", err))
+		return errors.ErrValidation
 	}
 
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, key); err != nil {
