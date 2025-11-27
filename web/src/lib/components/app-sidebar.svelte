@@ -33,29 +33,26 @@
 		],
 		navMain: [
 			{
-				title: "Today",
+				title: "Sidebar",
 				url: "#",
-				icon: SquareTerminalIcon,
 				isActive: true,
 				get items() { return $chats.map(chat => ({ title: chat.title, url: "#" })); }
 			},
 			{
-				title: "Yesterday",
+				title: "Login",
 				url: "#",
-				icon: SquareTerminalIcon,
 				isActive: true,
 				items: [
-					{ title: "Sidebar Test", url: "#",},
+					{ title: "Homepage Login", url: "#",},
 
 				]
 			},
 			{
-				title: "Last week",
+				title: "Vacation",
 				url: "#",
-				icon: SquareTerminalIcon,
 				isActive: true,
 				items: [
-					{ title: "Login Test", url: "#",},
+					{ title: "Pauschalreisen", url: "#",},
 
 				]
 			}
