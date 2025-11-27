@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -132,7 +133,8 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 
 		if strings.TrimSpace(result.Text) == "" {
-			return nil, fmt.Errorf("empty openai result for req: %v", req)
+			v.Logger.Error(fmt.Sprintf("empty openai result for req: %v", req))
+			return nil, sharedErrors.ErrGeneration
 		}
 
 		var validationResult OpenAIValidationResult
@@ -140,7 +142,8 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		err = json.Unmarshal([]byte(result.Text), &validationResult)
 
 		if err != nil {
-			return nil, fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
+			v.Logger.Error(fmt.Sprintf("invalid OpenAI response format at index %d: %v", i, err))
+			return nil, sharedErrors.ErrGeneration
 		}
 
 		if !validationResult.Valid {
