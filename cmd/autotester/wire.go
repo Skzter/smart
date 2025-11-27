@@ -67,12 +67,12 @@ func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout)
 }
 
-// ChatParquetWrapperProvider provides a new session summary parquet wrapper.
+// ChatParquetWrapperProvider provides a new Chat parquet wrapper.
 func ChatParquetWrapperProvider(logger *slog.Logger) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
 	return wrapperService.NewParquetWrapper[entity.Chat](logger, wrapperService.DefaultParquetConfig())
 }
 
-// ChatSummaryParquetWrapperProvider provides a new session summary parquet wrapper.
+// ChatSummaryParquetWrapperProvider provides a new ChatSummary parquet wrapper.
 func ChatSummaryParquetWrapperProvider(logger *slog.Logger) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
 	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, wrapperService.DefaultParquetConfig())
 }
@@ -82,6 +82,7 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger) (wrapperService.Parquet
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, wrapperService.DefaultParquetConfig())
 }
 
+// S3WrapperProvider provides a configured S3StorageWrapper
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
