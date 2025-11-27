@@ -8,6 +8,7 @@ import (
 	"time"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -56,15 +57,18 @@ func NewDatabaseRepository(
 // CreateRequest writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
 	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context cannot be nil, %w", err)
+		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
+		return sharedErrors.ErrInternalServer
 	}
 	if err := validateDbEntry(dbEntry); err != nil {
-		return fmt.Errorf("failed to validate dbEntry: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to validate dbEntry: %s", err))
+		return sharedErrors.ErrValidation
 	}
 
 	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(dbEntry)
 	if err != nil {
-		return fmt.Errorf("failed to write parquet: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to write parquet: %s", err))
+		return sharedErrors.ErrInternalServer
 	}
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -78,7 +82,8 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
-		return fmt.Errorf("failed to upload existing parquet: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to upload existing parquet: %s", err))
+		return sharedErrors.ErrGeneration
 	}
 
 	return nil
@@ -87,15 +92,18 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 // ReadRequest retrieves a request from the database by its key, downloading the Parquet file and reading its content.
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("context cannot be nil, %w", err)
+		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
+		return nil, sharedErrors.ErrGeneration
 	}
 	if err := assert.StringNotEmpty(key); err != nil {
+		dbR.logger.Error(fmt.Sprintf("key must not be empty: %s", err))
 		return nil, fmt.Errorf("key must not be empty: %w", err)
 	}
 
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to download existing parquet: %s", err))
+		return nil, sharedErrors.ErrInternalServer
 	}
 	dbR.logger.Debug("file downloaded",
 		slog.Int("size", len(parquetData)),
@@ -103,7 +111,8 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 	)
 	dbEntries, err := dbR.parquetWrapper.ReadStructsFromParquet(parquetData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read parquet data: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to read parquet data: %s", err))
+		return nil, sharedErrors.ErrInternalServer
 	}
 	dbR.logger.Debug("events read from parquet", slog.Int("count", len(dbEntries)))
 	firstEntry := dbEntries[0]
@@ -143,7 +152,8 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
+		dbR.logger.Error(fmt.Sprintf("failed to upload file: %s", err))
+		return sharedErrors.ErrInternalServer
 	}
 
 	return nil
