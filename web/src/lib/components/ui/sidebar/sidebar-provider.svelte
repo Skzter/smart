@@ -6,7 +6,6 @@
 		SIDEBAR_COOKIE_MAX_AGE,
 		SIDEBAR_COOKIE_NAME,
 		SIDEBAR_WIDTH,
-		SIDEBAR_WIDTH_ICON,
 	} from "./constants.js";
 	import { setSidebar } from "./context.svelte.js";
 
