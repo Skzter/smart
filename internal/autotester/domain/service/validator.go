@@ -9,7 +9,7 @@ import (
 	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
-	openAIService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -21,18 +21,18 @@ type Validator interface {
 
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
 type validator struct {
-	service openAIService.OpenAI
+	openAIservice sharedService.OpenAI
 	config  *config.Config
 	logger  *slog.Logger
 }
 
 // NewValidatorService creates a new instance of Validator.
 // Returns an error if any required dependencies are nil.
-func NewValidatorService(service openAIService.OpenAI, config *config.Config, logger *slog.Logger) (Validator, error) {
-	if err := assert.NotNil(service, config, logger); err != nil {
+func NewValidatorService(openAIservice sharedService.OpenAI, config *config.Config, logger *slog.Logger) (Validator, error) {
+	if err := assert.NotNil(openAIservice, config, logger); err != nil {
 		return nil, err
 	}
-	return &validator{service, config, logger}, nil
+	return &validator{openAIservice, config, logger}, nil
 }
 
 // ValidatePrompt checks if the user prompt contains required information for test generation.
@@ -53,7 +53,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		return false, "Invalid Request", err
 	}
 
-	resp, err := s.service.Request(ctx, req)
+	resp, err := s.openAIservice.Request(ctx, req)
 	if err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrValidation
