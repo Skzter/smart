@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
@@ -28,8 +27,7 @@ type databaseService struct {
 // NewDatabaseService creates a new instance of DatabaseService.
 func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository) (DatabaseService, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
-		logger.Error(fmt.Sprintf("repo cannot be nil, %s", err))
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("repo cannot be nil, %w", err)
 	}
 	return &databaseService{
 		logger: logger,
@@ -40,12 +38,10 @@ func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository)
 // SaveDbEntry saves a database entry by calling the repository's CreateRequest method.
 func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.DatabaseEntry) error {
 	if err := assert.NotNil(ctx); err != nil {
-		d.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
-		d.logger.Error(fmt.Sprintf("failed to save request: %s", err))
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to save request: %w", err)
 	}
 	d.logger.Debug("Request saved successfully", "request", request)
 	return nil
@@ -54,13 +50,11 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 // GetAllKeys retrieves all keys from the database.
 func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		d.logger.Error("context cannot be nil")
 		return nil, fmt.Errorf("context cannot be nil")
 	}
 	keys, err := d.repo.ListAllKeys(ctx)
 	if err != nil {
-		d.logger.Error(fmt.Sprintf("failed to get all keys: %s", err))
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}
 	return keys, nil
 }
