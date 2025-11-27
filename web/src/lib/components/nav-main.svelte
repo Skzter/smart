@@ -1,18 +1,18 @@
 <script lang="ts">
-	import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-	import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-	import NewChat from "@lucide/svelte/icons/plus";
-	import { toast } from "svelte-sonner";
-	import Calendar from "@lucide/svelte/icons/calendar";
-	import Filter from "@lucide/svelte/icons/filter";
-	import { Button } from "$lib/components/ui/button/index.js";
-	import { createChat } from "$lib/stores/chats";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import * as Popover from "$lib/components/ui/popover/index.js";
-	import { useSidebar } from "$lib/components/ui/sidebar/index.js";
-	import { buttonVariants } from "$lib/components/ui/button/index.js";
+    import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import {useSidebar} from "$lib/components/ui/sidebar/index.js";
+    import {Button} from "$lib/components/ui/button/index.js";
+    import {Calendar as CalendarComponent} from "$lib/components/ui/calendar/index.js";
+    import {getLocalTimeZone, today} from "@internationalized/date";
+    import {createChat} from "$lib/stores/chats";
+    import {toast} from "svelte-sonner";
+    import NewChat from "@lucide/svelte/icons/plus";
+    import Calendar from "@lucide/svelte/icons/calendar";
+    import Filter from "@lucide/svelte/icons/filter";
+    import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 
-	let {
+    let {
 		items,
 	}: {
 		items: {
@@ -28,15 +28,15 @@
 			}[];
 		}[];
 	} = $props();
-    
-	// Change this to any lucide icon to swap the icon used for the Login button
-	let loginIcon: any = NewChat;
+
 	const sidebar = useSidebar();
+    let date = $state(today(getLocalTimeZone()));
+
 </script>
 
 <!-- Add a top button above the Platform group -->
 <Sidebar.Menu>
-	<Sidebar.MenuItem class="px-3 py-2" onclick={() => { createChat(); toast.success('New Chat started!'); }}>
+	<Sidebar.MenuItem class="px-3 py-1" onclick={() => { createChat(); toast.success('New Chat started!'); }}>
 		<!-- Use the Button UI component inside a MenuItem; avoid nested buttons by not using Sidebar.MenuButton here -->
 		<div class="px-1">
 			<Button
@@ -52,36 +52,47 @@
 		</div>
 	</Sidebar.MenuItem>
 
-	<Sidebar.MenuItem class="px-3 py-2">
-		<div class="px-1">
-			<Button
-				variant="outline"
-				size={sidebar.state === "collapsed" ? "icon" : "lg"}
-				class={sidebar.state === "collapsed" ? "w-full justify-center gap-0 " : "w-full justify-start gap-3 h-9"}
-			>
-				<Calendar class="size-5" />
-				{#if sidebar.state !== "collapsed"}
-					Calendar
-				{/if}
-			</Button>
-		</div>
-	</Sidebar.MenuItem>
+    <Sidebar.MenuItem class="px-3 py-1">
+        <div class="px-1">
+            <Collapsible.Root class="group/collapsible">
+                <Collapsible.Trigger asChild>
+                    {#snippet child({props})}
+                        <Button
+                                variant="outline"
+                                size={sidebar.state === "collapsed" ? "icon" : "lg"}
+                                class={sidebar.state === "collapsed" ? "w-full justify-center gap-0 pointer-events-none" : "w-full justify-start gap-3 h-13"}
+                                {...props}
+                        >
+                            <Calendar class="size-5"/>
+                            {#if sidebar.state !== "collapsed"}
+                                Calendar
+                            {/if}
+                        </Button>
+                    {/snippet}
+                </Collapsible.Trigger>
+                <Collapsible.Content>
+                    <div class="mt-2 flex justify-center rounded-md border bg-background p-2">
+                        <CalendarComponent type="single" bind:value={date} class="rounded-md border"/>
+                    </div>
+                </Collapsible.Content>
+            </Collapsible.Root>
+        </div>
+    </Sidebar.MenuItem>
 
-	<Sidebar.MenuItem class="px-3 py-2">
-		<div class="px-1">
-			<Button
-				variant="outline"
-				size={sidebar.state === "collapsed" ? "icon" : "lg"}
-				class={sidebar.state === "collapsed" ? "w-full justify-center gap-0" : "w-full justify-start gap-3 h-9"}
-			>
-				<Filter class="size-5" />
-				{#if sidebar.state !== "collapsed"}
-					Filter
-				{/if}
-			</Button>
-		</div>
-	</Sidebar.MenuItem>
-
+    <Sidebar.MenuItem class="px-3 py-1">
+        <div class="px-1">
+            <Button
+                    variant="outline"
+                    size={sidebar.state === "collapsed" ? "icon" : "lg"}
+                    class={sidebar.state === "collapsed" ? "w-full justify-center gap-0" : "w-full justify-start gap-3 h-13"}
+            >
+                <Filter class="size-5"/>
+                {#if sidebar.state !== "collapsed"}
+                    Filter
+                {/if}
+            </Button>
+        </div>
+    </Sidebar.MenuItem>
 </Sidebar.Menu>
 
 <Sidebar.Group>
