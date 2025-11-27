@@ -36,7 +36,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
-		repository.NewTestCaseStorageRepository,
+		TestCaseStorageRepositoryProvider,
 		service.NewValidatePromptService,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
@@ -101,4 +101,12 @@ func DockerClientProvider() (service.DockerClient, error) {
 
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
+}
+
+func TestCaseStorageRepositoryProvider(logger *slog.Logger,
+	s3Wrapper wrapperService.S3StorageWrapper,
+	parquetWrapper wrapperService.ParquetFileWrapper[entity.TestCase],
+	cfg *config.Config,
+) (repository.TestcaseStorageRepository, error) {
+	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix)
 }

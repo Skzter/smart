@@ -28,7 +28,7 @@ func TestNewTestcaseStorageService(t *testing.T) {
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		repo    repository.TestCaseStorageRepository
+		repo    repository.TestcaseStorageRepository
 		wantErr bool
 	}{
 		{
@@ -64,7 +64,7 @@ func TestNewTestcaseStorageService(t *testing.T) {
 }
 
 // nolint: dupl
-func TestSaveTestCase(t *testing.T) {
+func TestSaveTestcase(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
@@ -153,7 +153,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, parquetWrapper)
 
-	s3Repo, err := repository.NewTestCaseStorageRepository(logger, s3Wrapper, parquetWrapper)
+	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest")
 	require.NoError(t, err)
 	require.NotNil(t, s3Repo)
 

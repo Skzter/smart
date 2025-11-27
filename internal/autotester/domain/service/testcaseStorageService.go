@@ -20,12 +20,12 @@ type TestcaseStorageService interface {
 // and provides logic for storing TestCase entities via the underlying repository.
 type testcaseStorageService struct {
 	logger *slog.Logger
-	repo   repository.TestCaseStorageRepository
+	repo   repository.TestcaseStorageRepository
 }
 
 // NewTestcaseStorageService creates a new TestcaseStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewTestcaseStorageService(logger *slog.Logger, repo repository.TestCaseStorageRepository) (TestcaseStorageService, error) {
+func NewTestcaseStorageService(logger *slog.Logger, repo repository.TestcaseStorageRepository) (TestcaseStorageService, error) {
 	if err := assert.NotNil(logger, repo); err != nil {
 		return nil, err
 	}

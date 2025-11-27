@@ -11,8 +11,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TestCaseStorageRepository defines the interface for a repository managing TestCase entities.
-type TestCaseStorageRepository interface {
+// TestcaseStorageRepository defines the interface for a repository managing TestCase entities.
+type TestcaseStorageRepository interface {
 	// Create stores a new TestCase object in the underlying storage system.
 	Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error)
 
@@ -26,24 +26,32 @@ type TestCaseStorageRepository interface {
 	Delete(ctx context.Context, key string) error
 }
 
-const prefixTestCase = "autotester/testcase"
-
-// testCaseStorageRepository provides a repository implementation for TestCase entities,
+// testcaseStorageRepository provides a repository implementation for TestCase entities,
 // encapsulating logic for S3 and Parquet operations.
-type testCaseStorageRepository struct {
+type testcaseStorageRepository struct {
 	s3Wrapper      service.S3StorageWrapper
 	parquetWrapper service.ParquetFileWrapper[entity.TestCase]
 	logger         *slog.Logger
+	s3Prefix       string
 }
 
-// NewTestCaseStorageRepository creates a new repository for TestCase entities.
+// NewTestcaseStorageRepository creates a new repository for TestCase entities.
 // Returns the repository or an error.
-func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, parquetWrapper service.ParquetFileWrapper[entity.TestCase]) (TestCaseStorageRepository, error) {
+func NewTestcaseStorageRepository(
+	logger *slog.Logger,
+	s3Wrapper service.S3StorageWrapper,
+	parquetWrapper service.ParquetFileWrapper[entity.TestCase],
+	s3Prefix string,
+) (TestcaseStorageRepository, error) {
 	if err := assert.NotNil(logger, s3Wrapper, parquetWrapper); err != nil {
 		return nil, err
 	}
 
-	return &testCaseStorageRepository{
+	if err := assert.StringNotEmpty(s3Prefix); err != nil {
+		return nil, err
+	}
+
+	return &testcaseStorageRepository{
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
@@ -52,7 +60,7 @@ func NewTestCaseStorageRepository(logger *slog.Logger, s3Wrapper service.S3Stora
 
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
 // nolint:dupl
-func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
+func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
 	if err := validateTestCaseData(obj); err != nil {
 		return "", fmt.Errorf("validation failed: %w", err)
 	}
@@ -64,7 +72,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 	if err != nil {
 		return "", err
 	}
-	key := generateTestCaseKey(obj.TestID)
+	key := r.generateTestCaseKey(obj.TestID)
 	metadata := map[string]string{
 		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
 		"author":  userId,
@@ -86,7 +94,7 @@ func (r *testCaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // Read downloads the Parquet file from S3 using the given key and returns the first TestCase found.
 // Returns the TestCase or an error.
 // nolint:dupl
-func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
+func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return nil, fmt.Errorf("key must not be empty")
 	}
@@ -112,7 +120,7 @@ func (r *testCaseStorageRepository) Read(ctx context.Context, key string) (*enti
 // Update overwrites the existing Parquet file at the given key with the provided TestCase.
 // Returns an error if the key does not exist or the operation fails.
 // nolint:dupl
-func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
+func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty")
 	}
@@ -151,7 +159,7 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // Delete removes the Parquet file associated with the given key from S3.
 // Returns an error if the deletion fails.
 // nolint:dupl
-func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) error {
+func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) error {
 	if err := assert.StringNotEmpty(key); err != nil {
 		return fmt.Errorf("key must not be empty")
 	}
@@ -167,10 +175,10 @@ func (r *testCaseStorageRepository) Delete(ctx context.Context, key string) erro
 }
 
 // generateTestCaseKey creates a unique S3 key for a TestCase object.
-// The format is: "autotester/testCase/<testCaseID>_<timestamp>.parquet"
-func generateTestCaseKey(testcaseId string) string {
+// The format is: "testcase/<testCaseID>_<timestamp>.parquet"
+func (r *testcaseStorageRepository) generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d.parquet", prefixTestCase, testcaseId, timestamp)
+	return fmt.Sprintf("%s/%s_%d.parquet", r.s3Prefix, testcaseId, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.
