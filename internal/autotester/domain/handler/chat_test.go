@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -236,16 +235,6 @@ func TestHandleUserInfoRequest(t *testing.T) {
 }
 
 func TestGetUserChats(t *testing.T) {
-	correctSortedResponse := []*entity.ChatSummary{
-		{
-			ChatId:    "1",
-			UpdatedAt: time.Now(),
-		},
-		{
-			ChatId:    "2",
-			UpdatedAt: time.Now().Add(-10 * time.Hour),
-		},
-	}
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tests := []struct {
@@ -261,42 +250,48 @@ func TestGetUserChats(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
+			name:           "error - invalid ID format",
+			requestID:      "132",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name:           "error - limit is not a number",
-			requestID:      "123",
+			requestID:      "auth0|123",
 			limit:          "hallo",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "error - limit is a negative number",
-			requestID:      uuid.NewString(),
+			requestID:      "auth0|123",
 			limit:          "-131",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:             "error - no chat history for given user found",
-			requestID:        "456",
+			requestID:        "auth0|123",
 			limit:            "123",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:             "success",
-			requestID:        "789",
-			limit:            "5",
-			mockResponseLoad: []any{correctSortedResponse, nil},
-			expectedStatus:   http.StatusOK,
+			name:             "error - empty limit but no history found",
+			requestID:        "auth0|123",
+			limit:            "",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:      "success - unsorted array",
-			requestID: "123456",
+			name:      "success",
+			requestID: "auth0|123",
+			limit:     "5",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
-				{
-					ChatId:    "2",
-					UpdatedAt: time.Now().Add(-10 * time.Hour),
-				},
 				{
 					ChatId:    "1",
 					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
 				},
 			}, nil},
 			expectedStatus: http.StatusOK,

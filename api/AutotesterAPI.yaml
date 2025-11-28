@@ -260,7 +260,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Chats'
+                $ref: '#/components/schemas/ChatSummarys'
 
         '400':
           description: "Bad request — invalid userId or invalid limit parameter."
@@ -425,7 +425,7 @@ components:
         template:
           type: string
           example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
-    Chats:
+    ChatSummarys:
       type: object
       properties:
         chats:

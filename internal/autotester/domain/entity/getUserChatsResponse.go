@@ -1,6 +1,6 @@
 package entity
 
-// Chats is an entity for holding an array of ChatSummarys
-type Chats struct {
-	Chats []*ChatSummary `json:"chats"`
+// ChatSummarys is an entity for holding an array of ChatSummarys
+type ChatSummarys struct {
+	ChatSummarys []*ChatSummary `json:"chats"`
 }

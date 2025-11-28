@@ -3,15 +3,14 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // HandleChatRequest processes a chat request from the frontend.
@@ -79,11 +78,10 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // invalid example: /chats/1234 or /chats/hahahihi
 func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	userID := c.Param("UserID")
-	// nach einigen tests sehr sicher, dass das hier eig nie failen wird da man keine request an die url schicken kann ohne id
-	// failt einfach direkt weil 404 not found
-	if err := assert.StringNotEmpty(userID); err != nil {
-		a.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+	// checking if style: auth0|id is there
+	if !isValid(userID) {
+		a.logger.Error("invalid id format")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid id format"})
 		return
 	}
 
@@ -117,11 +115,15 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 
 	chats = chats[:limit]
 
-	sort.Slice(chats, func(i, j int) bool {
-		return chats[i].UpdatedAt.After(chats[j].UpdatedAt)
+	c.JSON(http.StatusOK, entity.ChatSummarys{
+		ChatSummarys: chats,
 	})
+}
 
-	c.JSON(http.StatusOK, entity.Chats{
-		Chats: chats,
-	})
+func isValid(userId string) bool {
+	tokens := strings.Split(userId, "|")
+	if tokens[0] != "auth0" || tokens[1] == "" {
+		return false
+	}
+	return true
 }
