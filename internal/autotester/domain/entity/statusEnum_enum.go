@@ -6,7 +6,6 @@
 package entity
 
 import (
-	"database/sql/driver"
 	"errors"
 	"fmt"
 )
@@ -93,77 +92,4 @@ func (x *TestStatus) UnmarshalText(text []byte) error {
 // Implementations must not retain b, nor mutate any bytes within b[:len(b)].
 func (x *TestStatus) AppendText(b []byte) ([]byte, error) {
 	return append(b, x.String()...), nil
-}
-
-var errTestStatusNilPtr = errors.New("value pointer is nil") // one per type for package clashes
-
-// Scan implements the Scanner interface.
-func (x *TestStatus) Scan(value interface{}) (err error) {
-	if value == nil {
-		*x = TestStatus(0)
-		return
-	}
-
-	// A wider range of scannable types.
-	// driver.Value values at the top of the list for expediency
-	switch v := value.(type) {
-	case int64:
-		*x = TestStatus(v)
-	case string:
-		*x, err = ParseTestStatus(v)
-	case []byte:
-		*x, err = ParseTestStatus(string(v))
-	case TestStatus:
-		*x = v
-	case int:
-		*x = TestStatus(v)
-	case *TestStatus:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = *v
-	case uint:
-		*x = TestStatus(v)
-	case uint64:
-		*x = TestStatus(v)
-	case *int:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = TestStatus(*v)
-	case *int64:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = TestStatus(*v)
-	case float64: // json marshals everything as a float64 if it's a number
-		*x = TestStatus(v)
-	case *float64: // json marshals everything as a float64 if it's a number
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = TestStatus(*v)
-	case *uint:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = TestStatus(*v)
-	case *uint64:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x = TestStatus(*v)
-	case *string:
-		if v == nil {
-			return errTestStatusNilPtr
-		}
-		*x, err = ParseTestStatus(*v)
-	}
-
-	return
-}
-
-// Value implements the driver Valuer interface.
-func (x TestStatus) Value() (driver.Value, error) {
-	return x.String(), nil
 }

@@ -62,28 +62,6 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
-func TestScanAndValue(t *testing.T) {
-	for _, status := range []TestStatus{
-		TestStatusPending,
-		TestStatusRunning,
-		TestStatusFailed,
-	} {
-		val, err := status.Value()
-		if err != nil {
-			t.Fatalf("Value() error: %v", err)
-		}
-
-		var s TestStatus
-		if err := s.Scan(val); err != nil {
-			t.Fatalf("Scan() error: %v", err)
-		}
-
-		if s != status {
-			t.Errorf("Scan(Value()) = %v, want %v", s, status)
-		}
-	}
-}
-
 func TestMarshalUnmarshalText(t *testing.T) {
 	for _, status := range []TestStatus{
 		TestStatusPending,
