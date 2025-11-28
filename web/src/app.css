@@ -48,9 +48,7 @@
 
 /* Tokenizer Setup */
 :root {
-    h1 {
-        color: black;
-    }
+    --catppuccin-heading: #000000;
     --catppuccin-background: #eff1f5;
     --token-keyword-color: #8839ef;
     --token-keyword-weight: 600;
@@ -69,9 +67,7 @@
 
 /* Catppuccin Mocha Dark Theme */
 [data-theme="dark"] {
-    h1 {
-        color: white;
-    }
+    --catppuccin-heading: #ffffff;
     --catppuccin-background: #1e1e2e;
     --token-keyword-color: #cba6f7; /* Mauve */
     --token-function-color: #89b4fa; /* Blue */

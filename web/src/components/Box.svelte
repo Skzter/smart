@@ -116,7 +116,10 @@
         class:bg-(--catppuccin-background)={name === "Bot" && showSave}
     >
         <div class="flex items-start justify-between">
-            <h1 class="tracking-wide uppercase font-bold text-xl">
+            <h1
+                class="tracking-wide uppercase font-bold text-xl"
+                class:text-(--catppuccin-heading)={name === "Bot" && showSave}
+            >
                 {name}
             </h1>
             <div class="flex">
@@ -154,6 +157,7 @@
             </div>
         </div>
         {#if showSave}
+            <!-- pre preserves whitespace in them so this has to be like this -->
             <pre
                 class="font-sans text-base leading-relaxed whitespace-pre-wrap break-words">{#each tokens as token}<span
                         class="token-{token.type}">{token.value}</span
