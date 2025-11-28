@@ -48,23 +48,30 @@
 
 /* Tokenizer Setup */
 :root {
-    --token-keyword-color: #569cd6;
+    h1 {
+        color: black;
+    }
+    --catppuccin-background: #eff1f5;
+    --token-keyword-color: #8839ef;
     --token-keyword-weight: 600;
 
-    --token-function-color: #dcdcaa;
+    --token-function-color: #1e66f5;
 
-    --token-string-color: #ce9178;
-    --token-comment-color: #6a9955;
+    --token-string-color: #1e66f5;
+    --token-comment-color: #9ca0b0;
     --token-comment-style: italic;
 
-    --token-identifier-color: #9cdcfe;
-    --token-number-color: #b5cea8;
-    --token-operator-color: #d4d4d4;
-    --token-punctuation-color: #d4d4d4;
+    --token-identifier-color: #d20f39;
+    --token-number-color: #fe640b;
+    --token-operator-color: #ea76cb;
+    --token-punctuation-color: #5c5f77;
 }
 
 /* Catppuccin Mocha Dark Theme */
 [data-theme="dark"] {
+    h1 {
+        color: white;
+    }
     --catppuccin-background: #1e1e2e;
     --token-keyword-color: #cba6f7; /* Mauve */
     --token-function-color: #89b4fa; /* Blue */
