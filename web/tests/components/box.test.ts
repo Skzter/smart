@@ -11,16 +11,16 @@ describe("Box component", () => {
         vi.clearAllMocks();
     });
 
-    // Updated helper function to handle both showSave cases
+    // Updated helper function to handle both isCode cases
     function getMessageElement(
         container: HTMLElement,
-        showSave: boolean = false,
+        isCode: boolean = false,
     ) {
-        if (showSave) {
-            // When showSave is true, content is in <pre> with tokenized spans
+        if (isCode) {
+            // When isCode is true, content is in <pre> with tokenized spans
             return container.querySelector("pre");
         } else {
-            // When showSave is false, content is in <p> tag
+            // When isCode is false, content is in <p> tag
             return container.querySelector("p");
         }
     }
@@ -148,14 +148,14 @@ describe("Box component", () => {
         });
     });
 
-    describe("when showSave is true", () => {
+    describe("when isCode is true", () => {
         it("renders the Save button", () => {
             render(Box, {
                 msg: "import { test } from 'playwright';",
                 name: "Bot",
                 userId: "test-user-123",
                 conversationId: "test-conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -168,7 +168,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "test-user-123",
                 conversationId: "test-conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const codeElement = getMessageElement(container, true);
@@ -178,14 +178,14 @@ describe("Box component", () => {
         });
     });
 
-    describe("when showSave is false", () => {
+    describe("when isCode is false", () => {
         it("does not render the Save button", () => {
             render(Box, {
                 msg: "import { test } from 'playwright';",
                 name: "Bot",
                 userId: "test-user-123",
                 conversationId: "test-conv-456",
-                showSave: false,
+                isCode: false,
             });
 
             const saveButton = screen.queryByRole("button", { name: /save/i });
@@ -204,7 +204,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -241,7 +241,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "auth0|user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -266,7 +266,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: undefined,
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -288,7 +288,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: undefined,
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -317,7 +317,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -345,7 +345,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -366,7 +366,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -393,7 +393,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -418,7 +418,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -449,7 +449,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -478,7 +478,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -497,7 +497,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const runButton = screen.queryByText("Run Test");
@@ -514,7 +514,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -543,7 +543,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test
@@ -605,7 +605,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test
@@ -657,7 +657,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: undefined,
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 unmount();
@@ -668,7 +668,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -702,7 +702,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "auth0|user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test

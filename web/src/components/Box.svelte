@@ -4,7 +4,7 @@
     import { AxiosError } from "axios";
     import Code from "./Code.svelte";
 
-    let { msg, name, userId, conversationId, showSave = false } = $props();
+    let { msg, name, userId, conversationId, isCode = false } = $props();
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
@@ -109,19 +109,19 @@
         class:w-[75%]={name === "User"}
         class:w-fit={name === "Bot"}
         class:bg-sky-300={name === "User"}
-        class:bg-gray-200={name === "Bot" && !showSave}
-        class:bg-(--catppuccin-background)={name === "Bot" && showSave}
+        class:bg-gray-200={name === "Bot" && !isCode}
+        class:bg-(--catppuccin-background)={name === "Bot" && isCode}
     >
         <div class="flex items-start justify-between">
             <h1
                 class="tracking-wide uppercase font-bold text-xl"
-                class:text-(--catppuccin-heading)={name === "Bot" && showSave}
+                class:text-(--catppuccin-heading)={name === "Bot" && isCode}
             >
                 {name}
             </h1>
             <div class="flex">
                 <div class="ml-2">
-                    {#if showSave}
+                    {#if isCode}
                         <Button
                             color={saveState === "success"
                                 ? "green"
@@ -145,7 +145,7 @@
                     {/if}
                 </div>
                 <div class="ml-2">
-                    {#if showSave && saveState === "success"}
+                    {#if isCode && saveState === "success"}
                         <Button color="purple" onclick={RunTest}
                             >Run Test</Button
                         >
@@ -153,7 +153,7 @@
                 </div>
             </div>
         </div>
-        {#if showSave}
+        {#if isCode}
             <Code message={msg} />
         {:else}
             <p class="font-sans whitespace-pre-wrap break-words">

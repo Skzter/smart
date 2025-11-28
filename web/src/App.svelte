@@ -113,7 +113,7 @@
                         name="Bot"
                         {userId}
                         {conversationId}
-                        showSave={c.answer.startsWith("import")}
+                        isCode={c.answer.startsWith("import")}
                     />
                 {/if}
             {/each}
