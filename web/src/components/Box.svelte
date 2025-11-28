@@ -2,15 +2,12 @@
     import { Button, Spinner, Modal, type ModalProps } from "flowbite-svelte";
     import { saveTestLocal, runContainer } from "../lib/Api.ts";
     import { AxiosError } from "axios";
-    import { tokenize } from "../lib/syntaxHighlighting.ts";
+    import Code from "./Code.svelte";
 
     let { msg, name, userId, conversationId, showSave = false } = $props();
-
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
-
-    let tokens = $derived(tokenize(msg));
 
     async function saveTest(testcode: string) {
         if (!userId || !conversationId) {
@@ -157,11 +154,7 @@
             </div>
         </div>
         {#if showSave}
-            <!-- pre preserves whitespace in them so this has to be like this -->
-            <pre
-                class="font-sans text-base leading-relaxed whitespace-pre-wrap break-words">{#each tokens as token}<span
-                        class="token-{token.type}">{token.value}</span
-                    >{/each}</pre>
+            <Code message={msg} />
         {:else}
             <p class="font-sans whitespace-pre-wrap break-words">
                 {msg}
