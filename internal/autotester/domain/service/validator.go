@@ -22,8 +22,8 @@ type Validator interface {
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
 type validator struct {
 	openAIservice sharedService.OpenAI
-	config  *config.Config
-	logger  *slog.Logger
+	config        *config.Config
+	logger        *slog.Logger
 }
 
 // NewValidatorService creates a new instance of Validator.
