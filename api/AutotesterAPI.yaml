@@ -163,69 +163,159 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+                
   /api/v1/run:
-  post:
-    summary: Run automated Playwright test in container
-    description: Executes a Playwright test file in a containerized environment and returns the test output logs
-    tags:
-      - Autotester
-    requestBody:
-      required: true
-      content:
-        application/json:
+    post:
+      summary: Run automated Playwright test in container
+      description: Executes a Playwright test file in a containerized environment and returns the test output logs
+      tags:
+        - Autotester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - testId
+                - sessionId
+              properties:
+                userId:
+                  type: string
+                  description: Unique identifier of the user
+                  example: "user123"
+                testId:
+                  type: string
+                  description: Unique identifier of the test to run
+                  example: "test456"
+                sessionId:
+                  type: string
+                  description: Unique identifier of the session
+                  example: "session789"
+      responses:
+        '200':
+          description: Test executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: Test execution output logs
+                    example: "Test passed: All assertions successful"
+        '400':
+          description: Bad request - Invalid input or missing required parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message describing the issue
+                    example: "Missing required parameters"
+        '500':
+          description: Internal server error - Command execution or file reading failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message describing the internal error
+                    example: "Command execution error: exit status 1"
+  
+  /api/v1/tests/{userId}:
+    get:
+      summary: Retrieve stored test cases with optional filters
+      description: >
+        Returns test cases belonging to the specified user. Additional optional
+        query parameters can be used to filter for specific test cases, conversations,
+        or by creation timestamps.
+      parameters:
+        - name: userId
+          in: path
+          required: true
           schema:
-            type: object
-            required:
-              - userId
-              - testId
-              - sessionId
-            properties:
-              userId:
-                type: string
-                description: Unique identifier of the user
-                example: "user123"
-              testId:
-                type: string
-                description: Unique identifier of the test to run
-                example: "test456"
-              sessionId:
-                type: string
-                description: Unique identifier of the session
-                example: "session789"
-    responses:
-      '200':
-        description: Test executed successfully
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                result:
-                  type: string
-                  description: Test execution output logs
-                  example: "Test passed: All assertions successful"
-      '400':
-        description: Bad request - Invalid input or missing required parameters
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Error message describing the issue
-                  example: "Missing required parameters"
-      '500':
-        description: Internal server error - Command execution or file reading failed
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Error message describing the internal error
-                  example: "Command execution error: exit status 1"
+            type: string
+            format: uuid
+          description:  Unique user identifier. Required to scope results to test cases belonging to this specific user.
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+
+        - name: testcaseId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: >
+            Optional: Filters results by a specific test case ID. Can be combined
+            with other filters. If this ID does not belong to the specified user,
+            an empty result will be returned.
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+
+        - name: conversationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: >
+            Optional: Filters results to test cases associated with the given
+            conversation ID. Can be combined with other filters.
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
+
+        - name: createdAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly after the provided
+            ISO 8601 timestamp. Can be combined with `createdBefore` to define
+            a date range.
+          example: "2025-01-01T00:00:00Z"
+
+        - name: createdBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly before the provided
+            ISO 8601 timestamp. Can be combined with `createdAfter` to define
+            a date range.
+          example: "2025-12-31T23:59:59Z"
+
+      responses:
+        '200':
+          description: Successfully returned the filtered test cases.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testcase"
+
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 
 components:
   schemas:
@@ -376,3 +466,26 @@ components:
         template:
           type: string
           example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
+
+    Testcase:
+      type: object
+      properties:
+        id: 
+          type: string
+          format: uuid
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        code:
+          type: string
+          example: |
+            import { test, expect } from '@playwright/test';
+            test('should successfully log in', async ({ page }) => {
+              await page.goto('https://example.com/login');
+              await page.fill('#username', 'user');
+              await page.fill('#password', 'pass');
+              await page.click('button[type=\"submit\"]');
+              await expect(page).toHaveURL('https://example.com/dashboard');
+            });
+        status:
+          type: string
+          example: "passed"
+
