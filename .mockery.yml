@@ -55,7 +55,7 @@ packages:
     config:
       dir: './internal/autotester/domain/repository/mocks'
     interfaces:
-      SessionSummaryStorageRepository:
+      ChatStorageRepository:
       TestCaseStorageRepository:
       FileSystem:
       TestcaseLocalStorageRepository:

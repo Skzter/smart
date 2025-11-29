@@ -129,7 +129,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "valid",
 			request: &entity.Request{
-				Request: `{}`,
+				Tags: "",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -156,7 +157,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "invalid address",
 			request: &entity.Request{
-				Request: `{}`,
+				Tags: "",
+				Body: `{}`,
 			},
 			useCorrectAdress: false,
 			expectedResponse: invalidRequestBody,
@@ -178,8 +180,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "non empty prompt, failure in tagsearch",
 			request: &entity.Request{
-				Prompt:  "non empty prompt, but fails in tagsearch",
-				Request: `{}`,
+				Tags: "non empty prompt, but fails in tagsearch",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -201,8 +203,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "non empty prompt, no keys found",
 			request: &entity.Request{
-				Prompt:  "non emtpy prompt without matching keys",
-				Request: `{}`,
+				Tags: "non emtpy prompt without matching keys",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -283,6 +285,11 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			} else {
 				reqstring = []byte("invalid")
 			}
+			mockTagsearch.
+				On("FindKeysByTags", mock.Anything, mock.Anything).
+				Return([]string{}, nil).
+				Maybe()
+
 			if tt.expectGetTaglistCall {
 				mockSyncer.On("GetCurrentTaglist").
 					Return(&sharedEntity.TagList{
@@ -497,9 +504,9 @@ func BenchmarkPostOfferList(b *testing.B) {
 
 	requestBody, _ := json.Marshal(entity.Request{
 		Header:      map[string]string{"Content-Type": "application/json"},
-		Prompt:      "",
+		Tags:        "",
 		Destination: server.URL,
-		Request:     `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
+		Body:        `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
 	})
 
 	for b.Loop() {

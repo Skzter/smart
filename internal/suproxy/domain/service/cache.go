@@ -236,7 +236,7 @@ func canonicalizeRequest(req entity.Request) string {
 	}
 
 	// Append body content (trimmed)
-	b.WriteString(strings.TrimSpace(req.Request))
+	b.WriteString(strings.TrimSpace(req.Body))
 	return b.String()
 }
 

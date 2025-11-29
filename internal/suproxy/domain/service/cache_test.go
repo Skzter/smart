@@ -91,7 +91,7 @@ func TestCacheService_Lookup_Miss(t *testing.T) {
 	req := entity.Request{
 		Destination: "/test",
 		Header:      map[string]string{"X-Test": "1"},
-		Request:     `{"foo":"bar"}`,
+		Body:        `{"foo":"bar"}`,
 	}
 
 	resp, hit, err := svc.Lookup(context.Background(), req, false)
@@ -114,7 +114,7 @@ func TestCacheService_Lookup_Hit(t *testing.T) {
 	req := entity.Request{
 		Destination: "/test",
 		Header:      map[string]string{"X-Test": "1"},
-		Request:     `{"foo":"bar"}`,
+		Body:        `{"foo":"bar"}`,
 	}
 
 	key := svc.BuildKey(req, false)
@@ -163,7 +163,7 @@ func TestCacheService_Lookup_RepoErrorDegradesToMiss(t *testing.T) {
 	req := entity.Request{
 		Destination: "/test",
 		Header:      map[string]string{},
-		Request:     "",
+		Body:        "",
 	}
 
 	resp, hit, err := svc.Lookup(context.Background(), req, false)
@@ -186,7 +186,7 @@ func TestCacheService_Store_UsesCorrectTTL_ForSupplierOK(t *testing.T) {
 	req := entity.Request{
 		Destination: "/supplier",
 		Header:      map[string]string{},
-		Request:     "{}",
+		Body:        "{}",
 	}
 	response := []byte(`{"result":"ok"}`)
 
@@ -208,7 +208,7 @@ func TestCacheService_Store_UsesCorrectTTL_ForMockOK(t *testing.T) {
 	req := entity.Request{
 		Destination: "/mock",
 		Header:      map[string]string{},
-		Request:     "{}",
+		Body:        "{}",
 	}
 	response := []byte(`{"result":"ok"}`)
 
@@ -243,7 +243,7 @@ func TestCacheService_Store_UsesCorrectTTL_ForErrorOrEmpty(t *testing.T) {
 			req := entity.Request{
 				Destination: "/test",
 				Header:      map[string]string{},
-				Request:     "{}",
+				Body:        "{}",
 			}
 
 			err := svc.Store(context.Background(), req, tc.resp, false, tc.isError)
@@ -266,7 +266,7 @@ func TestCacheService_Invalidate_UsesCorrectKey(t *testing.T) {
 	req := entity.Request{
 		Destination: "/invalidate",
 		Header:      map[string]string{"X": "1"},
-		Request:     "body",
+		Body:        "body",
 	}
 
 	expectedKey := svc.BuildKey(req, false)
@@ -291,7 +291,7 @@ func TestBuildKey_IsDeterministicAndHeaderOrderIndependent(t *testing.T) {
 			"X-B": "2",
 			"X-A": "1",
 		},
-		Request: "body",
+		Body: "body",
 	}
 
 	req2 := entity.Request{
@@ -300,7 +300,7 @@ func TestBuildKey_IsDeterministicAndHeaderOrderIndependent(t *testing.T) {
 			"X-A": "1",
 			"X-B": "2",
 		},
-		Request: "body",
+		Body: "body",
 	}
 
 	key1 := svc.BuildKey(req1, false)
