@@ -67,7 +67,7 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 		Header: map[string]string{
 			"X-Test": "1",
 		},
-		Request: `{"foo":"bar"}`,
+		Body: `{"foo":"bar"}`,
 	}
 
 	originalResponse := []byte(`{"result":"ok"}`)
