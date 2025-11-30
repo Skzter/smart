@@ -8,9 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 )
 
 const EntryPrefix = "taglist/"
@@ -68,6 +69,7 @@ func TestCreateTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -79,10 +81,10 @@ func TestCreateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			err := repo.CreateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -153,6 +155,7 @@ func TestReadTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,10 +167,10 @@ func TestReadTaglist(t *testing.T) {
 			}
 
 			if tt.readReturns != nil {
-				parquet.On("ReadStructsFromParquet", mock.Anything).Return(*tt.readReturns...)
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).Return(*tt.readReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			taglist, err := repo.ReadTaglist(tt.ctx)
 
 			if tt.expectsError {
@@ -246,6 +249,7 @@ func TestUpdateTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -257,14 +261,14 @@ func TestUpdateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
 			if tt.downloadReturns != nil {
 				s3.On("DownloadParquetFile", mock.Anything, mock.Anything).Return(*tt.downloadReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			err := repo.UpdateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -306,6 +310,7 @@ func TestTaglistExists(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -316,7 +321,7 @@ func TestTaglistExists(t *testing.T) {
 				s3.On("FileExists", mock.Anything, mock.Anything).Return(*tt.existReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			exists, err := repo.TaglistExists(tt.ctx)
 
 			if tt.expectedError {
@@ -331,6 +336,7 @@ func TestTaglistExists(t *testing.T) {
 
 func TestNewTaglistStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -362,7 +368,7 @@ func TestNewTaglistStorage(t *testing.T) {
 				parquet = mocks.NewMockParquetFileWrapper[entity.TagList](t)
 			}
 
-			repo, err := NewTaglistStorage(tt.logger, s3, parquet, EntryPrefix)
+			repo, err := NewTaglistStorage(tt.logger, s3, parquet, EntryPrefix, tracer)
 
 			if tt.expectError {
 				assert.Error(t, err)

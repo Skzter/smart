@@ -17,12 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
+	"go.opentelemetry.io/otel"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 )
 
 func TestNewS3Wrapper(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -67,7 +69,7 @@ func TestNewS3Wrapper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrapper, err := NewS3Wrapper(logger, tt.config)
+			wrapper, err := NewS3Wrapper(logger, tt.config, tracer)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -89,12 +91,13 @@ func TestNewS3Wrapper(t *testing.T) {
 }
 
 func TestNewS3WrapperNilLogger(t *testing.T) {
+	tracer := otel.Tracer("test")
 	config := entity.S3Config{
 		Region: "us-east-1",
 		Bucket: "test-bucket",
 	}
 
-	wrapper, err := NewS3Wrapper(nil, config)
+	wrapper, err := NewS3Wrapper(nil, config, tracer)
 	assert.Error(t, err)
 	assert.Nil(t, wrapper)
 	assert.ErrorIs(t, err, ErrNilLogger)
@@ -102,12 +105,13 @@ func TestNewS3WrapperNilLogger(t *testing.T) {
 
 func TestS3WrapperInputValidation(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tracer := otel.Tracer("test")
 	config := entity.S3Config{
 		Region: "us-east-1",
 		Bucket: "test-bucket",
 	}
 
-	wrapper, err := NewS3Wrapper(logger, config)
+	wrapper, err := NewS3Wrapper(logger, config, tracer)
 	require.NoError(t, err)
 	require.NotNil(t, wrapper)
 
@@ -248,6 +252,7 @@ func setupMinIOContainer(t *testing.T) (*minio.MinioContainer, func()) {
 
 func createS3WrapperWithMinIO(t *testing.T, minioContainer *minio.MinioContainer) *S3Wrapper {
 	ctx := context.Background()
+	tracer := otel.Tracer("test")
 
 	// Get MinIO connection details
 	endpoint, err := minioContainer.ConnectionString(ctx)
@@ -276,7 +281,7 @@ func createS3WrapperWithMinIO(t *testing.T, minioContainer *minio.MinioContainer
 	createBucket(t, minioContainer)
 
 	// Create S3 wrapper
-	wrapper, err := NewS3Wrapper(logger, config)
+	wrapper, err := NewS3Wrapper(logger, config, tracer)
 	require.NoError(t, err)
 	require.NotNil(t, wrapper)
 
