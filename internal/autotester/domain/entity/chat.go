@@ -47,7 +47,8 @@ type Chat struct {
 func (chat *Chat) Validate() error {
 	if err := assert.StringsNotEmpty(
 		chat.Id,
-		chat.UserId); err != nil {
+		chat.UserId,
+	); err != nil {
 		return err
 	}
 
