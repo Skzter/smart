@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
@@ -14,7 +13,7 @@ import (
 )
 
 // ErrChatNotFound is returned when no chat exists for the given userId/chatId.
-var ErrChatNotFound = errors.New("chat not found")
+var ErrChatNotFound = repository.ErrChatNotFound
 
 // ChatStorageService provides an interface to persist Chat entities.
 type ChatStorageService interface {
@@ -22,7 +21,7 @@ type ChatStorageService interface {
 	// Returns an error if the operation fails.
 	SaveChat(ctx context.Context, summary *entity.Chat) error
 	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
-	LoadChat(ctx context.Context, chatId string, userId string) (*entity.Chat, error)
+	LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
 	// FindByUserId retrieves an all ChatSummarys associated with the given userId
 	// The resulting slice is ordered by updatedAt in descending order
 	LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error)
@@ -70,7 +69,7 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 
 	chat, err := s.repo.Read(ctx, userId, chatId)
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "no data found for key=") {
+		if errors.Is(err, repository.ErrChatNotFound) {
 			return nil, ErrChatNotFound
 		}
 		return nil, err

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -25,6 +26,9 @@ type ChatStorageRepository interface {
 	// FindByUserId retrieves an slice of all ChatSummarys associated with the given userId
 	FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error)
 }
+
+// ErrChatNotFound is returned when no chat exists for the given userId/chatId.
+var ErrChatNotFound = errors.New("chat not found")
 
 const prefixChat = "chat"
 
@@ -125,7 +129,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
+		return nil, ErrChatNotFound
 	}
 	return &items[0], nil
 }
