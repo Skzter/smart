@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
 // nolint:funlen
@@ -180,7 +180,7 @@ func TestHandleRunContainer(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
 func TestNewAutoTesterController(t *testing.T) {
@@ -33,7 +33,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	// only two version because we shouldnt be testing the functionality of the assert
 	// if it works once, it should work all the time
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)

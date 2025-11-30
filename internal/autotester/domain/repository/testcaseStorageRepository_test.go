@@ -9,16 +9,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
 // nolint:dupl
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range testcaseCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
@@ -33,6 +35,7 @@ func TestCreate(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			_, err := repo.Create(ctx, test.obj, test.userId)
@@ -68,7 +71,7 @@ func testcaseCreateTestCaseProvider() []struct {
 			obj:    &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			userId: "valid user",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return([]byte("parquetdata"), nil)
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("parquetdata"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 			expectError: false,
@@ -99,7 +102,7 @@ func testcaseCreateTestCaseProvider() []struct {
 			obj:    &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			userId: "valid user",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return(nil, errors.New("parquet error"))
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return(nil, errors.New("parquet error"))
 			},
 			expectError: true,
 		},
@@ -108,7 +111,7 @@ func testcaseCreateTestCaseProvider() []struct {
 			obj:    &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			userId: "valid user",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return([]byte("parquetdata"), nil)
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("parquetdata"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("upload error"))
 			},
 			expectError: true,
@@ -120,6 +123,7 @@ func testcaseCreateTestCaseProvider() []struct {
 func TestReadRemote(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range readRemoteTestcaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
@@ -134,6 +138,7 @@ func TestReadRemote(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			result, err := repo.Read(ctx, test.key)
@@ -175,7 +180,7 @@ func readRemoteTestcaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("parquet"), map[string]string{"meta": "data"}, nil)
-				parquet.EXPECT().ReadStructsFromParquet([]byte("parquet")).Return([]entity.TestCase{{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed}}, nil)
+				parquet.EXPECT().ReadStructsFromParquet(mock.Anything, []byte("parquet")).Return([]entity.TestCase{{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed}}, nil)
 			},
 			expectError:     false,
 			expectNilResult: false,
@@ -200,7 +205,7 @@ func readRemoteTestcaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("parquet"), map[string]string{}, nil)
-				parquet.EXPECT().ReadStructsFromParquet([]byte("parquet")).Return(nil, errors.New("read error"))
+				parquet.EXPECT().ReadStructsFromParquet(mock.Anything, []byte("parquet")).Return(nil, errors.New("read error"))
 			},
 			expectError:     true,
 			expectNilResult: true,
@@ -210,7 +215,7 @@ func readRemoteTestcaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("parquet"), map[string]string{}, nil)
-				parquet.EXPECT().ReadStructsFromParquet([]byte("parquet")).Return([]entity.TestCase{}, nil)
+				parquet.EXPECT().ReadStructsFromParquet(mock.Anything, []byte("parquet")).Return([]entity.TestCase{}, nil)
 			},
 			expectError:     true,
 			expectNilResult: true,
@@ -220,7 +225,7 @@ func readRemoteTestcaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("parquet"), map[string]string{}, nil)
-				parquet.EXPECT().ReadStructsFromParquet([]byte("parquet")).Return([]entity.TestCase{{}}, nil)
+				parquet.EXPECT().ReadStructsFromParquet(mock.Anything, []byte("parquet")).Return([]entity.TestCase{{}}, nil)
 			},
 			expectError:     true,
 			expectNilResult: true,
@@ -232,6 +237,7 @@ func readRemoteTestcaseProvider() []struct {
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	for _, test := range testcaseUpdateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
@@ -246,6 +252,7 @@ func TestUpdate(t *testing.T) {
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			err := repo.Update(ctx, test.obj, test.key)
@@ -282,7 +289,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, "valid-key", []byte("dummy parquet data"), mock.Anything).Return(nil)
 			},
 			expectError: false,
@@ -329,7 +336,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return(nil, errors.New("parquet error"))
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return(nil, errors.New("parquet error"))
 			},
 			expectError: true,
 		},
@@ -339,7 +346,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
 				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
-				parquet.EXPECT().WriteStructToParquet(mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
+				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, "valid-key", []byte("dummy parquet data"), mock.Anything).Return(errors.New("s3 error"))
 			},
 			expectError: true,
@@ -351,6 +358,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 func TestDeleteRemote(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -380,16 +388,19 @@ func TestDeleteRemote(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockS3 := &mocks.MockS3StorageWrapper{}
-			mockParquet := &mocks.MockParquetFileWrapper[entity.TestCase]{}
+			mockS3 := mocks.NewMockS3StorageWrapper(t)
+			mockParquet := mocks.NewMockParquetFileWrapper[entity.TestCase](t)
 
-			mockS3.EXPECT().DeleteParquetFile(ctx, test.key).
-				Return(test.deleteRet)
+			if test.key != "" {
+				mockS3.EXPECT().DeleteParquetFile(mock.Anything, test.key).
+					Return(test.deleteRet)
+			}
 
 			repo := &testcaseStorageRepository{
 				s3Wrapper:      mockS3,
 				parquetWrapper: mockParquet,
 				logger:         logger,
+				tracer:         tracer,
 			}
 
 			err := repo.Delete(ctx, test.key)
@@ -507,6 +518,7 @@ func TestNewTestcaseStorageRepository(t *testing.T) {
 	mockS3 := mocks.NewMockS3StorageWrapper(t)
 	mockParquet := mocks.NewMockParquetFileWrapper[entity.TestCase](t)
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -560,7 +572,7 @@ func TestNewTestcaseStorageRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewTestcaseStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper, test.prefix)
+			repo, err := NewTestcaseStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper, test.prefix, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewTestCaseStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}

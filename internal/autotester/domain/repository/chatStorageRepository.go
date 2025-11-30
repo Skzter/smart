@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -35,13 +39,19 @@ type chatStorageRepository struct {
 	chatParquetWrapper    service.ParquetFileWrapper[entity.Chat]
 	summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary]
 	logger                *slog.Logger
+	tracer                trace.Tracer
 }
 
 // NewChatStorageRepository creates a new repository for Chat entities.
 // Returns the repository or an error.
-// nolint:lll
-func NewChatStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWrapper, chatParquetWrapper service.ParquetFileWrapper[entity.Chat], summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary]) (ChatStorageRepository, error) {
-	if err := assert.NotNil(logger, s3Wrapper, chatParquetWrapper, summaryParquetWrapper); err != nil {
+func NewChatStorageRepository(
+	logger *slog.Logger,
+	s3Wrapper service.S3StorageWrapper,
+	chatParquetWrapper service.ParquetFileWrapper[entity.Chat],
+	summaryParquetWrapper service.ParquetFileWrapper[entity.ChatSummary],
+	tracer trace.Tracer,
+) (ChatStorageRepository, error) {
+	if err := assert.NotNil(logger, s3Wrapper, chatParquetWrapper, summaryParquetWrapper, tracer); err != nil {
 		return nil, err
 	}
 	return &chatStorageRepository{
@@ -49,6 +59,7 @@ func NewChatStorageRepository(logger *slog.Logger, s3Wrapper service.S3StorageWr
 		chatParquetWrapper:    chatParquetWrapper,
 		summaryParquetWrapper: summaryParquetWrapper,
 		logger:                logger,
+		tracer:                tracer,
 	}, nil
 }
 
@@ -61,6 +72,14 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		return err
 	}
 
+	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.Create")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("chat.id", obj.Id),
+		attribute.String("chat.user_id", obj.UserId),
+		attribute.Int("chat.message_count", len(obj.Messages)),
+	)
+
 	summary := entity.ChatSummary{
 		ChatId:       obj.Id,
 		UserId:       obj.UserId,
@@ -70,23 +89,31 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		MessageCount: len(obj.Messages),
 	}
 
-	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(*obj)
+	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(ctx, *obj)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to serialize chat object")
 		return err
 	}
 
-	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(summary)
+	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(ctx, summary)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to serialize chat summary")
 		return err
 	}
 
 	chatkey, summaryKey := generateKeys(obj.UserId, obj.Id)
 	err = r.s3Wrapper.UploadParquetFile(ctx, chatkey, chatParquet, map[string]string{})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upload chat parquet")
 		return err
 	}
 
 	if err := r.s3Wrapper.UploadParquetFile(ctx, summaryKey, summaryParquet, map[string]string{}); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to upload chat summary parquet")
 		if err := r.s3Wrapper.DeleteParquetFile(ctx, chatkey); err != nil {
 			r.logger.Error("WARNING: chat uploaded without summary, removal not possible", "key", chatkey, "err", err)
 		}
@@ -103,6 +130,12 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		slog.String("type", "chatSummary"),
 	)
 
+	span.AddEvent("chat and summary stored", trace.WithAttributes(
+		attribute.String("chat.key", chatkey),
+		attribute.String("summary.key", summaryKey),
+	))
+	span.SetStatus(codes.Ok, "")
+
 	return nil
 }
 
@@ -115,18 +148,34 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 	}
 	key, _ := generateKeys(userId, chatId)
 
+	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.Read")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("chat.user_id", userId),
+		attribute.String("chat.id", chatId),
+	)
+
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to download chat parquet")
 		return nil, err
 	}
 
-	items, err := r.chatParquetWrapper.ReadStructsFromParquet(data)
+	items, err := r.chatParquetWrapper.ReadStructsFromParquet(ctx, data)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to read chat parquet")
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
+		err := fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "no chat found for user and chat id")
+		return nil, err
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return &items[0], nil
 }
 
@@ -139,7 +188,16 @@ func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatI
 	}
 	chatkey, summaryKey := generateKeys(userId, chatId)
 
+	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.Delete")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("chat.user_id", userId),
+		attribute.String("chat.id", chatId),
+	)
+
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, chatkey); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to delete chat parquet")
 		return err
 	}
 
@@ -148,12 +206,20 @@ func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatI
 	)
 
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, summaryKey); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to delete chat summary parquet")
 		return err
 	}
 
 	r.logger.Debug("delete: object successfully deleted",
 		slog.String("key", summaryKey),
 	)
+
+	span.AddEvent("chat and summary deleted", trace.WithAttributes(
+		attribute.String("chat.key", chatkey),
+		attribute.String("summary.key", summaryKey),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
@@ -164,12 +230,22 @@ func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string)
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
+
+	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.FindByUserID")
+	defer span.End()
+	span.SetAttributes(attribute.String("chat.user_id", userId))
+
 	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprintf("%s/%s/summary", prefixChat, userId))
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to list summary parquet files")
 		return nil, fmt.Errorf("failed to list session summary parquet files: %w", err)
 	}
 	if len(keys) == 0 {
-		return nil, fmt.Errorf("no session summary files found in storage")
+		err := fmt.Errorf("no session summary files found in storage")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "no chat summaries found")
+		return nil, err
 	}
 	result := make([]*entity.ChatSummary, 0, len(keys))
 	for _, key := range keys {
@@ -178,7 +254,7 @@ func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string)
 			r.logger.Error("ListAll: failed to download file", "key", key, "error", err)
 			continue
 		}
-		summary, err := r.summaryParquetWrapper.ReadStructsFromParquet(parquetData)
+		summary, err := r.summaryParquetWrapper.ReadStructsFromParquet(ctx, parquetData)
 		if err != nil {
 			r.logger.Error("ListAll: failed to read parquet data", "key", key, "error", err)
 			continue
@@ -191,6 +267,10 @@ func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string)
 	}
 
 	r.logger.Debug("ListAll: finished loading chat summaries", slog.Int("count", len(result)))
+	span.AddEvent("chat summaries loaded", trace.WithAttributes(
+		attribute.Int("summary.count", len(result)),
+	))
+	span.SetStatus(codes.Ok, "")
 	return result, nil
 }
 

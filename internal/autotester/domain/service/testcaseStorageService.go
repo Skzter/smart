@@ -4,6 +4,9 @@ import (
 	"context"
 	"log/slog"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -21,34 +24,43 @@ type TestcaseStorageService interface {
 type testcaseStorageService struct {
 	logger *slog.Logger
 	repo   repository.TestcaseStorageRepository
+	tracer trace.Tracer
 }
 
 // NewTestcaseStorageService creates a new TestcaseStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewTestcaseStorageService(logger *slog.Logger, repo repository.TestcaseStorageRepository) (TestcaseStorageService, error) {
-	if err := assert.NotNil(logger, repo); err != nil {
+func NewTestcaseStorageService(
+	logger *slog.Logger,
+	repo repository.TestcaseStorageRepository,
+	tracer trace.Tracer,
+) (TestcaseStorageService, error) {
+	if err := assert.NotNil(logger, repo, tracer); err != nil {
 		return nil, err
 	}
 
 	return &testcaseStorageService{
 		logger: logger,
 		repo:   repo,
+		tracer: tracer,
 	}, nil
 }
 
 // SaveTestCase saves the given TestCase entity using the configured repository.
 // Validates the input context and returns an error if it is nil or if the repository operation fails.
 func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error) {
+	ctx, span := t.tracer.Start(ctx, "testcaseStorageService.SaveTestCase")
+	defer span.End()
+
 	if err := assert.NotNil(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "context validation failed")
 		return "", err
 	}
 
 	key, err := t.repo.Create(ctx, testcase, userId)
 	if err != nil {
-		t.logger.Error("failed to save testcase",
-			slog.String("testID", testcase.TestID),
-			slog.String("error", err.Error()),
-		)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to save test case")
 		return "", err
 	}
 

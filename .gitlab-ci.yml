@@ -338,6 +338,7 @@ deploy_htwk:
       export CI_REGISTRY_USER=$CI_REGISTRY_USER;
       export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
       export CI_REGISTRY=$CI_REGISTRY;
+      echo "DD_API_KEY={$DATADOG_KEY}" >> ~/.env;
       echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
       podman pull gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest &&
       podman-compose -f compose.prod.yml pull &&
