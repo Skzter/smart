@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -168,7 +169,7 @@ func (r *testCaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("failed to check if key exists: %w", err)
 	}
 	if !exists {
-		err := fmt.Errorf("cannot update: key does not exist")
+		err := errors.New("cannot update: key does not exist")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key does not exist")
 		return err

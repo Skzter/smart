@@ -79,14 +79,12 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService
 // to an OpenAI service for validation
 // nolint:funlen
 func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
-	ctx, span := v.tracer.Start(ctx, "validator.Validate")
-	defer span.End()
-
 	if err := assert.NotNil(ctx, offers); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "validation failed")
 		return nil, err
 	}
+
+	ctx, span := v.tracer.Start(ctx, "validator.Validate")
+	defer span.End()
 
 	if offers.HTTPStatusCode != http.StatusOK {
 		return &sharedEntity.TagList{

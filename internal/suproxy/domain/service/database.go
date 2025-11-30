@@ -29,9 +29,7 @@ type databaseService struct {
 }
 
 // NewDatabaseService creates a new instance of DatabaseService.
-func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository,
-	tracer trace.Tracer,
-) (DatabaseService, error) {
+func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository, tracer trace.Tracer) (DatabaseService, error) {
 	if err := assert.NotNil(logger, repo, tracer); err != nil {
 		return nil, fmt.Errorf("repo cannot be nil, %w", err)
 	}
@@ -50,6 +48,7 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 
 	ctx, span := d.tracer.Start(ctx, "databaseService.SaveDbEntry")
 	defer span.End()
+
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to save request")
@@ -68,6 +67,7 @@ func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 
 	ctx, span := d.tracer.Start(ctx, "databaseService.GetAllKeys")
 	defer span.End()
+
 	keys, err := d.repo.ListAllKeys(ctx)
 	if err != nil {
 		span.RecordError(err)

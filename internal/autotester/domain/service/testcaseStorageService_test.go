@@ -11,7 +11,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
-	repository_intf "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 )
 
 // nolint: dupl
@@ -22,7 +22,7 @@ func TestNewTestcaseStorageService(t *testing.T) {
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		repo    repository_intf.TestCaseStorageRepository
+		repo    repository.TestCaseStorageRepository
 		wantErr bool
 	}{
 		{

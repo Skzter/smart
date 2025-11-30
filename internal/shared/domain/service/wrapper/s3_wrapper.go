@@ -107,9 +107,6 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 		cfg, err = awsconfig.LoadDefaultConfig(context.TODO(),
 			awsconfig.WithRegion(config.Region),
 			awsconfig.WithCredentialsProvider(aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
-				_, span := tracer.Start(ctx, "S3Wrapper.LoadDefaultConfig")
-				defer span.End()
-
 				return aws.Credentials{
 					AccessKeyID:     config.AccessKey,
 					SecretAccessKey: config.SecretKey,
@@ -145,7 +142,7 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 		tracer: tracer,
 	}
 
-	logger.Info("S3Wrapper initialized",
+	logger.Debug("S3Wrapper initialized",
 		slog.String("region", config.Region),
 		slog.String("bucket", config.Bucket),
 		slog.String("endpoint", config.Endpoint),
@@ -190,7 +187,7 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 	metadata["File-Type"] = "parquet"
 	metadata["Upload-Time"] = time.Now().UTC().Format(time.RFC3339)
 
-	s.logger.Info("Uploading parquet file to S3",
+	s.logger.Debug("Uploading parquet file to S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 		slog.Int("size_bytes", len(data)),
@@ -223,7 +220,7 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 	))
 	span.SetStatus(codes.Ok, "")
 
-	s.logger.Info("Successfully uploaded parquet file",
+	s.logger.Debug("Successfully uploaded parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -247,7 +244,7 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 		return nil, nil, err
 	}
 
-	s.logger.Info("Downloading parquet file from S3",
+	s.logger.Debug("Downloading parquet file from S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -297,7 +294,7 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 	))
 	span.SetStatus(codes.Ok, "")
 
-	s.logger.Info("Successfully downloaded parquet file",
+	s.logger.Debug("Successfully downloaded parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 		slog.Int("size_bytes", len(data)),
@@ -315,7 +312,7 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 	ctx, span := s.tracer.Start(ctx, "S3Wrapper.ListParquetFiles")
 	defer span.End()
 
-	s.logger.Info("Listing parquet files",
+	s.logger.Debug("Listing parquet files",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("prefix", prefix),
 	)
@@ -358,7 +355,7 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 	))
 	span.SetStatus(codes.Ok, "")
 
-	s.logger.Info("Listed parquet files",
+	s.logger.Debug("Listed parquet files",
 		slog.String("bucket", s.config.Bucket),
 		slog.Int("count", len(keys)),
 	)
@@ -382,7 +379,7 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 		return err
 	}
 
-	s.logger.Info("Deleting parquet file from S3",
+	s.logger.Debug("Deleting parquet file from S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -410,7 +407,7 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 	))
 	span.SetStatus(codes.Ok, "")
 
-	s.logger.Info("Successfully deleted parquet file",
+	s.logger.Debug("Successfully deleted parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)

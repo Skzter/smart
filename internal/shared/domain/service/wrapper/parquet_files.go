@@ -91,7 +91,7 @@ func NewParquetWrapper[T any](logger *slog.Logger, config entity.ParquetConfig, 
 		tracer: tracer,
 	}
 
-	logger.Info("ParquetWrapper initialized")
+	logger.Debug("ParquetWrapper initialized")
 
 	return wrapper, nil
 }
@@ -133,7 +133,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T)
 		structType = structType.Elem()
 	}
 
-	p.logger.Info("Writing structs to parquet",
+	p.logger.Debug("Writing structs to parquet",
 		slog.String("type", structType.Name()),
 		slog.Int("count", len(data)),
 		slog.String("compression", p.config.CompressionCodec),
@@ -173,7 +173,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T)
 
 	parquetData := buf.Bytes()
 
-	p.logger.Info("Successfully wrote structs to parquet",
+	p.logger.Debug("Successfully wrote structs to parquet",
 		slog.String("type", structType.Name()),
 		slog.Int("count", len(data)),
 		slog.Int("size_bytes", len(parquetData)),
@@ -202,7 +202,7 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 		structType = structType.Elem()
 	}
 
-	p.logger.Info("Reading structs from parquet",
+	p.logger.Debug("Reading structs from parquet",
 		slog.String("type", structType.Name()),
 		slog.Int("data_size_bytes", len(parquetData)),
 	)
@@ -254,7 +254,7 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 	))
 	span.SetStatus(codes.Ok, "")
 
-	p.logger.Info("Successfully read structs from parquet",
+	p.logger.Debug("Successfully read structs from parquet",
 		slog.String("type", structType.Name()),
 		slog.Int("count", len(result)),
 	)
@@ -280,8 +280,8 @@ func (p *ParquetWrapper[T]) WriteStructToParquet(ctx context.Context, data T) ([
 	span.AddEvent("Struct written to parquet", trace.WithAttributes(
 		attribute.String("type", structType.Name()),
 	))
-	span.SetStatus(codes.Ok, "")
 
+	span.SetStatus(codes.Ok, "")
 	return result, nil
 }
 
@@ -293,7 +293,7 @@ func (p *ParquetWrapper[T]) GetParquetSchema(ctx context.Context) (*parquet.Sche
 	var zero T
 	structType := reflect.TypeOf(zero)
 
-	p.logger.Info("Getting parquet schema",
+	p.logger.Debug("Getting parquet schema",
 		slog.String("type", structType.Name()),
 	)
 
@@ -314,7 +314,7 @@ func (p *ParquetWrapper[T]) GetParquetSchema(ctx context.Context) (*parquet.Sche
 	))
 	span.SetStatus(codes.Ok, "")
 
-	p.logger.Info("Generated parquet schema",
+	p.logger.Debug("Generated parquet schema",
 		slog.String("type", structType.Name()),
 		slog.Int("fields", len(schema.Fields())),
 	)
@@ -364,8 +364,8 @@ func (p *ParquetWrapper[T]) ValidateStruct(ctx context.Context, data T) error {
 	span.AddEvent("Struct validated", trace.WithAttributes(
 		attribute.String("type", structType.Name()),
 	))
-	span.SetStatus(codes.Ok, "")
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -409,7 +409,7 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(ctx context.Context, parquetData 
 		info.Compression = "unknown"
 	}
 
-	p.logger.Info("Extracted parquet file info",
+	p.logger.Debug("Extracted parquet file info",
 		slog.Int64("rows", info.NumRows),
 		slog.Int64("columns", info.NumColumns),
 		slog.Int64("row_groups", info.NumRowGroups),
@@ -421,14 +421,14 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(ctx context.Context, parquetData 
 	structType := reflect.TypeOf(zero)
 
 	span.AddEvent("Parquet file info extracted", trace.WithAttributes(
-		attribute.String("type", structType.Name()), // TODO: check if this is correct
+		attribute.String("type", structType.Name()),
 		attribute.Int64("rows", info.NumRows),
 		attribute.Int64("columns", info.NumColumns),
 		attribute.Int64("row_groups", info.NumRowGroups),
 		attribute.Int64("size_bytes", info.FileSize),
 		attribute.String("compression", info.Compression),
 	))
-	span.SetStatus(codes.Ok, "")
 
+	span.SetStatus(codes.Ok, "")
 	return info, nil
 }

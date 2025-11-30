@@ -62,14 +62,13 @@ func NewDatabaseRepository(
 
 // CreateRequest writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
+	}
+
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.CreateRequest")
 	defer span.End()
 
-	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
-		return fmt.Errorf("context cannot be nil, %w", err)
-	}
 	if err := validateDbEntry(dbEntry); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "dbEntry validation failed")
@@ -110,14 +109,12 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 // ReadRequest retrieves a request from the database by its key, downloading the Parquet file and reading its content.
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
+	}
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.ReadRequest")
 	defer span.End()
 
-	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
-		return nil, fmt.Errorf("context cannot be nil, %w", err)
-	}
 	if err := assert.StringNotEmpty(key); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
@@ -154,14 +151,13 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 
 // UpdateRequest updates an existing request in the database by downloading the Parquet file, modifying its content, and re-uploading it.
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
+	}
+
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.UpdateRequest")
 	defer span.End()
 
-	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
-		return fmt.Errorf("context cannot be nil, %w", err)
-	}
 	if err := assert.StringNotEmpty(key); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
@@ -214,14 +210,13 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 // DeleteRequest deletes a request from the database by removing the Parquet file associated with the given key.
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context cannot be nil, %w", err)
+	}
+
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.DeleteRequest")
 	defer span.End()
 
-	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
-		return fmt.Errorf("context cannot be nil, %w", err)
-	}
 	if err := assert.StringNotEmpty(key); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
@@ -247,14 +242,13 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 }
 
 func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
+	}
+
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.ListAllKeys")
 	defer span.End()
 
-	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
-		return nil, fmt.Errorf("context cannot be nil, %w", err)
-	}
 	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, dbR.entryPrefix)
 	if err != nil {
 		span.RecordError(err)

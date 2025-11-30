@@ -79,18 +79,8 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Tags)
 		switch {
 		case err != nil:
-			s.logger.Error("Tag-based search failed", "error", err)
-		case len(matchingKeys) == 0:
-			s.logger.Info("No keys found in tags")
-		default:
-			s.logger.Info("Matching keys found", "keys", matchingKeys)
-		}
-	}
-
-	if request.Tags != "" {
-		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Tags)
-		switch {
-		case err != nil:
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "tag-based search failed")
 			s.logger.Error("Tag-based search failed", "error", err)
 		case len(matchingKeys) == 0:
 			s.logger.Info("No keys found in tags")
@@ -110,12 +100,12 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 
 	if code == http.StatusOK {
 		go s.HandleRequest(c.Copy(), request, body)
+		span.SetStatus(codes.Ok, "supplier request successful")
 	} else {
 		span.SetStatus(codes.Error, "supplier request failed")
 		s.logger.Error("supplier request failed", "code", code)
 	}
 
-	span.SetStatus(codes.Ok, "supplier request successful")
 	c.Data(code, "application/json", *body)
 }
 

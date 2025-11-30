@@ -52,7 +52,7 @@ func main() {
 
 	otel.SetTracerProvider(tracerProvider)
 
-	tracer := otel.Tracer("autotester")
+	tracer := otel.Tracer(os.Getenv("DD_SERVICE"))
 
 	router, err := InitializeApp(cfg, tracer)
 	if err != nil {
