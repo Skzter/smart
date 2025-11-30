@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
@@ -90,14 +91,28 @@ func (s *validator) ValidateRequest(ctx context.Context, req entity.Request) err
 		return errors.ErrInternalServer
 	}
 
+	_, span := s.tracer.Start(ctx, "validator.ValidateRequest")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("openai.model", req.Model),
+		attribute.Int("openai.message_count", len(req.Messages)),
+	)
+
 	if req.Model == "" {
 		s.logger.Error("Model empty")
-		return errors.ErrValidation
+		err := errors.ErrValidation
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing model")
+		return err
 	}
 	if req.SystemPrompt == "" {
 		s.logger.Error("SystemPrompt empty")
-		return errors.ErrValidation
+		err := errors.ErrValidation
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing system prompt")
+		return err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }

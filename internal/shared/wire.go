@@ -45,7 +45,9 @@ func TaglistStorageProvider(
 		logger,
 		s3,
 		parquet,
-		cfg.EntryPrefix)
+		cfg.EntryPrefix,
+		tracer,
+	)
 }
 
 // S3WrapperProvider provides an S3Wrapper configured with the shared config
