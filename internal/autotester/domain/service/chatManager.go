@@ -12,9 +12,9 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// Chat defines the behaviour for loading and saving chat sessions used by the autotester.
+// ChatManager defines the behaviour for loading and saving chats used by the autotester.
 // Implementations must handle persistence and any required initialization.
-type Chat interface {
+type ChatManager interface {
 	LoadChat(context.Context, entity.UserRequest) (*entity.Chat, error)
 	SaveChat(context.Context, *entity.Chat) error
 }
@@ -27,9 +27,9 @@ type chat struct {
 	cfg            config.Config
 }
 
-// NewChat constructs a new Chat service instance. It validates required dependencies and
+// NewChatManager constructs a new Chat service instance. It validates required dependencies and
 // copies the provided config into the service.
-func NewChat(logger *slog.Logger, storageService ChatStorageService, cfg *config.Config) (Chat, error) {
+func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Config) (ChatManager, error) {
 	if err := assert.NotNil(logger, storageService, cfg); err != nil {
 		return nil, err
 	}

@@ -65,5 +65,5 @@ packages:
       TestcaseLocalStorageService:
       Docker:
       DockerClient:
-      Chat:
+      ChatManager:
       ChatStorageService:

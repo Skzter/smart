@@ -124,7 +124,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockValServ := mocks.NewMockValidatePrompt(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatServ := mocks.NewMockChat(t)
+			mockChatServ := mocks.NewMockChatManager(t)
 
 			// mock setup
 			if test.MockResponseFile != nil {

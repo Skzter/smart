@@ -58,7 +58,7 @@ func TestNewChat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc, err := NewChat(tt.logger, tt.storage, tt.cfg)
+			svc, err := NewChatManager(tt.logger, tt.storage, tt.cfg)
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				assert.Nil(t, svc)
@@ -134,7 +134,7 @@ func TestLoadChat(t *testing.T) {
 			storage := mocks.NewMockChatStorageService(t)
 			tt.setupMock(storage)
 
-			svc, err := NewChat(logger, storage, cfg)
+			svc, err := NewChatManager(logger, storage, cfg)
 			assert.Nil(t, err)
 
 			ctx := context.Background()
@@ -215,7 +215,7 @@ func TestSaveChat(t *testing.T) {
 			storage := mocks.NewMockChatStorageService(t)
 			tt.setupMock(tt.chat, storage)
 
-			svc, err := NewChat(logger, storage, cfg)
+			svc, err := NewChatManager(logger, storage, cfg)
 			assert.Nil(t, err)
 
 			err = svc.SaveChat(tt.ctx, tt.chat)

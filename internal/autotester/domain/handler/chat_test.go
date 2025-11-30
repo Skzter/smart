@@ -160,7 +160,7 @@ func TestHandleChatRequest(t *testing.T) {
 			mockValServ := mocks.NewMockValidatePrompt(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatServ := mocks.NewMockChat(t)
+			mockChatServ := mocks.NewMockChatManager(t)
 
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
@@ -231,7 +231,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockValServ := mocks.NewMockValidatePrompt(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatServ := mocks.NewMockChat(t)
+	mockChatServ := mocks.NewMockChatManager(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {

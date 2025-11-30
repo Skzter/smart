@@ -42,7 +42,7 @@ func InitializeApp(cfg *config.Config) (*gin.Engine, error) {
 		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
-		service.NewChat,
+		service.NewChatManager,
 		service.NewChatStorageService,
 		repository.NewChatStorageRepository,
 		ChatParquetWrapperProvider,
