@@ -23,15 +23,17 @@ type generatePrompt struct {
 	taglistService sharedService.TaglistStorage
 	config         *config.Config
 	logger         *slog.Logger
+	validator      Validator
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService sharedService.TaglistStorage, config *config.Config, logger *slog.Logger) (GeneratePrompt, error) {
-	if err := assert.NotNil(openaiService, taglistService, config, logger); err != nil {
+func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService sharedService.TaglistStorage,
+	config *config.Config, logger *slog.Logger, validator Validator) (GeneratePrompt, error) {
+	if err := assert.NotNil(openaiService, taglistService, config, logger, validator); err != nil {
 		return nil, err
 	}
-	return &generatePrompt{openaiService, taglistService, config, logger}, nil
+	return &generatePrompt{openaiService, taglistService, config, logger, validator}, nil
 }
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
@@ -50,17 +52,21 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 		SystemPrompt: prompt,
 	}
 
-	msg, err := s.openAIService.Request(ctx, req)
+	if err := s.validator.ValidateRequest(ctx, req); err != nil {
+		return "", err
+	}
+
+	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		return "", err
 	}
 
-	if err = assert.StringNotEmpty(msg.Body); err != nil {
+	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrGeneration
 	}
 
-	return msg.Body, nil
+	return resp.Body, nil
 }
 
 // formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template

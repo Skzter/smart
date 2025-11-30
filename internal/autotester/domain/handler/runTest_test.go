@@ -121,7 +121,7 @@ func TestHandleRunContainer(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
 
