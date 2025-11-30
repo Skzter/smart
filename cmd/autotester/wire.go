@@ -37,7 +37,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		FileSystemProvider,
 		LogFileSystemProvider,
 		repository.NewTestcaseLocalStorageRepository,
-		service.NewValidatePromptService,
+		service.NewValidatorService,
 		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,

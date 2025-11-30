@@ -26,24 +26,24 @@ type generatePrompt struct {
 	taglistService sharedService.TaglistStorage
 	config         *config.Config
 	logger         *slog.Logger
+	validator      Validator
 	tracer         trace.Tracer
 }
 
 // NewGeneratePromptService creates a new generatePromptService instance.
 // Returns an error if any required dependencies are nil.
-// nolint:lll
 func NewGeneratePromptService(
 	openaiService sharedService.OpenAI,
 	taglistService sharedService.TaglistStorage,
 	config *config.Config,
 	logger *slog.Logger,
+	validator Validator,
 	tracer trace.Tracer,
 ) (GeneratePrompt, error) {
-	if err := assert.NotNil(openaiService, taglistService, config, logger, tracer); err != nil {
+	if err := assert.NotNil(openaiService, taglistService, config, logger, validator, tracer); err != nil {
 		return nil, err
 	}
-
-	return &generatePrompt{openaiService, taglistService, config, logger, tracer}, nil
+	return &generatePrompt{openaiService, taglistService, config, logger, validator, tracer}, nil
 }
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
@@ -65,21 +65,26 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, userPrompt string) 
 		SystemPrompt: prompt,
 	}
 
-	msg, err := s.openAIService.Request(ctx, req)
+	if err := s.validator.ValidateRequest(ctx, req); err != nil {
+		return "", err
+	}
+
+	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "OpenAI service request failed")
 		return "", err
 	}
 
-	span.SetStatus(codes.Ok, "")
-
-	if err = assert.StringNotEmpty(msg.Body); err != nil {
+	if err = assert.StringNotEmpty(resp.Body); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Empty response body")
 		s.logger.Error(err.Error())
 		return "", errors.ErrGeneration
 	}
 
-	return msg.Body, nil
+	span.SetStatus(codes.Ok, "")
+	return resp.Body, nil
 }
 
 // formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
