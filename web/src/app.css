@@ -48,8 +48,8 @@
 
 /* Tokenizer Setup */
 :root {
-    --catppuccin-heading: #000000;
-    --catppuccin-background: #eff1f5;
+    --heading: #000000;
+    --code-background: #eff1f5;
     --token-keyword-color: #8839ef;
     --token-keyword-weight: 600;
 
@@ -65,10 +65,10 @@
     --token-punctuation-color: #5c5f77;
 }
 
-/* Catppuccin Mocha Dark Theme */
+/*  Mocha Dark Theme */
 [data-theme="dark"] {
-    --catppuccin-heading: #ffffff;
-    --catppuccin-background: #1e1e2e;
+    --heading: #ffffff;
+    --code-background: #1e1e2e;
     --token-keyword-color: #cba6f7; /* Mauve */
     --token-function-color: #89b4fa; /* Blue */
     --token-string-color: #a6e3a1; /* Green */

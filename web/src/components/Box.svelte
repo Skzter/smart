@@ -110,12 +110,12 @@
         class:w-fit={name === "Bot"}
         class:bg-sky-300={name === "User"}
         class:bg-gray-200={name === "Bot" && !isCode}
-        class:bg-(--catppuccin-background)={name === "Bot" && isCode}
+        class:bg-(--code-background)={name === "Bot" && isCode}
     >
         <div class="flex items-start justify-between">
             <h1
                 class="tracking-wide uppercase font-bold text-xl"
-                class:text-(--catppuccin-heading)={name === "Bot" && isCode}
+                class:text-(--heading)={name === "Bot" && isCode}
             >
                 {name}
             </h1>
