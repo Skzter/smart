@@ -61,7 +61,7 @@ packages:
       dir: './internal/autotester/domain/service/mocks'
     interfaces:
       GeneratePrompt:
-      ValidatePrompt:
+      Validator:
       TestcaseLocalStorageService:
       Docker:
       DockerClient:

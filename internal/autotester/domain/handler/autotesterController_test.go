@@ -33,7 +33,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	// only two version because we shouldnt be testing the functionality of the assert
 	// if it works once, it should work all the time
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
