@@ -9,7 +9,6 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -52,15 +51,7 @@ func (c *chat) LoadChat(ctx context.Context, request entity.UserRequest) (*entit
 	if request.ChatId == "" {
 		id := uuid.NewString()
 		c.logger.Info("creating new chat", "user", request.UserId, "id", id)
-		return &entity.Chat{
-			Id:        id,
-			UserId:    request.UserId,
-			CreatedAt: time.Now().UTC(),
-
-			Messages: []sharedEntity.Message{},
-
-			InitialUserPrompt: request.Prompt,
-		}, nil
+		return entity.NewChat(request.UserId, []entity.Message{}), nil
 	}
 	return c.storageService.LoadChat(ctx, request.UserId, request.ChatId)
 }
@@ -72,8 +63,6 @@ func (c *chat) SaveChat(ctx context.Context, chat *entity.Chat) error {
 		return err
 	}
 	chat.UpdatedAt = time.Now().UTC()
-	chat.LastValidationPrompt = c.cfg.Prompts.ValidationPrompt
-	chat.LastAutoPlaywrightPrompt = c.cfg.Prompts.AutoPlaywrightPromptT
 
 	return c.storageService.SaveChat(ctx, chat)
 }

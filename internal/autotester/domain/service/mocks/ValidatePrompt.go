@@ -8,7 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockValidatePrompt creates a new instance of MockValidatePrompt. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,8 +39,8 @@ func (_m *MockValidatePrompt) EXPECT() *MockValidatePrompt_Expecter {
 }
 
 // ValidatePrompt provides a mock function for the type MockValidatePrompt
-func (_mock *MockValidatePrompt) ValidatePrompt(ctx context.Context, messages []entity.Message) (bool, string, error) {
-	ret := _mock.Called(ctx, messages)
+func (_mock *MockValidatePrompt) ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error) {
+	ret := _mock.Called(ctx, chat, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidatePrompt")
@@ -49,21 +49,21 @@ func (_mock *MockValidatePrompt) ValidatePrompt(ctx context.Context, messages []
 	var r0 bool
 	var r1 string
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Message) (bool, string, error)); ok {
-		return returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) (bool, string, error)); ok {
+		return returnFunc(ctx, chat, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Message) bool); ok {
-		r0 = returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) bool); ok {
+		r0 = returnFunc(ctx, chat, request)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []entity.Message) string); ok {
-		r1 = returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.Chat, *entity.UserRequest) string); ok {
+		r1 = returnFunc(ctx, chat, request)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, []entity.Message) error); ok {
-		r2 = returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, *entity.Chat, *entity.UserRequest) error); ok {
+		r2 = returnFunc(ctx, chat, request)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -77,24 +77,30 @@ type MockValidatePrompt_ValidatePrompt_Call struct {
 
 // ValidatePrompt is a helper method to define mock.On call
 //   - ctx context.Context
-//   - messages []entity.Message
-func (_e *MockValidatePrompt_Expecter) ValidatePrompt(ctx interface{}, messages interface{}) *MockValidatePrompt_ValidatePrompt_Call {
-	return &MockValidatePrompt_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, messages)}
+//   - chat *entity.Chat
+//   - request *entity.UserRequest
+func (_e *MockValidatePrompt_Expecter) ValidatePrompt(ctx interface{}, chat interface{}, request interface{}) *MockValidatePrompt_ValidatePrompt_Call {
+	return &MockValidatePrompt_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, chat, request)}
 }
 
-func (_c *MockValidatePrompt_ValidatePrompt_Call) Run(run func(ctx context.Context, messages []entity.Message)) *MockValidatePrompt_ValidatePrompt_Call {
+func (_c *MockValidatePrompt_ValidatePrompt_Call) Run(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest)) *MockValidatePrompt_ValidatePrompt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []entity.Message
+		var arg1 *entity.Chat
 		if args[1] != nil {
-			arg1 = args[1].([]entity.Message)
+			arg1 = args[1].(*entity.Chat)
+		}
+		var arg2 *entity.UserRequest
+		if args[2] != nil {
+			arg2 = args[2].(*entity.UserRequest)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -105,7 +111,7 @@ func (_c *MockValidatePrompt_ValidatePrompt_Call) Return(b bool, s string, err e
 	return _c
 }
 
-func (_c *MockValidatePrompt_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, messages []entity.Message) (bool, string, error)) *MockValidatePrompt_ValidatePrompt_Call {
+func (_c *MockValidatePrompt_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error)) *MockValidatePrompt_ValidatePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

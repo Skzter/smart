@@ -8,7 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockGeneratePrompt creates a new instance of MockGeneratePrompt. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,8 +39,8 @@ func (_m *MockGeneratePrompt) EXPECT() *MockGeneratePrompt_Expecter {
 }
 
 // GeneratePrompt provides a mock function for the type MockGeneratePrompt
-func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, messages []entity.Message) (string, error) {
-	ret := _mock.Called(ctx, messages)
+func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error) {
+	ret := _mock.Called(ctx, chat, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GeneratePrompt")
@@ -48,16 +48,16 @@ func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, messages []
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Message) (string, error)); ok {
-		return returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) (string, error)); ok {
+		return returnFunc(ctx, chat, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []entity.Message) string); ok {
-		r0 = returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) string); ok {
+		r0 = returnFunc(ctx, chat, request)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []entity.Message) error); ok {
-		r1 = returnFunc(ctx, messages)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.Chat, *entity.UserRequest) error); ok {
+		r1 = returnFunc(ctx, chat, request)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -71,24 +71,30 @@ type MockGeneratePrompt_GeneratePrompt_Call struct {
 
 // GeneratePrompt is a helper method to define mock.On call
 //   - ctx context.Context
-//   - messages []entity.Message
-func (_e *MockGeneratePrompt_Expecter) GeneratePrompt(ctx interface{}, messages interface{}) *MockGeneratePrompt_GeneratePrompt_Call {
-	return &MockGeneratePrompt_GeneratePrompt_Call{Call: _e.mock.On("GeneratePrompt", ctx, messages)}
+//   - chat *entity.Chat
+//   - request *entity.UserRequest
+func (_e *MockGeneratePrompt_Expecter) GeneratePrompt(ctx interface{}, chat interface{}, request interface{}) *MockGeneratePrompt_GeneratePrompt_Call {
+	return &MockGeneratePrompt_GeneratePrompt_Call{Call: _e.mock.On("GeneratePrompt", ctx, chat, request)}
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Context, messages []entity.Message)) *MockGeneratePrompt_GeneratePrompt_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []entity.Message
+		var arg1 *entity.Chat
 		if args[1] != nil {
-			arg1 = args[1].([]entity.Message)
+			arg1 = args[1].(*entity.Chat)
+		}
+		var arg2 *entity.UserRequest
+		if args[2] != nil {
+			arg2 = args[2].(*entity.UserRequest)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -99,7 +105,7 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(s string, err error) *M
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, messages []entity.Message) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

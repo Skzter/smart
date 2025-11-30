@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -15,7 +15,7 @@ import (
 
 // ValidatePrompt defines an interface for prompt validation
 type ValidatePrompt interface {
-	ValidatePrompt(ctx context.Context, messages []entity.Message) (bool, string, error)
+	ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error)
 }
 
 // validatePrompt provides functionality to validate user prompts using OpenAI.
@@ -37,14 +37,15 @@ func NewValidatePromptService(service sharedService.OpenAI, config *config.Confi
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
-func (s *validatePrompt) ValidatePrompt(ctx context.Context, messages []entity.Message) (bool, string, error) {
+func (s *validatePrompt) ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
 
-	req := entity.Request{
-		Messages:     messages,
+	chat.AddMessage(sharedEntity.NewMessage(request.Prompt, sharedEntity.RoleUser))
+	req := sharedEntity.Request{
+		Messages:     chat.Filter(entity.TypeValidation),
 		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
@@ -54,11 +55,13 @@ func (s *validatePrompt) ValidatePrompt(ctx context.Context, messages []entity.M
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrValidation
 	}
+	chat.AddMessage(msg, entity.TypeValidation)
 
-	llmResponse := autotesterEntity.LlmValidationResponse{}
+	llmResponse := entity.LlmValidationResponse{}
 	if err = json.Unmarshal([]byte(msg.Body), &llmResponse); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
+
 	return llmResponse.Valid, llmResponse.Message, nil
 }

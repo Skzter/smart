@@ -9,5 +9,5 @@ type ChatSummary struct {
 	Title        string    `json:"title"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
-	MessageCount int       `json:"messageCount"`
+	MessageCount int       `json:"messageCount"` // Number of user messages
 }

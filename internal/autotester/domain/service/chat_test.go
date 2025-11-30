@@ -152,7 +152,6 @@ func TestLoadChat(t *testing.T) {
 			assert.NotNil(t, got)
 			if tt.expectNewChat {
 				assert.Equal(t, tt.request.UserId, got.UserId)
-				assert.Equal(t, tt.request.Prompt, got.InitialUserPrompt)
 				assert.NotEmpty(t, got.Id)
 				assert.True(t, got.CreatedAt.After(now.Add(-time.Minute)))
 				assert.Len(t, got.Messages, 0)
@@ -227,8 +226,6 @@ func TestSaveChat(t *testing.T) {
 			assert.Nil(t, err)
 			// verify updated fields
 			assert.False(t, tt.chat.UpdatedAt.IsZero())
-			assert.Equal(t, cfg.Prompts.AutoPlaywrightPromptT, tt.chat.LastAutoPlaywrightPrompt)
-			assert.Equal(t, cfg.Prompts.ValidationPrompt, tt.chat.LastValidationPrompt)
 		})
 	}
 }

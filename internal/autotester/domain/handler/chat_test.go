@@ -165,9 +165,9 @@ func TestHandleChatRequest(t *testing.T) {
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
 				case "ValidatePrompt":
-					mockValServ.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
+					mockValServ.On(mc.Function, mock.Anything, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				case "GeneratePrompt":
-					mockGenServ.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
+					mockGenServ.On(mc.Function, mock.Anything, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				case "LoadChat":
 					mockChatServ.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				case "SaveChat":

@@ -24,9 +24,7 @@ func validChat() *entity.Chat {
 		UpdatedAt:                time.Now(),
 		LastTest:                 "test123",
 		LastAutoPlaywrightPrompt: "apw prompt",
-		LastValidationPrompt:     "val prompt",
-		InitialUserPrompt:        "usr prompt",
-		Messages:                 []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
+		Messages:                 []entity.Message{{Type: entity.TypeAny, Message: sharedEntity.Message{Id: "id", Role: "user", Body: "msg"}}},
 	}
 }
 

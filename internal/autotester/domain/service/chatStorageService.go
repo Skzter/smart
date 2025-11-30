@@ -44,14 +44,14 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 }
 
 // SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
-func (s *chatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
-	if err := assert.NotNil(summary); err != nil {
+func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
+	if err := assert.NotNil(chat); err != nil {
 		return err
 	}
-	if err := summary.Validate(); err != nil {
+	if err := chat.Validate(); err != nil {
 		return err
 	}
-	return s.repo.Create(ctx, summary)
+	return s.repo.Create(ctx, chat)
 }
 
 // LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.

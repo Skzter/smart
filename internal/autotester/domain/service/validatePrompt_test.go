@@ -2,17 +2,18 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	testifyAssert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
-	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
 
@@ -24,7 +25,7 @@ func TestNewValidatePromptService(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		service srv.OpenAI
+		service sharedService.OpenAI
 		config  *config.Config
 		logger  *slog.Logger
 		wantErr bool
@@ -63,12 +64,12 @@ func TestNewValidatePromptService(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repo, err := NewValidatePromptService(test.service, test.config, test.logger)
 			if test.wantErr {
-				assert.Nil(t, repo)
-				assert.NotNil(t, err)
+				testifyAssert.Nil(t, repo)
+				testifyAssert.NotNil(t, err)
 			}
 			if !test.wantErr && repo == nil {
-				assert.NotNil(t, repo)
-				assert.Nil(t, err)
+				testifyAssert.NotNil(t, repo)
+				testifyAssert.Nil(t, err)
 			}
 		})
 	}
@@ -76,143 +77,138 @@ func TestNewValidatePromptService(t *testing.T) {
 
 //nolint:funlen
 func TestValidatePrompt(t *testing.T) {
-	serviceMock := mocks.NewMockOpenAI(t)
+	logger := slog.Default()
 	cfg := &config.Config{
-		Model: "",
+		Model: "gpt-4",
 		Prompts: &config.Prompts{
-			ValidationPrompt: "",
-		},
-	}
-	logger := slog.New(slog.DiscardHandler)
-	svc, _ := NewValidatePromptService(serviceMock, cfg, logger)
-
-	validMessages := []entity.Message{{Role: entity.RoleUser, Body: "valid prompt"}}
-	invalidMessages := []entity.Message{{Role: entity.RoleUser, Body: "invalid prompt"}}
-	invalidJsonMessages := []entity.Message{{Role: entity.RoleUser, Body: "invalid json"}}
-
-	validRequest := entity.Request{
-		Messages: validMessages,
-	}
-	validResponse := entity.Message{
-		Body: `{"valid": true, "message": ""}`,
-	}
-
-	invalidRequest := entity.Request{
-		Messages: invalidMessages,
-	}
-	invalidResponse := entity.Message{
-		Body: `{"valid": false, "message": "alle gründe warum es schiefgelaufen"}`,
-	}
-
-	invalidJsonRequest := entity.Request{
-		Messages: invalidJsonMessages,
-	}
-	invalidJsonResponse := entity.Message{
-		Body: "no json",
-	}
-
-	mockSetup := []struct {
-		request     entity.Request
-		response    *entity.Message
-		returnError error
-		wantErr     bool
-	}{
-		{
-			request:     validRequest,
-			response:    &validResponse,
-			returnError: nil,
-		},
-		{
-			request:     invalidRequest,
-			response:    &invalidResponse,
-			returnError: nil,
-		},
-		{
-			request:     invalidJsonRequest,
-			response:    &invalidJsonResponse,
-			returnError: nil,
-		},
-		{
-			request: entity.Request{
-				Messages: []entity.Message{{Role: "user", Body: "service err"}},
-			},
-			response:    nil,
-			returnError: sharedErrors.ErrInternalServer,
+			ValidationPrompt: "Validate this prompt",
 		},
 	}
 
 	tests := []struct {
-		name        string
-		messages    []entity.Message
-		ctx         context.Context
-		wantErr     bool
-		isValid     bool
-		expectedErr error
+		name          string
+		setup         func(*mocks.MockOpenAI)
+		ctx           context.Context
+		chat          *entity.Chat
+		request       *entity.UserRequest
+		expectedValid bool
+		expectedMsg   string
+		wantErr       bool
 	}{
 		{
-			name:        "valid request without changes",
-			messages:    validMessages,
-			ctx:         context.Background(),
-			wantErr:     false,
-			isValid:     true,
-			expectedErr: nil,
-		},
-		{
-			name:        "valid request but with changes",
-			messages:    invalidMessages,
-			ctx:         context.Background(),
-			wantErr:     false,
-			isValid:     false,
-			expectedErr: nil,
-		},
-		{
-			name:        "invalid json",
-			messages:    invalidJsonMessages,
-			ctx:         context.Background(),
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrInternalServer,
-		},
-		{
-			name:        "nil ctx",
-			messages:    validMessages,
-			ctx:         nil,
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrInternalServer,
-		},
-		{
-			name:        "service error",
-			messages:    []entity.Message{{Role: "user", Body: "service err"}},
-			ctx:         context.Background(),
-			wantErr:     true,
-			isValid:     false,
-			expectedErr: sharedErrors.ErrValidation,
-		},
-	}
-
-	for _, mc := range mockSetup {
-		serviceMock.On("Request", mock.Anything, mc.request).Return(mc.response, mc.returnError)
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			valid, str, err := svc.ValidatePrompt(tt.ctx, tt.messages)
-			if tt.wantErr {
-				assert.NotNil(t, err)
-				if !errors.Is(err, tt.expectedErr) {
-					assert.Contains(t, err.Error(), tt.expectedErr.Error())
+			name: "valid prompt",
+			setup: func(m *mocks.MockOpenAI) {
+				validResponse := entity.LlmValidationResponse{
+					Valid:   true,
+					Message: "Prompt is valid",
 				}
+				body, _ := json.Marshal(validResponse)
+				m.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Body: string(body)}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user123", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat123",
+				Prompt: "Test this login form",
+				UserId: "user123",
+			},
+			expectedValid: true,
+			expectedMsg:   "Prompt is valid",
+			wantErr:       false,
+		},
+		{
+			name: "invalid prompt",
+			setup: func(m *mocks.MockOpenAI) {
+				invalidResponse := entity.LlmValidationResponse{
+					Valid:   false,
+					Message: "Prompt is missing required information",
+				}
+				body, _ := json.Marshal(invalidResponse)
+				m.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Body: string(body)}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user456", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat456",
+				Prompt: "Test something",
+				UserId: "user456",
+			},
+			expectedValid: false,
+			expectedMsg:   "Prompt is missing required information",
+			wantErr:       false,
+		},
+		{
+			name: "service request error",
+			setup: func(m *mocks.MockOpenAI) {
+				m.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(nil, errors.New("service error"))
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user789", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat789",
+				Prompt: "Test case",
+				UserId: "user789",
+			},
+			expectedValid: false,
+			expectedMsg:   "",
+			wantErr:       true,
+		},
+		{
+			name: "invalid json response",
+			setup: func(m *mocks.MockOpenAI) {
+				m.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Body: "invalid json"}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user101", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat101",
+				Prompt: "Test invalid response",
+				UserId: "user101",
+			},
+			expectedValid: false,
+			expectedMsg:   "",
+			wantErr:       true,
+		},
+		{
+			name: "nil context",
+			setup: func(m *mocks.MockOpenAI) {
+				// No mock expectations needed as function should fail before any calls
+			},
+			ctx:  nil,
+			chat: entity.NewChat("user202", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat202",
+				Prompt: "Test nil context",
+				UserId: "user202",
+			},
+			expectedValid: false,
+			expectedMsg:   "",
+			wantErr:       true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockService := mocks.NewMockOpenAI(t)
+			test.setup(mockService)
+
+			svc, err := NewValidatePromptService(mockService, cfg, logger)
+			testifyAssert.Nil(t, err)
+			testifyAssert.NotNil(t, svc)
+
+			isValid, msg, err := svc.ValidatePrompt(test.ctx, test.chat, test.request)
+
+			if test.wantErr {
+				testifyAssert.NotNil(t, err)
 			} else {
-				assert.Nil(t, err)
-				if tt.isValid {
-					assert.Equal(t, tt.isValid, valid)
-					assert.Empty(t, str)
-				} else {
-					assert.NotEmpty(t, str)
-				}
+				testifyAssert.Nil(t, err)
+				testifyAssert.Equal(t, test.expectedValid, isValid)
+				testifyAssert.Equal(t, test.expectedMsg, msg)
 			}
-			mock.AssertExpectationsForObjects(t)
 		})
 	}
 }

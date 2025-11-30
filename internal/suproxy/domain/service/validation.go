@@ -122,7 +122,7 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
-			Messages:     []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: item}},
+			Messages:     []*sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: item}},
 			SystemPrompt: sysPrompt,
 		}
 		msg, err := v.openAiService.Request(ctx, req)

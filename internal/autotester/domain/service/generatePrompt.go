@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
@@ -14,7 +15,7 @@ import (
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
-	GeneratePrompt(ctx context.Context, messages []sharedEntity.Message) (string, error)
+	GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error)
 }
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
@@ -36,7 +37,7 @@ func NewGeneratePromptService(openaiService sharedService.OpenAI, taglistService
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
-func (s *generatePrompt) GeneratePrompt(ctx context.Context, messages []sharedEntity.Message) (string, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
 		return "", errors.ErrInternalServer
@@ -45,15 +46,17 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, messages []sharedEn
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{
-		Messages:     messages,
+		Messages:     chat.Filter(entity.TypeGeneration),
 		Model:        s.config.Model,
 		SystemPrompt: prompt,
 	}
+	chat.LastAutoPlaywrightPrompt = prompt
 
 	msg, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		return "", err
 	}
+	chat.AddMessage(msg, entity.TypeGeneration)
 
 	if err = assert.StringNotEmpty(msg.Body); err != nil {
 		s.logger.Error(err.Error())

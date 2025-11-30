@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
@@ -78,75 +79,134 @@ func TestNewGeneratePromptService(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func TestGeneratePrompt(t *testing.T) {
 	logger := slog.Default()
 	cfg := &config.Config{
+		Model: "gpt-4",
 		Prompts: &config.Prompts{
 			AutoPlaywrightPromptT: "system prompt %s",
 		},
 	}
+	generatedCode := "some code"
 	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
-	code := "some code"
 
 	tests := []struct {
-		name              string
-		expectedResult    string
-		requestReturns    []any
-		getTaglistReturns []any
-		expectErr         bool
-		ctx               context.Context
+		name           string
+		setup          func(*mocks.MockOpenAI, *mocks.MockTaglistStorage)
+		ctx            context.Context
+		chat           *entity.Chat
+		request        *entity.UserRequest
+		expectedResult string
+		wantErr        bool
 	}{
 		{
-			name:              "success",
-			expectedResult:    code,
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
-			getTaglistReturns: []any{tags, nil},
-			expectErr:         false,
-			ctx:               context.Background(),
+			name: "successful generation",
+			setup: func(openai *mocks.MockOpenAI, taglist *mocks.MockTaglistStorage) {
+				taglist.EXPECT().GetTaglist(mock.Anything).
+					Return(tags, nil)
+				openai.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Role: "assistant", Body: generatedCode}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user123", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat123",
+				Prompt: "Generate test for login form",
+				UserId: "user123",
+			},
+			expectedResult: generatedCode,
+			wantErr:        false,
 		},
 		{
-			name:      "nil ctx",
-			ctx:       nil,
-			expectErr: true,
+			name: "empty response body",
+			setup: func(openai *mocks.MockOpenAI, taglist *mocks.MockTaglistStorage) {
+				taglist.EXPECT().GetTaglist(mock.Anything).
+					Return(tags, nil)
+				openai.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Role: "assistant", Body: ""}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user456", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat456",
+				Prompt: "Generate test",
+				UserId: "user456",
+			},
+			expectedResult: "",
+			wantErr:        true,
 		},
 		{
-			name:              "empty code segment in openau response",
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: ""}, nil},
-			getTaglistReturns: []any{tags, nil},
-			expectErr:         true,
-			ctx:               context.Background(),
+			name: "openai service error",
+			setup: func(openai *mocks.MockOpenAI, taglist *mocks.MockTaglistStorage) {
+				taglist.EXPECT().GetTaglist(mock.Anything).
+					Return(tags, nil)
+				openai.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(nil, sharedErrors.ErrInternalServer)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user789", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat789",
+				Prompt: "Generate test",
+				UserId: "user789",
+			},
+			expectedResult: "",
+			wantErr:        true,
 		},
 		{
-			name:              "openai error",
-			requestReturns:    []any{nil, sharedErrors.ErrInternalServer},
-			getTaglistReturns: []any{tags, nil},
-			expectErr:         true,
-			ctx:               context.Background(),
+			name: "taglist fetch error",
+			setup: func(openai *mocks.MockOpenAI, taglist *mocks.MockTaglistStorage) {
+				taglist.EXPECT().GetTaglist(mock.Anything).
+					Return(nil, sharedErrors.ErrInternalServer)
+				openai.EXPECT().Request(mock.Anything, mock.Anything).
+					Return(&sharedEntity.Message{Role: "assistant", Body: generatedCode}, nil)
+			},
+			ctx:  context.Background(),
+			chat: entity.NewChat("user101", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat101",
+				Prompt: "Generate test",
+				UserId: "user101",
+			},
+			expectedResult: generatedCode,
+			wantErr:        false,
+		},
+		{
+			name: "nil context",
+			setup: func(openai *mocks.MockOpenAI, taglist *mocks.MockTaglistStorage) {
+				// No mock expectations needed as function should fail before any calls
+			},
+			ctx:  nil,
+			chat: entity.NewChat("user202", []entity.Message{}),
+			request: &entity.UserRequest{
+				ChatId: "chat202",
+				Prompt: "Generate test",
+				UserId: "user202",
+			},
+			expectedResult: "",
+			wantErr:        true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			openai := mocks.NewMockOpenAI(t)
-			taglist := mocks.NewMockTaglistStorage(t)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockOpenAI := mocks.NewMockOpenAI(t)
+			mockTaglist := mocks.NewMockTaglistStorage(t)
+			test.setup(mockOpenAI, mockTaglist)
 
-			if tt.requestReturns != nil {
-				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
-			}
+			svc, err := NewGeneratePromptService(mockOpenAI, mockTaglist, cfg, logger)
+			assert.Nil(t, err)
+			assert.NotNil(t, svc)
 
-			if tt.getTaglistReturns != nil {
-				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
-			}
+			result, err := svc.GeneratePrompt(test.ctx, test.chat, test.request)
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
-			got, err := svc.GeneratePrompt(tt.ctx, []sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: "prompt"}})
-
-			if tt.expectErr {
+			if test.wantErr {
 				assert.NotNil(t, err)
-				assert.Empty(t, got)
+				assert.Empty(t, result)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, tt.expectedResult, got)
+				assert.Equal(t, test.expectedResult, result)
 			}
 		})
 	}
