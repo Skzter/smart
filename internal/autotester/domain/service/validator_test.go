@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
 
 //nolint:dupl
@@ -21,6 +22,7 @@ func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
 	cfg := config.Config{}
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -61,7 +63,7 @@ func TestNewValidatorService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewValidatorService(test.service, test.config, test.logger)
+			repo, err := NewValidatorService(test.service, test.config, test.logger, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewValidatorService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -83,7 +85,8 @@ func TestValidatePrompt(t *testing.T) {
 		},
 	}
 	logger := slog.New(slog.DiscardHandler)
-	svc, err := NewValidatorService(serviceMock, cfg, logger)
+	tracer := otel.Tracer("test")
+	svc, err := NewValidatorService(serviceMock, cfg, logger, tracer)
 	if err != nil {
 		t.Fatalf("failed to create validator service: %v", err)
 	}
@@ -183,8 +186,8 @@ func TestValidateRequest(t *testing.T) {
 	serviceMock := mocks.NewMockOpenAI(t)
 	cfg := &config.Config{}
 	logger := slog.New(slog.DiscardHandler)
-	svc, _ := NewValidatorService(serviceMock, cfg, logger)
-
+	tracer := otel.Tracer("test")
+	svc, _ := NewValidatorService(serviceMock, cfg, logger, tracer)
 	model := "gpt-4"
 	systemPrompt := "You are a helpful assistant."
 	msg := []entity.Message{

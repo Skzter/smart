@@ -2,7 +2,9 @@ package application
 
 import (
 	"net/http"
+	"os"
 
+	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
@@ -12,6 +14,8 @@ import (
 func NewRouter(h *handler.SuproxyController) *gin.Engine {
 	router := gin.Default()
 
+	router.Use(gin.Recovery())
+	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
 	router.Use(corsMiddleware())
 
 	api := router.Group("/api/v1")
