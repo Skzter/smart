@@ -27,7 +27,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	}
 
 	// find file to mount
-	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
+	testfile, err := a.localTestcaseStorageService.GetTestPath(params.TestId, params.UserID, params.SessionID)
 	a.logger.Debug(fmt.Sprintf("Testpath: %s\n", testfile))
 	if err != nil {
 		a.logger.Debug(fmt.Sprintf("file not available: %s\n", err.Error()))
@@ -52,7 +52,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	pattern := fmt.Sprintf(`(?m)^\s*✓\s+\d+\s+%s:\d+:\d+`, regexp.QuoteMeta(filepath.Base(testfile)))
 	passPattern := regexp.MustCompile(pattern)
 	if passPattern.MatchString(output) {
-		code, err := a.saveLocalService.Read(params.TestId, params.UserID, params.SessionID)
+		code, err := a.localTestcaseStorageService.Read(params.TestId, params.UserID, params.SessionID)
 		if err != nil {
 			a.logger.Error(fmt.Sprintf("Reading local test code failed, skipping remote save: %s", err.Error()))
 			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
@@ -66,7 +66,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 			},
 			Status: entity.TestStatusPassed,
 		}
-		if _, err := a.saveTestRemoteServcie.SaveTestcase(c, test, params.UserID); err != nil {
+		if _, err := a.remoteTestcaseStorageService.SaveTestcase(c, test, params.UserID); err != nil {
 			a.logger.Error(err.Error())
 			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 			return

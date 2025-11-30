@@ -103,7 +103,8 @@ func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
 
-func TestCaseStorageRepositoryProvider(logger *slog.Logger,
+func TestCaseStorageRepositoryProvider(
+	logger *slog.Logger,
 	s3Wrapper wrapperService.S3StorageWrapper,
 	parquetWrapper wrapperService.ParquetFileWrapper[entity.TestCase],
 	cfg *config.Config,
