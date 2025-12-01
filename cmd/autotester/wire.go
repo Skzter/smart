@@ -45,6 +45,11 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
+		S3WrapperProvider,
+		ChatParquetWrapperProvider,
+		ChatSummaryParquetWrapperProvider,
+		repository.NewChatStorageRepository,
+		service.NewChatStorageService,
 	)
 
 	return nil, nil
@@ -69,9 +74,14 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 	return sharedService.NewOpenAI(repo, tracer)
 }
 
+// ChatParquetWrapperProvider provides a new chat summary parquet wrapper.
+func ChatSummaryParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
+	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, wrapperService.DefaultParquetConfig(), tracer)
+}
+
 // ChatParquetWrapperProvider provides a new session summary parquet wrapper.
-func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
-	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg, tracer)
+func ChatParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
+	return wrapperService.NewParquetWrapper[entity.Chat](logger, wrapperService.DefaultParquetConfig(), tracer)
 }
 
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
