@@ -15,6 +15,20 @@
     // Note: We should ideally get this from a backend state associated with the user
     var conversationId = $state("");
 
+    onMount(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const updateTheme = () => {
+            document.documentElement.setAttribute(
+                "data-theme",
+                media.matches ? "dark" : "light",
+            );
+        };
+
+        media.addEventListener("change", updateTheme);
+        updateTheme();
+    });
+
     onMount(async () => {
         await auth.initAuth();
     });
@@ -101,7 +115,7 @@
                         name="Bot"
                         {userId}
                         {conversationId}
-                        showSave={c.answer.startsWith("import")}
+                        isCode={c.answer.startsWith("import")}
                     />
                 {/if}
             {/each}

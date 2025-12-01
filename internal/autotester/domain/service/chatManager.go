@@ -19,9 +19,9 @@ type ChatManager interface {
 	SaveChat(context.Context, *entity.Chat) error
 }
 
-// chat is the concrete implementation of Chat that delegates persistence to a storage service
-// and enriches chat records with timestamps and configured prompts.
-type chat struct {
+// chatManager is the concrete implementation of Chat that delegates persistence to a storage service
+// and enriches chatManager records with timestamps and configured prompts.
+type chatManager struct {
 	storageService ChatStorageService
 	logger         *slog.Logger
 	cfg            config.Config
@@ -33,7 +33,7 @@ func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg 
 	if err := assert.NotNil(logger, storageService, cfg); err != nil {
 		return nil, err
 	}
-	return &chat{
+	return &chatManager{
 		storageService: storageService,
 		logger:         logger,
 		cfg:            *cfg,
@@ -43,7 +43,7 @@ func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg 
 // LoadChat either loads an existing chat from storage (when request.ChatId is set) or
 // creates and returns a new chat object initialized with a generated UUID, creation time,
 // empty message slice and the initial user prompt.
-func (c *chat) LoadChat(ctx context.Context, request entity.UserRequest) (*entity.Chat, error) {
+func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) (*entity.Chat, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (c *chat) LoadChat(ctx context.Context, request entity.UserRequest) (*entit
 
 // SaveChat updates timestamps and the last-used prompts on the chat before delegating
 // persistence to the storage service.
-func (c *chat) SaveChat(ctx context.Context, chat *entity.Chat) error {
+func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}

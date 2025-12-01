@@ -8,13 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
 // nolint:funlen
@@ -157,11 +159,11 @@ func TestHandleChatRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidatePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatServ := mocks.NewMockChatManager(t)
-
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
 				case "ValidatePrompt":
@@ -169,9 +171,9 @@ func TestHandleChatRequest(t *testing.T) {
 				case "GeneratePrompt":
 					mockGenServ.On(mc.Function, mock.Anything, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				case "LoadChat":
-					mockChatServ.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
+					mockChatManager.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				case "SaveChat":
-					mockChatServ.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
+					mockChatManager.On(mc.Function, mock.Anything, mock.Anything).Return(mc.ExpectedResponse...)
 				}
 			}
 
@@ -181,7 +183,8 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatServ)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
+
 			controller.HandleChatRequest(ctx)
 
 			if rec.Code != test.ExpectedStatus {
@@ -228,10 +231,11 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatServ := mocks.NewMockChatManager(t)
+	mockChatManager := mocks.NewMockChatManager(t)
+	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -246,7 +250,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -255,6 +259,141 @@ func TestHandleUserInfoRequest(t *testing.T) {
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+		})
+	}
+}
+
+func TestGetUserChats(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tests := []struct {
+		name             string
+		requestID        string
+		limit            string
+		mockResponseLoad []any
+		expectedStatus   int
+	}{
+		{
+			name:           "error - No ID",
+			requestID:      "",
+			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:           "error - invalid ID format",
+			requestID:      "132",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "error - limit is not a number",
+			requestID:      "auth0|123",
+			limit:          "hallo",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "error - limit is a negative number",
+			requestID:      "auth0|123",
+			limit:          "-131",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:             "error - no chat history for given user found",
+			requestID:        "auth0|123",
+			limit:            "123",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
+		},
+		{
+			name:             "error - empty limit but no history found",
+			requestID:        "auth0|123",
+			limit:            "",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
+		},
+		{
+			name:      "success",
+			requestID: "auth0|123",
+			limit:     "5",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
+			}, nil},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+	mockChatManager := mocks.NewMockChatManager(t)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			if tc.mockResponseLoad != nil {
+				mockChatStorageServ.On("LoadUserChats", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+			}
+			gin.SetMode(gin.TestMode)
+			router := gin.New()
+
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
+			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
+
+			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
+			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+			rec := httptest.NewRecorder()
+
+			router.ServeHTTP(rec, req)
+
+			if rec.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestIsValid(t *testing.T) {
+	tests := []struct {
+		name      string
+		id        string
+		expectErr bool
+	}{
+		{
+			name:      "error - id doesnt have separator",
+			id:        "auth01234",
+			expectErr: true,
+		},
+		{
+			name:      "error - first token isnt 'auth0'",
+			id:        "hallo|123",
+			expectErr: true,
+		},
+		{
+			name:      "error - second token is empty string",
+			id:        "hallo|123",
+			expectErr: true,
+		},
+		{
+			name:      "success",
+			id:        "auth0|123",
+			expectErr: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			valid := isValid(tc.id)
+			if tc.expectErr {
+				assert.False(t, valid)
+			} else {
+				assert.True(t, valid)
 			}
 		})
 	}

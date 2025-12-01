@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
 func TestHandleTemplate(t *testing.T) {
@@ -36,10 +36,11 @@ func TestHandleTemplate(t *testing.T) {
 	}
 
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidatePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatServ := mocks.NewMockChatManager(t)
+	mockChatManager := mocks.NewMockChatManager(t)
+	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -55,7 +56,7 @@ func TestHandleTemplate(t *testing.T) {
 			ctx.Errors.Errors()
 
 			cfg.Template = test.template
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
 
 			if err != nil {
 				t.Errorf("build failed")

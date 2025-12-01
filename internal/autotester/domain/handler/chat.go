@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -29,7 +32,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	chat, err := a.chatService.LoadChat(c, userRequest)
+	chat, err := a.chatManager.LoadChat(c, userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: errors.ErrInternalServer.Error()})
 		a.logger.Error("Loading Chat failed", "error", err)
@@ -39,7 +42,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	defer func() {
 		// only update chat when no errors
 		if c.Writer.Status() == http.StatusOK {
-			if err := a.chatService.SaveChat(c, chat); err != nil {
+			if err := a.chatManager.SaveChat(c, chat); err != nil {
 				a.logger.Error("Updating stored chat failed", "err", err.Error())
 			}
 		}
@@ -87,4 +90,60 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
+}
+
+// HandleGetUserChats processes a request for all chats of a given user
+// Expects a valid uuid as url parameter
+// valid example: /chats/0bc024d1-5e82-435b-8b2e-dc88493a8a28
+// invalid example: /chats/1234 or /chats/hahahihi
+func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
+	userID := c.Param("UserID")
+	// checking if style: auth0|id is there
+	if !isValid(userID) {
+		a.logger.Error("invalid id format")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid id format"})
+		return
+	}
+
+	limitStr := c.Query("limit")
+	if limitStr == "" {
+		limitStr = "0"
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "limit has to be a number"})
+		return
+	}
+
+	if limit < 0 {
+		a.logger.Error(fmt.Sprintf("%d, limit has to be greater than zero", limit))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: fmt.Sprintf("%d, limit has to be greater than zero", limit)})
+		return
+	}
+
+	chats, err := a.chatStorageService.LoadUserChats(c, userID)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "no history found for this user"})
+		return
+	}
+
+	if limit > len(chats) || limit == 0 {
+		limit = len(chats)
+	}
+
+	chats = chats[:limit]
+
+	c.JSON(http.StatusOK, entity.ChatSummarys{
+		ChatSummarys: chats,
+	})
+}
+
+func isValid(userId string) bool {
+	tokens := strings.Split(userId, "|")
+	if len(tokens) != 2 || tokens[0] != "auth0" || tokens[1] == "" {
+		return false
+	}
+	return true
 }

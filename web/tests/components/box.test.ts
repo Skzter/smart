@@ -11,6 +11,20 @@ describe("Box component", () => {
         vi.clearAllMocks();
     });
 
+    // Updated helper function to handle both isCode cases
+    function getMessageElement(
+        container: HTMLElement,
+        isCode: boolean = false,
+    ) {
+        if (isCode) {
+            // When isCode is true, content is in <pre> with tokenized spans
+            return container.querySelector("pre");
+        } else {
+            // When isCode is false, content is in <p> tag
+            return container.querySelector("p");
+        }
+    }
+
     describe('when the message is from "User"', () => {
         it("renders the message and applies User-specific styles", () => {
             const { container } = render(Box, {
@@ -21,12 +35,13 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("User");
-            const messageElement = screen.getByText(
+            expect(nameElement).toBeInTheDocument();
+
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain(
                 "This is a message from User!",
             );
-
-            expect(nameElement).toBeInTheDocument();
-            expect(messageElement).toBeInTheDocument();
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).toHaveClass("justify-end");
@@ -46,12 +61,13 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("Bot");
-            const messageElement = screen.getByText(
+            expect(nameElement).toBeInTheDocument();
+
+            const messageElement = getMessageElement(container, false);
+            expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain(
                 "This is a message from Bot!",
             );
-
-            expect(nameElement).toBeInTheDocument();
-            expect(messageElement).toBeInTheDocument();
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).toHaveClass("justify-start");
@@ -71,10 +87,11 @@ describe("Box component", () => {
             });
 
             const nameElement = screen.getByText("Test");
-            const messageElement = screen.getByText("Test Message");
-
             expect(nameElement).toBeInTheDocument();
+
+            const messageElement = getMessageElement(container, false);
             expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain("Test Message");
 
             const outerDiv = container.querySelector(".flex.m-4");
             expect(outerDiv).not.toHaveClass("justify-end", "justify-start");
@@ -98,8 +115,9 @@ describe("Box component", () => {
                 conversationId: "test-conv-456",
             });
 
-            const messageElement = screen.getByText("Empty name test");
+            const messageElement = getMessageElement(container, false);
             expect(messageElement).toBeInTheDocument();
+            expect(messageElement?.textContent).toContain("Empty name test");
 
             const nameElement = screen.getByRole("heading", { level: 1 });
             expect(nameElement).toBeInTheDocument();
@@ -124,36 +142,50 @@ describe("Box component", () => {
             const nameElement = screen.getByText("User");
             expect(nameElement).toBeInTheDocument();
 
-            // The message paragraph should be empty
-            const messageElement = container.querySelector("p.font-sans");
+            const messageElement = getMessageElement(container, false);
             expect(messageElement).toBeInTheDocument();
-            expect(messageElement?.textContent).toBe("");
+            expect(messageElement?.textContent?.trim()).toBe("");
         });
     });
 
-    describe("when showSave is true", () => {
+    describe("when isCode is true", () => {
         it("renders the Save button", () => {
             render(Box, {
                 msg: "import { test } from 'playwright';",
                 name: "Bot",
                 userId: "test-user-123",
                 conversationId: "test-conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
             expect(saveButton).toBeInTheDocument();
         });
+
+        it("renders code with syntax highlighting in pre element", () => {
+            const { container } = render(Box, {
+                msg: "const x = 5;",
+                name: "Bot",
+                userId: "test-user-123",
+                conversationId: "test-conv-456",
+                isCode: true,
+            });
+
+            const codeElement = getMessageElement(container, true);
+            expect(codeElement).toBeInTheDocument();
+            expect(codeElement?.tagName).toBe("PRE");
+            expect(codeElement?.textContent).toContain("const x = 5;");
+        });
     });
 
-    describe("when showSave is false", () => {
+    describe("when isCode is false", () => {
         it("does not render the Save button", () => {
             render(Box, {
                 msg: "import { test } from 'playwright';",
                 name: "Bot",
                 userId: "test-user-123",
                 conversationId: "test-conv-456",
-                showSave: false,
+                isCode: false,
             });
 
             const saveButton = screen.queryByRole("button", { name: /save/i });
@@ -167,12 +199,12 @@ describe("Box component", () => {
                 data: { testcaseId: "test-123" },
             });
 
-            render(Box, {
+            const { container } = render(Box, {
                 msg: "test code",
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -193,6 +225,10 @@ describe("Box component", () => {
                 conversationId: "conv-456",
                 code: "test code",
             });
+
+            // Ensure message still rendered (optional sanity check)
+            const codeElement = getMessageElement(container, true);
+            expect(codeElement?.textContent).toContain("test code");
         });
 
         it("sanitizes userId with pipe character before saving", async () => {
@@ -205,7 +241,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "auth0|user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -230,7 +266,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: undefined,
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -252,7 +288,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: undefined,
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -281,7 +317,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -309,7 +345,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -330,7 +366,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -357,7 +393,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -382,7 +418,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -413,7 +449,7 @@ describe("Box component", () => {
                 name: "Bot",
                 userId: "user-123",
                 conversationId: "conv-456",
-                showSave: true,
+                isCode: true,
             });
 
             const saveButton = screen.getByRole("button", { name: /save/i });
@@ -425,6 +461,7 @@ describe("Box component", () => {
             });
         });
     });
+
     describe("Box component - RunTest functionality", () => {
         beforeEach(() => {
             vi.clearAllMocks();
@@ -441,7 +478,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -460,7 +497,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const runButton = screen.queryByText("Run Test");
@@ -477,7 +514,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -506,7 +543,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test
@@ -543,6 +580,7 @@ describe("Box component", () => {
                     sessionId: "conv-456",
                 });
             });
+
             it("opens modal and displays error message when runContainer fails", async () => {
                 vi.mocked(saveTestLocal).mockResolvedValue({
                     data: { testcaseId: "test-123" },
@@ -567,7 +605,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test
@@ -603,6 +641,7 @@ describe("Box component", () => {
                     sessionId: "conv-456",
                 });
             });
+
             it("does not run test and logs error when userId becomes undefined", async () => {
                 const consoleErrorSpy = vi
                     .spyOn(console, "error")
@@ -618,7 +657,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: undefined,
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 unmount();
@@ -629,7 +668,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 const saveButton = screen.getByRole("button", {
@@ -649,6 +688,7 @@ describe("Box component", () => {
 
                 consoleErrorSpy.mockRestore();
             });
+
             it("sanitizes userId with pipe character before running test", async () => {
                 vi.mocked(saveTestLocal).mockResolvedValue({
                     data: { testcaseId: "test-123" },
@@ -662,7 +702,7 @@ describe("Box component", () => {
                     name: "Bot",
                     userId: "auth0|user-123",
                     conversationId: "conv-456",
-                    showSave: true,
+                    isCode: true,
                 });
 
                 // First save the test

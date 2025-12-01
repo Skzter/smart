@@ -8,15 +8,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper/mocks"
 )
 
 // nolint:dupl
 func TestCreateChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, test := range chatCreateTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
@@ -30,16 +32,16 @@ func TestCreateChatStorage(t *testing.T) {
 			}
 
 			if test.chatWriteRet != nil {
-				mockParquet.On("WriteStructToParquet", *test.obj).Return(test.chatWriteRet...)
+				mockParquet.On("WriteStructToParquet", mock.Anything, *test.obj).Return(test.chatWriteRet...)
 			}
 			if test.summaryWriteRet != nil {
-				mockSummaryParquet.On("WriteStructToParquet", mock.Anything).Return(test.summaryWriteRet...)
+				mockSummaryParquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(test.summaryWriteRet...)
 			}
 			if test.uploadRet != nil {
 				mockS3.On("UploadParquetFile", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(test.uploadRet...)
 			}
 
-			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
 			err := repo.Create(test.ctx, test.obj)
 			if test.expectError {
@@ -124,6 +126,7 @@ func chatCreateTestCaseProvider() []struct {
 // nolint:dupl
 func TestReadChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, test := range chatReadTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
@@ -134,14 +137,14 @@ func TestReadChatStorage(t *testing.T) {
 			key, _ := generateKeys("user", "chat")
 
 			if test.downloadRet != nil {
-				mockS3.On("DownloadParquetFile", test.ctx, key).Return(test.downloadRet...)
+				mockS3.On("DownloadParquetFile", mock.Anything, key).Return(test.downloadRet...)
 			}
 
 			if test.readStructsRet != nil {
-				mockParquet.On("ReadStructsFromParquet", mock.Anything).Return(test.readStructsRet...)
+				mockParquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).Return(test.readStructsRet...)
 			}
 
-			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
 			result, err := repo.Read(test.ctx, "user", "chat")
 			if test.expectError {
@@ -207,6 +210,7 @@ func chatReadTestCaseProvider() []struct {
 // nolint:dupl
 func TestDeleteChatStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name             string
@@ -249,15 +253,15 @@ func TestDeleteChatStorage(t *testing.T) {
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 			chatkey, summarykey := generateKeys("user", "chat")
 			if test.deleteChatRet != nil {
-				mockS3.On("DeleteParquetFile", test.ctx, chatkey).
+				mockS3.On("DeleteParquetFile", mock.Anything, chatkey).
 					Return(test.deleteChatRet...)
 			}
 			if test.deleteSummaryRet != nil {
-				mockS3.On("DeleteParquetFile", test.ctx, summarykey).
+				mockS3.On("DeleteParquetFile", mock.Anything, summarykey).
 					Return(test.deleteSummaryRet...)
 			}
 
-			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
 			err := repo.Delete(test.ctx, "user", "chat")
 			if test.expectError {
@@ -276,6 +280,7 @@ func TestDeleteChatStorage(t *testing.T) {
 func TestFindByUserID(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, test := range findByUserIDTestCaseProvider(ctx) {
 		t.Run(test.name, func(t *testing.T) {
@@ -284,7 +289,7 @@ func TestFindByUserID(t *testing.T) {
 
 			test.setupMocks(mockS3, mockSummaryParquet)
 
-			repo, _ := NewChatStorageRepository(logger, mockS3, mocks.NewMockParquetFileWrapper[entity.Chat](t), mockSummaryParquet)
+			repo, _ := NewChatStorageRepository(logger, mockS3, mocks.NewMockParquetFileWrapper[entity.Chat](t), mockSummaryParquet, tracer)
 
 			result, err := repo.FindByUserID(test.ctx, "user")
 			if (err != nil) != test.wantErr {
@@ -321,13 +326,13 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "happy path",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return([]byte("data1"), map[string]string{}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 2,
@@ -344,7 +349,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "s3 list error",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return(nil, errors.New("err"))
 			},
 			wantCount: 0,
@@ -354,7 +359,7 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "no keys found",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return([]string{}, nil)
 			},
 			wantCount: 0,
@@ -364,13 +369,13 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "s3 download error",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return(nil, nil, errors.New("err"))
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}}, nil)
 			},
 			wantCount: 1,
@@ -380,13 +385,13 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "parquet error",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return(nil, nil, errors.New("err"))
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return(nil, errors.New("err"))
 			},
 			wantCount: 0,
@@ -396,13 +401,13 @@ func findByUserIDTestCaseProvider(ctx context.Context) []struct {
 		{
 			name: "incorrect number of structs in parquet file",
 			setupMocks: func(mockS3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.ChatSummary]) {
-				mockS3.On("ListParquetFiles", ctx, mock.Anything).
+				mockS3.On("ListParquetFiles", mock.Anything, mock.Anything).
 					Return([]string{"key1", "key2"}, nil)
-				mockS3.On("DownloadParquetFile", ctx, "key1").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key1").
 					Return(nil, nil, errors.New("err"))
-				mockS3.On("DownloadParquetFile", ctx, "key2").
+				mockS3.On("DownloadParquetFile", mock.Anything, "key2").
 					Return([]byte("data2"), map[string]string{}, nil)
-				parquet.On("ReadStructsFromParquet", mock.Anything).
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).
 					Return([]entity.ChatSummary{{}, {}}, nil)
 			},
 			wantCount: 0,
@@ -420,6 +425,7 @@ func TestNewChatStorageRepository(t *testing.T) {
 	mockChatParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
 	mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name                  string
@@ -473,7 +479,7 @@ func TestNewChatStorageRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewChatStorageRepository(test.logger, test.s3Wrapper, test.chatParquetWrapper, test.summaryParquetWrapper)
+			repo, err := NewChatStorageRepository(test.logger, test.s3Wrapper, test.chatParquetWrapper, test.summaryParquetWrapper, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewChatStorageRepository() error = %v, wantErr %v", err, test.wantErr)
 			}
