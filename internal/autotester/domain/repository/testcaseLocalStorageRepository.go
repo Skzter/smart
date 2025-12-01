@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -71,28 +72,31 @@ func NewTestcaseLocalStorageRepository(logger *slog.Logger, filesystem FileSyste
 
 func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId, sessionId string) error {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
-		return fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return errors.ErrValidation
 	}
 	if err := validateTestcase(testcase); err != nil {
-		return fmt.Errorf("validate testcase: %w", err)
+		r.logger.Error(fmt.Sprintf("validate testcase: %s", err))
+		return errors.ErrValidation
 	}
 
 	filename := testcase.TestID + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
-		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+		r.logger.Error(fmt.Sprintf("invalid testcase filename %s: %v", filename, err))
+		return errors.ErrValidation
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	if err := r.filesystem.MkdirAll(dir); err != nil {
 		r.logger.Error("create directory failed", "dir", dir, "err", err)
-		return fmt.Errorf("create directory %s: %w", dir, err)
+		return errors.ErrInternalServer
 	}
 
 	filePath := filepath.Join(dir, filename)
 	data := []byte(testcase.TestCode.Code)
 	if err := r.filesystem.WriteFile(filePath, data); err != nil {
 		r.logger.Error("write testcase file failed", "path", filePath, "err", err)
-		return fmt.Errorf("write testcase file %s: %w", filePath, err)
+		return errors.ErrInternalServer
 	}
 
 	return nil
@@ -100,25 +104,28 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 
 func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId string) (string, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
-		return "", fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return "", errors.ErrValidation
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
-		return "", fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+		r.logger.Error(fmt.Sprintf("invalid testcase filename: %s %v", filename, err))
+		return "", errors.ErrValidation
 	}
 
 	relativePath := filepath.Join(dir, filename)
 
 	if _, err := r.filesystem.GetFileStats(relativePath); err != nil {
-		r.logger.Error("testcase file not found", "path", relativePath, "err", err)
-		return "", fmt.Errorf("testcase file not found %s: %w", relativePath, err)
+		r.logger.Error(fmt.Sprintf("testcase file not found: %s %v", relativePath, err))
+		return "", errors.ErrValidation
 	}
 
 	validatedPath, err := r.filesystem.GetValidatedPath(relativePath)
 	if err != nil {
-		return "", fmt.Errorf("validate path: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path: %s", err))
+		return "", errors.ErrInternalServer
 	}
 
 	return validatedPath, nil
@@ -126,14 +133,15 @@ func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId s
 
 func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId string) ([]string, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
-		return nil, fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return nil, errors.ErrValidation
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	filenames, err := r.filesystem.ReadDir(dir)
 	if err != nil {
-		r.logger.Error("read directory failed", "dir", dir, "err", err)
-		return nil, fmt.Errorf("read directory %s: %w", dir, err)
+		r.logger.Error(fmt.Sprintf("read directory failed: %s %v", dir, err))
+		return nil, errors.ErrInternalServer
 	}
 
 	results := make([]string, 0, len(filenames))
@@ -147,7 +155,7 @@ func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId
 		validatedPath, err := r.filesystem.GetValidatedPath(relativePath)
 		if err != nil {
 			r.logger.Error("failed to validate path", "path", relativePath, "err", err)
-			return nil, fmt.Errorf("validate path for %s: %w", relativePath, err)
+			return nil, errors.ErrInternalServer
 		}
 
 		results = append(results, validatedPath)
@@ -158,13 +166,14 @@ func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId
 
 func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[string][]string, error) {
 	if err := validatePathNameElements(userId); err != nil {
-		return nil, fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return nil, errors.ErrValidation
 	}
 
 	sessions, err := r.filesystem.ReadDir(userId)
 	if err != nil {
 		r.logger.Error("read user directory failed", "dir", userId, "err", err)
-		return nil, fmt.Errorf("read user directory %s: %w", userId, err)
+		return nil, errors.ErrInternalServer
 	}
 
 	results := make(map[string][]string)
@@ -172,7 +181,8 @@ func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[
 	for _, sessionId := range sessions {
 		testPaths, err := r.GetTestPathsBySession(userId, sessionId)
 		if err != nil {
-			return nil, fmt.Errorf("read session %s for user %s: %w", sessionId, userId, err)
+			r.logger.Error(fmt.Sprintf("read session %s for user %s: %v", sessionId, userId, err))
+			return nil, errors.ErrInternalServer
 		}
 
 		results[sessionId] = testPaths
@@ -182,19 +192,21 @@ func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[
 
 func (r *testcaseLocalStorageRepository) Delete(testId, userId, sessionId string) error {
 	if err := validatePathNameElements(testId, userId, sessionId); err != nil {
-		return fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return errors.ErrValidation
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
-		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+		r.logger.Error(fmt.Sprintf("invalid testcase filename %s: %s", filename, err))
+		return errors.ErrValidation
 	}
 
 	path := filepath.Join(dir, filename)
 	if err := r.filesystem.Remove(path, false); err != nil {
 		r.logger.Error("remove file failed", "path", path, "err", err)
-		return fmt.Errorf("remove file %s: %w", path, err)
+		return errors.ErrInternalServer
 	}
 	return nil
 }
@@ -205,7 +217,8 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 
 	userIds, err := r.filesystem.ReadDir(".")
 	if err != nil {
-		return 0, fmt.Errorf("read user directories: %w", err)
+		r.logger.Error(fmt.Sprintf("read user directories: %s", err))
+		return 0, errors.ErrInternalServer
 	}
 
 	for _, userId := range userIds {
