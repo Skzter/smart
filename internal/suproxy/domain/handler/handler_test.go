@@ -14,12 +14,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/service"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 type slicewriter struct {
@@ -45,11 +47,13 @@ func (s *slicewriter) len() int {
 
 func RejectValidator(t testing.TB) service.Validator {
 	discardValidator := mocks.NewMockValidator(t)
-	discardValidator.On("Validate", mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
+	discardValidator.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("reject")).Maybe()
 	return discardValidator
 }
 
 func TestNewSuproxyController(t *testing.T) {
+	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		name       string
 		log        *slog.Logger
@@ -87,7 +91,7 @@ func TestNewSuproxyController(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tracer, tt.syncer, tt.tagservice)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -113,19 +117,20 @@ func TestHandlerPostOfferlist(t *testing.T) {
 	}
 
 	tests := []struct {
-		name             string
-		request          *entity.Request // will use invalid request if nil
-		useCorrectAdress bool
-		sSetup           *supplierSetup // only sets up server if not nil
-		tsSetup          *[]any
-		expectedResponse any // allows for unmarshal to fail
-		expects200       bool
+		name                 string
+		request              *entity.Request // will use invalid request if nil
+		useCorrectAdress     bool
+		sSetup               *supplierSetup // only sets up server if not nil
+		tsSetup              *[]any
+		expectedResponse     any // allows for unmarshal to fail
+		expects200           bool
+		expectGetTaglistCall bool
 	}{
 		{
 			name: "valid",
 			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
+				Tags: "",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -141,6 +146,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
+			expectGetTaglistCall: true,
 		},
 		{
 			name:             "invalid request body",
@@ -151,8 +157,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "invalid address",
 			request: &entity.Request{
-				Prompt:  "",
-				Request: `{}`,
+				Tags: "",
+				Body: `{}`,
 			},
 			useCorrectAdress: false,
 			expectedResponse: invalidRequestBody,
@@ -174,8 +180,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 		{
 			name: "non empty prompt, failure in tagsearch",
 			request: &entity.Request{
-				Prompt:  "non empty prompt, but fails in tagsearch",
-				Request: `{}`,
+				Tags: "non empty prompt, but fails in tagsearch",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -191,13 +197,14 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			tsSetup: &[]any{nil, errors.New("tagsearch error")},
+			tsSetup:              &[]any{nil, errors.New("tagsearch error")},
+			expectGetTaglistCall: true,
 		},
 		{
 			name: "non empty prompt, no keys found",
 			request: &entity.Request{
-				Prompt:  "non emtpy prompt without matching keys",
-				Request: `{}`,
+				Tags: "non emtpy prompt without matching keys",
+				Body: `{}`,
 			},
 			useCorrectAdress: true,
 
@@ -213,29 +220,8 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				code:     200,
 				response: nil,
 			},
-			tsSetup: &[]any{[]string{}, nil},
-		},
-		{
-			name: "non empty prompt, matching keys found",
-			request: &entity.Request{
-				Prompt:  "non emtpy prompt with matching keys",
-				Request: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			tsSetup: &[]any{[]string{"tag1", "tag2"}, nil},
+			tsSetup:              &[]any{[]string{}, nil},
+			expectGetTaglistCall: true,
 		},
 	}
 
@@ -245,8 +231,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
 			mockTagsearch := mocks.NewMockTagSearchService(t)
+			tracer := otel.Tracer("test")
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
@@ -282,7 +269,20 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			} else {
 				reqstring = []byte("invalid")
 			}
+			mockTagsearch.
+				On("FindKeysByTags", mock.Anything, mock.Anything).
+				Return([]string{}, nil).
+				Maybe()
 
+			if tt.expectGetTaglistCall {
+				mockSyncer.On("GetCurrentTaglist").
+					Return(&sharedEntity.TagList{
+						Tags: []sharedEntity.Tag{
+							{Name: "ResponseNot200", Description: "response not 200"},
+						},
+					}, nil).
+					Maybe()
+			}
 			if tt.tsSetup != nil {
 				mockTagsearch.On("FindKeysByTags", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
@@ -305,7 +305,7 @@ type dbSetup struct {
 
 type validationSetup struct {
 	err  error
-	tags []string
+	tags *sharedEntity.TagList
 }
 
 //nolint:funlen
@@ -323,50 +323,55 @@ func TestHandlerHandleRequest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		respData          []byte
-		dbSetup           *dbSetup
-		vsetup            *validationSetup
-		wantSyncEr        bool
-		expectLoggedError bool
+		name                 string
+		respData             []byte
+		dbSetup              *dbSetup
+		vsetup               *validationSetup
+		wantSyncEr           bool
+		expectLoggedError    bool
+		expectGetTaglistCall bool
 	}{
 		{
 			name:     "valid, sucessful storage",
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: nil},
-			wantSyncEr:        false,
-			expectLoggedError: false,
+			dbSetup:              &dbSetup{err: nil},
+			wantSyncEr:           false,
+			expectLoggedError:    false,
+			expectGetTaglistCall: true,
 		},
 		{
 			name:     "valid, storage error",
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: errors.New("Storage error")},
-			wantSyncEr:        false,
-			expectLoggedError: true,
+			dbSetup:              &dbSetup{err: errors.New("Storage error")},
+			wantSyncEr:           false,
+			expectLoggedError:    true,
+			expectGetTaglistCall: true,
 		},
 		{
-			name:              "invalid resp data",
-			respData:          []byte("invalid"),
-			expectLoggedError: true,
+			name:                 "invalid resp data",
+			respData:             []byte("invalid"),
+			expectLoggedError:    true,
+			expectGetTaglistCall: false,
 		},
 		{
 			name:     "sync error",
 			respData: validRespData,
 			vsetup: &validationSetup{
 				err:  nil,
-				tags: []string{"valid"},
+				tags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "valid", Description: ""}}},
 			},
-			dbSetup:           &dbSetup{err: nil},
-			wantSyncEr:        true,
-			expectLoggedError: true,
+			dbSetup:              &dbSetup{err: nil},
+			wantSyncEr:           true,
+			expectLoggedError:    true,
+			expectGetTaglistCall: true,
 		},
 	}
 
@@ -374,16 +379,18 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
 	mockTagsearch := mocks.NewMockTagSearchService(t)
+	tracer := otel.Tracer("test")
+
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			writer.Clear()
 
 			if tt.vsetup != nil {
-				mockValidator.On("Validate", mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
+				mockValidator.On("Validate", mock.Anything, mock.Anything, mock.Anything).Return(tt.vsetup.tags, tt.vsetup.err)
 				defer func() {
 					mockValidator.AssertExpectations(t)
 					mockValidator.ExpectedCalls = []*mock.Call{}
@@ -397,7 +404,15 @@ func TestHandlerHandleRequest(t *testing.T) {
 					mockDB.ExpectedCalls = []*mock.Call{}
 				}()
 			}
-
+			if tt.expectGetTaglistCall {
+				mockSyncer.On("GetCurrentTaglist").
+					Return(&sharedEntity.TagList{
+						Tags: []sharedEntity.Tag{
+							{Name: "ResponseNot200", Description: "response not 200"},
+						},
+					}, nil).
+					Maybe()
+			}
 			if tt.wantSyncEr {
 				mockSyncer.On("SyncTaglist", mock.Anything, mock.Anything).Return(errors.New("syncing error"))
 				defer func() {
@@ -415,7 +430,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 			h.HandleRequest(t.Context(), entity.Request{}, &tt.respData)
 
 			err := false
-			for i := range writer.len() {
+			for i := 0; i < writer.len(); i++ {
 				if strings.Contains(string(writer.Read(i)), "ERROR") {
 					err = true
 				}
@@ -428,12 +443,15 @@ func TestHandlerHandleRequest(t *testing.T) {
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
+	tracer := otel.Tracer("test")
+
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Config{},
 		RejectValidator(b),
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
+		tracer,
 		mocks.NewMockTaglistSync(b),
 		mocks.NewMockTagSearchService(b),
 	)
@@ -456,9 +474,9 @@ func BenchmarkPostOfferList(b *testing.B) {
 
 	requestBody, _ := json.Marshal(entity.Request{
 		Header:      map[string]string{"Content-Type": "application/json"},
-		Prompt:      "",
+		Tags:        "",
 		Destination: server.URL,
-		Request:     `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
+		Body:        `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
 	})
 
 	for b.Loop() {

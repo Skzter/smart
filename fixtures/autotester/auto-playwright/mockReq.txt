@@ -1,0 +1,23 @@
+// komplexer Test
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite. 
+   Base-URL: localhost:5173 
+   Szenario: Nutzer sucht nach einer Reise, filtert und erhält passende Angebote. 
+   Ablauf: Zuerst gibt der Nutzer sein Reiseziel und den Abflughafen ein. Er geht für 3 Wochen in den Urlaub und startet seine Reise am 6.9.2026. Danach drückt er auf „Suchen“. Dann werden ihm mindestens ein Ergebnis angezeigt. Anschließend filtert er die Ergebnisse auf kostenlose Stornierung und es sind immer noch Ergebnisse zu sehen. 
+   Assertions: Es werden Ergebnisse für die initiale Suche angezeigt und nach der Filteranwendung gibt es immer noch Ergebnisse. 
+   Testdaten/Setup: Reiseziel Mallorca, Abflughafen Leipzig-Halle, Reisedauer 3 Wochen, Start 6.9.2026, Filter Stornierung → kostenlos stornierbar
+
+// wenn gar nichts geht xD
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale Entwicklungsumgebung für Check24 Reise. 
+   Base-URL: http://localhost:5173
+   Szenario: Nutzer sucht nach einer Reise und erhält keine passenden Angebote. 
+   Ablauf: Zuerst gibt der Nutzer im Reiseziel-Inputfeld „Mallorca“ ein. Der Abflughafen ist „Leipzig-Halle“ – ebenfalls ein Inputfeld. Er geht für 3 Wochen in den Urlaub und startet seine Reise am 6.9.2026 (ebenfalls Inputfelder). Danach drückt er auf „Suchen“ (Button). Dann werden ihm keine Ergebnisse angezeigt. Anschließend filtert er die Ergebnisse auf kostenlose Stornierung (Checkbox an der Seite), und es sind immer noch keine Ergebnisse zu sehen. 
+   Assertions: Es werden keine Ergebnisse für die initiale Suche angezeigt und nach der Filteranwendung gibt es immer noch keine Ergebnisse. 
+   Testdaten/Setup: Reiseziel Mallorca, Abflughafen Leipzig-Halle, Reisedauer 3 Wochen, Start 6.9.2026, Filter Stornierung → kostenlos stornierbar, danach Browser schließen
+
+// Mini-Test für kurze Dockercontainer-Laufzeit
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite.
+    Base-URL: localhost:8082
+    Szenario: Nutzer nutzt die Suche.
+    Ablauf: Zuerst gibt der Nutzer beim Reiseziel „Mallorca“ ein.
+    Assertions: Im Reiseziel-Feld steht „Mallorca“.
+    Testdaten/Setup: Reiseziel Mallorca

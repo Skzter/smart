@@ -1,9 +1,9 @@
 package entity
 
-// Request represents a request entity with header, prompt, destination, and request content.
+// Request represents a request entity with header, tags, destination, and body content.
 type Request struct {
 	Header      map[string]string `json:"header"`
-	Prompt      string            `json:"prompt"`
+	Tags        string            `json:"tags"`
 	Destination string            `json:"destination"`
-	Request     string            `json:"request"`
+	Body        string            `json:"body"`
 }

@@ -8,6 +8,8 @@ variables:
   GO_VERSION: 1.24
 
 default:
+  tags:
+    - aws
   image:
     name: golang:$GO_VERSION
 
@@ -85,12 +87,12 @@ replace_api_paths:
     # Frontend API file - replace baseURL from "/api/v1/chat" to "/v1/chat"
     - sed -i 's|/api/v1|/v1|g' web/src/lib/Api.ts
     # Test files - replace all /api/v1/* routes with /v1/*
-    - sed -i 's|/api/v1/chat|/v1/chat|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/requestHandler_test.go
-    - sed -i 's|/api/v1/chat|/v1/chat|g' web/tests/unit/api.test.ts
+    - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/chat_test.go
+    - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/template_test.go
+    - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/localStorage_test.go
+    - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/localStorage_test.go
+    - sed -i 's|/api/v1/run|/v1/run|g' internal/autotester/domain/handler/runTest_test.go
+    - sed -i 's|/api/v1/|/v1/|g' web/tests/unit/api.test.ts
     - sed -i 's|/api/v1/Offerlist|/v1/Offerlist|g' internal/suproxy/domain/handler/handler_test.go
     - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/domain/handler/handler_test.go
   artifacts:
@@ -99,7 +101,10 @@ replace_api_paths:
       - internal/autotester/application/router.go
       - internal/suproxy/application/router.go
       - web/src/lib/Api.ts
-      - internal/autotester/domain/handler/requestHandler_test.go
+      - internal/autotester/domain/handler/chat_test.go
+      - internal/autotester/domain/handler/template_test.go
+      - internal/autotester/domain/handler/localStorage_test.go
+      - internal/autotester/domain/handler/runTest_test.go
       - web/tests/unit/api.test.ts
       - internal/suproxy/domain/handler/handler_test.go
 
@@ -126,8 +131,6 @@ static_analysis_go:
 
 sonarqube-check:
   stage: code_analysis_and_testing
-  tags:
-    - fdit
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
@@ -158,10 +161,6 @@ unit_test_go:
       when: on_success
 
 integration_test_go:
-  services:
-    - docker:dind
-  tags:
-    - fdit
   stage: code_analysis_and_testing
   extends: .go_cache
   script:
@@ -184,6 +183,9 @@ integration_test_go:
 frontend_test:
   stage: code_analysis_and_testing
   extends: .pnpm_cache
+  needs:
+    - job: replace_api_paths
+      artifacts: true
   script:
     - pnpm run test:coverage
   coverage: '/All files\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/'
@@ -257,8 +259,6 @@ build_go_no_artifacts:
 .docker_build:
   image:
     name: docker:dind
-  tags:
-    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -288,13 +288,39 @@ build_autotester_go_container:
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
   script:
-    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG .
+    - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
     - docker push $IMAGE_TAG
+
+build_autotester_run_container:
+  stage: build
+  extends:
+    - .docker_build
+    - .go_cache
+  interruptible: true
+  needs:
+    - job: go_generate_code
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/auto-playwright:latest
+    DOCKER_BUILDKIT: 1
+  script:
+    - |
+      echo "$CI_JOB_TOKEN" | docker build \
+        --secret id=git_credentials,src=/dev/stdin \
+        -f build/auto-playwright/Dockerfile \
+        -t $IMAGE_TAG \
+        .
+    - docker push $IMAGE_TAG
+  rules:
+    - changes:
+        - build/auto-playwright/Dockerfile
 
 deploy_htwk:
   image:
     name: alpine:latest
   stage: deploy
+  tags:
+    - fdit
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -309,12 +335,14 @@ deploy_htwk:
     - sshpass -f ~/.ssh/ssh_password.txt scp deployments/compose.prod.yml stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt scp -r deployments/nginx stud@$HTWK_IP:/home/stud
     - sshpass -f ~/.ssh/ssh_password.txt ssh stud@$HTWK_IP "
-        export CI_REGISTRY_USER=$CI_REGISTRY_USER;
-        export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
-        export CI_REGISTRY=$CI_REGISTRY;
-        echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
-        podman-compose -f compose.prod.yml pull &&
-        podman-compose -f compose.prod.yml down &&
-        podman-compose -f compose.prod.yml up -d --remove-orphans && 
-        podman image prune -f
+      export CI_REGISTRY_USER=$CI_REGISTRY_USER;
+      export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
+      export CI_REGISTRY=$CI_REGISTRY;
+      echo "DD_API_KEY={$DATADOG_KEY}" >> ~/.env;
+      echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
+      podman pull gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest &&
+      podman-compose -f compose.prod.yml pull &&
+      podman-compose -f compose.prod.yml down &&
+      podman-compose -f compose.prod.yml up -d --remove-orphans &&
+      podman image prune -f
       "

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 )
 
 const (
@@ -98,7 +98,7 @@ func getSaveTestCases() []saveTestCase {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
 
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"ts")
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(nil).Once()
 			},
 			wantErr: false,
@@ -122,7 +122,7 @@ func getSaveTestCases() []saveTestCase {
 			setupMock: func(m *mocks.MockFileSystem) {
 				dirPath := filepath.Join(userID, sessionID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
-				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+"ts")
+				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(assert.AnError).Once()
 			},
 			wantErr: true,
@@ -204,7 +204,7 @@ func getTestPathTestCases() []getTestPathTestCase {
 				m.EXPECT().GetValidatedPath(relativePath).Return(fullPath, nil).Once()
 			},
 			wantErr:  false,
-			wantPath: filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000.ts")),
+			wantPath: filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
 		},
 		{
 			name:      "file not found",
@@ -261,7 +261,7 @@ func TestGetTestPath(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+".ts")
+			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+"."+testcaseLanguageDefault)
 			if tc.setupMock != nil {
 				tc.setupMock(mockFS, relativePath)
 			}
@@ -300,27 +300,27 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			name:      "success",
 			userID:    userID,
 			sessionID: sessionID,
-			fileNames: []string{"123e4567-e89b-12d3-a456-426614174000.ts", "819b4567-e89b-12d3-a456-426614174001.ts"},
+			fileNames: []string{"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault, "819b4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault},
 			setupMock: func(m *mocks.MockFileSystem) {
 				sessionPath := filepath.Join(userID, sessionID)
 				m.EXPECT().ReadDir(sessionPath).Return([]string{
-					"123e4567-e89b-12d3-a456-426614174000.ts",
-					"819b4567-e89b-12d3-a456-426614174001.ts",
+					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
+					"819b4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path1 := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000.ts")
+				path1 := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath1 := filepath.Clean(filepath.Join(testRoot, path1))
 				m.EXPECT().GetValidatedPath(path1).Return(fullPath1, nil).Once()
 
-				path2 := filepath.Join(sessionPath, "819b4567-e89b-12d3-a456-426614174001.ts")
+				path2 := filepath.Join(sessionPath, "819b4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
 				fullPath2 := filepath.Clean(filepath.Join(testRoot, path2))
 				m.EXPECT().GetValidatedPath(path2).Return(fullPath2, nil).Once()
 			},
 			wantErr:   false,
 			wantCount: 2,
 			wantPaths: []string{
-				filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000.ts")),
-				filepath.Clean(filepath.Join(testRoot, "user1/0001/819b4567-e89b-12d3-a456-426614174001.ts")),
+				filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
+				filepath.Clean(filepath.Join(testRoot, "user1/0001/819b4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)),
 			},
 		},
 		{
@@ -339,22 +339,22 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			name:      "invalid testcase filename - should skip",
 			userID:    userID,
 			sessionID: sessionID,
-			fileNames: []string{"invalid/test:id.ts", "123e4567-e89b-12d3-a456-426614174000.ts"},
+			fileNames: []string{"invalid/test:id" + "." + testcaseLanguageDefault, "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault},
 			setupMock: func(m *mocks.MockFileSystem) {
 				sessionPath := filepath.Join(userID, sessionID)
 				m.EXPECT().ReadDir(sessionPath).Return([]string{
-					"invalid/test:id.ts",
-					"123e4567-e89b-12d3-a456-426614174000.ts",
+					"invalid/test:id" + "." + testcaseLanguageDefault,
+					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000.ts")
+				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath := filepath.Clean(filepath.Join(testRoot, validPath))
 				m.EXPECT().GetValidatedPath(validPath).Return(fullPath, nil).Once()
 			},
 			wantErr:   false,
 			wantCount: 1,
 			wantPaths: []string{
-				filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000.ts")),
+				filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
 			},
 		},
 		{
@@ -364,10 +364,10 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			setupMock: func(m *mocks.MockFileSystem) {
 				sessionPath := filepath.Join(userID, sessionID)
 				m.EXPECT().ReadDir(sessionPath).Return([]string{
-					"123e4567-e89b-12d3-a456-426614174000.ts",
+					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000.ts")
+				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().GetValidatedPath(validPath).Return("", assert.AnError).Once()
 			},
 			wantErr:   true,
@@ -433,25 +433,25 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 				// session1 files
 				session1Path := filepath.Join(userID, "session1")
 				m.EXPECT().ReadDir(session1Path).Return([]string{
-					"123e4567-e89b-12d3-a456-426614174000.ts",
-					"223e4567-e89b-12d3-a456-426614174001.ts",
+					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
+					"223e4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path1 := filepath.Join(session1Path, "123e4567-e89b-12d3-a456-426614174000.ts")
+				path1 := filepath.Join(session1Path, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath1 := filepath.Clean(filepath.Join(testRoot, path1))
 				m.EXPECT().GetValidatedPath(path1).Return(fullPath1, nil).Once()
 
-				path2 := filepath.Join(session1Path, "223e4567-e89b-12d3-a456-426614174001.ts")
+				path2 := filepath.Join(session1Path, "223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
 				fullPath2 := filepath.Clean(filepath.Join(testRoot, path2))
 				m.EXPECT().GetValidatedPath(path2).Return(fullPath2, nil).Once()
 
 				// session2 files
 				session2Path := filepath.Join(userID, "session2")
 				m.EXPECT().ReadDir(session2Path).Return([]string{
-					"323e4567-e89b-12d3-a456-426614174002.ts",
+					"323e4567-e89b-12d3-a456-426614174002" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path3 := filepath.Join(session2Path, "323e4567-e89b-12d3-a456-426614174002.ts")
+				path3 := filepath.Join(session2Path, "323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)
 				fullPath3 := filepath.Clean(filepath.Join(testRoot, path3))
 				m.EXPECT().GetValidatedPath(path3).Return(fullPath3, nil).Once()
 			},
@@ -459,11 +459,11 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 			wantSessions: 2,
 			wantPaths: map[string][]string{
 				"session1": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/123e4567-e89b-12d3-a456-426614174000.ts")),
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/223e4567-e89b-12d3-a456-426614174001.ts")),
+					filepath.Clean(filepath.Join(testRoot, "user1/session1/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
+					filepath.Clean(filepath.Join(testRoot, "user1/session1/223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)),
 				},
 				"session2": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session2/323e4567-e89b-12d3-a456-426614174002.ts")),
+					filepath.Clean(filepath.Join(testRoot, "user1/session2/323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)),
 				},
 			},
 		},
@@ -573,7 +573,7 @@ func TestDelete(t *testing.T) {
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.ts")
+				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().Remove(path, false).Return(nil).Once()
 			},
 			wantErr: false,
@@ -600,7 +600,7 @@ func TestDelete(t *testing.T) {
 			userID:    userID,
 			sessionID: sessionID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000.ts")
+				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().Remove(path, false).Return(assert.AnError).Once()
 			},
 			wantErr: true,
@@ -645,7 +645,7 @@ func TestDeleteOlderThan(t *testing.T) {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
 				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				fname := "123e4567-e89b-12d3-a456-426614174000.ts"
+				fname := "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault
 				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
 
 				filePath := filepath.Join(userID, sessionID, fname)
@@ -681,7 +681,7 @@ func TestDeleteOlderThan(t *testing.T) {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
 				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				fname := "123e4567-e89b-12d3-a456-426614174000.ts"
+				fname := "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault
 				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
 
 				filePath := filepath.Join(userID, sessionID, fname)
@@ -810,11 +810,11 @@ func TestValidateFilename(t *testing.T) {
 		filename string
 		wantErr  bool
 	}{
-		{"valid filename", validID + ".ts", false},
+		{"valid filename", validID + "" + "." + testcaseLanguageDefault, false},
 		{"empty filename", "", true},
 		{"missing extension", validID, true},
 		{"empty extension", validID + ".", true},
-		{"invalid UUID", "not-a-uuid.ts", true},
+		{"invalid UUID", "not-a-uuid" + "." + testcaseLanguageDefault, true},
 	}
 
 	for _, tc := range tests {

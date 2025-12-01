@@ -13,13 +13,27 @@
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
-    var conversationId = localStorage.getItem("conversationId") || "";
+    var conversationId = $state(localStorage.getItem("conversationId") || "");
+
+    onMount(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const updateTheme = () => {
+            document.documentElement.setAttribute(
+                "data-theme",
+                media.matches ? "dark" : "light",
+            );
+        };
+
+        media.addEventListener("change", updateTheme);
+        updateTheme();
+    });
 
     onMount(async () => {
         await auth.initAuth();
     });
 
-    let userId: string | undefined;
+    let userId = $state<string | undefined>(undefined);
     $effect(() => {
         if ($auth.isAuthenticated && $auth.user) {
             userId = $auth.user.sub;
@@ -28,11 +42,11 @@
         }
     });
 
-    let paramsChatRequest = {
-        message: { data: "", agent: "user" },
+    let paramsChatRequest = $derived({
+        message: { body: "", role: "user" },
         userId: userId,
         conversationId: conversationId,
-    };
+    });
     const chatUrl = "/chat";
 
     let isLoading = $state(false);
@@ -49,13 +63,12 @@
             answer: "",
         });
         isLoading = true;
-        paramsChatRequest.message.data = userQuestion;
+        paramsChatRequest.message.body = userQuestion;
         paramsChatRequest.userId = userId;
 
         try {
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
-            convo[convo.length - 1].answer = answer.data.message.data;
-            setConversationId(answer.data.conversationId);
+            convo[convo.length - 1].answer = answer.data.message.body;
         } catch (err) {
             if (err.isAxiosError) {
                 convo[convo.length - 1].answer = err.response.data.message;
@@ -65,14 +78,6 @@
             }
         } finally {
             isLoading = false;
-        }
-    }
-
-    function setConversationId(newConversationId: string) {
-        if (conversationId === "") {
-            conversationId = newConversationId;
-            localStorage.setItem("conversationId", conversationId);
-            paramsChatRequest.conversationId = conversationId;
         }
     }
 
@@ -101,9 +106,15 @@
             bind:this={container}
         >
             {#each convo as c}
-                <Box msg={c.question} name="User" />
+                <Box msg={c.question} name="User" {userId} {conversationId} />
                 {#if c.answer}
-                    <Box msg={c.answer} name="Bot" />
+                    <Box
+                        msg={c.answer}
+                        name="Bot"
+                        {userId}
+                        {conversationId}
+                        isCode={c.answer.startsWith("import")}
+                    />
                 {/if}
             {/each}
             {#if isLoading}

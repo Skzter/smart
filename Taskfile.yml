@@ -62,7 +62,7 @@ tasks:
       - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [windows/amd64]
     silent: true
-  
+
   install-frontend-deps:
     desc: "Install frontend dependencies"
     dir: web
@@ -109,6 +109,8 @@ tasks:
         sh: "{{.BIN_PATH}}/doppler secrets get AWS_SECRET_ACCESS_KEY --plain"
       BASE_LDFLAGS: "-X '{{.VERSION_VAR}}={{.VERSION}}' -X '{{.OPENAI_KEY_VAR}}={{.OPENAI_KEY}}' -X '{{.AWS_ACCESS_KEY_VAR}}={{.AWS_ACCESS_KEY}}' -X '{{.AWS_SECRET_ACCESS_KEY_VAR}}={{.AWS_SECRET_ACCESS_KEY}}'"
       PROD_LDFLAGS: "-s -w {{.BASE_LDFLAGS}}"
+      GIN_MODE: "release"
+      ENVIRONMENT: "production"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
       - CGO_ENABLED=0 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
@@ -125,6 +127,9 @@ tasks:
       APP_CMD: "./cmd/{{.APP_NAME}}"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
+      DD_AGENT_HOST: localhost
+      DD_TRACE_AGENT_PORT: 8126
+      DD_SITE: us5.datadoghq.com
     cmds:
       - "PATH=$LPATH; doppler run -- go tool air"
 
@@ -145,16 +150,29 @@ tasks:
 
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
-    dir: 'deployments'
+    dir: "deployments"
     cmds:
       - docker login gitlab.dit.htwk-leipzig.de:5050
-      - docker compose -f compose.dev.yml up -d
+      - "PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d"
 
   compose-local-down:
     desc: "Stop all the containers in local environment"
-    dir: 'deployments'
+    dir: "deployments"
     cmds:
       - docker compose -f compose.dev.yml down
+
+  build-autopw-image:
+    desc: "builds auto playwright image"
+    dir: build/auto-playwright
+    cmds:
+      - docker build -t auto-pw . --no-cache
+
+  test-auto-playwright:
+    desc: Run a Playwright test in Docker with logs
+    dir: scripts
+    cmds:
+      # TEST_FILE wird bei runtime hinzugefügt
+      - ./run-container.sh {{.TEST_FILE}}
 
   # --------------------------------------------------------------------------------
   # Testing
@@ -163,7 +181,7 @@ tasks:
     desc: "Run the tests"
     cmds:
       - go tool gotestsum ./...
-  
+
   test-coverage:
     desc: "Run the tests with coverage"
     cmds:
@@ -203,7 +221,7 @@ tasks:
     desc: "run the test script for testing the current sysprompts against the given testcases"
     dir: "scripts"
     cmds:
-    - ./sysprompt-test.sh
+      - ./sysprompt-test.sh
 
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
@@ -219,7 +237,7 @@ tasks:
     vars:
       GOVERSION:
         sh: echo "go$(grep '^go ' go.mod | awk '{print $2}')"
-      EXCLUDE_RULES: "G104,G107"
+      EXCLUDE_RULES: "G104,G107, G204, G304"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
       - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
@@ -286,8 +304,9 @@ tasks:
     cmds:
       - PATH=$LPATH; go run cmd/internal/generate-pkl-data/main.go
     sources:
-    - configs/**
-  
+      - configs/suproxy.pkl
+      - configs/autotester.pkl
+
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
     cmds:

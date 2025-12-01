@@ -8,10 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
-	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
@@ -28,6 +29,7 @@ func TestNewValidator(t *testing.T) {
 	}
 	logger := slog.Default()
 	serv := sharedMocks.NewMockOpenAI(t)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -53,7 +55,7 @@ func TestNewValidator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validator, err := service.NewValidator(tt.logger, tt.cfg, tt.service)
+			validator, err := service.NewValidator(tt.logger, tt.cfg, tt.service, tracer)
 			if !tt.expectError {
 				if validator == nil {
 					t.Errorf("expected validator, got nil")
@@ -79,7 +81,7 @@ func TestValidatorValidate(t *testing.T) {
 		mockResponse     string
 		mockResonseError error
 		expectError      bool
-		expectedTags     []string
+		expectedTags     *sharedEntity.TagList
 	}{
 		{
 			name:        "empty input",
@@ -94,7 +96,7 @@ func TestValidatorValidate(t *testing.T) {
 				Data:           entity.SupplierOfferList{},
 			},
 			expectCall:   false,
-			expectedTags: []string{"non200"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "non_200", Description: ""}}},
 		},
 		{
 			name: "valid 200 response with valid OpenAI result",
@@ -111,7 +113,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-01-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    []string{"valid"},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
 		},
 		{
 			name: "valid 200 response with invalid OpenAI result",
@@ -127,8 +129,9 @@ func TestValidatorValidate(t *testing.T) {
 			},
 			expectCall:      true,
 			expectedContent: "2025-02-01",
-			mockResponse:    `{"valid":false,"reason":["missing_hotelid"]}`,
-			expectedTags:    []string{"missing_hotelid"},
+			mockResponse:    `{"valid":false,"reason":[ "name": "no_hotelid", "description": "The response does not contain a hotelid field."]}`,
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_hotelid", Description: "The response does not contain a hotelid field."}}},
+			expectError:     true,
 		},
 		{
 			name: "valid 200 response with invalid JSON from OpenAI",
@@ -156,7 +159,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: []string{"noOffer"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "no_offer", Description: ""}}},
 		},
 		{
 			name: "exceeding maximum request,",
@@ -176,7 +179,7 @@ func TestValidatorValidate(t *testing.T) {
 			expectCall:      true,
 			expectedContent: "2025-05-01",
 			mockResponse:    `{"valid":true,"reason":[]}`,
-			expectedTags:    []string{"valid"},
+			expectedTags:    &sharedEntity.TagList{Tags: []sharedEntity.Tag{}},
 		},
 		{
 			name: "valid 200 response with single empty offer",
@@ -189,7 +192,7 @@ func TestValidatorValidate(t *testing.T) {
 				},
 			},
 			expectCall:   false,
-			expectedTags: []string{"emptyOffer"},
+			expectedTags: &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "empty_offer", Description: ""}}},
 		},
 		{
 			name: "openai service error",
@@ -229,6 +232,7 @@ func TestValidatorValidate(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	cfg := config.Config{
 		Timeout:               5,
@@ -245,15 +249,15 @@ func TestValidatorValidate(t *testing.T) {
 			if tt.expectCall {
 				mockservice.
 					On("Request", mock.Anything, mock.Anything).
-					Return(&sharedEntity.Response{Text: tt.mockResponse}, tt.mockResonseError)
+					Return(&sharedEntity.Message{Body: tt.mockResponse}, tt.mockResonseError)
 			}
 
-			validator, err := service.NewValidator(logger, &cfg, mockservice)
+			validator, err := service.NewValidator(logger, &cfg, mockservice, tracer)
 			if err != nil {
 				panic(err)
 			}
 
-			tags, err := validator.Validate(t.Context(), tt.input)
+			tags, err := validator.Validate(t.Context(), tt.input, &sharedEntity.TagList{})
 
 			assert.Equal(t, tt.expectError, err != nil)
 			if err != nil {
