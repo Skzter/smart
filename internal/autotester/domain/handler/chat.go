@@ -122,7 +122,7 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 
 func isValid(userId string) bool {
 	tokens := strings.Split(userId, "|")
-	if tokens[0] != "auth0" || tokens[1] == "" {
+	if len(tokens) < 2 || tokens[0] != "auth0" || tokens[1] == "" {
 		return false
 	}
 	return true
