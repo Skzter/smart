@@ -92,6 +92,31 @@ func TestStringNotEmpty(t *testing.T) {
 	}
 }
 
+// TestStringsNotEmpty tests the StringsNotEmpty function.
+// It returns an error for any calls with empty strings and nil for non-empty strings.
+func TestStringsNotEmpty(t *testing.T) {
+	tests := []struct {
+		id      int
+		values  []string
+		wantErr bool
+	}{
+		{1, []string{""}, true},
+		{2, []string{"foo"}, false},
+		{3, []string{"foo", ""}, true},
+		{4, []string{"", "foo"}, true},
+		{5, []string{"bar", "foo"}, false},
+	}
+
+	for _, test := range tests {
+		err := StringsNotEmpty(test.values...)
+		if test.wantErr && err == nil {
+			t.Errorf("Got nil, expected error (test id: %d, value: '%s')", test.id, test.values)
+		} else if !test.wantErr && err != nil {
+			t.Errorf("Got error '%s', expected nil (test id: %d, value: '%s')", err, test.id, test.values)
+		}
+	}
+}
+
 // BenchmarkStringLength benchmarks the StringLength function.
 func BenchmarkStringLength(b *testing.B) {
 	for n := 0; n < b.N; n++ {

@@ -3,6 +3,7 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"testing"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 )
@@ -44,6 +47,7 @@ type LogEntry struct {
 }
 
 func TestNewParquetWrapper(t *testing.T) {
+	tracer := otel.Tracer("test")
 	testCases := []struct {
 		name        string
 		logger      *slog.Logger
@@ -68,7 +72,7 @@ func TestNewParquetWrapper(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			wrapper, err := NewParquetWrapper[UserEvent](tc.logger, tc.config)
+			wrapper, err := NewParquetWrapper[UserEvent](tc.logger, tc.config, tracer)
 			if tc.expectError {
 				assert.Error(t, err)
 				assert.ErrorIs(t, err, tc.err)
@@ -88,17 +92,17 @@ func TestDefaultParquetConfig(t *testing.T) {
 	assert.Equal(t, int64(1000), config.RowGroupSize)
 }
 
-func runWriteReadTest[T any](t *testing.T, logger *slog.Logger, config entity.ParquetConfig, data []T, assertFunc func(t *testing.T, original, read []T)) {
+func runWriteReadTest[T any](t *testing.T, ctx context.Context, logger *slog.Logger, config entity.ParquetConfig, data []T, assertFunc func(t *testing.T, original, read []T), tracer trace.Tracer) {
 	t.Helper()
 
-	wrapper, err := NewParquetWrapper[T](logger, config)
+	wrapper, err := NewParquetWrapper[T](logger, config, tracer)
 	require.NoError(t, err)
 
-	parquetData, err := wrapper.WriteStructsToParquet(data)
+	parquetData, err := wrapper.WriteStructsToParquet(ctx, data)
 	require.NoError(t, err)
 	assert.Greater(t, len(parquetData), 0)
 
-	readData, err := wrapper.ReadStructsFromParquet(parquetData)
+	readData, err := wrapper.ReadStructsFromParquet(ctx, parquetData)
 	require.NoError(t, err)
 	assert.Len(t, readData, len(data))
 
@@ -109,6 +113,8 @@ func runWriteReadTest[T any](t *testing.T, logger *slog.Logger, config entity.Pa
 
 func TestParquetWrapper_WriteAndRead(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
 
 	t.Run("UserEvents", func(t *testing.T) {
 		events := []UserEvent{
@@ -131,14 +137,14 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 				Data:      `{}`,
 			},
 		}
-		runWriteReadTest(t, logger, entity.ParquetConfig{}, events, func(t *testing.T, original, read []UserEvent) {
+		runWriteReadTest(t, ctx, logger, entity.ParquetConfig{}, events, func(t *testing.T, original, read []UserEvent) {
 			for i, event := range original {
 				assert.Equal(t, event.UserID, read[i].UserID)
 				assert.Equal(t, event.EventType, read[i].EventType)
 				assert.Equal(t, event.Data, read[i].Data)
 				assert.WithinDuration(t, event.Timestamp, read[i].Timestamp, time.Millisecond)
 			}
-		})
+		}, tracer)
 	})
 
 	t.Run("Products", func(t *testing.T) {
@@ -165,7 +171,7 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 			PageSize:         4 * 1024,
 			RowGroupSize:     500,
 		}
-		runWriteReadTest(t, logger, config, products, func(t *testing.T, original, read []Product) {
+		runWriteReadTest(t, ctx, logger, config, products, func(t *testing.T, original, read []Product) {
 			for i, product := range original {
 				assert.Equal(t, product.ID, read[i].ID)
 				assert.Equal(t, product.Name, read[i].Name)
@@ -174,7 +180,7 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 				assert.Equal(t, product.InStock, read[i].InStock)
 				assert.Equal(t, product.Description, read[i].Description)
 			}
-		})
+		}, tracer)
 	})
 
 	t.Run("LogEntries", func(t *testing.T) {
@@ -200,7 +206,7 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 			PageSize:         4 * 1024,
 			RowGroupSize:     500,
 		}
-		runWriteReadTest(t, logger, config, logs, func(t *testing.T, original, read []LogEntry) {
+		runWriteReadTest(t, ctx, logger, config, logs, func(t *testing.T, original, read []LogEntry) {
 			for i, log := range original {
 				assert.Equal(t, log.Level, read[i].Level)
 				assert.Equal(t, log.Message, read[i].Message)
@@ -214,12 +220,14 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 					assert.Equal(t, *log.UserID, *read[i].UserID)
 				}
 			}
-		})
+		}, tracer)
 	})
 }
 
 func TestWriteStructToParquetSingleStruct(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
 
 	testCases := []struct {
 		name       string
@@ -242,16 +250,16 @@ func TestWriteStructToParquetSingleStruct(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
+			wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
 			require.NoError(t, err)
 
 			// Test writing single struct
-			parquetData, err := wrapper.WriteStructToParquet(tc.event)
+			parquetData, err := wrapper.WriteStructToParquet(ctx, tc.event)
 			require.NoError(t, err)
 			assert.Greater(t, len(parquetData), 0)
 
 			// Test reading back
-			readEvents, err := wrapper.ReadStructsFromParquet(parquetData)
+			readEvents, err := wrapper.ReadStructsFromParquet(ctx, parquetData)
 			require.NoError(t, err)
 			assert.Len(t, readEvents, 1)
 			assert.Equal(t, tc.expectID, readEvents[0].UserID)
@@ -262,17 +270,19 @@ func TestWriteStructToParquetSingleStruct(t *testing.T) {
 
 func TestGetParquetSchemaUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
+	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
 	require.NoError(t, err)
 
 	// Test schema generation for UserEvent
-	schema, err := wrapper.GetParquetSchema()
+	schema, err := wrapper.GetParquetSchema(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, schema)
 	assert.Greater(t, len(schema.Fields()), 0)
 
 	// Test schema generation for Product
-	schema, err = wrapper.GetParquetSchema()
+	schema, err = wrapper.GetParquetSchema(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, schema)
 	assert.Greater(t, len(schema.Fields()), 0)
@@ -280,22 +290,26 @@ func TestGetParquetSchemaUserEvents(t *testing.T) {
 
 func TestValidateStructUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
+	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
 	require.NoError(t, err)
 
 	// Test valid struct
 	event := UserEvent{UserID: 1, EventType: "test"}
-	err = wrapper.ValidateStruct(event)
+	err = wrapper.ValidateStruct(ctx, event)
 	assert.NoError(t, err)
 
 	// Test with pointer
-	err = wrapper.ValidateStruct(event)
+	err = wrapper.ValidateStruct(ctx, event)
 	assert.NoError(t, err)
 }
 
 func TestParquetWrapperErrorHandling(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
+	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -309,7 +323,7 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 		{
 			name: "Write empty data slice",
 			action: func() error {
-				_, err := wrapper.WriteStructsToParquet([]UserEvent{})
+				_, err := wrapper.WriteStructsToParquet(ctx, []UserEvent{})
 				return err
 			},
 			expectError: true,
@@ -318,7 +332,7 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 		{
 			name: "Read empty parquet data",
 			action: func() error {
-				_, err := wrapper.ReadStructsFromParquet([]byte{})
+				_, err := wrapper.ReadStructsFromParquet(ctx, []byte{})
 				return err
 			},
 			expectError: true,
@@ -327,7 +341,7 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 		{
 			name: "Read invalid parquet data",
 			action: func() error {
-				_, err := wrapper.ReadStructsFromParquet([]byte("invalid parquet data"))
+				_, err := wrapper.ReadStructsFromParquet(ctx, []byte("invalid parquet data"))
 				return err // this error is not actually returned due to panic
 			},
 			expectPanic: true,
@@ -365,7 +379,9 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 
 func TestGetParquetFileInfoUserEvents(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{})
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
+	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
 	require.NoError(t, err)
 
 	// Create test data
@@ -374,11 +390,11 @@ func TestGetParquetFileInfoUserEvents(t *testing.T) {
 		{UserID: 2, EventType: "test2", Timestamp: time.Now().UTC()},
 	}
 
-	parquetData, err := wrapper.WriteStructsToParquet(events)
+	parquetData, err := wrapper.WriteStructsToParquet(ctx, events)
 	require.NoError(t, err)
 
 	// Test getting file info
-	info, err := wrapper.GetParquetFileInfo(parquetData)
+	info, err := wrapper.GetParquetFileInfo(ctx, parquetData)
 	require.NoError(t, err)
 	require.NotNil(t, info)
 
@@ -389,7 +405,7 @@ func TestGetParquetFileInfoUserEvents(t *testing.T) {
 	assert.NotNil(t, info.Schema)
 
 	// Test with empty data
-	_, err = wrapper.GetParquetFileInfo([]byte{})
+	_, err = wrapper.GetParquetFileInfo(ctx, []byte{})
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrEmptyParquetData)
 }
@@ -398,6 +414,8 @@ func TestGetParquetFileInfoUserEvents(t *testing.T) {
 func ExampleParquetWrapper() {
 	// Initialize logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	tracer := otel.Tracer("test")
+	ctx := context.Background()
 
 	// Configure parquet settings
 	config := entity.ParquetConfig{
@@ -407,7 +425,7 @@ func ExampleParquetWrapper() {
 	}
 
 	// Create parquet wrapper
-	wrapper, err := NewParquetWrapper[UserEvent](logger, config)
+	wrapper, err := NewParquetWrapper[UserEvent](logger, config, tracer)
 	if err != nil {
 		logger.Error("Failed to create parquet wrapper", slog.String("error", err.Error()))
 		return
@@ -430,14 +448,14 @@ func ExampleParquetWrapper() {
 	}
 
 	// Write user events to parquet
-	parquetData, err := wrapper.WriteStructsToParquet(events)
+	parquetData, err := wrapper.WriteStructsToParquet(ctx, events)
 	if err != nil {
 		logger.Error("Failed to write user events", slog.String("error", err.Error()))
 		return
 	}
 
 	// Read user events back from parquet
-	readEvents, err := wrapper.ReadStructsFromParquet(parquetData)
+	readEvents, err := wrapper.ReadStructsFromParquet(ctx, parquetData)
 	if err != nil {
 		logger.Error("Failed to read user events", slog.String("error", err.Error()))
 		return
@@ -445,7 +463,7 @@ func ExampleParquetWrapper() {
 
 	logger.Info("Processed user events", slog.Int("count", len(readEvents)))
 
-	wrapper2, err := NewParquetWrapper[Product](logger, config)
+	wrapper2, err := NewParquetWrapper[Product](logger, config, tracer)
 	if err != nil {
 		logger.Error("Failed to create parquet wrapper", slog.String("error", err.Error()))
 		return
@@ -463,14 +481,14 @@ func ExampleParquetWrapper() {
 	}
 
 	// Write products to parquet
-	productData, err := wrapper2.WriteStructsToParquet(products)
+	productData, err := wrapper2.WriteStructsToParquet(ctx, products)
 	if err != nil {
 		logger.Error("Failed to write products", slog.String("error", err.Error()))
 		return
 	}
 
 	// Get file information
-	info, err := wrapper2.GetParquetFileInfo(productData)
+	info, err := wrapper2.GetParquetFileInfo(ctx, productData)
 	if err != nil {
 		logger.Error("Failed to get file info", slog.String("error", err.Error()))
 		return

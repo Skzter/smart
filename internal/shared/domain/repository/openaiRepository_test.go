@@ -2,52 +2,36 @@ package repository
 
 import (
 	"context"
-	"log/slog"
+	"errors"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 )
 
 // Test for creating new OpenAiRepository
 func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name            string
-		logger          *slog.Logger
 		timeout         int
 		expectedOutcome any
 		expectedError   bool
 	}{
 		{
-			name:            "creating repo with nil logger, correct timeout",
-			logger:          nil,
-			timeout:         5,
-			expectedOutcome: nil,
-			expectedError:   true,
-		},
-		{
-			name:            "creating repo with negative timeout, correct logger",
-			logger:          logger,
+			name:            "creating repo with negative timeout",
 			timeout:         -1,
 			expectedOutcome: nil,
 			expectedError:   true,
 		},
 		{
-			name:          "creating repo with correct logger, correct timeout",
-			logger:        logger,
+			name:          "correct timeout",
 			timeout:       5,
 			expectedError: false,
-		},
-		{
-			name:            "creating repo with nil logger, negative timeout",
-			logger:          nil,
-			timeout:         -1,
-			expectedOutcome: nil,
-			expectedError:   true,
 		},
 	}
 
@@ -56,7 +40,7 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := NewOpenAiRepository(test.logger, mockClient, test.timeout)
+			repo, err := NewOpenAiRepository(mockClient, test.timeout, tracer)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")
@@ -81,10 +65,18 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			name: "validating incorrect request entity => empty prompt",
+			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Prompt:       "",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "", Body: "prompt"}},
+				Model:        "nano",
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "validating incorrect request entity => empty role",
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "role", Body: ""}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -93,8 +85,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty model",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "",
 				SystemPrompt: "sys prompt",
 			},
@@ -103,28 +94,16 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty system prompt",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "",
 			},
 			expectedError: true,
 		},
 		{
-			name: "validating incorrect request entity => empty sessionId",
+			name: "happy path",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
-				Model:        "nano",
-				SystemPrompt: "sys prompt",
-			},
-			expectedError: false,
-		},
-		{
-			name: "validating correct request entity",
-			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -153,8 +132,8 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 // nolint:funlen
 func TestOpenaiReposCreateRequest(t *testing.T) {
 	model := openai.GPT4Dot1Nano20250414
-	logger := slog.New(slog.DiscardHandler)
 	timeout := 5
+	tracer := otel.Tracer("test")
 
 	mockClient := mocks.NewMockOpenAIClient(t)
 
@@ -219,10 +198,6 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 						Role:    openai.ChatMessageRoleAssistant,
 						Content: "Travis Scott",
 					},
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: "user prompt",
-					},
 				},
 			},
 			openaiResponse: openai.ChatCompletionResponse{
@@ -233,6 +208,75 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 						Message: openai.ChatCompletionMessage{
 							Role:    "assistant",
 							Content: "This is a mocked reply based on full history.",
+						},
+						FinishReason: "stop",
+					},
+				},
+			},
+			openaiError: nil,
+		},
+		{
+			name: "create Error",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "error please",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{},
+			openaiError:    errors.New("err"),
+		},
+		{
+			name: "no choices",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "no choices",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{
+				ID:      "chatcmpl-mock789",
+				Choices: []openai.ChatCompletionChoice{},
+			},
+			openaiError: nil,
+		},
+		{
+			name: "empty response",
+			openaiRequest: openai.ChatCompletionRequest{
+				Model: model,
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    openai.ChatMessageRoleSystem,
+						Content: "sys prompt",
+					},
+					{
+						Role:    openai.ChatMessageRoleUser,
+						Content: "empty response",
+					},
+				},
+			},
+			openaiResponse: openai.ChatCompletionResponse{
+				ID: "chatcmpl-mock789",
+				Choices: []openai.ChatCompletionChoice{
+					{
+						Index: 0,
+						Message: openai.ChatCompletionMessage{
+							Role:    "assistant",
+							Content: "",
 						},
 						FinishReason: "stop",
 					},
@@ -252,19 +296,34 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "123",
+				Messages:     []entity.Message{{Role: "user", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
 			expectedError: false,
 		},
 		{
-			name: "valid, storing new respid",
+			name: "valid with history",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
+				Messages: []entity.Message{
+					{
+						Role: "user",
+						Body: "what is 3 + 2?",
+					},
+					{
+						Role: "assistant",
+						Body: "3 + 2 is 5",
+					},
+					{
+						Role: "user",
+						Body: "who is the highest in the room?",
+					},
+					{
+						Role: "assistant",
+						Body: "Travis Scott",
+					},
+				},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -279,13 +338,42 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		{
 			name: "nil context",
 			request: entity.Request{
-				Prompt:       "user prompt",
-				SessionID:    "",
+				Messages:     []entity.Message{{Role: "role", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
 			expectedError: true,
 			ctx:           nil,
+		},
+		{
+			name: "create Error",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "error please"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "no choices",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "no choices"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
+		},
+		{
+			name: "empty response",
+			ctx:  t.Context(),
+			request: entity.Request{
+				Messages:     []entity.Message{{Role: "user", Body: "empty response"}},
+				Model:        model,
+				SystemPrompt: "sys prompt",
+			},
+			expectedError: true,
 		},
 	}
 
@@ -298,48 +386,9 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			// create Repos everytime for mock calls to be correct
-			repoEmpty := openAI{
-				logger:   logger,
-				client:   mockClient,
-				timeout:  timeout,
-				messages: []entity.Message{},
-			}
 
-			repoWithMsgs := openAI{
-				logger:  logger,
-				client:  mockClient,
-				timeout: timeout,
-				messages: []entity.Message{
-					{
-						Actor:       "user",
-						MessageBody: "what is 3 + 2?",
-					},
-					{
-						Actor:       "assistant",
-						MessageBody: "3 + 2 is 5",
-					},
-					{
-						Actor:       "user",
-						MessageBody: "who is the highest in the room?",
-					},
-					{
-						Actor:       "assistant",
-						MessageBody: "Travis Scott",
-					},
-				},
-			}
-			_, err := repoEmpty.CreateRequest(test.ctx, test.request)
-			if test.expectedError {
-				if err == nil {
-					t.Errorf("expected error but go nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("did not expect error but go this: %q", err.Error())
-				}
-			}
-			_, err = repoWithMsgs.CreateRequest(test.ctx, test.request)
+			repo, _ := NewOpenAiRepository(mockClient, timeout, tracer)
+			_, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error but go nil")

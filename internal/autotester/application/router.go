@@ -4,7 +4,9 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
 
+	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
@@ -12,9 +14,12 @@ import (
 )
 
 // NewRouter initializes the HTTP server, sets up API routes and serves static files.
-// Registers endpointa and serves frontend assets from the embedded dist directory.
+// Registers endpoints and serves frontend assets from the embedded dist directory.
 func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*gin.Engine, error) {
 	router := gin.Default()
+
+	router.Use(gin.Recovery())
+	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
 
 	apiV1 := router.Group("/api/v1")
 	{
