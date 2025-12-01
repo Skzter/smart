@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
+	"go.opentelemetry.io/otel"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	wrapperEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
@@ -26,6 +28,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 
 	ctx := context.Background()
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	endpoint, err := minioContainer.ConnectionString(ctx)
 	require.NoError(t, err)
@@ -42,20 +45,20 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 
 	createBucket(t, minioContainer)
 
-	s3Wrapper, err := wrapperService.NewS3Wrapper(logger, s3Config)
+	s3Wrapper, err := wrapperService.NewS3Wrapper(logger, s3Config, tracer)
 	require.NoError(t, err)
 	require.NotNil(t, s3Wrapper)
 
 	parquetConfig := wrapperService.DefaultParquetConfig()
-	parquetWrapper, err := wrapperService.NewParquetWrapper[entity.TestCase](logger, parquetConfig)
+	parquetWrapper, err := wrapperService.NewParquetWrapper[entity.TestCase](logger, parquetConfig, tracer)
 	require.NoError(t, err)
 	require.NotNil(t, parquetWrapper)
 
-	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest")
+	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest", tracer)
 	require.NoError(t, err)
 	require.NotNil(t, s3Repo)
 
-	service, err := NewTestcaseStorageService(logger, s3Repo)
+	service, err := NewTestcaseStorageService(logger, s3Repo, tracer)
 	require.NoError(t, err)
 	require.NotNil(t, service)
 
