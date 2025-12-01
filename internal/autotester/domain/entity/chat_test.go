@@ -2,110 +2,11 @@ package entity
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
-
-// nolint:funlen
-func TestValidate(t *testing.T) {
-	tests := []struct {
-		name    string
-		obj     *Chat
-		wantErr bool
-	}{
-		{
-			name: "valid Chat",
-			obj: &Chat{
-				Id:                       "chat123",
-				UserId:                   "user123",
-				CreatedAt:                time.Now(),
-				UpdatedAt:                time.Now(),
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
-			},
-			wantErr: false,
-		},
-		{
-			name: "empty id",
-			obj: &Chat{
-				UserId:                   "user123",
-				CreatedAt:                time.Now(),
-				UpdatedAt:                time.Now(),
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty userId",
-			obj: &Chat{
-				Id:                       "chat123",
-				CreatedAt:                time.Now(),
-				UpdatedAt:                time.Now(),
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty Messages",
-			obj: &Chat{
-				Id:                       "chat123",
-				UserId:                   "user123",
-				CreatedAt:                time.Now(),
-				UpdatedAt:                time.Now(),
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "updatedAt zero",
-			obj: &Chat{
-				Id:                       "chat123",
-				UserId:                   "user123",
-				CreatedAt:                time.Now(),
-				UpdatedAt:                time.Time{},
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "createdAt zero",
-			obj: &Chat{
-				Id:                       "chat123",
-				UserId:                   "user123",
-				CreatedAt:                time.Time{},
-				UpdatedAt:                time.Now(),
-				LastTest:                 "test123",
-				LastAutoPlaywrightPrompt: "apw prompt",
-				Messages:                 []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := test.obj.Validate()
-
-			if test.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
-			}
-		})
-	}
-}
 
 func TestNewChat(t *testing.T) {
 	tests := []struct {

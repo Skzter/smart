@@ -12,56 +12,56 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
+	servmocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
-
-func validChat() *entity.Chat {
-	return &entity.Chat{
-		Id:                       "chat123",
-		UserId:                   "user123",
-		CreatedAt:                time.Now(),
-		UpdatedAt:                time.Now(),
-		LastTest:                 "test123",
-		LastAutoPlaywrightPrompt: "apw prompt",
-		Messages:                 []entity.Message{{Type: entity.TypeAny, Message: sharedEntity.Message{Id: "id", Role: "user", Body: "msg"}}},
-	}
-}
 
 // nolint: dupl
 func TestNewChatStorageService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := mocks.NewMockChatStorageRepository(t)
+	mockValidator := servmocks.NewMockValidator(t)
 
 	tests := []struct {
-		name    string
-		logger  *slog.Logger
-		repo    repository.ChatStorageRepository
-		wantErr bool
+		name      string
+		logger    *slog.Logger
+		repo      repository.ChatStorageRepository
+		validator Validator
+		wantErr   bool
 	}{
 		{
-			name:    "all not nil",
-			logger:  logger,
-			repo:    mockRepo,
-			wantErr: false,
+			name:      "all not nil",
+			logger:    logger,
+			repo:      mockRepo,
+			validator: mockValidator,
+			wantErr:   false,
 		},
 		{
-			name:    "nil logger",
-			logger:  nil,
-			repo:    mockRepo,
-			wantErr: true,
+			name:      "nil logger",
+			logger:    nil,
+			repo:      mockRepo,
+			validator: mockValidator,
+			wantErr:   true,
 		},
 		{
-			name:    "nil repo",
-			logger:  logger,
-			repo:    nil,
-			wantErr: true,
+			name:      "nil repo",
+			logger:    logger,
+			validator: mockValidator,
+			repo:      nil,
+			wantErr:   true,
+		},
+		{
+			name:      "validator nil",
+			logger:    logger,
+			repo:      mockRepo,
+			validator: nil,
+			wantErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewChatStorageService(test.logger, test.repo)
+			svc, err := NewChatStorageService(test.logger, test.repo, test.validator)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -79,41 +79,50 @@ func TestChatStorageSaveChat(t *testing.T) {
 	tests := []struct {
 		name          string
 		createReturns []any
+		validRetuns   []any
 		wantErr       bool
 		chat          *entity.Chat
 	}{
 		{
 			name:          "success",
 			createReturns: []any{nil},
+			validRetuns:   []any{nil},
 			wantErr:       false,
-			chat:          validChat(),
+			chat:          &entity.Chat{},
 		},
 		{
-			name:    "nil chat",
+			name:    "nil assert error",
 			wantErr: true,
 			chat:    nil,
 		},
 		{
-			name:    "validation error",
-			wantErr: true,
-			chat:    &entity.Chat{},
+			name:        "validation error",
+			wantErr:     true,
+			validRetuns: []any{errors.New("err")},
+			chat:        &entity.Chat{},
 		},
 		{
 			name:          "repo returns error",
 			createReturns: []any{errors.New("repo error")},
+			validRetuns:   []any{nil},
 			wantErr:       true,
-			chat:          validChat(),
+			chat:          &entity.Chat{},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
+			mockVal := servmocks.NewMockValidator(t)
+
 			if test.createReturns != nil {
 				mockRepo.On("Create", mock.Anything, test.chat).Return(test.createReturns...)
 			}
+			if test.validRetuns != nil {
+				mockVal.On("ValidateChat", mock.Anything, test.chat).Return(test.validRetuns...)
+			}
 
-			svc, err := NewChatStorageService(logger, mockRepo)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -129,29 +138,40 @@ func TestChatStorageLoadChat(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
-		name        string
-		userid      string
-		chatid      string
-		loadReturns []any
-		wantErr     bool
+		name         string
+		userid       string
+		chatid       string
+		loadReturns  []any
+		validReturns []any
+		ctx          context.Context
+		wantErr      bool
 	}{
 		{
-			name:        "success",
-			userid:      "user123",
-			chatid:      "chat123",
-			loadReturns: []any{validChat(), nil},
-			wantErr:     false,
+			name:         "success",
+			userid:       "user123",
+			chatid:       "chat123",
+			loadReturns:  []any{&entity.Chat{}, nil},
+			validReturns: []any{nil},
+			ctx:          context.Background(),
+			wantErr:      false,
+		},
+		{
+			name:    "nil assert failed",
+			ctx:     nil,
+			wantErr: true,
 		},
 		{
 			name:    "invalid userId",
 			userid:  "",
 			chatid:  "chat123",
+			ctx:     context.Background(),
 			wantErr: true,
 		},
 		{
 			name:    "invalid chatId",
 			userid:  "user123",
 			chatid:  "",
+			ctx:     context.Background(),
 			wantErr: true,
 		},
 		{
@@ -159,29 +179,37 @@ func TestChatStorageLoadChat(t *testing.T) {
 			userid:      "user123",
 			chatid:      "chat123",
 			loadReturns: []any{nil, errors.New("repo error")},
+			ctx:         context.Background(),
 			wantErr:     true,
 		},
 		{
-			name:        "repo returns invalid chat",
-			userid:      "user123",
-			chatid:      "chat123",
-			loadReturns: []any{&entity.Chat{}, nil},
-			wantErr:     true,
+			name:         "repo returns invalid chat",
+			userid:       "user123",
+			chatid:       "chat123",
+			loadReturns:  []any{&entity.Chat{}, nil},
+			validReturns: []any{errors.New("err")},
+			ctx:          context.Background(),
+			wantErr:      true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
+			mockVal := servmocks.NewMockValidator(t)
+
 			if test.loadReturns != nil {
 				mockRepo.On("Read", mock.Anything, test.userid, test.chatid).Return(test.loadReturns...)
 			}
+			if test.validReturns != nil {
+				mockVal.On("ValidateChat", mock.Anything, &entity.Chat{}).Return(test.validReturns...)
+			}
 
-			svc, err := NewChatStorageService(logger, mockRepo)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			res, err := svc.LoadChat(context.Background(), test.userid, test.chatid)
+			res, err := svc.LoadChat(test.ctx, test.userid, test.chatid)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, res)
@@ -235,7 +263,9 @@ func TestLoadUserChats(t *testing.T) {
 				mockRepo.On("FindByUserID", mock.Anything, test.userId).Return(test.listReturns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo)
+			val := servmocks.NewMockValidator(t)
+
+			svc, err := NewChatStorageService(logger, mockRepo, val)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}

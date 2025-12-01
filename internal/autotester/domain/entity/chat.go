@@ -1,18 +1,16 @@
 package entity
 
 import (
-	"errors"
 	"math"
 	"time"
 
 	"github.com/google/uuid"
 
 	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // Type represents a Type of Message stored in Chat entity
-type Type uint8
+type Type uint
 
 const (
 	// TypeValidation is the Type of messages used in validation
@@ -20,7 +18,7 @@ const (
 	// TypeGeneration is the Type of messages used in generation
 	TypeGeneration
 	// TypeAny matches any type, and is mainly used for the users messages
-	TypeAny = Type(math.MaxUint8)
+	TypeAny = Type(math.MaxUint)
 )
 
 func types() []Type {
@@ -40,31 +38,6 @@ type Chat struct {
 
 	LastTest                 string `json:"lastTest"`
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
-}
-
-// Validate validates a Chat entity.
-// Returns an error if any required field is empty or invalid.
-func (chat *Chat) Validate() error {
-	if err := assert.StringsNotEmpty(
-		chat.Id,
-		chat.UserId,
-	); err != nil {
-		return err
-	}
-
-	if chat.UpdatedAt.IsZero() {
-		return errors.New("updatedAt cannot be zero")
-	}
-	if chat.CreatedAt.IsZero() {
-		return errors.New("createdAt cannot be zero")
-	}
-
-	if err := assert.ArrayLengthGreaterThan(chat.Messages, 0); err != nil {
-		return err
-	}
-
-	// shared validation for each Message in Messages
-	return nil
 }
 
 // NewChat creates a new chat with for the given user with the given messages

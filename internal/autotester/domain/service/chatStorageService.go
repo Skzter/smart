@@ -26,29 +26,31 @@ type ChatStorageService interface {
 // chatStorageService implements the ChatStorageService interface
 // and provides logic for storing Chat entities via the underlying repository.
 type chatStorageService struct {
-	logger *slog.Logger
-	repo   repository.ChatStorageRepository
+	logger    *slog.Logger
+	repo      repository.ChatStorageRepository
+	validator Validator
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository) (ChatStorageService, error) {
-	if err := assert.NotNil(logger, repo); err != nil {
+func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator) (ChatStorageService, error) {
+	if err := assert.NotNil(logger, repo, validator); err != nil {
 		return nil, err
 	}
 
 	return &chatStorageService{
-		logger: logger,
-		repo:   repo,
+		logger:    logger,
+		repo:      repo,
+		validator: validator,
 	}, nil
 }
 
 // SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
-	if err := assert.NotNil(chat); err != nil {
+	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}
-	if err := chat.Validate(); err != nil {
+	if err := s.validator.ValidateChat(ctx, chat); err != nil {
 		return err
 	}
 	return s.repo.Create(ctx, chat)
@@ -56,6 +58,9 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 
 // LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
 	if err := assert.StringNotEmpty(userId); err != nil {
 		return nil, fmt.Errorf("userId must not be empty")
 	}
@@ -68,7 +73,7 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 		return nil, err
 	}
 
-	if err := chat.Validate(); err != nil {
+	if err := s.validator.ValidateChat(ctx, chat); err != nil {
 		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
 	}
 
