@@ -228,7 +228,7 @@ paths:
                     description: Error message describing the internal error
                     example: "Command execution error: exit status 1"
   
-  /api/v1/tests/{userId}:
+  /api/v1/tests:
     get:
       summary: Retrieve stored test cases with optional filters
       description: >
@@ -237,12 +237,13 @@ paths:
         or by creation timestamps.
       parameters:
         - name: userId
-          in: path
-          required: true
+          in: query
           schema:
             type: string
             format: uuid
-          description:  Unique user identifier. Required to scope results to test cases belonging to this specific user.
+          description:  >
+            Optional: Filters results by a specific user ID. 
+            Can be combined with other filters. 
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
 
         - name: testcaseId
@@ -252,21 +253,9 @@ paths:
             type: string
             format: uuid
           description: >
-            Optional: Filters results by a specific test case ID. Can be combined
-            with other filters. If this ID does not belong to the specified user,
-            an empty result will be returned.
+            Optional: Filters results by a specific test case ID. 
+            Can be combined with other filters. 
           example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
-
-        - name: conversationId
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uuid
-          description: >
-            Optional: Filters results to test cases associated with the given
-            conversation ID. Can be combined with other filters.
-          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
 
         - name: createdAfter
           in: query
@@ -294,13 +283,13 @@ paths:
 
       responses:
         '200':
-          description: Successfully returned the filtered test cases.
+          description: Successfully returned the filtered testcase metadata.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Testcase"
+                   $ref: '#/components/schemas/TestcaseMetadata'
 
         '400':
           description: Bad request
@@ -467,25 +456,31 @@ components:
           type: string
           example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
 
-    Testcase:
+    TestcaseMetadata:
       type: object
       properties:
-        id: 
+        key:
           type: string
-          format: uuid
-          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
-        code:
-          type: string
-          example: |
-            import { test, expect } from '@playwright/test';
-            test('should successfully log in', async ({ page }) => {
-              await page.goto('https://example.com/login');
-              await page.fill('#username', 'user');
-              await page.fill('#password', 'pass');
-              await page.click('button[type=\"submit\"]');
-              await expect(page).toHaveURL('https://example.com/dashboard');
-            });
-        status:
-          type: string
-          example: "passed"
-
+          description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
+          example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
+        metadata:
+          type: object
+          description: "Metadata for the test case, including creation time, user ID, last update, and name."
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: "UUID of the user who created the test case."
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+            created:
+              type: string
+              description: "Creation timestamp as Unix time."
+              example: "1701456000"
+            updated:
+              type: string
+              description: "Last update timestamp as Unix time."
+              example: "1701460000"
+            name:
+              type: string
+              description: "Descriptive name of the test case."
+              example: "Login form test"
