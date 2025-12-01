@@ -9,10 +9,18 @@
     import { Button } from "$lib/components/ui/button";
     import * as ButtonGroup from "$lib/components/ui/button-group";
     import * as InputGroup from "$lib/components/ui/input-group";
-    import { getChatResponse } from "$lib/Api";
+    import { getChatResponse, saveTestLocal } from "$lib/Api";
     import { auth } from "$lib/authService";
     import LogIn from "@lucide/svelte/icons/log-in";
     import LogOut from "@lucide/svelte/icons/log-out";
+    import Bot from "@lucide/svelte/icons/bot";
+    import User from "@lucide/svelte/icons/user";
+    import Save from "@lucide/svelte/icons/save";
+    import Edit from "@lucide/svelte/icons/edit";
+    import Play from "@lucide/svelte/icons/play";
+    import Copy from "@lucide/svelte/icons/copy";
+    import * as Avatar from "$lib/components/ui/avatar/index.js";
+    import { toast } from "svelte-sonner";
 
     let textareaWrapper: HTMLDivElement;
     let messages = $state<Array<{ question: string; answer: string; id: number }>>([]);
@@ -116,6 +124,9 @@
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
             console.log('Received answer:', answer);
             messages[messages.length - 1].answer = answer.data.message.data;
+            localStorage.setItem("conversationId", answer.data.conversationId);
+            console.log('Updated conversationId:', answer.data);
+            console.log(localStorage);
         } catch (err: any) {
             if (err.isAxiosError) {
                 messages[messages.length - 1].answer = err.response.data.message;
@@ -124,6 +135,29 @@
             }
         } finally {
             isLoading = false;
+        }
+    }
+
+    async function handleSaveTest(message: string) {
+        try {
+            const params = {
+                code: message,
+                conversationId: localStorage.getItem("conversationId"),
+                userId: userId,
+            };
+            await saveTestLocal(params);
+            toast.success('Test erfolgreich gespeichert', {
+                duration: 3000,
+                position: 'top-right',
+                style: 'background-color: #22c55e; color: white;'
+            });
+        } catch (err: any) {
+            console.error('Error saving test:', err);
+            toast.error('Fehler beim Speichern des Tests', {
+                duration: 3000,
+                position: 'top-right',
+                style: 'background-color: #ef4444; color: white;'
+            });
         }
     }
 
@@ -155,7 +189,7 @@
                     <Breadcrumb.Root />
                 </div>
                 <div class="px-4">
-                    <Button variant="outline" size="sm" on:click={handleLogout}>
+                    <Button variant="outline" size="sm" onclick={handleLogout}>
                         <LogOut class="h-4 w-4 mr-2" />
                         Logout
                     </Button>
@@ -175,25 +209,52 @@
                             <div class="flex flex-col gap-4">
                                 {#each messages as message (message.id)}
                                     <!-- User message -->
-                                    <div class="flex justify-end">
+                                    <div class="flex justify-end gap-2 items-start">
                                         <div class="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] break-words whitespace-pre-wrap">
                                             {message.question}
+                                        </div>
+                                        <div class="h-8 w-8 shrink-0 rounded-full bg-primary flex items-center justify-center">
+                                            <User class="h-7 w-7 text-primary-foreground" />
                                         </div>
                                     </div>
 
                                     <!-- Bot response -->
                                     {#if message.answer}
-                                        <div class="flex justify-start">
-                                            <div class="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2 max-w-[80%] break-words whitespace-pre-wrap">
-                                                {message.answer}
+                                        <div class="flex justify-start gap-2 items-start">
+                                            <div class="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center">
+                                                <Bot class="h-5 w-5" />
+                                            </div>
+                                            <div class="bg-muted text-foreground rounded-2xl rounded-tl-sm max-w-[80%] overflow-hidden">
+                                                <div class="flex justify-end gap-1 px-3 py-2 bg-muted/40 border-b border-border/50">
+                                                    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
+                                                        <Copy class="h-3.5 w-3.5" />
+                                                        <span class="text-xs">Kopieren</span>
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
+                                                        <Edit class="h-3.5 w-3.5" />
+                                                        <span class="text-xs">Bearbeiten</span>
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2" onclick={() => handleSaveTest(message.answer)}>
+                                                        <Save class="h-3.5 w-3.5" />
+                                                        <span class="text-xs">Speichern</span>
+                                                    </Button>
+                                                    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
+                                                        <Play class="h-3.5 w-3.5" />
+                                                        <span class="text-xs">Ausführen</span>
+                                                    </Button>
+                                                </div>
+                                                <div class="px-4 py-2 break-words whitespace-pre-wrap">
+                                                    {message.answer}
+                                                </div>
                                             </div>
                                         </div>
                                     {/if}
-                                {/each}
-
-                                <!-- Loading indicator -->
+                                {/each}                                <!-- Loading indicator -->
                                 {#if isLoading}
-                                    <div class="flex justify-start">
+                                    <div class="flex justify-start gap-2 items-start">
+                                        <div class="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center">
+                                            <Bot class="h-7 w-7" />
+                                        </div>
                                         <div class="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2">
                                             <div class="flex gap-1">
                                                 <span class="animate-bounce" style="animation-delay: 0ms;">●</span>
@@ -233,7 +294,7 @@
                                                 variant="default"
                                                 size="icon"
                                                 class="w-10 h-10"
-                                                on:click={sendMessage}
+                                                onclick={sendMessage}
                                                 disabled={isLoading}
                                         >
                                             <Send />
@@ -256,7 +317,7 @@
             <p class="mb-8 text-gray-500 dark:text-gray-400">
                 Please log in to continue
             </p>
-            <Button on:click={handleLogin} size="lg" class="w-full">
+            <Button onclick={handleLogin} size="lg" class="w-full">
                 <LogIn class="h-5 w-5 mr-2" />
                 Log In
             </Button>

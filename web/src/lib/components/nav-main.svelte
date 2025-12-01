@@ -38,13 +38,14 @@
 
 <!-- Add a top button above the Platform group -->
 <Sidebar.Menu>
-	<Sidebar.MenuItem class="px-3 py-1" onclick={() => { createChat(); toast.success('New Chat started!'); }}>
+	<Sidebar.MenuItem class="px-3 py-1">
 		<!-- Use the Button UI component inside a MenuItem; avoid nested buttons by not using Sidebar.MenuButton here -->
 		<div class="px-1">
 			<Button
 				variant="outline"
 				size={sidebar.state === "collapsed" ? "icon" : "lg"}
 				class={sidebar.state === "collapsed" ? "w-full justify-center gap-0" : "w-full justify-start gap-3 h-13"}
+				onclick={() => { createChat(); toast.success('New Chat started!'); }}
 			>
 				<NewChat class="size-5" />
 				{#if sidebar.state !== "collapsed"}

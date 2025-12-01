@@ -31,33 +31,34 @@
 		teams: [
 			{ name: "Check24", logo: GalleryVerticalEndIcon, plan: "Frontend Tests" },
 		],
-		navMain: [
-			{
-				title: "Sidebar",
-				url: "#",
-				isActive: true,
-				get items() { return $chats.map(chat => ({ title: chat.title, url: "#" })); }
-			},
-			{
-				title: "Login",
-				url: "#",
-				isActive: true,
-				items: [
-					{ title: "Homepage Login", url: "#",},
-
-				]
-			},
-			{
-				title: "Vacation",
-				url: "#",
-				isActive: true,
-				items: [
-					{ title: "Pauschalreisen", url: "#",},
-
-				]
-			}
-		]
 	};
+
+	let navMainItems = $derived([
+		{
+			title: "Sidebar",
+			url: "#",
+			isActive: true,
+			items: $chats.map(chat => ({ title: chat.title, url: "#" }))
+		},
+		{
+			title: "Login",
+			url: "#",
+			isActive: true,
+			items: [
+				{ title: "Homepage Login", url: "#",},
+
+			]
+		},
+		{
+			title: "Vacation",
+			url: "#",
+			isActive: true,
+			items: [
+				{ title: "Pauschalreisen", url: "#",},
+
+			]
+		}
+	]);
 
 	/* ---------------- Props ---------------- */
 	let {
@@ -73,7 +74,7 @@
 	</Sidebar.Header>
 
 	<Sidebar.Content>
-		<NavMain items={sidebarData.navMain} />
+		<NavMain items={navMainItems} />
 		<NavHistory />
 	</Sidebar.Content>
 
