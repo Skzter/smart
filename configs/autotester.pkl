@@ -257,4 +257,6 @@ template: String = """
     Testdaten/Setup: {{Voraussetzungen an Testdaten und Teardown-Anweisungen}}
 """
 
+defaultLimitChats: String = "10"
+
 taglistConfig: taglist = taglist

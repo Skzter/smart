@@ -36,10 +36,11 @@ func TestNewAutoTesterController(t *testing.T) {
 	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
+	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			controller, err := NewAutotesterController(test.logger, test.config, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockRemoteStorageServ)
+			controller, err := NewAutotesterController(test.logger, test.config, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
 
 			if test.expectedError {
 				if err == nil {
