@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { Edit } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
 </script>
