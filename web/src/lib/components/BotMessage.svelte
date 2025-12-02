@@ -8,7 +8,7 @@
     let {
         message,
         userId,
-        conversationId,
+        conversationId = $bindable(),
     }: {
         message: string;
         userId: string;
