@@ -1,6 +1,9 @@
 package main
 
-import "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+import (
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/tracing"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+)
 
 func main() {
 	cfg, err := config.LoadAppConfig()
@@ -8,7 +11,17 @@ func main() {
 		panic(err)
 	}
 
-	router, err := InitializeApp(cfg)
+	tracer, shutdown, err := tracing.Setup("suproxy")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := shutdown(); err != nil {
+			panic(err)
+		}
+	}()
+
+	router, err := InitializeApp(cfg, tracer)
 	if err != nil {
 		panic(err)
 	}

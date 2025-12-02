@@ -78,7 +78,7 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 	logFileName := basefile + ".log"
 
 	containerConfig := &container.Config{
-		Image: "auto-pw",
+		Image: "gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest",
 		Env:   []string{fmt.Sprintf("OPENAI_API_KEY=%s", build.OpenAIKey)},
 		Cmd: []string{
 			"/bin/bash",
