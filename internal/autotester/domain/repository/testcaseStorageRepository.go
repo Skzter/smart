@@ -24,6 +24,8 @@ type TestcaseStorageRepository interface {
 	// Read retrieves a TestCase object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.TestCase, error)
 
+	ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error)
+
 	// Update modifies an existing TestCase object in the storage system.
 	Update(ctx context.Context, obj *entity.TestCase, key string) error
 
@@ -62,6 +64,7 @@ func NewTestcaseStorageRepository(
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
+		s3Prefix:       s3Prefix,
 		tracer:         tracer,
 	}, nil
 }
@@ -88,9 +91,12 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 		return "", err
 	}
 	key := r.generateTestCaseKey(obj.TestID)
+	time := fmt.Sprintf("%d", time.Now().UTC().Unix())
 	metadata := map[string]string{
-		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
 		"author":  userId,
+		"created": time,
+		"updated": time,
+		"name":    "",
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
@@ -149,6 +155,48 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 
 	span.SetStatus(codes.Ok, "")
 	return &items[0], nil
+}
+
+func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
+	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
+	defer span.End()
+
+	fileKeys, err := r.s3Wrapper.ListParquetFiles(ctx, r.s3Prefix)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to list all parquet files")
+		return nil, fmt.Errorf("failed to list all parquet files: %w", err)
+	}
+
+	allMetadata := make([]*entity.TestcaseMetadata, 0, len(fileKeys))
+
+	for _, fileKey := range fileKeys {
+		_, metadata, err := r.s3Wrapper.DownloadParquetFile(ctx, fileKey)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("failed to download parquet file with key: %s", fileKey))
+			span.AddEvent("download failed", trace.WithAttributes(
+				attribute.String("fileKey", fileKey),
+			))
+			r.logger.Warn("failed to download parquet file", "fileKey", fileKey, "error", err)
+			continue
+		}
+
+		span.AddEvent("parquet file downloaded", trace.WithAttributes(
+			attribute.String("fileKey", fileKey),
+		))
+
+		allMetadata = append(allMetadata, &entity.TestcaseMetadata{
+			Key:     fileKey,
+			Author:  metadata["author"],
+			Created: metadata["created"],
+			Updated: metadata["updated"],
+			Name:    metadata["name"],
+		})
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return allMetadata, nil
 }
 
 // Update overwrites the existing Parquet file at the given key with the provided TestCase.
@@ -240,7 +288,7 @@ func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) erro
 // The format is: "testcase/<testCaseID>_<timestamp>.parquet"
 func (r *testcaseStorageRepository) generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d.parquet", r.s3Prefix, testcaseId, timestamp)
+	return fmt.Sprintf("%s%s_%d.parquet", r.s3Prefix, testcaseId, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.

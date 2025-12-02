@@ -17,7 +17,7 @@ import (
 // nolint: dupl
 func TestNewTestcaseStorageService(t *testing.T) {
 	logger := slog.Default()
-	mockRepo := &mocks.MockTestCaseStorageRepository{}
+	mockRepo := &mocks.MockTestcaseStorageRepository{}
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name    string
@@ -98,7 +98,7 @@ func TestSaveTestcase(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockRepo := &mocks.MockTestCaseStorageRepository{}
+			mockRepo := &mocks.MockTestcaseStorageRepository{}
 			var key string
 			if test.createErr == nil {
 				key = "dummy-key"

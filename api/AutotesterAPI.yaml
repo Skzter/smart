@@ -227,6 +227,7 @@ paths:
                       type: string
                       description: Error message describing the internal error
                       example: "Command execution error: exit status 1"
+                      
   /api/v1/chats/{UserID}:
     get:
       summary: "Returns the chat history for a specific user"
@@ -543,24 +544,20 @@ components:
           type: string
           description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
           example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
-        metadata:
-          type: object
-          description: "Metadata for the test case, including creation time, user ID, last update, and name."
-          properties:
-            userId:
-              type: string
-              format: uuid
-              description: "UUID of the user who created the test case."
-              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            created:
-              type: string
-              description: "Creation timestamp as Unix time."
-              example: "1701456000"
-            updated:
-              type: string
-              description: "Last update timestamp as Unix time."
-              example: "1701460000"
-            name:
-              type: string
-              description: "Descriptive name of the test case."
-              example: "Login form test"
+        author:
+          type: string
+          format: uuid
+          description: "UUID of the user who created the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        created:
+          type: string
+          description: "Creation timestamp as Unix time."
+          example: "1701456000"
+        updated:
+          type: string
+          description: "Last update timestamp as Unix time."
+          example: "1701460000"
+        name:
+          type: string
+          description: "Descriptive name of the test case."
+          example: "Login form test"

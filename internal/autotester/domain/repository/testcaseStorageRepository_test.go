@@ -471,7 +471,7 @@ func TestGenerateTestcaseKey(t *testing.T) {
 	mockS3 := mocks.NewMockS3StorageWrapper(t)
 	mockParquet := mocks.NewMockParquetFileWrapper[entity.TestCase](t)
 	logger := slog.Default()
-	prefix := "testcase"
+	prefix := "testcase/"
 	testID := "test-id-123"
 	repo := &testcaseStorageRepository{
 		s3Wrapper:      mockS3,
@@ -488,7 +488,7 @@ func TestGenerateTestcaseKey(t *testing.T) {
 		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", prefix, key)
 	}
 
-	expectedStart := prefix + "/" + testID + "_"
+	expectedStart := prefix + testID + "_"
 	if len(key) < len(expectedStart) || key[:len(expectedStart)] != expectedStart {
 		t.Errorf("generateTestCaseKey() should start with '%s', got: %s", expectedStart, key)
 	}
