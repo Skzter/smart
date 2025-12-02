@@ -28,7 +28,7 @@ func TestCreateChatStorage(t *testing.T) {
 
 			// generate index
 			if test.obj != nil {
-				test.obj.CountMessages(entity.TypeAny)
+				test.obj.CountMessages(entity.MessageTypeUser)
 			}
 
 			if test.chatWriteRet != nil {

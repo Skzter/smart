@@ -61,7 +61,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{
-		Messages:     chat.Filter(entity.TypeGeneration),
+		Messages:     chat.Filter(entity.MessageTypeGeneration),
 		Model:        s.config.Model,
 		SystemPrompt: prompt,
 	}
@@ -77,7 +77,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.SetStatus(codes.Error, "OpenAI service request failed")
 		return "", err
 	}
-	chat.AddMessage(resp, entity.TypeGeneration|entity.TypeFrontend)
+	chat.AddMessage(resp, entity.MessageTypeGeneration)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		span.RecordError(err)

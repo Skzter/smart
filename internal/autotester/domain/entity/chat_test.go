@@ -40,16 +40,16 @@ func TestAddMessage(t *testing.T) {
 			initial: nil,
 			add:     &entity.Message{Id: "m1"},
 			expected: []Message{
-				{Message: entity.Message{Id: "m1"}, Type: TypeValidation},
+				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
 			},
 		},
 		{
 			name:    "append to existing",
-			initial: []Message{{Message: entity.Message{Id: "m1"}, Type: TypeValidation}},
+			initial: []Message{{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation}},
 			add:     &entity.Message{Id: "m2"},
 			expected: []Message{
-				{Message: entity.Message{Id: "m1"}, Type: TypeValidation},
-				{Message: entity.Message{Id: "m2"}, Type: TypeValidation},
+				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
+				{Message: entity.Message{Id: "m2"}, Type: MessageTypeValidation},
 			},
 		},
 	}
@@ -60,7 +60,7 @@ func TestAddMessage(t *testing.T) {
 			// satisfy Validate precondition
 			c.LastAutoPlaywrightPrompt = "p"
 
-			c.AddMessage(tt.add, TypeValidation)
+			c.AddMessage(tt.add, MessageTypeValidation)
 
 			assert.Len(t, c.Messages, len(tt.expected))
 			for i := range tt.expected {
@@ -73,31 +73,31 @@ func TestAddMessage(t *testing.T) {
 
 func TestFilter(t *testing.T) {
 	base := []Message{
-		{Message: entity.Message{Id: "m0"}, Type: TypeAny},
-		{Message: entity.Message{Id: "m1"}, Type: TypeValidation},
-		{Message: entity.Message{Id: "m2"}, Type: TypeGeneration},
-		{Message: entity.Message{Id: "m3"}, Type: TypeValidation},
-		{Message: entity.Message{Id: "m4"}, Type: TypeAny},
-		{Message: entity.Message{Id: "m5"}, Type: TypeValidation},
-		{Message: entity.Message{Id: "m6"}, Type: TypeGeneration},
+		{Message: entity.Message{Id: "m0"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m2"}, Type: MessageTypeGeneration},
+		{Message: entity.Message{Id: "m3"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m4"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m5"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m6"}, Type: MessageTypeGeneration},
 	}
 
 	tests := []struct {
 		name         string
 		messages     []Message
-		wantType     Type
+		wantType     MessageType
 		wantMessages []*entity.Message
 	}{
 		{
 			name:         "no matches",
-			messages:     []Message{{Message: entity.Message{Id: "only gen"}, Type: TypeGeneration}},
-			wantType:     TypeValidation,
+			messages:     []Message{{Message: entity.Message{Id: "only gen"}, Type: MessageTypeGeneration}},
+			wantType:     MessageTypeValidation,
 			wantMessages: []*entity.Message{},
 		},
 		{
 			name:     "multiple matches",
 			messages: base,
-			wantType: TypeValidation,
+			wantType: MessageTypeValidation,
 			wantMessages: []*entity.Message{
 				&base[0].Message,
 				&base[1].Message,
@@ -109,7 +109,7 @@ func TestFilter(t *testing.T) {
 		{
 			name:         "single match",
 			messages:     base[1:4],
-			wantType:     TypeGeneration,
+			wantType:     MessageTypeGeneration,
 			wantMessages: []*entity.Message{&base[2].Message},
 		},
 	}

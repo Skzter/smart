@@ -58,7 +58,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 
 	chat.AddMessage(sharedEntity.NewMessage(request.Prompt, sharedEntity.RoleUser))
 	req := sharedEntity.Request{
-		Messages:     chat.Filter(entity.TypeValidation),
+		Messages:     chat.Filter(entity.MessageTypeValidation),
 		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
@@ -84,12 +84,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 		return false, "", errors.ErrInternalServer
 	}
 
-	t := entity.TypeValidation
-	if !llmResponse.Valid {
-		t |= entity.TypeFrontend
-		chat.Messages[len(chat.Messages)-1].Type = entity.TypeValidation | entity.TypeFrontend
-	}
-	chat.AddMessage(resp, t)
+	chat.AddMessage(resp, entity.MessageTypeValidation)
 
 	span.SetStatus(codes.Ok, "")
 	return llmResponse.Valid, llmResponse.Message, nil

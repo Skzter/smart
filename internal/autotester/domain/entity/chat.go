@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,23 +8,11 @@ import (
 	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
-// Type represents a Type of Message stored in Chat entity
-type Type uint
+// MessageType represents a Type of Message stored in Chat entity
+// ENUM(Validation, Generation, User)
+type MessageType uint
 
-const (
-	// TypeValidation is the Type of messages used in validation
-	TypeValidation = Type(1 << iota)
-	// TypeGeneration is the Type of messages used in generation
-	TypeGeneration
-	// TypeFrontend is the Type of messages send to the Frontend
-	TypeFrontend
-	// TypeAny matches any type, and is mainly used for the users messages
-	TypeAny = Type(math.MaxUint)
-)
-
-func types() []Type {
-	return []Type{TypeAny, TypeGeneration, TypeValidation, TypeFrontend}
-}
+//go:generate go tool go-enum -f=$GOFILE --marshal
 
 // Chat represents a single Chat, identified by a unique id and associated with a user.
 type Chat struct {
@@ -36,7 +23,7 @@ type Chat struct {
 	Title     string    `json:"title"`
 
 	Messages []Message `json:"messages"`
-	index    map[Type][]int
+	index    map[MessageType][]int
 
 	LastTest                 string `json:"lastTest"`
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
@@ -57,8 +44,8 @@ func NewChat(userId string, messages []Message) *Chat {
 }
 
 // AddMessage adds a Message of the given type to the chats Messages
-func (m *Chat) AddMessage(message *shared.Message, ts ...Type) {
-	t := TypeAny
+func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
+	t := MessageTypeUser
 	if len(ts) > 0 {
 		t = ts[0]
 	}
@@ -70,19 +57,21 @@ func (m *Chat) buildIndex() {
 	if m.index != nil {
 		return
 	}
-	m.index = make(map[Type][]int)
+	m.index = make(map[MessageType][]int)
 
 	for i, msg := range m.Messages {
-		for _, t := range types() {
-			if msg.Type&t > 0 {
+		if msg.Type == MessageTypeUser {
+			for t := range _MessageTypeMap {
 				m.index[t] = append(m.index[t], i)
 			}
+		} else {
+			m.index[msg.Type] = append(m.index[msg.Type], i)
 		}
 	}
 }
 
 // Filter returns a slice of all Messages associated with the Type
-func (m *Chat) Filter(t Type) []*shared.Message {
+func (m *Chat) Filter(t MessageType) []*shared.Message {
 	m.buildIndex()
 
 	index, ok := m.index[t]
@@ -101,7 +90,7 @@ func (m *Chat) Filter(t Type) []*shared.Message {
 }
 
 // CountMessages returns the number of Messages associated with the Type
-func (m *Chat) CountMessages(t Type) int {
+func (m *Chat) CountMessages(t MessageType) int {
 	m.buildIndex()
 	index, ok := m.index[t]
 	if !ok {
