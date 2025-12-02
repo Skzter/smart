@@ -11,7 +11,7 @@
 <!-- User message -->
 <div class="flex justify-end gap-2 items-start">
     <div
-        class="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%] wrap-break-word whitespace-pre-wrap"
+        class="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] break-words whitespace-pre-wrap"
     >
         {message}
     </div>
