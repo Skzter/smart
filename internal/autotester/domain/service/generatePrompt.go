@@ -77,7 +77,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.SetStatus(codes.Error, "OpenAI service request failed")
 		return "", err
 	}
-	chat.AddMessage(resp, entity.TypeGeneration)
+	chat.AddMessage(resp, entity.TypeGeneration|entity.TypeFrontend)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		span.RecordError(err)

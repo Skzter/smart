@@ -14,15 +14,17 @@ type Type uint
 
 const (
 	// TypeValidation is the Type of messages used in validation
-	TypeValidation = 1 << iota
+	TypeValidation = Type(1 << iota)
 	// TypeGeneration is the Type of messages used in generation
 	TypeGeneration
+	// TypeFrontend is the Type of messages send to the Frontend
+	TypeFrontend
 	// TypeAny matches any type, and is mainly used for the users messages
 	TypeAny = Type(math.MaxUint)
 )
 
 func types() []Type {
-	return []Type{TypeAny, TypeGeneration, TypeValidation}
+	return []Type{TypeAny, TypeGeneration, TypeValidation, TypeFrontend}
 }
 
 // Chat represents a single Chat, identified by a unique id and associated with a user.

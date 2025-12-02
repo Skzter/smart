@@ -75,7 +75,6 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation
 	}
-	chat.AddMessage(resp, entity.TypeValidation)
 
 	llmResponse := entity.LlmValidationResponse{}
 	if err = json.Unmarshal([]byte(resp.Body), &llmResponse); err != nil {
@@ -84,6 +83,12 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
+
+	t := entity.TypeValidation
+	if !llmResponse.Valid {
+		t |= entity.TypeFrontend
+	}
+	chat.AddMessage(resp, t)
 
 	span.SetStatus(codes.Ok, "")
 	return llmResponse.Valid, llmResponse.Message, nil
@@ -103,7 +108,6 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.StringsNotEmpty(
 		chat.Id,
 		chat.UserId,
-		chat.LastAutoPlaywrightPrompt,
 	); err != nil {
 		s.logger.Error("Empty string(s) in Chat", "err", err)
 		err := errors.ErrValidation
