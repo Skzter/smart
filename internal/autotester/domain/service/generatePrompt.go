@@ -68,14 +68,14 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 	chat.LastAutoPlaywrightPrompt = prompt
 
 	if err := s.validator.ValidateRequest(ctx, req); err != nil {
-		return "", err
+		return "", errors.ErrGeneration
 	}
 
 	resp, err := s.openAIService.Request(ctx, req)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "OpenAI service request failed")
-		return "", err
+		return "", errors.ErrInternalServer
 	}
 	chat.AddMessage(resp, entity.MessageTypeGeneration)
 

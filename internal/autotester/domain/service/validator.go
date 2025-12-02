@@ -66,7 +66,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	if err := s.ValidateRequest(ctx, req); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
-		return false, "Invalid Request", err
+		return false, "Invalid Request", errors.ErrValidation
 	}
 
 	resp, err := s.openAIservice.Request(ctx, req)
@@ -106,10 +106,9 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 		chat.UserId,
 	); err != nil {
 		s.logger.Error("Empty string(s) in Chat", "err", err)
-		err := errors.ErrValidation
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing fields")
-		return err
+		return errors.ErrValidation
 	}
 
 	if chat.UpdatedAt.IsZero() {
@@ -131,14 +130,14 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 		s.logger.Error("Messages Empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing messages")
-		return err
+		return errors.ErrValidation
 	}
 
 	for _, msg := range chat.Messages {
 		if err := s.ValidateMessage(ctx, &msg.Message); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "message validation failed")
-			return err
+			return errors.ErrValidation
 		}
 	}
 
@@ -217,10 +216,9 @@ func (s *validator) ValidateMessage(ctx context.Context, msg *sharedEntity.Messa
 
 	if err := uuid.Validate(msg.Id); err != nil {
 		s.logger.Error("Invalid Id", "err", err)
-		err := errors.ErrValidation
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid id")
-		return err
+		return errors.ErrValidation
 	}
 
 	if msg.CreatedAt.IsZero() {

@@ -9,11 +9,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 	servmocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 )
 
 // nolint: dupl
@@ -21,47 +21,28 @@ func TestNewChatStorageService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := mocks.NewMockChatStorageRepository(t)
 	mockValidator := servmocks.NewMockValidator(t)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name      string
-		logger    *slog.Logger
-		repo      repository.ChatStorageRepository
-		validator Validator
-		wantErr   bool
+		name    string
+		logger  *slog.Logger
+		wantErr bool
 	}{
 		{
-			name:      "all not nil",
-			logger:    logger,
-			repo:      mockRepo,
-			validator: mockValidator,
-			wantErr:   false,
+			name:    "all not nil",
+			logger:  logger,
+			wantErr: false,
 		},
 		{
-			name:      "nil logger",
-			logger:    nil,
-			repo:      mockRepo,
-			validator: mockValidator,
-			wantErr:   true,
-		},
-		{
-			name:      "nil repo",
-			logger:    logger,
-			validator: mockValidator,
-			repo:      nil,
-			wantErr:   true,
-		},
-		{
-			name:      "validator nil",
-			logger:    logger,
-			repo:      mockRepo,
-			validator: nil,
-			wantErr:   true,
+			name:    "nil assertion error",
+			logger:  nil,
+			wantErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewChatStorageService(test.logger, test.repo, test.validator)
+			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -75,6 +56,7 @@ func TestNewChatStorageService(t *testing.T) {
 // nolint: dupl
 func TestChatStorageSaveChat(t *testing.T) {
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name          string
@@ -122,7 +104,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 				mockVal.On("ValidateChat", mock.Anything, test.chat).Return(test.validRetuns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -136,6 +118,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 
 func TestChatStorageLoadChat(t *testing.T) {
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name         string
@@ -205,7 +188,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 				mockVal.On("ValidateChat", mock.Anything, &entity.Chat{}).Return(test.validReturns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -223,6 +206,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 
 func TestLoadUserChats(t *testing.T) {
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 	orderedResult := []*entity.ChatSummary{{UpdatedAt: time.Unix(200, 0)}, {UpdatedAt: time.Unix(100, 0)}}
 
 	tests := []struct {
@@ -230,29 +214,39 @@ func TestLoadUserChats(t *testing.T) {
 		userId      string
 		listReturns []any
 		wantErr     bool
+		ctx         context.Context
 	}{
 		{
 			name:        "success",
 			userId:      "user123",
 			listReturns: []any{orderedResult, nil},
 			wantErr:     false,
+			ctx:         context.Background(),
+		},
+		{
+			name:    "nil assert error",
+			wantErr: true,
+			ctx:     nil,
 		},
 		{
 			name:        "inverse order",
 			userId:      "user123",
 			listReturns: []any{[]*entity.ChatSummary{{UpdatedAt: time.Unix(100, 0)}, {UpdatedAt: time.Unix(200, 0)}}, nil},
 			wantErr:     false,
+			ctx:         context.Background(),
 		},
 		{
 			name:    "invalid userId",
 			userId:  "",
 			wantErr: true,
+			ctx:     context.Background(),
 		},
 		{
 			name:        "repo returns error",
 			userId:      "user123",
 			listReturns: []any{nil, errors.New("repo error")},
 			wantErr:     true,
+			ctx:         context.Background(),
 		},
 	}
 
@@ -265,11 +259,11 @@ func TestLoadUserChats(t *testing.T) {
 
 			val := servmocks.NewMockValidator(t)
 
-			svc, err := NewChatStorageService(logger, mockRepo, val)
+			svc, err := NewChatStorageService(logger, mockRepo, val, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			res, err := svc.LoadUserChats(context.Background(), test.userId)
+			res, err := svc.LoadUserChats(test.ctx, test.userId)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, res)

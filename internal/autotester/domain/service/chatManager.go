@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -25,18 +28,20 @@ type chatManager struct {
 	storageService ChatStorageService
 	logger         *slog.Logger
 	cfg            config.Config
+	tracer         trace.Tracer
 }
 
 // NewChatManager constructs a new Chat service instance. It validates required dependencies and
 // copies the provided config into the service.
-func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Config) (ChatManager, error) {
-	if err := assert.NotNil(logger, storageService, cfg); err != nil {
+func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Config, trace trace.Tracer) (ChatManager, error) {
+	if err := assert.NotNil(logger, storageService, cfg, trace); err != nil {
 		return nil, err
 	}
 	return &chatManager{
 		storageService: storageService,
 		logger:         logger,
 		cfg:            *cfg,
+		tracer:         trace,
 	}, nil
 }
 
@@ -48,12 +53,32 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 		return nil, err
 	}
 
+	ctx, span := c.tracer.Start(ctx, "chatManager.LoadChat")
+	defer span.End()
+
 	if request.ChatId == "" {
 		id := uuid.NewString()
 		c.logger.Info("creating new chat", "user", request.UserId, "id", id)
-		return entity.NewChat(request.UserId, []entity.Message{}), nil
+
+		chat := entity.NewChat(request.UserId, []entity.Message{})
+		span.AddEvent("new chat created", trace.WithAttributes(
+			attribute.String("user", request.UserId),
+			attribute.String("id", id),
+		))
+
+		span.SetStatus(codes.Ok, "")
+		return chat, nil
 	}
-	return c.storageService.LoadChat(ctx, request.UserId, request.ChatId)
+
+	chat, err := c.storageService.LoadChat(ctx, request.UserId, request.ChatId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while loading chat")
+		return nil, err
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return chat, nil
 }
 
 // SaveChat updates timestamps and the last-used prompts on the chat before delegating
@@ -62,7 +87,16 @@ func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}
+	ctx, span := c.tracer.Start(ctx, "chatManager.SaveChat")
+	defer span.End()
+
 	chat.UpdatedAt = time.Now().UTC()
 
-	return c.storageService.SaveChat(ctx, chat)
+	if err := c.storageService.SaveChat(ctx, chat); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat")
+		return err
+	}
+	span.SetStatus(codes.Ok, "")
+	return nil
 }

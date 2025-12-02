@@ -26,9 +26,8 @@ func TestCreateChatStorage(t *testing.T) {
 			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
-			// generate index
 			if test.obj != nil {
-				test.obj.CountMessages(entity.MessageTypeUser)
+				test.obj.Filter(entity.MessageTypeUser)
 			}
 
 			if test.chatWriteRet != nil {

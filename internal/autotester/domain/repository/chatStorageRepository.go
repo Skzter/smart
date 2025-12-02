@@ -81,12 +81,11 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 	)
 
 	summary := entity.ChatSummary{
-		ChatId:       obj.Id,
-		UserId:       obj.UserId,
-		Title:        obj.Title,
-		CreatedAt:    obj.CreatedAt,
-		UpdatedAt:    obj.UpdatedAt,
-		MessageCount: obj.CountMessages(entity.MessageTypeUser),
+		ChatId:    obj.Id,
+		UserId:    obj.UserId,
+		Title:     obj.Title,
+		CreatedAt: obj.CreatedAt,
+		UpdatedAt: obj.UpdatedAt,
 	}
 
 	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(ctx, *obj)

@@ -50,7 +50,7 @@ func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
 		t = ts[0]
 	}
 	m.Messages = append(m.Messages, Message{Message: *message, Type: t})
-	m.index = nil // index muss neu erstellt werden (lazy reicht aus)
+	m.index = nil
 }
 
 func (m *Chat) buildIndex() {
@@ -87,14 +87,4 @@ func (m *Chat) Filter(t MessageType) []*shared.Message {
 	}
 
 	return result
-}
-
-// CountMessages returns the number of Messages associated with the Type
-func (m *Chat) CountMessages(t MessageType) int {
-	m.buildIndex()
-	index, ok := m.index[t]
-	if !ok {
-		return 0
-	}
-	return len(index)
 }
