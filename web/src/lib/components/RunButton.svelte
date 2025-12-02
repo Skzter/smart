@@ -1,37 +1,9 @@
 <script lang="ts">
     import { Play } from "@lucide/svelte";
-    import {
-        Button,
-        type ButtonSize,
-        type ButtonVariant,
-    } from "$lib/components/ui/button/index.js";
-    import type { Runner } from "$lib/runner.svelte";
-
-    let {
-        activeTab = $bindable(),
-        testRunner,
-        classes,
-        variant,
-        size,
-    }: {
-        activeTab: string;
-        testRunner: Runner;
-        classes: string;
-        variant: ButtonVariant;
-        size: ButtonSize;
-    } = $props();
+    import Button from "./ui/button/button.svelte";
 </script>
 
-<Button
-    class={classes}
-    {variant}
-    {size}
-    onclick={() => {
-        activeTab = "run";
-        testRunner.run();
-    }}
-    disabled={testRunner.isRunning() || testRunner.getCurTest() === ""}
->
+<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
     <Play class="h-3.5 w-3.5" />
-    <p>{testRunner.isRunning() ? "Lädt..." : "Ausführen"}</p>
+    <span class="text-xs">Ausführen</span>
 </Button>
