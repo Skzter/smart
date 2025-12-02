@@ -4,11 +4,11 @@
     import * as InputGroup from "$lib/components/ui/input-group";
     import { Send } from "@lucide/svelte";
 
+    let input = $state("");
+
     let {
-        input = $bindable(),
         isLoading = $bindable(),
     }: {
-        input: string;
         isLoading: boolean;
     } = $props();
 </script>
