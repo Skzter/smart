@@ -16,14 +16,14 @@ import (
 type TestcaseStorageService interface {
 	// SaveTestCase persists the provided TestCase entity into the storage.
 	// Returns an error if the operation fails.
-	SaveTestCase(context.Context, *entity.TestCase) error
+	SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error)
 }
 
 // testcaseStorageService implements the TestcaseStorageService interface
 // and provides logic for storing TestCase entities via the underlying repository.
 type testcaseStorageService struct {
 	logger *slog.Logger
-	repo   repository.TestCaseStorageRepository
+	repo   repository.TestcaseStorageRepository
 	tracer trace.Tracer
 }
 
@@ -31,7 +31,7 @@ type testcaseStorageService struct {
 // Returns the service or an error if any of the arguments are nil.
 func NewTestcaseStorageService(
 	logger *slog.Logger,
-	repo repository.TestCaseStorageRepository,
+	repo repository.TestcaseStorageRepository,
 	tracer trace.Tracer,
 ) (TestcaseStorageService, error) {
 	if err := assert.NotNil(logger, repo, tracer); err != nil {
@@ -47,22 +47,25 @@ func NewTestcaseStorageService(
 
 // SaveTestCase saves the given TestCase entity using the configured repository.
 // Validates the input context and returns an error if it is nil or if the repository operation fails.
-func (t *testcaseStorageService) SaveTestCase(ctx context.Context, testCase *entity.TestCase) error {
+func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error) {
 	ctx, span := t.tracer.Start(ctx, "testcaseStorageService.SaveTestCase")
 	defer span.End()
 
 	if err := assert.NotNil(ctx); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "context validation failed")
-		return err
+		return "", err
 	}
-	err := t.repo.Create(ctx, testCase)
+
+	key, err := t.repo.Create(ctx, testcase, userId)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to save test case")
-		return err
+		return "", err
 	}
 
-	span.SetStatus(codes.Ok, "")
-	return nil
+	t.logger.Debug("testcase successfully saved",
+		slog.String("testID", testcase.TestID),
+	)
+	return key, nil
 }

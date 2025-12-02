@@ -35,8 +35,12 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		OpenAiServiceProvider,
 		FileSystemProvider,
 		LogFileSystemProvider,
+		TestCaseParquetWrapperProvider,
+		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
+		TestCaseStorageRepositoryProvider,
 		service.NewValidatorService,
+		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
 		application.NewRouter,
 		handler.NewAutotesterController,
@@ -44,7 +48,6 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
-		S3WrapperProvider,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
 		repository.NewChatStorageRepository,
@@ -83,9 +86,9 @@ func ChatParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapp
 	return wrapperService.NewParquetWrapper[entity.Chat](logger, wrapperService.DefaultParquetConfig(), tracer)
 }
 
-// TestCaseParquetWrapperProvider provides a new test case parquet wrapper.
-func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
-	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
+// TestCaseParquetWrapperProvider provides a new test case parquet wrapper with default parquet config.
+func TestCaseParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
+	return wrapperService.NewParquetWrapper[entity.TestCase](logger, wrapperService.DefaultParquetConfig(), tracer)
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
@@ -115,4 +118,14 @@ func DockerClientProvider() (service.DockerClient, error) {
 
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
+}
+
+func TestCaseStorageRepositoryProvider(
+	logger *slog.Logger,
+	s3Wrapper wrapperService.S3StorageWrapper,
+	parquetWrapper wrapperService.ParquetFileWrapper[entity.TestCase],
+	cfg *config.Config,
+	tracer trace.Tracer,
+) (repository.TestcaseStorageRepository, error) {
+	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
 }
