@@ -28,23 +28,6 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		userRequest.ChatId = uuid.New().String()
 	}
 
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
-		a.logger.Error("Validation failed", "error", err)
-		return
-	}
-
-	if !valid {
-		c.JSON(http.StatusOK,
-			&entity.ResponseForUser{
-				Message: sharedEntity.Message{Body: msg},
-				UserId:  userRequest.UserId,
-				ChatId:  userRequest.ChatId,
-			})
-		return
-	}
-
 	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
@@ -55,6 +38,46 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	c.JSON(http.StatusOK,
 		&entity.ResponseForUser{
 			Message: sharedEntity.Message{Body: generatedCode},
+			UserId:  userRequest.UserId,
+			ChatId:  userRequest.ChatId,
+		})
+}
+
+// HandleChatRequestValidity processes a chat request for prompt validity checking.
+// Expects a JSON with UserRequestDTO and returns whether the prompt is valid or not.
+func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
+	var userRequest entity.UserRequest
+
+	if err := c.BindJSON(&userRequest); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		a.logger.Error("JSON binding failed", "error", err)
+		return
+	}
+
+	if userRequest.ChatId == "" {
+		userRequest.ChatId = uuid.New().String()
+	}
+
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Validation failed", "error", err)
+		return
+	}
+
+	if !valid {
+		c.JSON(http.StatusOK,
+			&entity.ResponseForUser{
+				Message: sharedEntity.Message{Body: msg}, // show reason for failure
+				UserId:  userRequest.UserId,
+				ChatId:  userRequest.ChatId,
+			})
+		return
+	}
+
+	c.JSON(http.StatusOK,
+		&entity.ResponseForUser{
+			Message: sharedEntity.Message{Body: "Prompt validated successfully!"},
 			UserId:  userRequest.UserId,
 			ChatId:  userRequest.ChatId,
 		})
