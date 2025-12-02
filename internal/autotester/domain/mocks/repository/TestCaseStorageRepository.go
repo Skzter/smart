@@ -39,20 +39,29 @@ func (_m *MockTestCaseStorageRepository) EXPECT() *MockTestCaseStorageRepository
 }
 
 // Create provides a mock function for the type MockTestCaseStorageRepository
-func (_mock *MockTestCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase) error {
-	ret := _mock.Called(ctx, obj)
+func (_mock *MockTestCaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
+	ret := _mock.Called(ctx, obj, userId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase) error); ok {
-		r0 = returnFunc(ctx, obj)
-	} else {
-		r0 = ret.Error(0)
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase, string) (string, error)); ok {
+		return returnFunc(ctx, obj, userId)
 	}
-	return r0
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.TestCase, string) string); ok {
+		r0 = returnFunc(ctx, obj, userId)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.TestCase, string) error); ok {
+		r1 = returnFunc(ctx, obj, userId)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // MockTestCaseStorageRepository_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -63,11 +72,12 @@ type MockTestCaseStorageRepository_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - obj *entity.TestCase
-func (_e *MockTestCaseStorageRepository_Expecter) Create(ctx interface{}, obj interface{}) *MockTestCaseStorageRepository_Create_Call {
-	return &MockTestCaseStorageRepository_Create_Call{Call: _e.mock.On("Create", ctx, obj)}
+//   - userId string
+func (_e *MockTestCaseStorageRepository_Expecter) Create(ctx interface{}, obj interface{}, userId interface{}) *MockTestCaseStorageRepository_Create_Call {
+	return &MockTestCaseStorageRepository_Create_Call{Call: _e.mock.On("Create", ctx, obj, userId)}
 }
 
-func (_c *MockTestCaseStorageRepository_Create_Call) Run(run func(ctx context.Context, obj *entity.TestCase)) *MockTestCaseStorageRepository_Create_Call {
+func (_c *MockTestCaseStorageRepository_Create_Call) Run(run func(ctx context.Context, obj *entity.TestCase, userId string)) *MockTestCaseStorageRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -77,20 +87,25 @@ func (_c *MockTestCaseStorageRepository_Create_Call) Run(run func(ctx context.Co
 		if args[1] != nil {
 			arg1 = args[1].(*entity.TestCase)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
 }
 
-func (_c *MockTestCaseStorageRepository_Create_Call) Return(err error) *MockTestCaseStorageRepository_Create_Call {
-	_c.Call.Return(err)
+func (_c *MockTestCaseStorageRepository_Create_Call) Return(s string, err error) *MockTestCaseStorageRepository_Create_Call {
+	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *MockTestCaseStorageRepository_Create_Call) RunAndReturn(run func(ctx context.Context, obj *entity.TestCase) error) *MockTestCaseStorageRepository_Create_Call {
+func (_c *MockTestCaseStorageRepository_Create_Call) RunAndReturn(run func(ctx context.Context, obj *entity.TestCase, userId string) (string, error)) *MockTestCaseStorageRepository_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

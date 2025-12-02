@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -18,11 +19,12 @@ import (
 func TestNewDatabaseService(t *testing.T) {
 	validLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
-	svc, err := NewDatabaseService(validLogger, validRepo)
+	tracer := otel.Tracer("test")
+	svc, err := NewDatabaseService(validLogger, validRepo, tracer)
 	assert.NoError(t, err)
 	assert.NotNil(t, svc)
 
-	svcNilLogger, err := NewDatabaseService(nil, validRepo)
+	svcNilLogger, err := NewDatabaseService(nil, validRepo, tracer)
 	assert.Error(t, err)
 	assert.Nil(t, svcNilLogger)
 }
@@ -31,8 +33,9 @@ func TestNewDatabaseService(t *testing.T) {
 func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 	validLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
+	tracer := otel.Tracer("test")
 
-	svc, err := NewDatabaseService(validLogger, validRepo)
+	svc, err := NewDatabaseService(validLogger, validRepo, tracer)
 	assert.NoError(t, err)
 
 	entry := entity.DatabaseEntry{
@@ -97,7 +100,8 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 func TestDatabaseServiceGetAllKeys(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
-	svc, _ := NewDatabaseService(logger, validRepo)
+	tracer := otel.Tracer("test")
+	svc, _ := NewDatabaseService(logger, validRepo, tracer)
 
 	tests := []struct {
 		name      string
