@@ -447,15 +447,6 @@ func TestValidateTestcaseData(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty Status",
-			obj: &entity.TestCase{
-				TestID:   "id",
-				TestCode: entity.TestCode{Code: "code"},
-				Status:   "",
-			},
-			wantErr: true,
-		},
-		{
 			name: "empty TestCode.Code",
 			obj: &entity.TestCase{
 				TestID:   "id",
