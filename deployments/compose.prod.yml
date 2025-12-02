@@ -17,6 +17,7 @@ services:
     volumes:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
       - /var/log/smart/:/var/log/smart/
+      - /tmp/tests:/tmp/tests
     ports:
       - "8079:8081"
     networks:
