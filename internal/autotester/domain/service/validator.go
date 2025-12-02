@@ -87,6 +87,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	t := entity.TypeValidation
 	if !llmResponse.Valid {
 		t |= entity.TypeFrontend
+		chat.Messages[len(chat.Messages)-1].Type = entity.TypeValidation | entity.TypeFrontend
 	}
 	chat.AddMessage(resp, t)
 
