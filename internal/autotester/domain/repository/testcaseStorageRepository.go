@@ -244,9 +244,6 @@ func validateTestCaseData(testcase *entity.TestCase) error {
 	if err := assert.StringNotEmpty(testcase.TestID); err != nil {
 		return fmt.Errorf("testcase.TestID must not be empty: %w", err)
 	}
-	if err := assert.StringNotEmpty(string(testcase.Status)); err != nil {
-		return fmt.Errorf("testcase.Status must not be empty: %w", err)
-	}
 	if err := assert.StringNotEmpty(testcase.TestCode.Code); err != nil {
 		return fmt.Errorf("testcase.TestCode.Code must not be empty: %w", err)
 	}
