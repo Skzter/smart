@@ -9,6 +9,22 @@
 
     let isLoading = $state(false);
     let messages = $state<Message[]>([]);
+    let conversationId = $state("");
+    let userId = $state("auth0|687270280dca20b77cfdcf73");
+    messages = [
+        {
+            question: "What is the capital of France?",
+            answer: "Paris",
+        },
+        {
+            question: "What is 2 + 2?",
+            answer: "4",
+        },
+        {
+            question: "Who wrote '1984'?",
+            answer: "George Orwell",
+        },
+    ];
 
     let input = $state("");
 
@@ -47,7 +63,11 @@
                         <UserMessage message={message.question} />
                         <!-- Bot response -->
                         {#if message.answer}
-                            <BotMessage message={message.answer} />
+                            <BotMessage
+                                message={message.answer}
+                                {userId}
+                                bind:conversationId
+                            />
                         {/if}
                     {/each}
                     <!-- Loading indicator -->
