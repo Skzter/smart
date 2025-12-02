@@ -21,6 +21,11 @@ type TestcaseLocalStorageRepository interface {
 	// Implementations may create directories or files as required.
 	Save(testcase *entity.TestCase, userId, sessionId string) error
 
+	// Read retrieves the content of a TestCase file from local storage.
+	// The file is uniquely identified and validated using testId, userId, and sessionId.
+	// Returns the file content as a byte slice, or an error if the file does not exist or parameters are invalid.
+	Read(testId, userId, sessionId string) ([]byte, error)
+
 	// GetTestPath returns the validated relative file path to a specific TestCase file,
 	// starting from the root of the local test storage directory.
 	// The path is ready for the test runner to execute the test without
@@ -96,6 +101,27 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 	}
 
 	return nil
+}
+
+func (r *testcaseLocalStorageRepository) Read(testId, userId, sessionId string) ([]byte, error) {
+	if err := validatePathNameElements(userId, sessionId); err != nil {
+		return nil, fmt.Errorf("validate path elements: %w", err)
+	}
+
+	dir := filepath.Join(userId, sessionId)
+	filename := testId + "." + testcaseLanguageDefault
+	if err := validateFilename(filename); err != nil {
+		return nil, fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+	}
+
+	relativePath := filepath.Join(dir, filename)
+
+	fileContent, err := r.filesystem.ReadFile(relativePath)
+	if err != nil {
+		return nil, fmt.Errorf("read file failed, path: %s", relativePath)
+	}
+
+	return fileContent, nil
 }
 
 func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId string) (string, error) {

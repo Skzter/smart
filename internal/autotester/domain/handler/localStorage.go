@@ -28,7 +28,7 @@ func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
 		Status: entity.TestStatusNotRun,
 	}
 
-	if err := a.saveLocalService.Save(testcaseToSave, localSaveRequest.UserId, localSaveRequest.ConversationId); err != nil {
+	if err := a.localTestcaseStorageService.Save(testcaseToSave, localSaveRequest.UserId, localSaveRequest.ConversationId); err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "Saving failed due to internal server error"})
 		return
 	}
@@ -52,7 +52,7 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 		return
 	}
 
-	if err := a.saveLocalService.Delete(deleteLocalRequest.TestcaseId, deleteLocalRequest.UserId, deleteLocalRequest.ConversationId); err != nil {
+	if err := a.localTestcaseStorageService.Delete(deleteLocalRequest.TestcaseId, deleteLocalRequest.UserId, deleteLocalRequest.ConversationId); err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "Deleting failed due to internal server error"})
 		return
 	}

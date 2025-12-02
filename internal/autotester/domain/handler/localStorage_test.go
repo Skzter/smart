@@ -65,6 +65,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 			test.SetupMock(mockLocalStorageServ)
 
@@ -78,7 +79,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
 			if err != nil {
 				t.Errorf("build failed")
 			}
@@ -144,6 +145,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 			test.SetupMock(mockLocalStorageServ)
 
@@ -169,7 +171,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
 			if err != nil {
 				t.Errorf("build failed")
 			}
