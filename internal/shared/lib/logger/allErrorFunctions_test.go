@@ -43,10 +43,9 @@ func Test_AllErrorFunctions(t *testing.T) {
 		{
 			name: "CreateTaglist_nil_context",
 			fn: func() error {
-				// statt nil → context.TODO()
 				return storage.CreateTaglist(context.TODO(), &entity.TagList{})
 			},
-			wantErr: nil, // kein Fehler, weil taglist != nil und ctx != nil
+			wantErr: nil,
 		},
 		{
 			name: "CreateTaglist_nil_taglist",
@@ -65,7 +64,6 @@ func Test_AllErrorFunctions(t *testing.T) {
 		{
 			name: "ReadTaglist_nil_context",
 			fn: func() error {
-				// statt nil → context.TODO()
 				_, err := storage.ReadTaglist(context.TODO())
 				return err
 			},
@@ -74,7 +72,6 @@ func Test_AllErrorFunctions(t *testing.T) {
 		{
 			name: "UpdateTaglist_nil_context",
 			fn: func() error {
-				// statt nil → context.TODO()
 				return storage.UpdateTaglist(context.TODO(), &entity.TagList{})
 			},
 			wantErr: nil,
