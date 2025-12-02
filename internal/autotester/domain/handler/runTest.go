@@ -3,6 +3,8 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 
@@ -25,7 +27,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	}
 
 	// find file to mount
-	testfile, err := a.saveLocalService.GetTestPath(params.TestId, params.UserID, params.SessionID)
+	testfile, err := a.localTestcaseStorageService.GetTestPath(params.TestId, params.UserID, params.SessionID)
 	a.logger.Debug(fmt.Sprintf("Testpath: %s\n", testfile))
 	if err != nil {
 		a.logger.Debug(fmt.Sprintf("file not available: %s\n", err.Error()))
@@ -45,6 +47,32 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
+
+	// Checks for a line like: "✓  <number> <testId>.spec.ts:<line>:<column>" in the log output.
+	pattern := fmt.Sprintf(`(?m)^\s*✓\s+\d+\s+%s:\d+:\d+`, regexp.QuoteMeta(filepath.Base(testfile)))
+	passPattern := regexp.MustCompile(pattern)
+	if passPattern.MatchString(output) {
+		code, err := a.localTestcaseStorageService.Read(params.TestId, params.UserID, params.SessionID)
+		if err != nil {
+			a.logger.Error(fmt.Sprintf("Reading local test code failed, skipping remote save: %s", err.Error()))
+			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+			return
+		}
+
+		test := &entity.TestCase{
+			TestID: params.TestId,
+			TestCode: entity.TestCode{
+				Code: code,
+			},
+			Status: entity.TestStatusPassed,
+		}
+		if _, err := a.remoteTestcaseStorageService.SaveTestcase(c, test, params.UserID); err != nil {
+			a.logger.Error(err.Error())
+			c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+			return
+		}
+	}
+
 	c.JSON(http.StatusOK, entity.RunTestResponse{
 		Result: output,
 	})

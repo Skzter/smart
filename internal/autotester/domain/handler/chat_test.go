@@ -156,13 +156,15 @@ func TestHandleChatRequest(t *testing.T) {
 		},
 	}
 
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+	mockChatStorageServ := mocks.NewMockChatStorageService(t)
+	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
 			mockValServ := mocks.NewMockValidator(t)
-			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
-			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
@@ -183,7 +185,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
 
 			controller.HandleChatRequest(ctx)
 
@@ -236,6 +238,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
+	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -250,7 +253,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -331,6 +334,7 @@ func TestGetUserChats(t *testing.T) {
 	mockGenServ := mocks.NewMockGeneratePrompt(t)
 	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 
@@ -343,7 +347,7 @@ func TestGetUserChats(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockChatManager)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
 			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
 
 			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit

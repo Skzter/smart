@@ -17,12 +17,12 @@ import (
 // nolint: dupl
 func TestNewTestcaseStorageService(t *testing.T) {
 	logger := slog.Default()
-	mockRepo := &mocks.MockTestCaseStorageRepository{}
+	mockRepo := mocks.NewMockTestcaseStorageRepository(t)
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		repo    repository.TestCaseStorageRepository
+		repo    repository.TestcaseStorageRepository
 		wantErr bool
 	}{
 		{
@@ -58,34 +58,39 @@ func TestNewTestcaseStorageService(t *testing.T) {
 }
 
 // nolint: dupl
-func TestSaveTestCase(t *testing.T) {
+func TestSaveTestcase(t *testing.T) {
 	logger := slog.Default()
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name      string
 		context   context.Context
-		testCase  entity.TestCase
+		testCase  *entity.TestCase
+		userId    string
 		createErr error
 		wantErr   bool
 	}{
 		{
 			name:      "success",
 			context:   context.Background(),
-			testCase:  entity.TestCase{},
+			testCase:  &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:    "valid user",
 			createErr: nil,
 			wantErr:   false,
 		},
 		{
 			name:      "nil context",
 			context:   context.Background(), // Use valid context since nil causes panic with tracing
-			testCase:  entity.TestCase{},
+			testCase:  &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:    "valid user",
 			createErr: nil,
 			wantErr:   false, // Changed to false since context.Background() is valid
 		},
 		{
 			name:      "repo returns error",
 			context:   context.Background(),
+			testCase:  &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
+			userId:    "valid user",
 			createErr: errors.New("repo error"),
 			wantErr:   true,
 		},
@@ -93,14 +98,18 @@ func TestSaveTestCase(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mockRepo := &mocks.MockTestCaseStorageRepository{}
-			mockRepo.On("Create", mock.Anything, mock.Anything).Return(test.createErr)
+			mockRepo := mocks.NewMockTestcaseStorageRepository(t)
+			var key string
+			if test.createErr == nil {
+				key = "dummy-key"
+			}
+			mockRepo.EXPECT().Create(mock.Anything, test.testCase, test.userId).Return(key, test.createErr)
 
 			svc, err := NewTestcaseStorageService(logger, mockRepo, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			err = svc.SaveTestCase(test.context, &test.testCase)
+			_, err = svc.SaveTestcase(test.context, test.testCase, test.userId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("SaveTestCase() error = %v, wantErr %v", err, test.wantErr)
 			}

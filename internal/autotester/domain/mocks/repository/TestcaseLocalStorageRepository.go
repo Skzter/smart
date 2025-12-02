@@ -363,6 +363,80 @@ func (_c *MockTestcaseLocalStorageRepository_GetTestPathsByUser_Call) RunAndRetu
 	return _c
 }
 
+// Read provides a mock function for the type MockTestcaseLocalStorageRepository
+func (_mock *MockTestcaseLocalStorageRepository) Read(testId string, userId string, sessionId string) ([]byte, error) {
+	ret := _mock.Called(testId, userId, sessionId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Read")
+	}
+
+	var r0 []byte
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string, string, string) ([]byte, error)); ok {
+		return returnFunc(testId, userId, sessionId)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string, string) []byte); ok {
+		r0 = returnFunc(testId, userId, sessionId)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string, string) error); ok {
+		r1 = returnFunc(testId, userId, sessionId)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTestcaseLocalStorageRepository_Read_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Read'
+type MockTestcaseLocalStorageRepository_Read_Call struct {
+	*mock.Call
+}
+
+// Read is a helper method to define mock.On call
+//   - testId string
+//   - userId string
+//   - sessionId string
+func (_e *MockTestcaseLocalStorageRepository_Expecter) Read(testId interface{}, userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageRepository_Read_Call {
+	return &MockTestcaseLocalStorageRepository_Read_Call{Call: _e.mock.On("Read", testId, userId, sessionId)}
+}
+
+func (_c *MockTestcaseLocalStorageRepository_Read_Call) Run(run func(testId string, userId string, sessionId string)) *MockTestcaseLocalStorageRepository_Read_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTestcaseLocalStorageRepository_Read_Call) Return(bytes []byte, err error) *MockTestcaseLocalStorageRepository_Read_Call {
+	_c.Call.Return(bytes, err)
+	return _c
+}
+
+func (_c *MockTestcaseLocalStorageRepository_Read_Call) RunAndReturn(run func(testId string, userId string, sessionId string) ([]byte, error)) *MockTestcaseLocalStorageRepository_Read_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Save provides a mock function for the type MockTestcaseLocalStorageRepository
 func (_mock *MockTestcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId string, sessionId string) error {
 	ret := _mock.Called(testcase, userId, sessionId)
