@@ -1,5 +1,6 @@
 package handler
 
+// TODO: add API api "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/api"
 import (
 	"fmt"
 	"net/http"
@@ -26,6 +27,23 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 
 	if userRequest.ChatId == "" {
 		userRequest.ChatId = uuid.New().String()
+	}
+
+	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Validation failed", "error", err)
+		return
+	}
+
+	if !valid {
+		c.JSON(http.StatusOK,
+			&entity.ResponseForUser{
+				Message: sharedEntity.Message{Body: msg},
+				UserId:  userRequest.UserId,
+				ChatId:  userRequest.ChatId,
+			})
+		return
 	}
 
 	generatedCode, err := a.generationService.GeneratePrompt(c, userRequest.Message.Body)
