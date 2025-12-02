@@ -8,14 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-coverage
-dist/*.html
-dist/*.png
-dist/assets/*.css
-dist/assets/*.js
-dist/assets/*.png
-dist/assets/*.ttf
-
+dist
+dist-ssr
 *.local
 
 # Editor directories and files

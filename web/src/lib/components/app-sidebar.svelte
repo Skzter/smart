@@ -1,86 +1,64 @@
 <script lang="ts">
-	/* ---------------- Icons ---------------- */
-	import AudioWaveformIcon from "@lucide/svelte/icons/audio-waveform";
-	import BookOpenIcon from "@lucide/svelte/icons/book-open";
-	import BotIcon from "@lucide/svelte/icons/bot";
-	import ChartPieIcon from "@lucide/svelte/icons/chart-pie";
-	import CommandIcon from "@lucide/svelte/icons/command";
-	import FrameIcon from "@lucide/svelte/icons/frame";
-	import GalleryVerticalEndIcon from "@lucide/svelte/icons/gallery-vertical-end";
-	import MapIcon from "@lucide/svelte/icons/map";
-	import Settings2Icon from "@lucide/svelte/icons/settings-2";
-	import SquareTerminalIcon from "@lucide/svelte/icons/square-terminal";
-
-	/* ---------------- Components ---------------- */
-	import NavMain from "./nav-main.svelte";
-	import NavHistory from "./nav-history.svelte";
-	import NavUser from "./nav-user.svelte";
-	import TeamSwitcher from "./team-switcher.svelte";
-	import * as Sidebar from "$lib/components/ui/sidebar";
-	import type { ComponentProps } from "svelte";
-    import { Title } from "./ui/sheet";
-	import { chats } from "$lib/stores/chats";
-
-	/* ---------------- Sidebar Data ---------------- */
-	const sidebarData = {
-		user: {
-			name: "Johannes",
-			email: "johannes@check24.com",
-			avatar: "/avatars/shadcn.jpg"
-		},
-		teams: [
-			{ name: "Check24", logo: GalleryVerticalEndIcon, plan: "Frontend Tests" },
-		],
-	};
-
-	let navMainItems = $derived([
-		{
-			title: "Sidebar",
-			url: "#",
-			isActive: true,
-			items: $chats.map(chat => ({ title: chat.title, url: "#" }))
-		},
-		{
-			title: "Login",
-			url: "#",
-			isActive: true,
-			items: [
-				{ title: "Homepage Login", url: "#",},
-
-			]
-		},
-		{
-			title: "Vacation",
-			url: "#",
-			isActive: true,
-			items: [
-				{ title: "Pauschalreisen", url: "#",},
-
-			]
-		}
-	]);
-
-	/* ---------------- Props ---------------- */
-	let {
-		ref = $bindable(null),
-		collapsible = "icon",
-		...restProps
-	}: ComponentProps<typeof Sidebar.Root> = $props();
+ import CalendarIcon from "@lucide/svelte/icons/calendar";
+ import HouseIcon from "@lucide/svelte/icons/house";
+ import InboxIcon from "@lucide/svelte/icons/inbox";
+ import SearchIcon from "@lucide/svelte/icons/search";
+ import SettingsIcon from "@lucide/svelte/icons/settings";
+ import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+ 
+ // Menu items.
+ const items = [
+  {
+   title: "Home",
+   url: "localhost:8081/api/v1/chats/0234",
+   icon: HouseIcon,
+  },
+  {
+   title: "Inbox",
+   url: "#",
+   icon: InboxIcon,
+  },
+  {
+   title: "Calendar",
+   url: "#",
+   icon: CalendarIcon,
+  },
+  {
+   title: "Search",
+   url: "#",
+   icon: SearchIcon,
+  },
+  {
+   title: "Settings",
+   url: "#",
+   icon: SettingsIcon,
+  },
+ ];
 </script>
-
-<Sidebar.Root {collapsible} {...restProps}>
-	<Sidebar.Header>
-		<TeamSwitcher teams={sidebarData.teams} />
-	</Sidebar.Header>
-
-	<Sidebar.Content>
-		<NavMain items={navMainItems} />
-		<NavHistory />
-	</Sidebar.Content>
-
-	<Sidebar.Footer>
-		<NavUser user={sidebarData.user} />
-	</Sidebar.Footer>
-
-	<Sidebar.Rail />
+ 
+<Sidebar.Root>
+ <Sidebar.Content>
+  <Sidebar.Group>
+   <Sidebar.GroupLabel>Application</Sidebar.GroupLabel>
+   <Sidebar.GroupContent>
+    <Sidebar.Menu>
+     {#each items as item (item.title)}
+      <Sidebar.MenuItem>
+       <Sidebar.MenuButton>
+        {#snippet child({ props })}
+         <a href={item.url} {...props}>
+          <item.icon />
+          <span>{item.title}</span>
+         </a>
+        {/snippet}
+       </Sidebar.MenuButton>
+      </Sidebar.MenuItem>
+     {/each}
+    </Sidebar.Menu>
+   </Sidebar.GroupContent>
+  </Sidebar.Group>
+<Sidebar.Group>
+    <Sidebar.GroupLabel>Gestern</Sidebar.GroupLabel>
+</Sidebar.Group>
+ </Sidebar.Content>
 </Sidebar.Root>
