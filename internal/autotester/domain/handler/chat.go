@@ -133,7 +133,7 @@ func isValid(userId string) bool {
 // GetChatById returns a full chat including all messages for a given chatId and userId.
 func (a *AutotesterController) GetChatById(c *gin.Context) {
 	chatID := c.Param("chatId")
-	userID := c.Query("userId")
+	userID := c.Param("userId")
 
 	if chatID == "" || userID == "" {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "chatId and userId are required"})

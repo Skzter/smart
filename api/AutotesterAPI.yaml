@@ -275,7 +275,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/v1/chats/{chatId}:
+  /api/v1/chats/{userId}/{chatId}:
     get:
       summary: Get full chat by ID
       parameters:

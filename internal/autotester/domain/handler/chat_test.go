@@ -451,11 +451,12 @@ func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 
 	controller := newTestControllerWithChatMock(t, nil, autotesterService.ErrChatNotFound)
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/chat-123?userId=user-42", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/user-42/chat-123", nil)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
+		{Key: "userId", Value: "user-42"},
 		{Key: "chatId", Value: "chat-123"},
 	}
 
@@ -476,11 +477,12 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 
 	controller := newTestControllerWithChatMock(t, expectedChat, nil)
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/chat-123?userId=user-42", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/user-42/chat-123", nil)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
+		{Key: "userId", Value: "user-42"},
 		{Key: "chatId", Value: "chat-123"},
 	}
 
