@@ -65,6 +65,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
 
+	s.logger.Debug(fmt.Sprintf("%v", req))
 	if err := s.ValidateRequest(ctx, req); err != nil {
 		s.logger.Error("Request validation failed", "err", err)
 		span.RecordError(err)
@@ -74,6 +75,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 
 	resp, err := s.openAIservice.Request(ctx, req)
 	if err != nil {
+		s.logger.Debug(err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation
