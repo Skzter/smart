@@ -30,34 +30,29 @@
             ? userId.split("|")[1]
             : userId;
 
-        const request = {
-            userId: sanitizedUserId,
-            conversationId: conversationId,
-            code: testcode,
-        };
-
+        saveState = "saving";
         try {
-            saveState = "saving";
-            const response = await saveTestLocal(request);
-            testId = response.data.testcaseId;
-            console.log("Test saved successfully:", response.data);
+            let test = await saveTestLocal({
+                userId: sanitizedUserId,
+                conversationId: conversationId,
+                code: testcode,
+            });
+            testId = test.testcaseId;
+            console.log("Test saved successfully:", test);
             saveState = "success";
-        } catch (error: unknown) {
+        } catch (error) {
             console.error("Failed to save test:", error);
             saveState = "error";
-
-            if (error instanceof AxiosError) {
-                errorMessage =
-                    error.response?.data?.error ||
-                    "Failed to save test. Please try again.";
-            } else {
-                errorMessage = "Failed to save test. Please try again.";
+            let msg = "Unknown error";
+            if (error instanceof Error) {
+                msg = error.message;
             }
-
-            setTimeout(() => {
-                saveState = "idle";
-            }, 2000);
+            errorMessage = msg;
         }
+
+        setTimeout(() => {
+            saveState = "idle";
+        }, 2000);
     }
 </script>
 

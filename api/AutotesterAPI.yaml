@@ -203,12 +203,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /run:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /api/v1/run:
     post:
       summary: Run automated Playwright test in container
       description: Executes a Playwright test file in a containerized environment and returns the test output logs
+      tags:
+        - Autotester
       requestBody:
         required: true
         content:
@@ -218,7 +220,7 @@ paths:
               required:
                 - userId
                 - testId
-                - chatId
+                - sessionId
               properties:
                 userId:
                   type: string
@@ -228,12 +230,12 @@ paths:
                   type: string
                   description: Unique identifier of the test to run
                   example: "test456"
-                chatId:
+                sessionId:
                   type: string
-                  description: Unique identifier of the chat
-                  example: "chat789"
+                  description: Unique identifier of the session
+                  example: "session789"
       responses:
-        "200":
+        '200':
           description: Test executed successfully
           content:
             application/json:
@@ -244,7 +246,7 @@ paths:
                     type: string
                     description: Test execution output logs
                     example: "Test passed: All assertions successful"
-        "400":
+        '400':
           description: Bad request - Invalid input or missing required parameters
           content:
             application/json:
@@ -255,7 +257,7 @@ paths:
                     type: string
                     description: Error message describing the issue
                     example: "Missing required parameters"
-        "500":
+        '500':
           description: Internal server error - Command execution or file reading failed
           content:
             application/json:
@@ -266,6 +268,55 @@ paths:
                     type: string
                     description: Error message describing the internal error
                     example: "Command execution error: exit status 1"
+  /api/v1/chats/{UserID}:
+    get:
+      summary: "Returns the chat history for a specific user"
+      description: |
+        Retrieves all chat summaries associated with the given `UserID`.
+
+        An optional `limit` query parameter can be provided to restrict how many
+        of the most recently updated chats are returned.  
+        - If `limit` is omitted or set to `0`, all chats are returned.  
+        - Chats are sorted by `updatedAt` descending.
+      parameters:
+        - name: UserID
+          in: path
+          required: true
+          description: "Unique identifier of the user."
+          schema:
+            type: string
+          example: "auth0|687270280dca20b77cfdcf74"
+
+        - name: limit
+          in: query
+          required: false
+          description: "Maximum number of chat summaries to return. Must be 0 or a positive integer."
+          schema:
+            type: integer
+            minimum: 0
+          example: 10
+
+      responses:
+        '200':
+          description: "Successfully returned the chat summaries for the user."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSummarys'
+
+        '400':
+          description: "Bad request — invalid userId or invalid limit parameter."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '500':
+          description: "Internal server error — failed to load chat history."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /test/{testId}/stream:
     get:
@@ -743,17 +794,14 @@ components:
     ChatResponse:
       type: object
       properties:
-        content:
-          type: object
-          properties:
-            message:
-              $ref: "#/components/schemas/Message"
-            userId:
-              type: string
-              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            chatId:
-              type: string
-              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        message:
+          $ref: '#/components/schemas/Message'
+        userId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        conversationId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
           type: array
           items:
@@ -850,84 +898,3 @@ components:
         messageCount:
           type: integer
           example: 14
-
-    TestcaseMetadata:
-      type: object
-      properties:
-        key:
-          type: string
-          description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
-          example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
-        testcaseId:
-          type: string
-          format: uuid
-          description: "UUID of the testcase."
-          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
-        author:
-          type: string
-          format: uuid
-          description: "UUID of the user who created the test case."
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        created:
-          type: string
-          description: "Creation timestamp as Unix time."
-          example: "1701456000"
-        updated:
-          type: string
-          description: "Last update timestamp as Unix time."
-          example: "1701460000"
-        name:
-          type: string
-          description: "Descriptive name of the test case."
-          example: "Login form test"
-    Token:
-      type: object
-      properties:
-        userId:
-          type: string
-          description: "ID of the user for whom the token was generated."
-        token:
-          type: string
-          description: "authentication token string."
-        createdAt:
-          type: string
-          format: date-time
-          description: "Timestamp when the token was created."
-        updatedAt:
-          type: string
-          format: date-time
-          description: "Timestamp when the token was last updated."
-        expiresAt:
-          type: string
-          format: date-time
-          description: "Timestamp when the token will expire."
-        revokedAt:
-          type: string
-          format: date-time
-          nullable: true
-          description: "Timestamp when the token was revoked, if applicable."
-      required:
-        - userId
-        - token
-        - createdAt
-        - updatedAt
-        - expiresAt
-    Group:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Unique identifier for the group
-        name:
-          type: string
-          description: Name of the group
-        description:
-          type: string
-          description: Description of the group
-        createdAt:
-          type: string
-          format: date-time
-          description: Timestamp when the group was created
-        createdBy:
-          type: string
-          description: ID of the user who created the group
