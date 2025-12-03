@@ -3,18 +3,7 @@
     import AppSidebar from "$lib/components/app-sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
     import { user } from "$lib/shared.svelte";
-    import { onMount } from "svelte";
-
-    onMount(() => {
-        const media = window.matchMedia("(prefers-color-scheme: dark)");
-
-        const updateTheme = () => {
-            document.documentElement.classList.toggle("dark", media.matches);
-        };
-
-        media.addEventListener("change", updateTheme);
-        updateTheme();
-    });
+    import SaveToaster from "$lib/components/SaveToaster.svelte";
 
     // hier dann auth
     user.id = "auth0|687270280dca20b77cfdcf73";
@@ -32,3 +21,4 @@
         <Main />
     </Sidebar.Inset>
 </Sidebar.Provider>
+<SaveToaster/>
