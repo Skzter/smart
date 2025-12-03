@@ -4,15 +4,12 @@
     import { saveTestLocal } from "$lib/Api";
     import { AxiosError } from "axios";
     import type { SaveState } from "$types/save";
+    import { chat, user } from "$lib/shared.svelte";
 
     let {
         code,
-        userId,
-        conversationId,
     }: {
         code: string;
-        userId: string;
-        conversationId: string;
     } = $props();
 
     let errorMessage = $state("");
@@ -20,22 +17,24 @@
     let testId = "";
 
     async function saveTest(testcode: string) {
-        if (!userId || !conversationId) {
+        if (!user.id || !chat.id) {
             errorMessage =
                 "Failed to save test: userId or conversationId is missing";
-            console.error(errorMessage, { userId, conversationId });
+            console.error(
+                errorMessage + " ChatID: " + chat.id + "UserID: " + user.id,
+            );
             return;
         }
 
-        const sanitizedUserId = userId.includes("|")
-            ? userId.split("|")[1]
-            : userId;
+        const sanitizedUserId = user.id.includes("|")
+            ? user.id.split("|")[1]
+            : user.id;
 
         saveState = "saving";
         try {
             let test = await saveTestLocal({
                 userId: sanitizedUserId,
-                conversationId: conversationId,
+                conversationId: chat.id,
                 code: testcode,
             });
             testId = test.testcaseId;

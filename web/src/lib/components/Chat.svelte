@@ -3,16 +3,8 @@
     import type { Message } from "$types/message";
     import UserMessage from "./UserMessage.svelte";
     import BotMessage from "./BotMessage.svelte";
+    import { chat } from "$lib/shared.svelte";
 
-    let {
-        isLoading = $bindable(),
-        userId,
-    }: {
-        isLoading: boolean;
-        userId: string;
-    } = $props();
-
-    let conversationId = $state("");
     let messages = $state<Message[]>([]);
     messages = [
         {
@@ -32,7 +24,7 @@
     let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes
     $effect(() => {
-        if (container && (isLoading || messages.length > 0)) {
+        if (container && (chat.isLoading || messages.length > 0)) {
             // Small timeout to ensure DOM updates are complete
             setTimeout(() => {
                 container?.scrollTo({
@@ -63,15 +55,11 @@
                         <UserMessage message={message.question} />
                         <!-- Bot response -->
                         {#if message.answer}
-                            <BotMessage
-                                message={message.answer}
-                                {userId}
-                                bind:conversationId
-                            />
+                            <BotMessage message={message.answer} />
                         {/if}
                     {/each}
                     <!-- Loading indicator, auch eigener component und vllt auf vorgefertigte component zurück greifen -->
-                    {#if isLoading}
+                    {#if chat.isLoading}
                         <div class="flex justify-start gap-2 items-start">
                             <div
                                 class="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center"
