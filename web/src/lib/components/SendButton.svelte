@@ -3,7 +3,7 @@
     import Button from "./ui/button/button.svelte";
     import { chat, messages, user } from "$lib/shared.svelte";
     import type { ApiChatRequest } from "$types/api";
-    import { getChatResponse } from "$lib/Api";
+    import { getChatResponse } from "$lib/api";
 
     let {
         input = $bindable(),

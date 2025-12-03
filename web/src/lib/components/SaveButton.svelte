@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Save } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
-    import { saveTestLocal } from "$lib/Api";
+    import { saveTestLocal } from "$lib/api";
     import { AxiosError } from "axios";
     import type { SaveState } from "$types/save";
     import { chat, user } from "$lib/shared.svelte";
@@ -13,6 +13,7 @@
         code: string;
     } = $props();
 
+    let errorMessage = $state("");
     let saveState = $state<SaveState>("idle");
     let testId = "";
 
@@ -22,6 +23,8 @@
 
     async function saveTest(testcode: string) {
         if (!user.id || !chat.id) {
+            errorMessage =
+                "Failed to save test: userId or conversationId is missing";
             console.error(
                 "Missing IDs - ChatID: " + chat.id + " UserID: " + user.id,
             );
@@ -59,6 +62,8 @@
             } else if (error instanceof Error) {
                 errorMsg = error.message;
             }
+            errorMessage = msg;
+        }
 
             toast.error("Speichern fehlgeschlagen", {
                 description: errorMsg,
