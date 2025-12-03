@@ -7,8 +7,10 @@
     let input = $state("");
 
     let {
+        userId,
         isLoading = $bindable(),
     }: {
+        userId: string;
         isLoading: boolean;
     } = $props();
 </script>
