@@ -7,12 +7,8 @@
 
     let {
         message,
-        userId,
-        conversationId = $bindable(),
     }: {
         message: string;
-        userId: string;
-        conversationId: string;
     } = $props();
 </script>
 
@@ -30,7 +26,7 @@
         >
             <CopyButton />
             <EditButton />
-            <SaveButton code={message} {userId} {conversationId} />
+            <SaveButton code={message} />
             <RunButton />
         </div>
         <div class="px-4 py-2 break-words whitespace-pre-wrap">

@@ -2,17 +2,17 @@
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { getUserChats } from "$lib/Api";
     import type { ApiChatSummary } from "$types/api";
-
-    let { userId = $bindable() }: { userId: string } = $props();
+    import { user } from "$lib/shared.svelte";
 
     let items = $state<ApiChatSummary[]>([]);
+    console.log(user.id);
 
     (async () => {
-        if (userId == undefined) {
+        if (user.id == undefined) {
             return;
         }
         try {
-            items = (await getUserChats({ userId })).chatSummarys;
+            items = (await getUserChats({ userId: user.id })).chatSummarys;
             console.log("successfully retrieved chatSummaries", items);
         } catch (error) {
             console.log(error);

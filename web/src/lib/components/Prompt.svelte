@@ -1,12 +1,11 @@
 <script lang="ts">
     import * as InputGroup from "$lib/components/ui/input-group";
+    import { chat } from "$lib/shared.svelte";
 
     let {
         input = $bindable(),
-        isLoading = $bindable(),
     }: {
         input: string;
-        isLoading: boolean;
     } = $props();
 </script>
 
@@ -16,6 +15,6 @@
         class="w-full resize-none min-h-11"
         placeholder="Send a message..."
         rows={1}
-        disabled={isLoading}
+        disabled={chat.isLoading}
     />
 </InputGroup.Root>
