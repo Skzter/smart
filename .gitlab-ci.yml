@@ -321,6 +321,7 @@ deploy_htwk:
   stage: deploy
   tags:
     - fdit
+    - imn
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
