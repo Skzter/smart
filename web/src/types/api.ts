@@ -12,3 +12,18 @@ export type ApiChatSummary = {
     createdAt: number;
     updatedAt: number;
 };
+
+export type ApiChatRequest = {
+    message: {
+        body: string;
+        role: string;
+    };
+    userId: string;
+    conversationId: string;
+};
+
+export type ApiChatResponse = {
+    message: ApiMessage;
+    userId: string;
+    conversationId: string;
+};
