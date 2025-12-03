@@ -12,8 +12,7 @@
             return;
         }
         try {
-            items = (await getUserChats({ userId: user.id })).chatSummarys;
-            console.log("successfully retrieved chatSummaries", items);
+            items = (await getUserChats(user.id)) as ApiChatSummary[];
         } catch (error) {
             console.log(error);
         }

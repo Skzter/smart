@@ -1,25 +1,8 @@
 <script lang="ts">
     import { Bot } from "@lucide/svelte";
-    import type { Message } from "$types/message";
     import UserMessage from "./UserMessage.svelte";
     import BotMessage from "./BotMessage.svelte";
-    import { chat } from "$lib/shared.svelte";
-
-    let messages = $state<Message[]>([]);
-    messages = [
-        {
-            question: "What is the capital of France?",
-            answer: "Paris",
-        },
-        {
-            question: "What is 2 + 2?",
-            answer: "4",
-        },
-        {
-            question: "Who wrote '1984'?",
-            answer: "George Orwell",
-        },
-    ];
+    import { chat, messages } from "$lib/shared.svelte";
 
     let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes

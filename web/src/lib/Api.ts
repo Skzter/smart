@@ -1,5 +1,10 @@
 import axios, { AxiosError } from "axios";
-import type { ApiMessage, ApiChatSummary } from "$types/api";
+import type {
+    ApiMessage,
+    ApiChatSummary,
+    ApiChatRequest,
+    ApiChatResponse,
+} from "$types/api";
 
 const baseURL = "http://localhost:8081/api/v1/";
 
@@ -8,11 +13,9 @@ const baseURL = "http://localhost:8081/api/v1/";
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChatResponse(request: {
-    prompt: string;
-    userId: string;
-    conversationId: string;
-}): Promise<{ message: ApiMessage; userId: string; conversationId: string }> {
+export async function getChatResponse(
+    request: ApiChatRequest,
+): Promise<ApiChatResponse> {
     try {
         const response = await axios({
             method: "post",
@@ -35,16 +38,14 @@ export async function getChatResponse(request: {
  * @param params: parameters for api
  * @param url: url for api
  */ // schön mit Rechtschreibfehler vom main
-export async function getUserChats(request: {
-    userId: string;
-}): Promise<{ chatSummarys: ApiChatSummary[] }> {
+export async function getUserChats(userId: string): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
-            method: "post",
-            url: `chats/${request.userId}`,
+            method: "get",
+            url: `chats/${userId}`,
             baseURL: baseURL,
         });
-        return { chatSummarys: response.data.chatSummarys };
+        return response.data.chatSummarys;
     } catch (error) {
         throw getErrorMessage(error);
     }
