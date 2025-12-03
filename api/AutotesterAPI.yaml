@@ -164,68 +164,117 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /api/v1/run:
-  post:
-    summary: Run automated Playwright test in container
-    description: Executes a Playwright test file in a containerized environment and returns the test output logs
-    tags:
-      - Autotester
-    requestBody:
-      required: true
-      content:
-        application/json:
+    post:
+      summary: Run automated Playwright test in container
+      description: Executes a Playwright test file in a containerized environment and returns the test output logs
+      tags:
+        - Autotester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - testId
+                - sessionId
+              properties:
+                userId:
+                  type: string
+                  description: Unique identifier of the user
+                  example: "user123"
+                testId:
+                  type: string
+                  description: Unique identifier of the test to run
+                  example: "test456"
+                sessionId:
+                  type: string
+                  description: Unique identifier of the session
+                  example: "session789"
+      responses:
+        '200':
+          description: Test executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: Test execution output logs
+                    example: "Test passed: All assertions successful"
+        '400':
+          description: Bad request - Invalid input or missing required parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message describing the issue
+                    example: "Missing required parameters"
+        '500':
+          description: Internal server error - Command execution or file reading failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message describing the internal error
+                    example: "Command execution error: exit status 1"
+  /api/v1/chats/{UserID}:
+    get:
+      summary: "Returns the chat history for a specific user"
+      description: |
+        Retrieves all chat summaries associated with the given `UserID`.
+
+        An optional `limit` query parameter can be provided to restrict how many
+        of the most recently updated chats are returned.  
+        - If `limit` is omitted or set to `0`, all chats are returned.  
+        - Chats are sorted by `updatedAt` descending.
+      parameters:
+        - name: UserID
+          in: path
+          required: true
+          description: "Unique identifier of the user."
           schema:
-            type: object
-            required:
-              - userId
-              - testId
-              - sessionId
-            properties:
-              userId:
-                type: string
-                description: Unique identifier of the user
-                example: "user123"
-              testId:
-                type: string
-                description: Unique identifier of the test to run
-                example: "test456"
-              sessionId:
-                type: string
-                description: Unique identifier of the session
-                example: "session789"
-    responses:
-      '200':
-        description: Test executed successfully
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                result:
-                  type: string
-                  description: Test execution output logs
-                  example: "Test passed: All assertions successful"
-      '400':
-        description: Bad request - Invalid input or missing required parameters
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Error message describing the issue
-                  example: "Missing required parameters"
-      '500':
-        description: Internal server error - Command execution or file reading failed
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  description: Error message describing the internal error
-                  example: "Command execution error: exit status 1"
+            type: string
+          example: "auth0|687270280dca20b77cfdcf74"
+
+        - name: limit
+          in: query
+          required: false
+          description: "Maximum number of chat summaries to return. Must be 0 or a positive integer."
+          schema:
+            type: integer
+            minimum: 0
+          example: 10
+
+      responses:
+        '200':
+          description: "Successfully returned the chat summaries for the user."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSummarys'
+
+        '400':
+          description: "Bad request — invalid userId or invalid limit parameter."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '500':
+          description: "Internal server error — failed to load chat history."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -284,17 +333,14 @@ components:
     ChatResponse:
       type: object
       properties:
-        content:
-          type: object
-          properties:
-            message:
-              $ref: '#/components/schemas/Message'
-            userId:
-              type: string
-              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            conversationId:
-              type: string
-              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        message:
+          $ref: '#/components/schemas/Message'
+        userId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        conversationId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
           type: array
           items:
@@ -376,3 +422,34 @@ components:
         template:
           type: string
           example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
+    ChatSummarys:
+      type: object
+      properties:
+        chatSummarys:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatSummary'
+
+    ChatSummary:
+      type: object
+      properties:
+        chatId:
+          type: string
+          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
+        userId:
+          type: string
+          example: "auth0|687270280dca20b77cfdcf74"
+        title:
+          type: string
+          example: "Login Test Conversation"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:24:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-01-22T09:12:45Z"
+        messageCount:
+          type: integer
+          example: 14
