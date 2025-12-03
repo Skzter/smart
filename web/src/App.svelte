@@ -4,7 +4,7 @@
     import Main from "$lib/components/Main.svelte";
 
     // hier dann auth
-    let userId = $state("auth0\|687270280dca20b77cfdcf73");
+    let userId = $state("auth0|687270280dca20b77cfdcf73");
 </script>
 
 <Sidebar.Provider>

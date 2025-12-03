@@ -1,5 +1,5 @@
 import axios, { AxiosError } from "axios";
-import type { ApiMessage, ApiChatSummary } from "../types/api";
+import type { ApiMessage, ApiChatSummary } from "$types/api";
 
 const baseURL = "http://localhost:8081/api/v1/";
 
