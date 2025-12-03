@@ -1,24 +1,48 @@
 <script lang="ts">
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-    import type { ApiChatSummary } from "$types/api";
-    import ChatSummary from "./ChatSummary.svelte";
+    import { getUserChats } from "$lib/Api";
+    import type { ApiChatSummary } from "src/types/api";
 
-    let {
-        group = $bindable(),
-    }: {
-        group: {
-            label: string;
-            summaries: ApiChatSummary[];
-        };
-    } = $props();
+    let { userId = $bindable() }: { userId: string } = $props();
+
+    let items = $state<ApiChatSummary[]>([]);
+
+    (async () => {
+        if (userId == undefined) {
+            return;
+        }
+        try {
+            items = (await getUserChats({ userId })).chatSummarys;
+            console.log("successfully retrieved chatSummaries", items);
+        } catch (error) {
+            console.log(error);
+        }
+    })();
 </script>
 
 <Sidebar.Group>
-    <Sidebar.GroupLabel class="uppercase">{group.label}</Sidebar.GroupLabel>
+    <Sidebar.GroupLabel>Application</Sidebar.GroupLabel>
     <Sidebar.GroupContent>
         <Sidebar.Menu>
-            {#each group.summaries as chat, key (chat.chatId)}
-                <ChatSummary bind:summary={group.summaries[key]}></ChatSummary>
+            {#each items as item (item.title)}
+                <Sidebar.MenuItem>
+                    <Sidebar.MenuButton>
+                        {#snippet child({ props })}
+                            <a
+                                onclick={() => {
+                                    console.log(
+                                        "changing to: ",
+                                        item.userId,
+                                        item.chatId,
+                                    );
+                                }}
+                                {...props}
+                            >
+                                <span>{item.title}</span>
+                            </a>
+                        {/snippet}
+                    </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
             {/each}
         </Sidebar.Menu>
     </Sidebar.GroupContent>
