@@ -8,7 +8,9 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
-// HandleGetRemoteTestcase TODO: add godoc
+// HandleGetRemoteTestcase retrieves stored test case metadata with optional filters.
+// It accepts query parameters for filtering by author, testcaseId, createdAfter, and createdBefore.
+// Returns 200 with filtered metadata array, 400 for invalid parameters, or 500 for service errors.
 func (a *AutotesterController) HandleGetRemoteTestcase(c *gin.Context) {
 	var query entity.GetRemoteTestcaseRequest
 

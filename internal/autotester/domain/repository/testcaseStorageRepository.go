@@ -24,6 +24,8 @@ type TestcaseStorageRepository interface {
 	// Read retrieves a TestCase object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.TestCase, error)
 
+	// ReadAllMetadata retrieves metadata for all stored test cases.
+	// Returns a slice of TestcaseMetadata or an error if the operation fails.
 	ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error)
 
 	// Update modifies an existing TestCase object in the storage system.
@@ -157,6 +159,8 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 	return &items[0], nil
 }
 
+// ReadAllMetadata retrieves metadata for all stored test cases from S3.
+// Returns a slice of TestcaseMetadata containing key, author, timestamps, and name for each test case.
 func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
 	defer span.End()

@@ -1,6 +1,6 @@
 package entity
 
-// TestcaseMetadata TODO: add godoc
+// TestcaseMetadata represents metadata information for a stored test case.
 type TestcaseMetadata struct {
 	Key     string `json:"key"`
 	Author  string `json:"author"`

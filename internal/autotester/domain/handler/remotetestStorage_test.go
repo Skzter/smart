@@ -102,8 +102,11 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			},
 		},
 		{
-			TestName:       "Filter by createdAfter and createdBefore (date range)",
-			QueryParams:    map[string]string{"createdAfter": "2025-01-01T00:00:00Z", "createdBefore": "2025-06-30T23:59:59Z"},
+			TestName: "Filter by createdAfter and createdBefore (date range)",
+			QueryParams: map[string]string{
+				"createdAfter":  "2025-01-01T00:00:00Z",
+				"createdBefore": "2025-06-30T23:59:59Z",
+			},
 			ExpectedStatus: http.StatusOK,
 			expectedResponse: []*entity.TestcaseMetadata{
 				{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},

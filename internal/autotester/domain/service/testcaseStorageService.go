@@ -22,6 +22,8 @@ type TestcaseStorageService interface {
 	// Returns an error if the operation fails.
 	SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error)
 
+	// ReadAllMetadataWithFilter retrieves all test case metadata and applies optional filters.
+	// Filters by author, testcaseId, and creation timestamps. Returns filtered metadata or an error.
 	ReadAllMetadataWithFilter(ctx context.Context, filter *entity.GetRemoteTestcaseRequest) ([]*entity.TestcaseMetadata, error)
 }
 
@@ -75,6 +77,8 @@ func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *ent
 	return key, nil
 }
 
+// ReadAllMetadataWithFilter retrieves all test case metadata and applies optional filters.
+// Filters by author, testcaseId, and creation timestamps. Returns filtered metadata or an error.
 func (t *testcaseStorageService) ReadAllMetadataWithFilter(ctx context.Context, filterParams *entity.GetRemoteTestcaseRequest) ([]*entity.TestcaseMetadata, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		t.logger.Error("context validation failed", "error", err)

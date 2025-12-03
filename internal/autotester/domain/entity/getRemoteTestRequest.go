@@ -1,6 +1,7 @@
 package entity
 
-// GetRemoteTestcaseRequest TODO: add godoc
+// GetRemoteTestcaseRequest represents query parameters for filtering remote test cases.
+// All fields are optional and validated through Gin's binding tags (UUID format and ISO8601 datetime).
 type GetRemoteTestcaseRequest struct {
 	Author        string `form:"author" binding:"omitempty,uuid"`
 	TestcaseId    string `form:"testcaseId" binding:"omitempty,uuid"`
