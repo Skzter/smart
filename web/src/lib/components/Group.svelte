@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { getUserChats } from "$lib/Api";
-    import type { ApiChatSummary } from "../../types/api";
+    import type { ApiChatSummary } from "$types/api";
 
     let { userId = $bindable() }: { userId: string } = $props();
 

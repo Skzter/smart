@@ -18,7 +18,9 @@
         "moduleDetection": "force",
         "paths": {
             "$lib": ["./src/lib"],
-            "$lib/*": ["./src/lib/*"]
+            "$lib/*": ["./src/lib/*"],
+            "$types": ["./src/types"],
+            "$types/*": ["./src/types/*"]
         }
     },
     "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]

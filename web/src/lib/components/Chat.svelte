@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Bot } from "@lucide/svelte";
-    import type { Message } from "../../types/message";
+    import type { Message } from "$types/message";
     import UserMessage from "./UserMessage.svelte";
     import BotMessage from "./BotMessage.svelte";
 
