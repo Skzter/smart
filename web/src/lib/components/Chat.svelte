@@ -36,7 +36,6 @@
                 <div class="flex flex-col gap-4">
                     {#each messages as message}
                         <UserMessage message={message.question} />
-                        <!-- Bot response -->
                         {#if message.answer}
                             <BotMessage message={message.answer} />
                         {/if}
