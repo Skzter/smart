@@ -1,4 +1,4 @@
-export let user = $state({
+export const user = $state({
     id: "",
 });
 

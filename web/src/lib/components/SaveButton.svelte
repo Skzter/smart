@@ -16,6 +16,10 @@
     let saveState = $state<SaveState>("idle");
     let testId = "";
 
+    $effect(() => {
+        console.log("SaveState: " + saveState + " TestID: " + testId);
+    });
+
     async function saveTest(testcode: string) {
         if (!user.id || !chat.id) {
             errorMessage =
