@@ -8,8 +8,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
-// HandleRemoteGetTestcase TODO: add godoc
-func (a *AutotesterController) HandleRemoteGetTestcase(c *gin.Context) {
+// HandleGetRemoteTestcase TODO: add godoc
+func (a *AutotesterController) HandleGetRemoteTestcase(c *gin.Context) {
 	var query entity.GetRemoteTestcaseRequest
 
 	if err := c.ShouldBindQuery(&query); err != nil {
