@@ -44,7 +44,7 @@
             console.error("Failed to save test:", error);
             saveState = "error";
             let msg = "Unknown error";
-            if (error instanceof Error) {
+            if (error instanceof AxiosError) {
                 msg = error.message;
             }
             errorMessage = msg;

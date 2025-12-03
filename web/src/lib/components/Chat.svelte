@@ -1,13 +1,18 @@
 <script lang="ts">
     import { Bot } from "@lucide/svelte";
-    import type { Message } from "src/types/message";
+    import type { Message } from "../../types/message";
     import UserMessage from "./UserMessage.svelte";
     import BotMessage from "./BotMessage.svelte";
 
-    let { isLoading = $bindable() }: { isLoading: boolean } = $props();
+    let {
+        isLoading = $bindable(),
+        userId,
+    }: {
+        isLoading: boolean;
+        userId: string;
+    } = $props();
 
     let conversationId = $state("");
-    let userId = $state("auth0|687270280dca20b77cfdcf73");
     let messages = $state<Message[]>([]);
     messages = [
         {
