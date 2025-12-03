@@ -2,6 +2,7 @@
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import AppSidebar from "$lib/components/app-sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
+    import SaveToaster from "$lib/components/SaveToaster.svelte";
     import { user } from "$lib/shared.svelte";
     import { onMount } from "svelte";
 
@@ -32,3 +33,5 @@
         <Main />
     </Sidebar.Inset>
 </Sidebar.Provider>
+<SaveToaster />
+

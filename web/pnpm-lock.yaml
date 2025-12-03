@@ -51,6 +51,9 @@ importers:
       globals:
         specifier: ^16.5.0
         version: 16.5.0
+      mode-watcher:
+        specifier: ^1.1.0
+        version: 1.1.0(svelte@5.45.4)
       prettier:
         specifier: 3.7.3
         version: 3.7.3
@@ -63,6 +66,9 @@ importers:
       svelte-check:
         specifier: ^4.3.4
         version: 4.3.4(picomatch@4.0.3)(svelte@5.45.4)(typescript@5.9.3)
+      svelte-sonner:
+        specifier: ^1.0.7
+        version: 1.0.7(svelte@5.45.4)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
@@ -1111,6 +1117,10 @@ packages:
 
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
+  mode-watcher@1.1.0:
+    resolution: {integrity: sha512-mUT9RRGPDYenk59qJauN1rhsIMKBmWA3xMF+uRwE8MW/tjhaDSCCARqkSuDTq8vr4/2KcAxIGVjACxTjdk5C3g==}
+    peerDependencies:
+      svelte: ^5.27.0
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -1225,6 +1235,21 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
+  runed@0.23.4:
+    resolution: {integrity: sha512-9q8oUiBYeXIDLWNK5DfCWlkL0EW3oGbk845VdKlPeia28l751VpfesaB/+7pI6rnbx1I6rqoZ2fZxptOJLxILA==}
+    peerDependencies:
+      svelte: ^5.7.0
+
+  runed@0.25.0:
+    resolution: {integrity: sha512-7+ma4AG9FT2sWQEA0Egf6mb7PBT2vHyuHail1ie8ropfSjvZGtEAx8YTmUjv/APCsdRRxEVvArNjALk9zFSOrg==}
+    peerDependencies:
+      svelte: ^5.7.0
+
+  runed@0.28.0:
+    resolution: {integrity: sha512-k2xx7RuO9hWcdd9f+8JoBeqWtYrm5CALfgpkg2YDB80ds/QE4w0qqu34A7fqiAwiBBSBQOid7TLxwxVC27ymWQ==}
+    peerDependencies:
+      svelte: ^5.7.0
+
   runed@0.35.1:
     resolution: {integrity: sha512-2F4Q/FZzbeJTFdIS/PuOoPRSm92sA2LhzTnv6FXhCoENb3huf5+fDuNOg1LNvGOouy3u/225qxmuJvcV3IZK5Q==}
     peerDependencies:
@@ -1283,11 +1308,22 @@ packages:
       svelte:
         optional: true
 
+  svelte-sonner@1.0.7:
+    resolution: {integrity: sha512-1EUFYmd7q/xfs2qCHwJzGPh9n5VJ3X6QjBN10fof2vxgy8fYE7kVfZ7uGnd7i6fQaWIr5KvXcwYXE/cmTEjk5A==}
+    peerDependencies:
+      svelte: ^5.0.0
+
   svelte-toolbelt@0.10.6:
     resolution: {integrity: sha512-YWuX+RE+CnWYx09yseAe4ZVMM7e7GRFZM6OYWpBKOb++s+SQ8RBIMMe+Bs/CznBMc0QPLjr+vDBxTAkozXsFXQ==}
     engines: {node: '>=18', pnpm: '>=8.7.0'}
     peerDependencies:
       svelte: ^5.30.2
+
+  svelte-toolbelt@0.7.1:
+    resolution: {integrity: sha512-HcBOcR17Vx9bjaOceUvxkY3nGmbBmCBBbuWLLEWO6jtmWH8f/QoWmbyUfQZrpDINH39en1b8mptfPQT9VKQ1xQ==}
+    engines: {node: '>=18', pnpm: '>=8.7.0'}
+    peerDependencies:
+      svelte: ^5.0.0
 
   svelte@5.45.4:
     resolution: {integrity: sha512-1/Y6ZfAQ30GjebMrDFM8ktL1WZ0ylljLabotDAFN41MTrDOY4gGzDDYnIKV+p8YXcnxEEDpVfVWE+I6u69jJ7A==}
@@ -2340,6 +2376,11 @@ snapshots:
       brace-expansion: 2.0.2
 
   moo@0.5.2: {}
+  mode-watcher@1.1.0(svelte@5.45.4):
+    dependencies:
+      runed: 0.25.0(svelte@5.45.4)
+      svelte: 5.45.4
+      svelte-toolbelt: 0.7.1(svelte@5.45.4)
 
   mri@1.2.0: {}
 
@@ -2449,6 +2490,21 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.53.3
       fsevents: 2.3.3
 
+  runed@0.23.4(svelte@5.45.4):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.45.4
+
+  runed@0.25.0(svelte@5.45.4):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.45.4
+
+  runed@0.28.0(svelte@5.45.4):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.45.4
+
   runed@0.35.1(svelte@5.45.4):
     dependencies:
       dequal: 2.0.3
@@ -2503,6 +2559,11 @@ snapshots:
     optionalDependencies:
       svelte: 5.45.4
 
+  svelte-sonner@1.0.7(svelte@5.45.4):
+    dependencies:
+      runed: 0.28.0(svelte@5.45.4)
+      svelte: 5.45.4
+
   svelte-toolbelt@0.10.6(svelte@5.45.4):
     dependencies:
       clsx: 2.1.1
@@ -2511,6 +2572,13 @@ snapshots:
       svelte: 5.45.4
     transitivePeerDependencies:
       - '@sveltejs/kit'
+
+  svelte-toolbelt@0.7.1(svelte@5.45.4):
+    dependencies:
+      clsx: 2.1.1
+      runed: 0.23.4(svelte@5.45.4)
+      style-to-object: 1.0.14
+      svelte: 5.45.4
 
   svelte@5.45.4:
     dependencies:

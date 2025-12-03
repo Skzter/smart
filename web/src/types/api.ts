@@ -9,8 +9,8 @@ export type ApiChatSummary = {
     chatId: string;
     userId: string;
     title: string;
-    createdAt: number;
-    updatedAt: number;
+    createdAt: string;
+    updatedAt: string;
 };
 
 export type ApiChatRequest = {
