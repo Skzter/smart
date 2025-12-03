@@ -20,13 +20,17 @@ func TestHandleRunContainer(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 
+	type mockSetupFunc func(
+		mockLocalStorageServ *mocks.MockTestcaseLocalStorageService,
+		mockRemoteStorageServ *mocks.MockTestcaseStorageService,
+		mockDockerServ *mocks.MockDocker,
+	)
+
 	tests := []struct {
-		TestName         string
-		RequestBody      string
-		MockResponseFile []any
-		MockResponseRun  []any
-		MockResponseRead []any
-		ExpectedStatus   int
+		TestName       string
+		RequestBody    string
+		ExpectedStatus int
+		MockSetup      mockSetupFunc
 	}{
 		{
 			TestName: "Valid run container request",
@@ -35,10 +39,12 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus:   http.StatusOK,
-			MockResponseFile: []any{"/tmp/session789.ts", nil},
-			MockResponseRun:  []any{nil},
-			MockResponseRead: []any{"successful test", nil},
+			ExpectedStatus: http.StatusOK,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/session789.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
+				docker.EXPECT().ReadLog(mock.Anything).Return("successful test", nil)
+			},
 		},
 		{
 			TestName:       "Invalid JSON",
@@ -90,8 +96,10 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus:   http.StatusBadRequest,
-			MockResponseFile: []any{"", errors.New("files not found")},
+			ExpectedStatus: http.StatusBadRequest,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("files not found"))
+			},
 		},
 		{
 			TestName: "docker container execution fails",
@@ -100,9 +108,11 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus:   http.StatusInternalServerError,
-			MockResponseFile: []any{"/tmp/test.spec.ts", nil},
-			MockResponseRun:  []any{errors.New("running error")},
+			ExpectedStatus: http.StatusInternalServerError,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(errors.New("running error"))
+			},
 		},
 		{
 			TestName: "Log file read fails",
@@ -111,10 +121,59 @@ func TestHandleRunContainer(t *testing.T) {
 				"testId": "test456",
 				"sessionId": "session789"
 			}`,
-			ExpectedStatus:   http.StatusInternalServerError,
-			MockResponseFile: []any{"/tmp/test.spec.ts", nil},
-			MockResponseRun:  []any{nil},
-			MockResponseRead: []any{"no logs", errors.New("failed to read log")},
+			ExpectedStatus: http.StatusInternalServerError,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
+				docker.EXPECT().ReadLog(mock.Anything).Return("no logs", errors.New("failed to read log"))
+			},
+		},
+		{
+			TestName: "Test passed, Read local testcode fails",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"sessionId": "session789"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
+				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
+				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("read failed"))
+			},
+		},
+		{
+			TestName: "Test passed, SaveTestCase fails",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"sessionId": "session789"
+			}`,
+			ExpectedStatus: http.StatusInternalServerError,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
+				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
+				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
+				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("save failed"))
+			},
+		},
+		{
+			TestName: "Test passed, SaveTestCase succeeds",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"sessionId": "session789"
+			}`,
+			ExpectedStatus: http.StatusOK,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
+				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
+				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
+				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
+				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
+				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("key", nil)
+			},
 		},
 	}
 
@@ -123,17 +182,12 @@ func TestHandleRunContainer(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
 			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 
-			// mock setup
-			if test.MockResponseFile != nil {
-				mockLocalStorageServ.On("GetTestPath", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseFile...)
-			}
-			if test.MockResponseRun != nil {
-				mockDockerServ.On("RunTest", mock.Anything, mock.Anything).Return(test.MockResponseRun...)
-			}
-			if test.MockResponseRead != nil {
-				mockDockerServ.On("ReadLog", mock.Anything).Return(test.MockResponseRead...)
+			if test.MockSetup != nil {
+				test.MockSetup(mockLocalStorageServ, mockRemoteStorageServ, mockDockerServ)
 			}
 
 			req, err := http.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
@@ -146,16 +200,14 @@ func TestHandleRunContainer(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ)
+			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}
 
-			// Execute
 			controller.HandleRunContainer(ctx)
 			t.Logf("TEST => %v\nRECORDER => %v", test, rec)
 
-			// Assert
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d. Response: %s", test.ExpectedStatus, rec.Code, rec.Body.String())
 			}
