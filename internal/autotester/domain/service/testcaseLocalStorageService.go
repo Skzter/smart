@@ -18,6 +18,10 @@ type TestcaseLocalStorageService interface {
 	// Returns an error when validation or storage fails.
 	Save(testcase *entity.TestCase, userId, sessionId string) error
 
+	// Read loads the content of a specific testcase identified by testId for the given user and session.
+	// Returns the file content as a string, or an error if reading or validation fails.
+	Read(testId, userId, sessionId string) (string, error)
+
 	// GetTestPath returns the relative file path to a specific TestCase file,
 	// starting from the root of the local test storage directory.
 	// Returns an error if path validation fails or the file does not exist.
@@ -99,6 +103,33 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 		slog.String("sessionId", sessionId),
 	)
 	return nil
+}
+
+func (s *testcaseLocalStorageService) Read(testId, userId, sessionId string) (string, error) {
+	s.logger.Debug("reading testcase",
+		slog.String("testId", testId),
+		slog.String("userId", userId),
+		slog.String("sessionId", sessionId),
+	)
+
+	fileContent, err := s.repo.Read(testId, userId, sessionId)
+	if err != nil {
+		s.logger.Error("failed to read testcase file",
+			slog.String("testId", testId),
+			slog.String("userId", userId),
+			slog.String("sessionId", sessionId),
+			slog.String("error", err.Error()),
+		)
+		return "", fmt.Errorf("read testcase file content failed: %w", err)
+	}
+
+	s.logger.Debug("testcase file read successfully",
+		slog.String("testId", testId),
+		slog.String("userId", userId),
+		slog.String("sessionId", sessionId),
+		slog.String("path", string(fileContent)),
+	)
+	return string(fileContent), nil
 }
 
 func (s *testcaseLocalStorageService) GetTestPath(testId, userId, sessionId string) (string, error) {
