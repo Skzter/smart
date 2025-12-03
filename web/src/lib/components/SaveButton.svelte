@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Save } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
-    import { saveTestLocal } from "$lib/Api";
+    import { saveTestLocal } from "$lib/api";
     import { AxiosError } from "axios";
     import type { SaveState } from "$types/save";
     import { chat, user } from "$lib/shared.svelte";
@@ -52,6 +52,12 @@
         } catch (error) {
             console.error("Failed to save test:", error);
             saveState = "error";
+            let msg = "Unknown error";
+            if (error instanceof Error) {
+                msg = error.message;
+            }
+            errorMessage = msg;
+        }
 
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof AxiosError) {

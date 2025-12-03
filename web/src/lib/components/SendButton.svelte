@@ -1,7 +1,9 @@
 <script lang="ts">
     import { Send } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
-    import { chat } from "$lib/shared.svelte";
+    import { chat, messages, user } from "$lib/shared.svelte";
+    import type { ApiChatRequest } from "$types/api";
+    import { getChatResponse } from "$lib/api";
 
     let {
         input = $bindable(),
