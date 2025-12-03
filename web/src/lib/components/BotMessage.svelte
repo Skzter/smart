@@ -4,12 +4,14 @@
     import SaveButton from "./SaveButton.svelte";
     import EditButton from "./EditButton.svelte";
     import CopyButton from "./CopyButton.svelte";
+    import Code from "./Code.svelte";
 
     let {
         message,
     }: {
         message: string;
     } = $props();
+    const messagsIsCode = $derived(message.startsWith("import"));
 </script>
 
 <div class="flex justify-start gap-2 items-start">
@@ -29,8 +31,12 @@
             <SaveButton code={message} />
             <RunButton />
         </div>
-        <div class="px-4 py-2 break-words whitespace-pre-wrap">
-            {message}
-        </div>
+        {#if messagsIsCode}
+            <Code {message} />
+        {:else}
+            <div class="px-4 py-2 break-words whitespace-pre-wrap">
+                {message}
+            </div>
+        {/if}
     </div>
 </div>
