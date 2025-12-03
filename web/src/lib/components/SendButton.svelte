@@ -1,23 +1,20 @@
 <script lang="ts">
     import { Send } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
-    import { chat } from "$lib/shared.svelte";
 
     let {
+        userId,
         input = $bindable(),
-        onclick,
+        isLoading = $bindable(),
     }: {
+        userId: string;
         input: string;
-        onclick: () => void;
+        isLoading: boolean;
     } = $props();
+
+    // onclick mit user id
 </script>
 
-<Button
-    variant="default"
-    size="icon"
-    class="w-10 h-10 cursor-pointer"
-    disabled={chat.isLoading || !input.trim()}
-    {onclick}
->
+<Button variant="default" size="icon" class="w-10 h-10" disabled={isLoading}>
     <Send />
 </Button>

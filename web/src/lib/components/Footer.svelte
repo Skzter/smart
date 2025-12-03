@@ -1,8 +1,7 @@
 <script lang="ts">
-    import Button from "./ui/button/button.svelte";
     import * as ButtonGroup from "$lib/components/ui/button-group";
-    import * as InputGroup from "$lib/components/ui/input-group";
-    import { Send } from "@lucide/svelte";
+    import Prompt from "./Prompt.svelte";
+    import SendButton from "./SendButton.svelte";
 
     let input = $state("");
 
@@ -24,23 +23,8 @@
             >
                 <ButtonGroup.Root class="flex-1">
                     <div class="flex w-full items-center gap-2">
-                        <InputGroup.Root class="w-full">
-                            <InputGroup.Textarea
-                                bind:value={input}
-                                class="w-full resize-none min-h-11"
-                                placeholder="Send a message..."
-                                rows={1}
-                                disabled={isLoading}
-                            />
-                        </InputGroup.Root>
-                        <Button
-                            variant="default"
-                            size="icon"
-                            class="w-10 h-10"
-                            disabled={isLoading}
-                        >
-                            <Send />
-                        </Button>
+                        <Prompt bind:isLoading bind:input />
+                        <SendButton {userId} bind:input bind:isLoading />
                     </div>
                 </ButtonGroup.Root>
             </ButtonGroup.Root>
