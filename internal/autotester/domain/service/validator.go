@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -58,6 +59,8 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
+
+	s.logger.Debug(fmt.Sprintf("%v", req))
 	if err := s.ValidateRequest(ctx, req); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
@@ -66,6 +69,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 
 	resp, err := s.openAIservice.Request(ctx, req)
 	if err != nil {
+		s.logger.Debug(err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation
