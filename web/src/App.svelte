@@ -21,4 +21,4 @@
         <Main />
     </Sidebar.Inset>
 </Sidebar.Provider>
-<SaveToaster/>
+<SaveToaster />
