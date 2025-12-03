@@ -3,6 +3,7 @@
     import Button from "./ui/button/button.svelte";
     import { saveTestLocal } from "$lib/Api";
     import { AxiosError } from "axios";
+    import type { SaveState } from "$types/save";
 
     let {
         code,
@@ -15,7 +16,7 @@
     } = $props();
 
     let errorMessage = $state("");
-    let saveState = $state("");
+    let saveState = $state<SaveState>("idle");
     let testId = "";
 
     async function saveTest(testcode: string) {
