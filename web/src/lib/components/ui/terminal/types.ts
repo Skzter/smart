@@ -6,6 +6,7 @@ export type TerminalRootProps = WithChildren<{
 	delay?: number;
 	speed?: number;
 	onComplete?: () => void;
+	hideDots?: boolean;
 }>;
 
 export type TerminalLoopProps = WithChildren<{
