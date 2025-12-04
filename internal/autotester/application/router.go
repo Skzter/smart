@@ -24,12 +24,12 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 	apiV1 := router.Group("/api/v1")
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
-		apiV1.GET("/chats/:UserID", controller.HandleGetUserChats)
+		apiV1.GET("/users/:userId/chats", controller.HandleGetUserChats)
 		apiV1.GET("/template", controller.HandleGetTemplate)
 		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
 		apiV1.POST("/run", controller.HandleRunContainer)
-		apiV1.GET("/chats/:userId/:chatId", controller.GetChatById)
+		apiV1.GET("/users/:userId/chats/:chatId", controller.GetChatById)
 	}
 
 	router.GET("/auth_config.json", func(c *gin.Context) {

@@ -74,12 +74,10 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
 }
 
-// HandleGetUserChats processes a request for all chats of a given user
-// Expects a valid uuid as url parameter
-// valid example: /chats/0bc024d1-5e82-435b-8b2e-dc88493a8a28
-// invalid example: /chats/1234 or /chats/hahahihi
+// HandleGetUserChats processes a request for all chats of a given user.
+// Expects an Auth0-style userId (e.g. auth0|687270280dca20b77cfdcf74) as URL parameter.
 func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
-	userID := c.Param("UserID")
+	userID := c.Param("userId")
 	// checking if style: auth0|id is there
 	if !isValid(userID) {
 		a.logger.Error("invalid id format")

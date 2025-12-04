@@ -239,9 +239,63 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	}
 }
 
-func TestGetUserChats(t *testing.T) {
+func TestGetUserChats_ValidationCases(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+
+	tests := []struct {
+		name           string
+		requestID      string
+		limit          string
+		expectedStatus int
+	}{
+		{"error - No ID", "", "", http.StatusNotFound},
+		{"error - invalid ID format", "132", "", http.StatusBadRequest},
+		{"error - limit is not a number", "auth0|123", "hallo", http.StatusBadRequest},
+		{"error - limit is a negative number", "auth0|123", "-131", http.StatusBadRequest},
+	}
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			gin.SetMode(gin.TestMode)
+			router := gin.New()
+
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
+			router.GET("/api/v1/users/:userId/chats", controller.HandleGetUserChats)
+
+			var endpoint string
+			if tc.requestID == "" {
+				endpoint = "/api/v1/users/"
+			} else {
+				endpoint = "/api/v1/users/" + tc.requestID + "/chats"
+				if tc.limit != "" {
+					endpoint += "?limit=" + tc.limit
+				}
+			}
+
+			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+			rec := httptest.NewRecorder()
+
+			router.ServeHTTP(rec, req)
+
+			if rec.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestGetUserChats_LoadCases(t *testing.T) {
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+
 	tests := []struct {
 		name             string
 		requestID        string
@@ -250,56 +304,21 @@ func TestGetUserChats(t *testing.T) {
 		expectedStatus   int
 	}{
 		{
-			name:           "error - No ID",
-			requestID:      "",
-			expectedStatus: http.StatusNotFound,
+			"error - no chat history for given user found",
+			"auth0|123",
+			"123",
+			[]any{nil, errors.New("no history found")},
+			http.StatusInternalServerError,
 		},
 		{
-			name:           "error - invalid ID format",
-			requestID:      "132",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "error - limit is not a number",
-			requestID:      "auth0|123",
-			limit:          "hallo",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "error - limit is a negative number",
-			requestID:      "auth0|123",
-			limit:          "-131",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:             "error - no chat history for given user found",
-			requestID:        "auth0|123",
-			limit:            "123",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
-			expectedStatus:   http.StatusInternalServerError,
-		},
-		{
-			name:             "error - empty limit but no history found",
-			requestID:        "auth0|123",
-			limit:            "",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
-			expectedStatus:   http.StatusInternalServerError,
-		},
-		{
-			name:      "success",
-			requestID: "auth0|123",
-			limit:     "5",
-			mockResponseLoad: []any{[]*entity.ChatSummary{
-				{
-					ChatId:    "1",
-					UpdatedAt: time.Now(),
-				},
-				{
-					ChatId:    "2",
-					UpdatedAt: time.Now().Add(-10 * time.Hour),
-				},
+			"success",
+			"auth0|123",
+			"5",
+			[]any{[]*entity.ChatSummary{
+				{ChatId: "1", UpdatedAt: time.Now()},
+				{ChatId: "2", UpdatedAt: time.Now().Add(-10 * time.Hour)},
 			}, nil},
-			expectedStatus: http.StatusOK,
+			http.StatusOK,
 		},
 	}
 
@@ -315,13 +334,18 @@ func TestGetUserChats(t *testing.T) {
 			if tc.mockResponseLoad != nil {
 				mockChatStorageServ.On("LoadUserChats", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
+
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
 			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
-			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
+			router.GET("/api/v1/users/:userId/chats", controller.HandleGetUserChats)
 
-			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
+			endpoint := "/api/v1/users/" + tc.requestID + "/chats"
+			if tc.limit != "" {
+				endpoint += "?limit=" + tc.limit
+			}
+
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 

@@ -226,18 +226,18 @@ paths:
                     type: string
                     description: Error message describing the internal error
                     example: "Command execution error: exit status 1"
-  /api/v1/chats/{UserID}:
+  /api/v1/users/{userId}/chats:
     get:
       summary: "Returns the chat history for a specific user"
       description: |
-        Retrieves all chat summaries associated with the given `UserID`.
+        Retrieves all chat summaries associated with the given `userId`.
 
         An optional `limit` query parameter can be provided to restrict how many
         of the most recently updated chats are returned.  
         - If `limit` is omitted or set to `0`, all chats are returned.  
         - Chats are sorted by `updatedAt` descending.
       parameters:
-        - name: UserID
+        - name: userId
           in: path
           required: true
           description: "Unique identifier of the user."
@@ -275,17 +275,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/v1/chats/{userId}/{chatId}:
+  /api/v1/users/{userId}/chats/{chatId}:
     get:
       summary: Get full chat by ID
       parameters:
         - in: path
-          name: chatId
+          name: userId
           required: true
           schema:
             type: string
-        - in: query
-          name: userId
+        - in: path
+          name: chatId
           required: true
           schema:
             type: string
