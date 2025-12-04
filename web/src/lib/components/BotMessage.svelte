@@ -26,7 +26,7 @@
         <div
             class="flex justify-end gap-1 px-3 py-2 bg-muted/40 border-b border-border/50"
         >
-            <CopyButton />
+            <CopyButton code={message} />
             <EditButton />
             <SaveButton code={message} />
             <RunWindow />
