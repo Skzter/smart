@@ -72,6 +72,9 @@ importers:
       svelte-sonner:
         specifier: ^1.0.7
         version: 1.0.7(svelte@5.45.4)
+      svelte-toolbelt:
+        specifier: ^0.10.6
+        version: 0.10.6(svelte@5.45.4)
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0

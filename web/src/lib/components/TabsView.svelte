@@ -1,28 +1,16 @@
 <script lang="ts">
   export let activeTab = 'run';
+  import * as UnderlineTabs from '$lib/components/ui/underline-tabs';
 
   function handleTabClick(tab: string) {
     activeTab = tab;
   }
 </script>
 
-<div class="flex border-b">
-  <button 
-    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'edit' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
-    onclick={() => handleTabClick('edit')}
-  >
-    Edit
-  </button>
-  <button 
-    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'run' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
-    onclick={() => handleTabClick('run')}
-  >
-    Run
-  </button>
-  <button 
-    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'result' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
-    onclick={() => handleTabClick('result')}
-  >
-    Result
-  </button>
-</div>
+<UnderlineTabs.Root value={activeTab} onValueChange={(value) => { activeTab = value; }} class="px-6">
+  <UnderlineTabs.List>
+    <UnderlineTabs.Trigger value="edit">Edit</UnderlineTabs.Trigger>
+    <UnderlineTabs.Trigger value="run">Run</UnderlineTabs.Trigger>
+    <UnderlineTabs.Trigger value="result">Result</UnderlineTabs.Trigger>
+  </UnderlineTabs.List>
+</UnderlineTabs.Root>
