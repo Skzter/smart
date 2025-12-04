@@ -30,7 +30,6 @@
             <EditButton />
             <SaveButton code={message} />
             <RunWindow code={message} />
-        
         </div>
         {#if messagsIsCode}
             <Code code={message} />
