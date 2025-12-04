@@ -5,6 +5,7 @@
     import type { ApiChatSummary } from "$types/api";
     import { user } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
+    import SidebarHeader from "$lib/components/SidebarHeader.svelte";
 
     let error = $state<string>("");
     let groupState = $state<
@@ -72,6 +73,7 @@
 </script>
 
 <Sidebar.Root>
+    <SidebarHeader/>
     <Sidebar.Content>
         {#if groupState == undefined}
             <Sidebar.Group class="mt-2 flex items-center justify-center">
