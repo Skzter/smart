@@ -4,6 +4,9 @@ import type {
     ApiChatSummary,
     ApiChatRequest,
     ApiChatResponse,
+    ApiSaveTestLocal,
+    ApiSaveTEstLocalResponse,
+    ApiRunContainer,
 } from "$types/api";
 
 const baseURL = "http://localhost:8081/api/v1/";
@@ -51,24 +54,22 @@ export async function getUserChats(userId: string): Promise<ApiChatSummary[]> {
     }
 }
 
-export async function getTemplate(): Promise<{ template: string }> {
+export async function getTemplate(): Promise<string> {
     try {
         const response = await axios({
             method: "get",
             url: "template",
             baseURL: baseURL,
         });
-        return { template: response.data.template };
+        return response.data.template;
     } catch (error) {
         throw getErrorMessage(error);
     }
 }
 
-export async function saveTestLocal(request: {
-    userId: string;
-    conversationId: string;
-    code: string;
-}): Promise<{ testcaseId: string; action: string }> {
+export async function saveTestLocal(
+    request: ApiSaveTestLocal,
+): Promise<ApiSaveTEstLocalResponse> {
     try {
         const response = await axios({
             method: "post",
@@ -85,11 +86,7 @@ export async function saveTestLocal(request: {
     }
 }
 
-export async function runContainer(request: {
-    userId: string;
-    testId: string;
-    sessionId: string;
-}): Promise<{ result: string }> {
+export async function runContainer(request: ApiRunContainer): Promise<string> {
     try {
         const response = await axios({
             method: "post",
@@ -97,9 +94,7 @@ export async function runContainer(request: {
             baseURL: baseURL,
             data: request,
         });
-        return {
-            result: response.data.result,
-        };
+        return response.data.result;
     } catch (error) {
         throw getErrorMessage(error);
     }

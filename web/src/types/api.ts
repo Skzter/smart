@@ -27,3 +27,20 @@ export type ApiChatResponse = {
     userId: string;
     conversationId: string;
 };
+
+export type ApiSaveTestLocal = {
+    userId: string;
+    conversationId: string;
+    code: string;
+};
+
+export type ApiSaveTEstLocalResponse = {
+    testcaseId: string;
+    action: string;
+};
+
+export type ApiRunContainer = {
+    userId: string;
+    testId: string;
+    sessionId: string;
+};

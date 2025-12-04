@@ -36,7 +36,7 @@
                 testId,
                 sessionId,
             });
-            testResult = response.result;
+            testResult = response;
             activeTab = "result";
         } catch (error) {
             console.error("Error running test:", error);
