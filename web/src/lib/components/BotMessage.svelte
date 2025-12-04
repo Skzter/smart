@@ -33,7 +33,7 @@
         
         </div>
         {#if messagsIsCode}
-            <Code {message} />
+            <Code code={message} />
         {:else}
             <div class="px-4 py-2 break-words whitespace-pre-wrap">
                 {message}
