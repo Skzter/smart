@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Bot } from "@lucide/svelte";
     import UserMessage from "./UserMessage.svelte";
     import BotMessage from "./BotMessage.svelte";
     import { chat, messages } from "$lib/shared.svelte";
+    import Dots from "./Dots.svelte";
 
     let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes
@@ -42,31 +42,7 @@
                     {/each}
                     <!-- Loading indicator, auch eigener component und vllt auf vorgefertigte component zurück greifen -->
                     {#if chat.isLoading}
-                        <div class="flex justify-start gap-2 items-start">
-                            <div
-                                class="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center"
-                            >
-                                <Bot class="h-7 w-7" />
-                            </div>
-                            <div
-                                class="bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-2"
-                            >
-                                <div class="flex gap-1">
-                                    <span
-                                        class="animate-bounce"
-                                        style="animation-delay: 0ms;">●</span
-                                    >
-                                    <span
-                                        class="animate-bounce"
-                                        style="animation-delay: 150ms;">●</span
-                                    >
-                                    <span
-                                        class="animate-bounce"
-                                        style="animation-delay: 300ms;">●</span
-                                    >
-                                </div>
-                            </div>
-                        </div>
+                        <Dots />
                     {/if}
                 </div>
             {/if}
