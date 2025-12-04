@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-    import AppSidebar from "$lib/components/app-sidebar.svelte";
+    import AppSidebar from "$lib/components/Sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
     import SaveToaster from "$lib/components/SaveToaster.svelte";
     import { user } from "$lib/shared.svelte";
