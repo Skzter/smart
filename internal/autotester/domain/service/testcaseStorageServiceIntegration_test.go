@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -23,8 +24,163 @@ import (
 )
 
 func TestSaveTestcaseIntegration(t *testing.T) {
+	setup := setupTestService(t)
+
+	testID := "integration-test-id"
+	testcase := &entity.TestCase{
+		TestID: testID,
+		TestCode: entity.TestCode{
+			Code: "best auto-playwrigth test in existens",
+		},
+		Status: entity.TestStatusPassed,
+	}
+	userId := "integration-user"
+
+	key, err := setup.service.SaveTestcase(setup.ctx, testcase, userId)
+	require.NoError(t, err)
+
+	loaded, err := setup.repo.Read(setup.ctx, key)
+	require.NoError(t, err)
+	require.NotNil(t, loaded)
+
+	assert.Equal(t, testcase.TestID, loaded.TestID)
+	assert.Equal(t, testcase.TestCode.Code, loaded.TestCode.Code)
+}
+
+// nolint:funlen
+func TestReadAllMetadataWithFilterIntegration(t *testing.T) {
+	setup := setupTestService(t)
+
+	testcases := []struct {
+		testcase *entity.TestCase
+		userId   string
+	}{
+		{
+			testcase: &entity.TestCase{
+				TestID: "test1",
+				TestCode: entity.TestCode{
+					Code: "test login functionality",
+				},
+				Status: entity.TestStatusPassed,
+			},
+			userId: "user1",
+		},
+		{
+			testcase: &entity.TestCase{
+				TestID: "test2",
+				TestCode: entity.TestCode{
+					Code: "test logout functionality",
+				},
+				Status: entity.TestStatusPassed,
+			},
+			userId: "user1",
+		},
+		{
+			testcase: &entity.TestCase{
+				TestID: "test3",
+				TestCode: entity.TestCode{
+					Code: "test integration",
+				},
+				Status: entity.TestStatusPassed,
+			},
+			userId: "user2",
+		},
+		{
+			testcase: &entity.TestCase{
+				TestID: "test4",
+				TestCode: entity.TestCode{
+					Code: "test performance",
+				},
+				Status: entity.TestStatusPassed,
+			},
+			userId: "user2",
+		},
+	}
+
+	for _, tc := range testcases {
+		_, err := setup.service.SaveTestcase(setup.ctx, tc.testcase, tc.userId)
+		require.NoError(t, err, "failed to save testcase: %s", tc.testcase.TestID)
+	}
+
+	oneDayAgo := time.Now().Add(-24 * time.Hour).UTC().Format(time.RFC3339)
+	oneDayFuture := time.Now().Add(24 * time.Hour).UTC().Format(time.RFC3339)
+
+	tests := []struct {
+		name          string
+		filter        *entity.GetRemoteTestcaseRequest
+		expectedCount int
+	}{
+		{
+			name:          "no filter",
+			filter:        &entity.GetRemoteTestcaseRequest{},
+			expectedCount: 4,
+		},
+		{
+			name:          "filter by user1",
+			filter:        &entity.GetRemoteTestcaseRequest{Author: "user1"},
+			expectedCount: 2,
+		},
+		{
+			name:          "filter by user2",
+			filter:        &entity.GetRemoteTestcaseRequest{Author: "user2"},
+			expectedCount: 2,
+		},
+		{
+			name:          "filter by testcaseId test1",
+			filter:        &entity.GetRemoteTestcaseRequest{TestcaseId: "test1"},
+			expectedCount: 1,
+		},
+		{
+			name:          "filter by testcaseId test2",
+			filter:        &entity.GetRemoteTestcaseRequest{TestcaseId: "test2"},
+			expectedCount: 1,
+		},
+		{
+			name:          "filter by createdAfter one day ago - all pass",
+			filter:        &entity.GetRemoteTestcaseRequest{CreatedAfter: oneDayAgo},
+			expectedCount: 4,
+		},
+		{
+			name:          "filter by createdBefore one day future - all pass",
+			filter:        &entity.GetRemoteTestcaseRequest{CreatedBefore: oneDayFuture},
+			expectedCount: 4,
+		},
+		{
+			name:          "filter by createdBefore one day ago - none pass",
+			filter:        &entity.GetRemoteTestcaseRequest{CreatedBefore: oneDayAgo},
+			expectedCount: 0,
+		},
+		{
+			name:          "filter by createdAfter one day future - none pass",
+			filter:        &entity.GetRemoteTestcaseRequest{CreatedAfter: oneDayFuture},
+			expectedCount: 0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data, err := setup.service.ReadAllMetadataWithFilter(setup.ctx, test.filter)
+			require.NoError(t, err)
+			assert.Len(t, data, test.expectedCount, "unexpected number of results")
+		})
+	}
+}
+
+const (
+	testBucketName = "test-bucket"
+	testAccessKey  = "minioadmin"
+	testSecretKey  = "minioadmin"
+)
+
+type testServiceSetup struct {
+	service TestcaseStorageService
+	repo    repository.TestcaseStorageRepository
+	ctx     context.Context
+}
+
+func setupTestService(t *testing.T) *testServiceSetup {
 	minioContainer, cleanup := setupMinIOContainer(t)
-	defer cleanup()
+	t.Cleanup(cleanup)
 
 	ctx := context.Background()
 	logger := slog.Default()
@@ -35,6 +191,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
 		endpoint = "http://" + endpoint
 	}
+
 	s3Config := wrapperEntity.S3Config{
 		Region:    "us-east-1",
 		Bucket:    testBucketName,
@@ -54,7 +211,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, parquetWrapper)
 
-	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest", tracer)
+	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest/", tracer)
 	require.NoError(t, err)
 	require.NotNil(t, s3Repo)
 
@@ -62,32 +219,12 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, service)
 
-	testID := "integration-test-id"
-	testcase := &entity.TestCase{
-		TestID: testID,
-		TestCode: entity.TestCode{
-			Code: "best auto-playwrigth test in existens",
-		},
-		Status: entity.TestStatusPassed,
+	return &testServiceSetup{
+		service: service,
+		repo:    s3Repo,
+		ctx:     ctx,
 	}
-	userId := "integration-user"
-
-	key, err := service.SaveTestcase(ctx, testcase, userId)
-	require.NoError(t, err)
-
-	loaded, err := s3Repo.Read(ctx, key)
-	require.NoError(t, err)
-	require.NotNil(t, loaded)
-
-	assert.Equal(t, testcase.TestID, loaded.TestID)
-	assert.Equal(t, testcase.TestCode.Code, loaded.TestCode.Code)
 }
-
-const (
-	testBucketName = "test-bucket"
-	testAccessKey  = "minioadmin"
-	testSecretKey  = "minioadmin"
-)
 
 // createBucket creates the test bucket using the MinIO container
 func createBucket(t *testing.T, minioContainer *minio.MinioContainer) {
