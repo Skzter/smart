@@ -7,6 +7,7 @@
     import OutputView from './OutputView.svelte';
     import TabsView from './TabsView.svelte';
     import EditView from './EditView.svelte';
+    import ResultView from './ResultView.svelte';
     import SaveButtons from './SaveButtons.svelte';
 
     let {
@@ -70,7 +71,7 @@
       <div class="flex items-center gap-2">
         {#if activeTab === 'edit'}
           <SaveButtons onSaveClick={handleSaveClick} onCloseClick={handleCloseClick} />
-        {:else}
+        {:else if activeTab === 'run'}
           <SwitchView onSplitClick={handleSplitClick} onMonitorClick={handleMonitorClick} onCodeClick={handleCodeClick} onCloseClick={handleCloseClick} activeView={isFullscreenBrowser ? 'fullscreen' : isFullscreenCode ? 'code' : 'split'} />
         {/if}
       </div>
@@ -83,7 +84,7 @@
       <div class="flex-1 overflow-hidden">
         <EditView code={code} />
       </div>
-    {:else}
+    {:else if activeTab === 'run'}
       <div class="flex-1 {isFullscreenBrowser || isFullscreenCode ? 'grid grid-cols-1' : 'grid grid-cols-2'} gap-0 overflow-hidden">
         {#if !isFullscreenBrowser && !isFullscreenCode}
           <OutputView />
@@ -93,6 +94,10 @@
         {#if !isFullscreenCode}
           <BrowserView />
         {/if}
+      </div>
+    {:else if activeTab === 'result'}
+      <div class="flex-1 overflow-hidden">
+        <ResultView />
       </div>
     {/if}
   </Dialog.Content>
