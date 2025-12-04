@@ -49,7 +49,7 @@
                                 <Bot class="h-7 w-7" />
                             </div>
                             <div
-                                class="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2"
+                                class="bg-muted text-foreground rounded-2xl rounded-tl-sm px-4 py-2"
                             >
                                 <div class="flex gap-1">
                                     <span
