@@ -6,22 +6,24 @@
     import { user } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
+    import { SvelteMap } from "svelte/reactivity";
 
     let error = $state<string>("");
     let groupState = $state<
-        { label: String; summaries: ApiChatSummary[] }[] | undefined
+        { label: string; summaries: ApiChatSummary[] }[] | undefined
     >(undefined);
-    let groups = new Map<string, ApiChatSummary[]>();
-    function add(group: string, item: ApiChatSummary) {
-        if (groups.has(group)) {
-            groups.get(group)?.push(item);
-        } else {
-            groups.set(group, [item]);
-        }
-    }
 
     let items: ApiChatSummary[] | undefined;
     (async () => {
+        let groups = new SvelteMap<string, ApiChatSummary[]>();
+        function add(group: string, item: ApiChatSummary) {
+            if (groups.has(group)) {
+                groups.get(group)?.push(item);
+            } else {
+                groups.set(group, [item]);
+            }
+        }
+
         groupState = undefined;
         if (user.id == undefined) {
             return;
@@ -64,7 +66,7 @@
             add("früher", item);
         });
 
-        let g: { label: String; summaries: ApiChatSummary[] }[] = [];
+        let g: { label: string; summaries: ApiChatSummary[] }[] = [];
         groups.forEach((value, key) => {
             g.push({ label: key, summaries: value });
         });
@@ -73,7 +75,7 @@
 </script>
 
 <Sidebar.Root>
-    <SidebarHeader/>
+    <SidebarHeader />
     <Sidebar.Content>
         {#if groupState == undefined}
             <Sidebar.Group class="mt-2 flex items-center justify-center">
@@ -84,7 +86,7 @@
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
             </Sidebar.Group>
         {:else}
-            {#each groupState as g, index}
+            {#each groupState, index (index)}
                 <Group bind:group={groupState[index]}></Group>
             {/each}
         {/if}

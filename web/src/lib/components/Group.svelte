@@ -5,7 +5,7 @@
 
     let {
         group = $bindable(),
-    }: { group: { label: String; summaries: ApiChatSummary[] } } = $props();
+    }: { group: { label: string; summaries: ApiChatSummary[] } } = $props();
 </script>
 
 <Sidebar.Group>
