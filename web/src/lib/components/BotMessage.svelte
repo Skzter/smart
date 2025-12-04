@@ -29,7 +29,7 @@
             <CopyButton code={message} />
             <EditButton />
             <SaveButton code={message} />
-            <RunWindow />
+            <RunWindow code={message} />
         
         </div>
         {#if messagsIsCode}

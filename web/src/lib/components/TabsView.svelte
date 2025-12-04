@@ -1,25 +1,28 @@
 <script lang="ts">
-    import * as UnderlineTabs from "$lib/components/ui/underline-tabs";
+  export let activeTab = 'run';
 
-    let {
-        activeTab = $bindable("run"),
-        curTest,
-    }: { activeTab: string; curTest: string } = $props();
-
-    function handleTabClick(tab: string) {
-        activeTab = tab;
-    }
+  function handleTabClick(tab: string) {
+    activeTab = tab;
+  }
 </script>
 
-<UnderlineTabs.Root
-    value={activeTab}
-    onValueChange={handleTabClick}
-    class="px-6"
->
-    <UnderlineTabs.List>
-        <UnderlineTabs.Trigger value="edit">Edit</UnderlineTabs.Trigger>
-        <UnderlineTabs.Trigger value="run">Run</UnderlineTabs.Trigger>
-        <UnderlineTabs.Trigger value="result">Result</UnderlineTabs.Trigger>
-        <div class="ml-auto text-sm">{curTest}</div>
-    </UnderlineTabs.List>
-</UnderlineTabs.Root>
+<div class="flex border-b">
+  <button 
+    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'edit' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
+    onclick={() => handleTabClick('edit')}
+  >
+    Edit
+  </button>
+  <button 
+    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'run' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
+    onclick={() => handleTabClick('run')}
+  >
+    Run
+  </button>
+  <button 
+    class="px-4 py-3 text-sm font-medium border-b-2 {activeTab === 'result' ? 'border-black' : 'border-transparent'} hover:border-gray-300"
+    onclick={() => handleTabClick('result')}
+  >
+    Result
+  </button>
+</div>

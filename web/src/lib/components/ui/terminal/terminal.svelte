@@ -9,6 +9,7 @@
 		delay = 0,
 		speed = 1,
 		onComplete = () => {},
+		hideDots = false,
 		children,
 		class: className
 	}: TerminalRootProps = $props();
@@ -25,6 +26,6 @@
 	});
 </script>
 
-<Window class={cn('font-mono text-sm font-light', className)}>
+<Window class={cn('font-mono text-sm font-light', className)} {hideDots}>
 	{@render children?.()}
 </Window>

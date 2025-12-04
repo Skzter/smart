@@ -1,8 +1,60 @@
 <script lang="ts">
-    import { Play } from "@lucide/svelte";
+    import { Play, X } from "@lucide/svelte";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import * as Terminal from '$lib/components/ui/terminal';
+    import SwitchView from './SwitchView.svelte';
+    import BrowserView from './BrowserView.svelte';
+    import OutputView from './OutputView.svelte';
+    import TabsView from './TabsView.svelte';
+    import EditView from './EditView.svelte';
+    import SaveButtons from './SaveButtons.svelte';
+
+    let {
+        code,
+    }: {
+        code: string;
+    } = $props();
+
+    let isFullscreenBrowser = $state(false);
+    let isFullscreenCode = $state(false);
+    let activeTab = $state('run');
+
+    function handleTabChange(event: CustomEvent) {
+      activeTab = event.detail;
+    }
+
+    function handleSaveClick() {
+      // Speichern-Logik hier
+      console.log('Speichern geklickt');
+    }
+
+    function handleCloseClick() {
+      const closeButton = document.querySelector('[data-dialog-close]') as HTMLElement;
+      closeButton?.click();
+    }
+
+    function handleSplitClick() {
+      isFullscreenBrowser = false;
+      isFullscreenCode = false;
+    }
+
+    function handleMonitorClick() {
+      if (isFullscreenBrowser) {
+        isFullscreenBrowser = false;
+      } else {
+        isFullscreenBrowser = true;
+        isFullscreenCode = false;
+      }
+    }
+
+    function handleCodeClick() {
+      if (isFullscreenCode) {
+        isFullscreenCode = false;
+      } else {
+        isFullscreenCode = true;
+        isFullscreenBrowser = false;
+      }
+    }
 </script>
 
 <Dialog.Root>
@@ -12,55 +64,36 @@
       <span class="text-xs">Ausführen</span>
     </Button>
   </Dialog.Trigger>
-  <Dialog.Content class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0">
-    <Dialog.Header class="flex-row items-center justify-between border-b px-6 py-4 space-y-0">
+  <Dialog.Content class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0" showCloseButton={false}>
+    <div class="flex flex-row items-center justify-between border-b px-4 py-4">
       <Dialog.Title class="text-lg font-semibold">Button Click Test</Dialog.Title>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-muted-foreground">⏱ 8.160s</span>
+        {#if activeTab === 'edit'}
+          <SaveButtons onSaveClick={handleSaveClick} onCloseClick={handleCloseClick} />
+        {:else}
+          <SwitchView onSplitClick={handleSplitClick} onMonitorClick={handleMonitorClick} onCodeClick={handleCodeClick} onCloseClick={handleCloseClick} activeView={isFullscreenBrowser ? 'fullscreen' : isFullscreenCode ? 'code' : 'split'} />
+        {/if}
       </div>
-    </Dialog.Header>
+    </div>
+    <Dialog.Close hidden data-dialog-close />
     
-    <!-- Tabs -->
-    <div class="flex border-b px-6">
-      <button class="px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-gray-300">
-        Edit
-      </button>
-      <button class="px-4 py-3 text-sm font-medium border-b-2 border-black">
-        Run
-      </button>
-      <button class="px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-gray-300">
-        Result
-      </button>
-    </div>
+    <TabsView bind:activeTab on:tabChange={handleTabChange} />
 
-    <div class="flex-1 grid grid-cols-2 gap-0 overflow-hidden">
-      <div class="flex flex-col border-r">
-        <div class="px-4 py-2 border-b bg-muted/50 text-sm font-medium">
-          Test Output
-        </div>
-        <div class="flex-1 overflow-auto">
-          <Terminal.Root class="m-0 max-w-none h-full" delay={0}>
-            <Terminal.TypingAnimation>&gt; Test wird ausgeführt...</Terminal.TypingAnimation>
-          </Terminal.Root>
-        </div>
+    {#if activeTab === 'edit'}
+      <div class="flex-1 overflow-hidden">
+        <EditView code={code} />
       </div>
-
-      <div class="flex flex-col">
-        <div class="px-4 py-2 border-b bg-muted/50 text-sm font-medium flex items-center gap-2">
-          <span>🖥️</span>
-          Browser Vorschau
-        </div>
-        <div class="flex-1 overflow-auto bg-gray-50 flex items-center justify-center">
-          <div class="text-center text-muted-foreground">
-            <div class="text-6xl mb-4">🖥️</div>
-            <p class="text-sm">Browser Vorschau</p>
-          </div>
-        </div>
+    {:else}
+      <div class="flex-1 {isFullscreenBrowser || isFullscreenCode ? 'grid grid-cols-1' : 'grid grid-cols-2'} gap-0 overflow-hidden">
+        {#if !isFullscreenBrowser && !isFullscreenCode}
+          <OutputView />
+        {:else if isFullscreenCode}
+          <OutputView />
+        {/if}
+        {#if !isFullscreenCode}
+          <BrowserView />
+        {/if}
       </div>
-    </div>
-
-    <div class="flex items-center justify-end gap-3 border-t px-6 py-3">
-      <Button variant="default">Schließen</Button>
-    </div>
+    {/if}
   </Dialog.Content>
 </Dialog.Root>
