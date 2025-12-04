@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Toaster } from "$lib/components/ui/sonner/index.ts";
+    import { Toaster } from "svelte-sonner";
     import { CheckCircle2, XCircle } from "@lucide/svelte";
 </script>
 
@@ -10,11 +10,12 @@
         error: XCircle,
     }}
     toastOptions={{
-        style: "background: rgb(239 68 68); color: white; border-color: rgb(220 38 38);",
-        classNames: {
+        classes: {
+            toast: "!border-none",
             success: "!bg-emerald-500 !text-white",
-            error: "!bg-rose-500 !text-white",
+            error: "!bg-rose-700 !text-white",
         },
+        descriptionClass: "!text-white",
     }}
     duration={3000}
 />
