@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Bot } from "@lucide/svelte";
-    import RunButton from "./RunButton.svelte";
+    import RunWindow from "./RunWindow.svelte";
     import SaveButton from "./SaveButton.svelte";
     import EditButton from "./EditButton.svelte";
     import CopyButton from "./CopyButton.svelte";
@@ -29,7 +29,8 @@
             <CopyButton />
             <EditButton />
             <SaveButton code={message} />
-            <RunButton />
+            <RunWindow />
+        
         </div>
         {#if messagsIsCode}
             <Code {message} />

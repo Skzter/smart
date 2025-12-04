@@ -60,6 +60,9 @@ importers:
       prettier-plugin-svelte:
         specifier: ^3.4.0
         version: 3.4.0(prettier@3.7.3)(svelte@5.45.4)
+      runed:
+        specifier: ^0.36.0
+        version: 0.36.0(svelte@5.45.4)
       svelte:
         specifier: ^5.45.4
         version: 5.45.4
@@ -1258,6 +1261,18 @@ packages:
       svelte: ^5.7.0
     peerDependenciesMeta:
       '@sveltejs/kit':
+        optional: true
+
+  runed@0.36.0:
+    resolution: {integrity: sha512-CK84KPwAausPQEyWF9t6miCuNW5isAKPMswDsz7jhdueiZZ9du/UrgWc/aggLts8QuppT8KucryrHDFBAqk9Ww==}
+    peerDependencies:
+      '@sveltejs/kit': ^2.21.0
+      svelte: ^5.7.0
+      zod: ^4.1.0
+    peerDependenciesMeta:
+      '@sveltejs/kit':
+        optional: true
+      zod:
         optional: true
 
   sade@1.8.1:
@@ -2513,6 +2528,13 @@ snapshots:
       svelte: 5.45.4
 
   runed@0.35.1(svelte@5.45.4):
+    dependencies:
+      dequal: 2.0.3
+      esm-env: 1.2.2
+      lz-string: 1.5.0
+      svelte: 5.45.4
+
+  runed@0.36.0(svelte@5.45.4):
     dependencies:
       dequal: 2.0.3
       esm-env: 1.2.2
