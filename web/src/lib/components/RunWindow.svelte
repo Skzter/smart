@@ -2,6 +2,7 @@
     import { Play, X } from "@lucide/svelte";
     import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
     import * as Dialog from "$lib/components/ui/dialog/index.js";
+    import { runContainer } from "$lib/api";
     import SwitchView from './SwitchView.svelte';
     import BrowserView from './BrowserView.svelte';
     import OutputView from './OutputView.svelte';
@@ -16,12 +17,41 @@
         code: string;
     } = $props();
 
+    // Mock-Werte für API-Call (diese sollten von außen kommen)
+    const userId = "687270280dca20b77cfdcf73";
+    const testId = "b6f75688-c6ba-43c9-9d3b-f80132755def";
+    const sessionId = "94b7e18c-e2e4-4d17-ac21-40c5c8b86162";
+    let testResult = $state("");
+    let isLoading = $state(false);
+
     let isFullscreenBrowser = $state(false);
     let isFullscreenCode = $state(false);
     let activeTab = $state('run');
 
+    async function handleRunFromButton() {
+      isLoading = true;
+      try {
+        const response = await runContainer({
+          userId,
+          testId,
+          sessionId,
+        });
+        testResult = response.result;
+        activeTab = 'result';
+      } catch (error) {
+        console.error('Error running test:', error);
+      } finally {
+        isLoading = false;
+      }
+    }
+
     function handleTabChange(event: CustomEvent) {
       activeTab = event.detail;
+    }
+
+    function handleRunTest(result: string) {
+      testResult = result;
+      activeTab = 'result';
     }
 
     function handleSaveClick() {
@@ -60,9 +90,9 @@
 
 <Dialog.Root>
   <Dialog.Trigger>
-    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
+    <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2" onclick={handleRunFromButton} disabled={isLoading}>
       <Play class="h-3.5 w-3.5" />
-      <span class="text-xs">Ausführen</span>
+      <span class="text-xs">{isLoading ? 'Lädt...' : 'Ausführen'}</span>
     </Button>
   </Dialog.Trigger>
   <Dialog.Content class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0" showCloseButton={false}>
@@ -82,7 +112,7 @@
 
     {#if activeTab === 'edit'}
       <div class="flex-1 overflow-hidden">
-        <EditView code={code} />
+        <EditView {code} {userId} {testId} {sessionId} onRunClick={handleRunTest} />
       </div>
     {:else if activeTab === 'run'}
       <div class="flex-1 {isFullscreenBrowser || isFullscreenCode ? 'grid grid-cols-1' : 'grid grid-cols-2'} gap-0 overflow-hidden">
