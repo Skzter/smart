@@ -2,10 +2,14 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import path from "path";
+import mkcert from "vite-plugin-mkcert";
 
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), svelte()],
+    server: {
+        https: true,
+    },
+    plugins: [tailwindcss(), svelte(), mkcert()],
     resolve: {
         alias: {
             $lib: path.resolve("./src/lib"),
