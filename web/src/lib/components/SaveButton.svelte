@@ -59,6 +59,7 @@
             } else if (error instanceof Error) {
                 errorMsg = error.message;
             }
+
             toast.error("Speichern fehlgeschlagen", {
                 description: errorMsg,
             });
