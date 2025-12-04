@@ -72,7 +72,7 @@ export async function saveTestLocal(request: {
     try {
         const response = await axios({
             method: "post",
-            url: "savelocal",
+            url: "saveLocal",
             baseURL: baseURL,
             data: request,
         });
