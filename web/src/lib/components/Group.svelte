@@ -15,7 +15,7 @@
             {#each group.summaries as chat}
                 <Sidebar.MenuItem>
                     <Sidebar.MenuButton
-                        class="h-full py-1 m-1"
+                        class="h-full py-1 my-1"
                         onclick={() => {
                             console.log(
                                 "changing to: ",

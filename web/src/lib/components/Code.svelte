@@ -1,8 +1,13 @@
 <script lang="ts">
     import { tokenize } from "$lib/syntaxHighlighting";
 
-    let { message } = $props();
-    let tokens = $derived(tokenize(message));
+    let {
+        code,
+    }: {
+        code: string;
+    } = $props();
+
+    let tokens = $derived(tokenize(code));
 </script>
 
 <!-- pre preserves whitespace in them so this has to be like this -->

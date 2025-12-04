@@ -16,7 +16,7 @@
     variant="default"
     size="icon"
     class="w-10 h-10"
-    disabled={chat.isLoading}
+    disabled={chat.isLoading || !input.trim()}
     {onclick}
 >
     <Send />
