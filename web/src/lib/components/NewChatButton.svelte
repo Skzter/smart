@@ -7,7 +7,11 @@
     }
 </script>
 
-<Button variant="ghost" class="w-full justify-start gap-2 h-10 bg-muted hover:bg-muted/80" onclick={handleNewChat}>
+<Button
+    variant="ghost"
+    class="w-full justify-start gap-2 h-10 bg-muted hover:bg-muted/80"
+    onclick={handleNewChat}
+>
     <Plus class="h-4 w-4" />
     <span>New Chat</span>
 </Button>

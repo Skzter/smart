@@ -2,7 +2,6 @@
     import { Save } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
     import { saveTestLocal } from "$lib/api";
-    import { AxiosError } from "axios";
     import type { SaveState } from "$types/save";
     import { chat, user } from "$lib/shared.svelte";
     import { toast } from "svelte-sonner";

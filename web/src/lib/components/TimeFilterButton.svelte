@@ -10,7 +10,11 @@
     let value = $state<DateRange | undefined>(undefined);
 
     const today = new Date();
-    const placeholder = new CalendarDate(today.getFullYear(), today.getMonth() + 1, today.getDate());
+    const placeholder = new CalendarDate(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        today.getDate(),
+    );
 
     function toggleCalendar() {
         showCalendar = !showCalendar;
@@ -25,9 +29,9 @@
 
 <div class="w-full">
     <Button
-            variant="ghost"
-            class="w-full justify-start gap-2 h-10 bg-muted hover:bg-muted/80"
-            onclick={toggleCalendar}
+        variant="ghost"
+        class="w-full justify-start gap-2 h-10 bg-muted hover:bg-muted/80"
+        onclick={toggleCalendar}
     >
         <Calendar class="h-4 w-4" />
         <span>Time Filter</span>
@@ -35,8 +39,8 @@
 
     {#if showCalendar}
         <div
-                transition:slide={{ duration: 300 }}
-                class="w-full bg-background border rounded-lg shadow-sm mt-2 overflow-hidden flex items-center justify-center"
+            transition:slide={{ duration: 300 }}
+            class="w-full bg-background border rounded-lg shadow-sm mt-2 overflow-hidden flex items-center justify-center"
         >
             <div class="scale-[0.85] -my-7">
                 <RangeCalendar bind:value {placeholder} />

@@ -1,3 +1,3 @@
-import Window from './window.svelte';
+import Window from "./window.svelte";
 
 export { Window };
