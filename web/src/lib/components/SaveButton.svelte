@@ -60,9 +60,7 @@
         }
 
             let errorMsg = "Unbekannter Fehler";
-            if (error instanceof AxiosError) {
-                errorMsg = error.response?.data?.message || error.message;
-            } else if (error instanceof Error) {
+            if (error instanceof Error) {
                 errorMsg = error.message;
             }
 
@@ -85,7 +83,5 @@
         disabled={saveState === "saving"}
 >
     <Save class="h-3.5 w-3.5" />
-    <span class="text-xs">
-        Speichern
-    </span>
+    <span class="text-xs"> Speichern </span>
 </Button>
