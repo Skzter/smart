@@ -22,15 +22,14 @@ type Chat struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	Title     string    `json:"title"`
 
-	Messages []Message `json:"messages"`
-	index    map[MessageType][]int
+	Messages []*Message `json:"messages"`
 
 	LastTest                 string `json:"lastTest"`
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
 }
 
 // NewChat creates a new chat with for the given user with the given messages
-func NewChat(userId string, messages []Message) *Chat {
+func NewChat(userId string, messages []*Message) *Chat {
 	now := time.Now().UTC()
 	return &Chat{
 		Id:        uuid.NewString(),
@@ -38,8 +37,6 @@ func NewChat(userId string, messages []Message) *Chat {
 		CreatedAt: now,
 		UpdatedAt: now,
 		Messages:  messages,
-
-		index: nil,
 	}
 }
 
@@ -49,32 +46,30 @@ func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
 	if len(ts) > 0 {
 		t = ts[0]
 	}
-	m.Messages = append(m.Messages, Message{Message: *message, Type: t})
-	m.index = nil
+	m.Messages = append(m.Messages, &Message{Message: *message, Type: t})
 }
 
-func (m *Chat) buildIndex() {
-	if m.index != nil {
-		return
-	}
-	m.index = make(map[MessageType][]int)
+func (m *Chat) buildIndex() map[MessageType][]int {
+	index := make(map[MessageType][]int)
 
 	for i, msg := range m.Messages {
 		if msg.Type == MessageTypeUser {
 			for t := range _MessageTypeMap {
-				m.index[t] = append(m.index[t], i)
+				index[t] = append(index[t], i)
 			}
 		} else {
-			m.index[msg.Type] = append(m.index[msg.Type], i)
+			index[msg.Type] = append(index[msg.Type], i)
 		}
 	}
+
+	return index
 }
 
 // Filter returns a slice of all Messages associated with the Type
 func (m *Chat) Filter(t MessageType) []*shared.Message {
-	m.buildIndex()
+	indeces := m.buildIndex()
 
-	index, ok := m.index[t]
+	index, ok := indeces[t]
 	if !ok {
 		return nil
 	}

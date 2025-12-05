@@ -57,7 +57,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	ctx, span := s.tracer.Start(ctx, "validatePrompt.ValidatePrompt")
 	defer span.End()
 
-	chat.AddMessage(sharedEntity.NewMessage(request.Prompt, sharedEntity.RoleUser))
+	chat.AddMessage(sharedEntity.NewMessage(request.Prompt, sharedEntity.RoleUser), entity.MessageTypeValidation)
 	req := sharedEntity.Request{
 		Messages:     chat.Filter(entity.MessageTypeValidation),
 		Model:        s.config.Model,
@@ -84,6 +84,10 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 		span.SetStatus(codes.Error, "json unmarshalling failed")
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
+	}
+
+	if llmResponse.Valid {
+		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeUser
 	}
 
 	chat.AddMessage(resp, entity.MessageTypeValidation)

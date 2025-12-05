@@ -12,7 +12,7 @@ func TestNewChat(t *testing.T) {
 	tests := []struct {
 		name     string
 		id       string
-		messages []Message
+		messages []*Message
 	}{
 		{
 			name: "happy path",
@@ -31,23 +31,23 @@ func TestNewChat(t *testing.T) {
 func TestAddMessage(t *testing.T) {
 	tests := []struct {
 		name     string
-		initial  []Message
+		initial  []*Message
 		add      *entity.Message
-		expected []Message
+		expected []*Message
 	}{
 		{
 			name:    "add to empty",
 			initial: nil,
 			add:     &entity.Message{Id: "m1"},
-			expected: []Message{
+			expected: []*Message{
 				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
 			},
 		},
 		{
 			name:    "append to existing",
-			initial: []Message{{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation}},
+			initial: []*Message{{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation}},
 			add:     &entity.Message{Id: "m2"},
-			expected: []Message{
+			expected: []*Message{
 				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
 				{Message: entity.Message{Id: "m2"}, Type: MessageTypeValidation},
 			},
@@ -71,7 +71,7 @@ func TestAddMessage(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	base := []Message{
+	base := []*Message{
 		{Message: entity.Message{Id: "m0"}, Type: MessageTypeUser},
 		{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
 		{Message: entity.Message{Id: "m2"}, Type: MessageTypeGeneration},
@@ -83,13 +83,13 @@ func TestFilter(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		messages     []Message
+		messages     []*Message
 		wantType     MessageType
 		wantMessages []*entity.Message
 	}{
 		{
 			name:         "no matches",
-			messages:     []Message{{Message: entity.Message{Id: "only gen"}, Type: MessageTypeGeneration}},
+			messages:     []*Message{{Message: entity.Message{Id: "only gen"}, Type: MessageTypeGeneration}},
 			wantType:     MessageTypeValidation,
 			wantMessages: []*entity.Message{},
 		},

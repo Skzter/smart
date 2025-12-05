@@ -56,7 +56,7 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 	defer span.End()
 
 	if request.ChatId == "" {
-		chat := entity.NewChat(request.UserId, []entity.Message{})
+		chat := entity.NewChat(request.UserId, []*entity.Message{})
 		c.logger.Info("creating new chat", "user", request.UserId, "id", chat.Id)
 		span.AddEvent("new chat created", trace.WithAttributes(
 			attribute.String("user", request.UserId),
