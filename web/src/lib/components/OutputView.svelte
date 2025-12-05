@@ -9,7 +9,7 @@
 
 <div class="flex flex-col">
     <div class="px-4 py-2 bg-muted/50 text-sm font-medium">
-        Test Output + {result}
+        Test Output {result}
     </div>
     <div class="flex-1 overflow-auto">
         <Terminal.Root

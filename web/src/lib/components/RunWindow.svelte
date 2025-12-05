@@ -37,7 +37,7 @@
     <Dialog.Trigger>
         <RunButton
             classes="h-7 gap-1.5 px-2 cursor-pointer"
-            variant="ghost"
+            variant="outline"
             size="sm"
             bind:isLoading
             bind:testResult

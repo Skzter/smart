@@ -12,7 +12,7 @@
             copied = true;
             setTimeout(() => {
                 copied = false;
-            }, 1000);
+            }, 3000);
         } catch (err) {
             console.error("Failed to copy:", err);
         }
@@ -22,7 +22,7 @@
 <Button
     variant="ghost"
     size="sm"
-    class="h-7 gap-1.5 px-2 cursor-pointer"
+    class="h-7 gap-1.5 px-2 cursor-pointer text-muted-foreground"
     onclick={handleCopy}
 >
     {#if copied}
@@ -30,5 +30,4 @@
     {:else}
         <Copy class="h-3.5 w-3.5" />
     {/if}
-    <p>Kopieren</p>
 </Button>
