@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Code from "./Code.svelte";
+    import MonacoEditor from "./MonacoEditor.svelte";
     import { Play, Save } from "@lucide/svelte";
     import { runContainer } from "$lib/api";
     import { chat, user } from "$lib/shared.svelte";
@@ -13,6 +13,7 @@
     } = $props();
 
     let isLoading = $state(false);
+    let localCode = $derived(code);
 
     async function handleTestRun() {
         isLoading = true;
@@ -32,8 +33,8 @@
 </script>
 
 <div class="flex-1 grid gap-0 h-full" style="grid-template-columns: 70% 30%">
-    <div class="overflow-y-auto">
-        <Code {code} />
+    <div class="overflow-y-auto h-full">
+        <MonacoEditor bind:value={localCode} language="typescript" />
     </div>
     <div
         class="bg-gray-100 flex items-center justify-center border-l overflow-y-auto p-6"
