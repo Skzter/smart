@@ -49,10 +49,10 @@
     <div class="flex items-center justify-center w-full">
         <div class="w-full max-w-6xl">
             <ButtonGroup.Root
-                class="[--radius:1rem] w-full flex items-center justify-center gap-3"
+                class="[--radius:1rem] w-full flex items-center justify-center gap-3 "
             >
                 <ButtonGroup.Root class="flex-1">
-                    <div class="flex w-full items-center gap-2">
+                    <div class="flex w-full items-center gap-2 ">
                         <Prompt {onclick} bind:input />
                         <SendButton {onclick} bind:input />
                     </div>

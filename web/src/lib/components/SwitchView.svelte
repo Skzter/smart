@@ -14,7 +14,7 @@
     } = $props();
 </script>
 
-<div class="flex items-center gap-2">
+<div class="flex items-center gap-2 ">
     <ButtonGroup.Root>
         <Button
             variant={view === "code" ? "default" : "secondary"}

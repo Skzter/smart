@@ -17,7 +17,7 @@
 <Button
     variant="default"
     size="icon"
-    class="w-10 h-10"
+    class="w-10 h-10 cursor-pointer"
     disabled={chat.isLoading || !input.trim()}
     {onclick}
 >
