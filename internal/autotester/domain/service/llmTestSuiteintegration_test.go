@@ -18,7 +18,7 @@ import (
 )
 
 // nolint: funlen
-func TestOpenAIRequests_TableDriven(t *testing.T) {
+func PromptTestSuite(t *testing.T) {
 	// Skip wenn kein API Key
 	if os.Getenv("OPENAI_KEY") == "" {
 		t.Skip("Skipping integration test: OPENAI_KEY not set")
@@ -139,7 +139,7 @@ func TestOpenAIRequests_TableDriven(t *testing.T) {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 				} else {
-					t.Logf("✓ Got expected error: %v", err)
+					t.Logf("Got expected error: %v", err)
 				}
 				return
 			}
@@ -159,7 +159,7 @@ func TestOpenAIRequests_TableDriven(t *testing.T) {
 				t.Errorf("Expected Valid=%v, got Valid=%v\nMessage: %s\nRaw: %s",
 					tc.expectedOutput, llmResp.Valid, llmResp.Message, resp.Body)
 			} else {
-				t.Logf("✓ Test passed: Valid=%v as expected", llmResp.Valid)
+				t.Logf("Test passed: Valid=%v as expected", llmResp.Valid)
 			}
 		})
 	}

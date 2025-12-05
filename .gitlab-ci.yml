@@ -1,6 +1,7 @@
 stages:
   - prepare
   - code_analysis_and_testing
+  - llm_testing
   - build
   - deploy
 
@@ -198,6 +199,15 @@ frontend_test:
         coverage_format: cobertura
         path: web/coverage/cobertura-coverage.xml
       junit: web/coverage/junit.xml
+
+llm_test_suite:
+  stage: llm_testing
+  script:
+    - echo "Running LLM test suite..."
+    - doppler run -- go test -tags=llmtest ./internal/autotester/domain/service/llmTestSuiteintegration_test.go -v
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: on_success
 
 build_frontend_artifacts:
   stage: build
