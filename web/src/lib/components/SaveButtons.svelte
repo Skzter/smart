@@ -12,5 +12,5 @@
         <Save class="h-3 w-4 mr-2" />
         Speichern
     </Button>
-    <CloseButton onCloseClick={onCloseClick} />
+    <CloseButton {onCloseClick} />
 </div>

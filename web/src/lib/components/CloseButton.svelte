@@ -6,8 +6,8 @@
 </script>
 
 <Button
-    variant={"ghost"}
-    size={"sm"}
+    variant="ghost"
+    size="sm"
     class="h-6 w-6 p-0 cursor-pointer"
     onclick={onCloseClick}
 >
