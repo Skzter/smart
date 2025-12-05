@@ -4,6 +4,8 @@
     import * as Dialog from "$lib/components/ui/dialog/index.js";
     import { runContainer } from "$lib/api";
     import SwitchView from "./SwitchView.svelte";
+    import CloseButton from "./CloseButton.svelte";
+    import ControlButtons from "./ControlButtons.svelte";
     import BrowserView from "./BrowserView.svelte";
     import OutputView from "./OutputView.svelte";
     import TabsView from "./TabsView.svelte";
@@ -96,6 +98,8 @@
                     />
                 {:else if activeTab === "run"}
                     <SwitchView onCloseClick={handleCloseClick} bind:view />
+                {:else if activeTab === "result"}
+                    <CloseButton onCloseClick={handleCloseClick} />
                 {/if}
             </div>
         </div>
@@ -121,7 +125,7 @@
                 {/if}
             </div>
         {:else if activeTab === "result"}
-            <div class="flex-1 overflow-hidden">
+            <div class="flex-1 overflow-auto">
                 <ResultView />
             </div>
         {/if}

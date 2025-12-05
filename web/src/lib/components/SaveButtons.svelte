@@ -1,9 +1,10 @@
 <script lang="ts">
     import { Button } from "$lib/components/ui/button/index.js";
-    import { Save, X } from "@lucide/svelte";
+    import { Save } from "@lucide/svelte";
+    import CloseButton from "./CloseButton.svelte";
 
-    export let onSaveClick = () => {};
-    export let onCloseClick = () => {};
+    export let onSaveClick: () => void = () => {};
+    export let onCloseClick: () => void = () => {};
 </script>
 
 <div class="flex items-center gap-2">
@@ -11,7 +12,5 @@
         <Save class="h-3 w-4 mr-2" />
         Speichern
     </Button>
-    <Button variant="outline" size="sm" onclick={onCloseClick}>
-        <X class="h-4 w-4" />
-    </Button>
+    <CloseButton onCloseClick={onCloseClick} />
 </div>
