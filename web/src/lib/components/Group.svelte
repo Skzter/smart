@@ -15,7 +15,7 @@
             {#each group.summaries as chat}
                 <Sidebar.MenuItem>
                     <Sidebar.MenuButton
-                        class="h-full py-1 my-1"
+                        class="h-full py-1 my-1 flex"
                         onclick={() => {
                             console.log(
                                 "changing to: ",
@@ -25,8 +25,12 @@
                         }}
                     >
                         <LucideMessageSquare class="mr-1" />
-                        <div class="h-full flex flex-col justify-between">
-                            <p class="text-sm text-gray-900 dark:text-gray-200">
+                        <div
+                            class="h-full flex flex-col justify-between flex-1 min-w-0"
+                        >
+                            <p
+                                class="text-sm text-gray-900 dark:text-gray-200 truncate"
+                            >
                                 {chat.title == "" ? "Neuer Chat" : chat.title}
                             </p>
                             <span
