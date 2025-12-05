@@ -63,18 +63,6 @@
         ) as HTMLElement;
         closeButton?.click();
     }
-
-    function handleSplitClick() {
-        view = "split";
-    }
-
-    function handleMonitorClick() {
-        view = "browser";
-    }
-
-    function handleCodeClick() {
-        view = "code";
-    }
 </script>
 
 <Dialog.Root>

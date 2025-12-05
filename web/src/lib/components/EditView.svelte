@@ -24,7 +24,7 @@
                 testId,
                 sessionId: chat.id,
             });
-            onRunClick(response.result);
+            onRunClick(response);
         } catch (error) {
             console.error("Error running test:", error);
         } finally {
