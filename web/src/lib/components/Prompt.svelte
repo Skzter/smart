@@ -16,6 +16,14 @@
     onMount(async () => {
         try {
             input = await getTemplate();
+            input = `
+Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite.
+    Base-URL: localhost:8082
+    Szenario: Nutzer nutzt die Suche.
+    Ablauf: Zuerst gibt der Nutzer beim Reiseziel „Mallorca“ ein.
+    Assertions: Im Reiseziel-Feld steht „Mallorca“.
+    Testdaten/Setup: Reiseziel Mallorca
+`;
         } catch (err: unknown) {
             toast.error((err as Error).message, {
                 description: "Das war wohl nichts mit dem Template.",

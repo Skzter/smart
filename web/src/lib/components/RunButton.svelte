@@ -53,9 +53,9 @@
 </script>
 
 <Button
+    class="h-7 gap-1.5 px-2 cursor-pointer"
     variant="ghost"
     size="sm"
-    class="h-7 gap-1.5 px-2 cursor-pointer"
     onclick={runTest}
     disabled={isLoading}
 >

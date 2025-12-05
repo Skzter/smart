@@ -1,34 +1,19 @@
 <script lang="ts">
     import Code from "./Code.svelte";
-    import { Play, Save } from "@lucide/svelte";
-    import { runContainer } from "$lib/api";
-    import { chat, user } from "$lib/shared.svelte";
+    import { Save } from "@lucide/svelte";
+    import RunButton from "./RunButton.svelte";
 
     let {
-        code,
-        onRunClick,
+        testResult = $bindable(),
+        code = $bindable(),
+        isLoading = $bindable(),
+        activeTab = $bindable(),
     }: {
+        testResult: string;
         code: string;
-        onRunClick: (result: string) => void;
+        isLoading: boolean;
+        activeTab: string;
     } = $props();
-
-    let isLoading = $state(false);
-
-    async function handleTestRun() {
-        isLoading = true;
-        try {
-            const response = await runContainer({
-                userId: user.id,
-                testId: chat.currTestId,
-                sessionId: chat.id,
-            });
-            onRunClick(response);
-        } catch (error) {
-            console.error("Error running test:", error);
-        } finally {
-            isLoading = false;
-        }
-    }
 </script>
 
 <div class="flex-1 grid gap-0 h-full" style="grid-template-columns: 70% 30%">
@@ -60,16 +45,7 @@
                     Schnellaktionen
                 </h3>
                 <div class="space-y-3">
-                    <button
-                        onclick={handleTestRun}
-                        disabled={isLoading}
-                        class="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Play class="w-4 h-4 text-gray-800" />
-                        <span class="text-gray-800"
-                            >{isLoading ? "Lädt..." : "Test ausführen"}</span
-                        >
-                    </button>
+                    <RunButton bind:isLoading bind:activeTab bind:testResult />
                     <button
                         class="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded cursor-pointer transition opacity-50"
                     >

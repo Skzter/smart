@@ -26,11 +26,6 @@
         activeTab = event.detail;
     }
 
-    function handleRunTest(result: string) {
-        testResult = result;
-        activeTab = "result";
-    }
-
     function handleSaveClick() {
         // Speichern-Logik hier
         console.log("Speichern geklickt");
@@ -77,7 +72,12 @@
 
         {#if activeTab === "edit"}
             <div class="flex-1 overflow-hidden">
-                <EditView {code} onRunClick={handleRunTest} />
+                <EditView
+                    bind:activeTab
+                    bind:code
+                    bind:isLoading
+                    bind:testResult
+                />
             </div>
         {:else if activeTab === "run"}
             <div
