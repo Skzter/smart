@@ -10,6 +10,7 @@
     import EditView from "./EditView.svelte";
     import ResultView from "./ResultView.svelte";
     import SaveButtons from "./SaveButtons.svelte";
+    import { user, chat } from "$lib/shared.svelte";
 
     let {
         code,
@@ -17,24 +18,21 @@
         code: string;
     } = $props();
 
-    // Mock-Werte für API-Call (diese sollten von außen kommen)
-    const userId = "687270280dca20b77cfdcf73";
-    const testId = "b6f75688-c6ba-43c9-9d3b-f80132755def";
-    const sessionId = "94b7e18c-e2e4-4d17-ac21-40c5c8b86162";
     let testResult = $state("");
     let isLoading = $state(false);
 
-    let isFullscreenBrowser = $state(false);
-    let isFullscreenCode = $state(false);
+    let view = $state("split");
     let activeTab = $state("run");
+
+    let testId = "test";
 
     async function handleRunFromButton() {
         isLoading = true;
         try {
             const response = await runContainer({
-                userId,
+                userId: user.id,
                 testId,
-                sessionId,
+                sessionId: chat.id,
             });
             testResult = response;
             activeTab = "result";
@@ -67,26 +65,15 @@
     }
 
     function handleSplitClick() {
-        isFullscreenBrowser = false;
-        isFullscreenCode = false;
+        view = "split";
     }
 
     function handleMonitorClick() {
-        if (isFullscreenBrowser) {
-            isFullscreenBrowser = false;
-        } else {
-            isFullscreenBrowser = true;
-            isFullscreenCode = false;
-        }
+        view = "browser";
     }
 
     function handleCodeClick() {
-        if (isFullscreenCode) {
-            isFullscreenCode = false;
-        } else {
-            isFullscreenCode = true;
-            isFullscreenBrowser = false;
-        }
+        view = "code";
     }
 </script>
 
@@ -104,7 +91,7 @@
         </Button>
     </Dialog.Trigger>
     <Dialog.Content
-        class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0"
+        class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0 overflow-hidden"
         showCloseButton={false}
     >
         <div
@@ -120,17 +107,7 @@
                         onCloseClick={handleCloseClick}
                     />
                 {:else if activeTab === "run"}
-                    <SwitchView
-                        onSplitClick={handleSplitClick}
-                        onMonitorClick={handleMonitorClick}
-                        onCodeClick={handleCodeClick}
-                        onCloseClick={handleCloseClick}
-                        activeView={isFullscreenBrowser
-                            ? "fullscreen"
-                            : isFullscreenCode
-                              ? "code"
-                              : "split"}
-                    />
+                    <SwitchView onCloseClick={handleCloseClick} bind:view />
                 {/if}
             </div>
         </div>
@@ -140,26 +117,18 @@
 
         {#if activeTab === "edit"}
             <div class="flex-1 overflow-hidden">
-                <EditView
-                    {code}
-                    {userId}
-                    {testId}
-                    {sessionId}
-                    onRunClick={handleRunTest}
-                />
+                <EditView {code} {testId} onRunClick={handleRunTest} />
             </div>
         {:else if activeTab === "run"}
             <div
-                class="flex-1 {isFullscreenBrowser || isFullscreenCode
-                    ? 'grid grid-cols-1'
-                    : 'grid grid-cols-2'} gap-0 overflow-hidden"
+                class="flex-1 {view === 'split'
+                    ? 'grid grid-cols-2'
+                    : 'grid grid-cols-1'} gap-0 overflow-hidden"
             >
-                {#if !isFullscreenBrowser && !isFullscreenCode}
-                    <OutputView result={testResult} />
-                {:else if isFullscreenCode}
+                {#if view == "split" || view == "code"}
                     <OutputView result={testResult} />
                 {/if}
-                {#if !isFullscreenCode}
+                {#if view == "split" || view == "browser"}
                     <BrowserView />
                 {/if}
             </div>
