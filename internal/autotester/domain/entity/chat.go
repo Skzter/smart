@@ -23,6 +23,7 @@ type Chat struct {
 	Title     string    `json:"title"`
 
 	Messages []*Message `json:"messages"`
+	index    map[MessageType][]int
 
 	LastTest                 string `json:"lastTest"`
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
@@ -47,29 +48,32 @@ func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
 		t = ts[0]
 	}
 	m.Messages = append(m.Messages, &Message{Message: *message, Type: t})
+
+	m.index = nil
 }
 
-func (m *Chat) buildIndex() map[MessageType][]int {
-	index := make(map[MessageType][]int)
+func (m *Chat) buildIndex() {
+	if m.index != nil {
+		return
+	}
+	m.index = make(map[MessageType][]int)
 
 	for i, msg := range m.Messages {
 		if msg.Type == MessageTypeUser {
 			for t := range _MessageTypeMap {
-				index[t] = append(index[t], i)
+				m.index[t] = append(m.index[t], i)
 			}
 		} else {
-			index[msg.Type] = append(index[msg.Type], i)
+			m.index[msg.Type] = append(m.index[msg.Type], i)
 		}
 	}
-
-	return index
 }
 
 // Filter returns a slice of all Messages associated with the Type
 func (m *Chat) Filter(t MessageType) []*shared.Message {
-	indeces := m.buildIndex()
+	m.buildIndex()
 
-	index, ok := indeces[t]
+	index, ok := m.index[t]
 	if !ok {
 		return nil
 	}

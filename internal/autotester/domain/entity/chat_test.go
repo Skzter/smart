@@ -91,7 +91,7 @@ func TestFilter(t *testing.T) {
 			name:         "no matches",
 			messages:     []*Message{{Message: entity.Message{Id: "only gen"}, Type: MessageTypeGeneration}},
 			wantType:     MessageTypeValidation,
-			wantMessages: []*entity.Message{},
+			wantMessages: nil,
 		},
 		{
 			name:     "multiple matches",
@@ -120,10 +120,7 @@ func TestFilter(t *testing.T) {
 
 			got := c.Filter(tt.wantType)
 			c.Filter(tt.wantType)
-			assert.Len(t, got, len(tt.wantMessages))
-			for i, msg := range tt.wantMessages {
-				assert.Equal(t, msg, got[i])
-			}
+			assert.Equal(t, tt.wantMessages, got)
 		})
 	}
 }
