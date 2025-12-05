@@ -13,5 +13,5 @@
     <Button variant="ghost" size="sm" class="h-6 w-6 p-0">
         <RotateCcw class="h-4 w-4" />
     </Button>
-    <CloseButton onCloseClick={onCloseClick} />
+    <CloseButton {onCloseClick} />
 </div>
