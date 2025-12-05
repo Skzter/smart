@@ -7,6 +7,7 @@
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
+    import { toast } from "svelte-sonner";
 
     let error = $state<string>("");
     let groupState = $state<
@@ -31,12 +32,13 @@
         try {
             items = (await getUserChats(user.id)) as ApiChatSummary[];
         } catch (err) {
-            let errorMsg = "Unbekannter Fehler";
+            error = "Unbekannter Fehler";
             if (err instanceof Error) {
-                errorMsg = err.message;
+                error = err.message;
+                toast.error(error, {
+                    description: "Das war wohl nichts mit der Historie.",
+                });
             }
-            console.log(err);
-            error = errorMsg;
         }
 
         console.log(items);
