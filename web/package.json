@@ -38,10 +38,12 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.1",
     "vite": "^7.2.6",
-    "vite-plugin-mkcert": "^1.17.9"
+    "vite-plugin-mkcert": "^1.17.9",
+    "vite-plugin-monaco-editor": "^1.1.0"
   },
   "dependencies": {
     "axios": "^1.13.2",
+    "monaco-editor": "^0.55.1",
     "moo": "^0.5.2"
   }
 }
