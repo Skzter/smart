@@ -23,12 +23,8 @@
         <Bot class="h-5 w-5" />
     </div>
 
-    <div
-        class="bg-muted text-foreground rounded-2xl rounded-tl-sm max-w-[80%] overflow-hidden"
-    >
-        <div
-            class="flex justify-end gap-1 px-3 py-2 bg-muted/40 border-b border-border/50"
-        >
+    <div class="bg-muted rounded-2xl rounded-tl-sm max-w-[80%] overflow-hidden">
+        <div class="flex justify-end gap-1 px-2 py-2 border-b">
             <CopyButton code={message} />
             {#if messageIsCode}
                 <EditButton />

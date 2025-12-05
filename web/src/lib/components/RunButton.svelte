@@ -62,7 +62,13 @@
     }
 </script>
 
-<Button class={classes} {variant} {size} onclick={runTest} disabled={isLoading}>
+<Button
+    variant="outline"
+    size="sm"
+    class="h-7 gap-1.5 px-2 cursor-pointer"
+    onclick={runTest}
+    disabled={isLoading}
+>
     <Play class="h-3.5 w-3.5" />
     <p>{isLoading ? "Lädt..." : "Ausführen"}</p>
 </Button>

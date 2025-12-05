@@ -83,9 +83,9 @@
 </script>
 
 <Button
-    {variant}
-    {size}
-    class={classes}
+    variant="outline"
+    size="sm"
+    class="h-7 gap-1.5 px-2 cursor-pointer"
     onclick={() => saveTest(code)}
     disabled={saveState === "saving"}
 >
