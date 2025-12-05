@@ -30,5 +30,5 @@
     {:else}
         <Copy class="h-3.5 w-3.5" />
     {/if}
-    <span class="text-xs">Kopieren</span>
+    <p>Kopieren</p>
 </Button>

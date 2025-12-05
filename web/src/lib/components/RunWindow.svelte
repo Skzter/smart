@@ -35,7 +35,14 @@
 
 <Dialog.Root>
     <Dialog.Trigger>
-        <RunButton bind:isLoading bind:testResult bind:activeTab />
+        <RunButton
+            classes="h-7 gap-1.5 px-2 cursor-pointer"
+            variant="ghost"
+            size="sm"
+            bind:isLoading
+            bind:testResult
+            bind:activeTab
+        />
     </Dialog.Trigger>
     <Dialog.Content
         class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0 overflow-hidden"

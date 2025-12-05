@@ -5,5 +5,5 @@
 
 <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2 cursor-pointer">
     <SquarePen class="h-3.5 w-3.5" />
-    <span class="text-xs">Bearbeiten</span>
+    <p>Bearbeiten</p>
 </Button>

@@ -32,7 +32,12 @@
             <CopyButton code={message} />
             {#if messageIsCode}
                 <EditButton />
-                <SaveButton code={message} />
+                <SaveButton
+                    classes="h-7 gap-1.5 px-2 cursor-pointer"
+                    variant="ghost"
+                    size="sm"
+                    code={message}
+                />
                 <RunWindow code={message} />
             {/if}
         </div>
