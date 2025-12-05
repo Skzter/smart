@@ -10,7 +10,7 @@ export default ts.config(
     ...ts.configs.recommended,
     ...svelte.configs.recommended,
     {
-        ignores: ["dist/**", "coverage/**"], // Ignoriere den dist/coverage-Ordner
+        ignores: ["dist/**", "coverage/**", "src/lib/components/ui/**"], // Ignoriere den dist/coverage-Ordner
     },
     {
         languageOptions: {
