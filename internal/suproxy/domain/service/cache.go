@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
@@ -33,7 +34,11 @@ type cacheService struct {
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache) CacheService {
+func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache) (CacheService, error) {
+	if err := assert.NotNil(log, cfg, repo); err != nil {
+		return nil, err
+	}
+
 	ttls := entity.CacheTTLPolicy{
 		// Default TTL configuration
 		SupplierOK:   10 * time.Minute,
@@ -54,11 +59,15 @@ func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache
 		"error_or_empty_ttl", svc.ttls.ErrorOrEmpty,
 	)
 
-	return svc
+	return svc, nil
 }
 
 // Lookup checks if a cached entry exists for a given request and returns it if found
 func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bool) ([]byte, bool, error) {
+	if err := assert.NotNil(ctx, req); err != nil {
+		return nil, false, err
+	}
+
 	key := s.BuildKey(req, isMock)
 
 	start := time.Now()
@@ -110,6 +119,10 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 
 // Store saves a new cache entry for a given request and response with a calculated TTL
 func (s *cacheService) Store(ctx context.Context, req entity.Request, response []byte, isMock bool, isError bool) error {
+	if err := assert.NotNil(ctx, req, response); err != nil {
+		return err
+	}
+
 	key := s.BuildKey(req, isMock)
 
 	// Build cache entry object with metadata
@@ -117,9 +130,12 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 		Mock:     isMock,
 		Key:      key,
 		Request:  req,
-		Response: json.RawMessage(response),
 		CachedAt: time.Now().UTC(),
 		Version:  1,
+	}
+
+	if len(response) > 0 {
+		entry.Response = json.RawMessage(response)
 	}
 
 	payload, err := json.Marshal(entry) // Serialize to JSON
@@ -162,6 +178,10 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 
 // Invalidate removes a specific cache entry based on the request key
 func (s *cacheService) Invalidate(ctx context.Context, req entity.Request, isMock bool) error {
+	if err := assert.NotNil(ctx, req); err != nil {
+		return err
+	}
+
 	key := s.BuildKey(req, isMock) // Reconstruct cache key
 
 	start := time.Now()

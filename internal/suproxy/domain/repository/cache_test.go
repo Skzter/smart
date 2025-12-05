@@ -43,11 +43,10 @@ func TestNewRedisCache(t *testing.T) {
 		wantAddr string
 	}{
 		{
-			name:     "nil cfg → default options",
-			logger:   newCacheTestLogger(),
-			cfg:      nil,
-			wantErr:  false,
-			wantAddr: "localhost:6379",
+			name:    "nil cfg → error",
+			logger:  newCacheTestLogger(),
+			cfg:     nil,
+			wantErr: true,
 		},
 		{
 			name:     "nil cfg.Redis → default options",
@@ -283,11 +282,13 @@ func TestDelete(t *testing.T) {
 			if tt.ctx != nil {
 				cmd := redis.NewIntCmd(tt.ctx)
 				cmd.SetErr(tt.mockErr)
+
 				mockClient.
 					On("Del", mock.Anything, []string{tt.key}).
 					Return(cmd).
 					Once()
 			}
+
 			err := cache.Delete(tt.ctx, tt.key)
 			if tt.wantErr {
 				assert.Error(t, err)

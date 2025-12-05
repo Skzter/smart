@@ -40,6 +40,10 @@ func NewRedisCache(logger *slog.Logger, cfg *config.Config) (Cache, error) {
 		return nil, fmt.Errorf("logger cannot be nil, %w", err)
 	}
 
+	if err := assert.NotNil(cfg); err != nil {
+		return nil, fmt.Errorf("config cannot be nil, %w", err)
+	}
+
 	// Default options
 	opts := redis.Options{
 		Addr:     "localhost:6379",
@@ -48,7 +52,7 @@ func NewRedisCache(logger *slog.Logger, cfg *config.Config) (Cache, error) {
 		Protocol: 2,
 	}
 
-	if cfg != nil && cfg.Redis != nil {
+	if cfg.Redis != nil {
 		opts.Addr = cfg.Redis.Addr
 		opts.Password = cfg.Redis.Password
 		opts.DB = cfg.Redis.Db
@@ -68,6 +72,10 @@ func (r *redisCache) Get(ctx context.Context, key string) ([]byte, bool, error) 
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, false, fmt.Errorf("context cannot be nil, %w", err)
 	}
+	if err := assert.StringNotEmpty(key); err != nil {
+		return nil, false, fmt.Errorf("key cannot be empty, %w", err)
+	}
+
 	val, err := r.rdb.Get(ctx, key).Bytes()
 	if err == redis.Nil {
 		return nil, false, nil
@@ -84,10 +92,17 @@ func (r *redisCache) Set(ctx context.Context, key string, value []byte, ttl time
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
+	if err := assert.StringNotEmpty(key); err != nil {
+		return fmt.Errorf("key cannot be empty, %w", err)
+	}
+	if err := assert.NotNil(value); err != nil {
+		return fmt.Errorf("value cannot be nil, %w", err)
+	}
 	if err := r.rdb.Set(ctx, key, value, ttl).Err(); err != nil {
 		r.log.Error("redis: set failed", "key", key, "ttl", ttl, "err", err)
 		return err
 	}
+
 	r.log.Debug("redis: set", "key", key, "ttl", ttl)
 	return nil
 }
@@ -97,10 +112,13 @@ func (r *redisCache) Delete(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return fmt.Errorf("context cannot be nil, %w", err)
 	}
-	if err := r.rdb.Del(ctx, []string{key}...).Err(); err != nil {
-		r.log.Error("redis: delete failed", "key", key, "err", err)
+	if err := assert.StringNotEmpty(key); err != nil {
+		return fmt.Errorf("key cannot be empty, %w", err)
+	}
+	if err := r.rdb.Del(ctx, key).Err(); err != nil {
 		return err
 	}
+
 	r.log.Debug("redis: delete", "key", key)
 	return nil
 }

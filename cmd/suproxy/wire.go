@@ -116,6 +116,6 @@ func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (repository.Cache,
 }
 
 // CacheServiceProvider provides a new CacheService
-func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) service.CacheService {
+func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) (service.CacheService, error) {
 	return service.NewCacheService(log, cfg, repo)
 }
