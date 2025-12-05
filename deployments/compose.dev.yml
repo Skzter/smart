@@ -11,6 +11,7 @@ services:
       - OPEN_AI_KEY=${OPEN_AI_KEY}
       - DD_AGENT_HOST=datadog
       - DD_TRACE_AGENT_PORT=8126
+      - DD_DOGSTATSD_PORT=8125
       - DD_SITE=us5.datadoghq.com
 
   autotester:
@@ -58,6 +59,7 @@ services:
       - default
     ports:
       - 8126:8126/tcp
+      - 8125:8125/udp
     volumes:
       - /var/run/datadog:/var/run/datadog
       - /opt/datadog-agent/run:/opt/datadog-agent/run:rw
@@ -66,6 +68,7 @@ services:
       - DD_HOSTNAME=dev-container
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
       - DD_SITE=us5.datadoghq.com
       - DD_APM_RECEIVER_SOCKET=/var/run/datadog/apm.socket
       - DD_DOGSTATSD_SOCKET=/var/run/datadog/dsd.socket
