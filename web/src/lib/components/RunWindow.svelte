@@ -7,7 +7,6 @@
     import TabsView from "./TabsView.svelte";
     import EditView from "./EditView.svelte";
     import ResultView from "./ResultView.svelte";
-    import SaveButtons from "./SaveButtons.svelte";
     import RunButton from "./RunButton.svelte";
 
     let {
@@ -24,11 +23,6 @@
 
     function handleTabChange(event: CustomEvent) {
         activeTab = event.detail;
-    }
-
-    function handleSaveClick() {
-        // Speichern-Logik hier
-        console.log("Speichern geklickt");
     }
 
     function handleCloseClick() {
@@ -55,10 +49,7 @@
             >
             <div class="flex items-center gap-2">
                 {#if activeTab === "edit"}
-                    <SaveButtons
-                        onSaveClick={handleSaveClick}
-                        onCloseClick={handleCloseClick}
-                    />
+                    <CloseButton onCloseClick={handleCloseClick} />
                 {:else if activeTab === "run"}
                     <SwitchView onCloseClick={handleCloseClick} bind:view />
                 {:else if activeTab === "result"}

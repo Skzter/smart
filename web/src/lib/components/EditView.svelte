@@ -1,7 +1,7 @@
 <script lang="ts">
     import Code from "./Code.svelte";
-    import { Save } from "@lucide/svelte";
     import RunButton from "./RunButton.svelte";
+    import SaveButton from "./SaveButton.svelte";
 
     let {
         testResult = $bindable(),
@@ -46,12 +46,7 @@
                 </h3>
                 <div class="space-y-3">
                     <RunButton bind:isLoading bind:activeTab bind:testResult />
-                    <button
-                        class="w-full flex items-center gap-3 p-3 hover:bg-gray-100 rounded cursor-pointer transition opacity-50"
-                    >
-                        <Save class="w-4 h-4 text-gray-800" />
-                        <span class="text-gray-800">Speichern</span>
-                    </button>
+                    <SaveButton {code} />
                 </div>
             </div>
         </div>
