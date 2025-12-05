@@ -10,7 +10,7 @@ logDir_autopw: String = "/tmp/smart/logs"
 
 port: String = "8081" 
 
-logLevel: String = "debug"
+logLevel: String = "info"
 
 class Prompts {
     validationPrompt : String = 

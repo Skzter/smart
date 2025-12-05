@@ -70,7 +70,7 @@
         try {
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
             convo[convo.length - 1].answer = answer.data.message.body;
-            conversationId = answer.data.conversationId ?? ""
+            conversationId = answer.data.conversationId ?? "";
         } catch (err) {
             if (err.isAxiosError) {
                 convo[convo.length - 1].answer = err.response.data.message;
