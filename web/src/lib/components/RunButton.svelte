@@ -1,35 +1,64 @@
 <script lang="ts">
     import { Play } from "@lucide/svelte";
     import { Button } from "$lib/components/ui/button/index.js";
-    import * as Dialog from "$lib/components/ui/dialog/index.js";
-    import SwitchView from "./SwitchView.svelte";
+    import { chat, user } from "$lib/shared.svelte";
+    import { runContainer } from "$lib/api";
+    import { toast } from "svelte-sonner";
+
+    let {
+        isLoading = $bindable(),
+        activeTab = $bindable(),
+        testResult = $bindable(),
+    }: {
+        isLoading: boolean;
+        activeTab: string;
+        testResult: string;
+    } = $props();
+
+    async function runTest() {
+        if (!user.id || !chat.id || !chat.currTestId) {
+            console.error(
+                "Missing IDs - ChatID: " +
+                    chat.id +
+                    " UserID: " +
+                    user.id +
+                    " TestID: " +
+                    chat.currTestId,
+            );
+            toast.error("Speichern fehlgeschlagen", {
+                description: "Benutzer-, -Konversations oder Test-ID fehlt.",
+            });
+            return;
+        }
+
+        const sanitizedUserId = user.id.includes("|")
+            ? user.id.split("|")[1]
+            : user.id;
+
+        isLoading = true;
+        try {
+            const response = await runContainer({
+                userId: sanitizedUserId,
+                testId: chat.currTestId,
+                sessionId: chat.id,
+            });
+            testResult = response;
+            activeTab = "result";
+        } catch (error) {
+            console.error("Error running test:", error);
+        } finally {
+            isLoading = false;
+        }
+    }
 </script>
 
-<Dialog.Root>
-    <Dialog.Trigger>
-        <Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2">
-            <Play class="h-3.5 w-3.5" />
-            <span class="text-xs">Ausführen</span>
-        </Button>
-    </Dialog.Trigger>
-    <Dialog.Content
-        class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0"
-    >
-        <div
-            class="flex flex-row items-center justify-between border-b px-6 py-4"
-        >
-            <Dialog.Title class="text-lg font-semibold"
-                >Button Click Test</Dialog.Title
-            >
-            <div class="flex items-center gap-2">
-                <SwitchView />
-
-            </div>
-        </div>
-
-        <!-- Content Platzhalter -->
-        <div class="flex-1 p-6 text-center text-muted-foreground">
-            Dialog Inhalt hier
-        </div>
-    </Dialog.Content>
-</Dialog.Root>
+<Button
+    variant="ghost"
+    size="sm"
+    class="h-7 gap-1.5 px-2 cursor-pointer"
+    onclick={runTest}
+    disabled={isLoading}
+>
+    <Play class="h-3.5 w-3.5" />
+    <span class="text-xs">{isLoading ? "Lädt..." : "Ausführen"}</span>
+</Button>

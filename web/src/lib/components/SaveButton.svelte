@@ -13,10 +13,9 @@
     } = $props();
 
     let saveState = $state<SaveState>("idle");
-    let testId = $state("");
 
     $effect(() => {
-        console.log("SaveState: " + saveState + " TestID: " + testId);
+        console.log("SaveState: " + saveState + " TestID: " + chat.currTestId);
     });
 
     async function saveTest(testcode: string) {
@@ -43,7 +42,7 @@
                 code: testcode,
             });
 
-            testId = test.testcaseId;
+            chat.currTestId = test.testcaseId;
             console.log("Test saved successfully:", test);
             saveState = "success";
 
