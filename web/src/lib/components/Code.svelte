@@ -2,7 +2,7 @@
     import { tokenize } from "$lib/syntaxHighlighting";
 
     let {
-        code,
+        code = $bindable(),
     }: {
         code: string;
     } = $props();

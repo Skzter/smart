@@ -14,9 +14,7 @@
     } = $props();
 
     let container = $state<HTMLElement | undefined>(undefined);
-    let editor = $state<Monaco.editor.IStandaloneCodeEditor | undefined>(
-        undefined,
-    );
+    let editor: Monaco.editor.IStandaloneCodeEditor | undefined = undefined;
     let disposable = $state<Monaco.IDisposable | undefined>(undefined);
 
     self.MonacoEnvironment = {

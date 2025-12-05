@@ -14,6 +14,7 @@
 
     // treat message as code when it looks like code or contains Playwright imports/markers
     const messageIsCode = $derived((message || "").includes("@playwright"));
+    let code = $derived(message);
 </script>
 
 <div class="flex justify-start gap-2 items-start">
@@ -32,17 +33,17 @@
                     classes="h-7 gap-1.5 px-2 cursor-pointer"
                     variant="ghost"
                     size="sm"
-                    code={message}
+                    bind:code
                 />
-                <RunWindow code={message} />
+                <RunWindow bind:code />
             {/if}
         </div>
 
         {#if messageIsCode}
-            <Code code={message} />
+            <Code bind:code />
         {:else}
             <div class="px-4 py-2 wrap-break-word whitespace-pre-wrap">
-                {message}
+                {code}
             </div>
         {/if}
     </div>
