@@ -4,13 +4,11 @@
 
     export let onCloseClick: () => void = () => {};
     export let sizeClass = "h-6 w-6 p-0";
-    export let variant = "ghost";
-    export let btnSize = "sm";
 </script>
 
 <Button
-    variant={variant}
-    size={btnSize}
+    variant={"ghost"}
+    size={"sm"}
     class={sizeClass}
     onclick={onCloseClick}
 >
