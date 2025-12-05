@@ -72,7 +72,7 @@
         <Button
             variant="ghost"
             size="sm"
-            class="h-7 gap-1.5 px-2"
+            class="h-7 gap-1.5 px-2 cursor-pointer"
             onclick={handleRunFromButton}
             disabled={isLoading}
         >

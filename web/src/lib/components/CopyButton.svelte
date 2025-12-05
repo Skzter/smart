@@ -19,7 +19,7 @@
     }
 </script>
 
-<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2" onclick={handleCopy}>
+<Button variant="ghost" size="sm" class="h-7 gap-1.5 px-2 cursor-pointer" onclick={handleCopy}>
     {#if copied}
         <Check class="h-3.5 w-3.5" />
     {:else}
