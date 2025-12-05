@@ -265,6 +265,7 @@ tasks:
     cmds:
       - task: lint
       - task: test
+      - task: lint-frontend
 
   # --------------------------------------------------------------------------------
   # Code Generation
