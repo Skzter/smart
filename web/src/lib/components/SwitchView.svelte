@@ -6,11 +6,11 @@
     import ControlButtons from "./ControlButtons.svelte";
 
     let {
-        view = $bindable(),
-        onCloseClick,
+        view = $bindable("code"),
+        onCloseClick = () => {},
     }: {
-        view: string;
-        onCloseClick: () => void;
+        view?: string;
+        onCloseClick?: () => void;
     } = $props();
 </script>
 
