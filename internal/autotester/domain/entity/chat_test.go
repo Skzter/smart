@@ -65,7 +65,6 @@ func TestAddMessage(t *testing.T) {
 			assert.Len(t, c.Messages, len(tt.expected))
 			for i := range tt.expected {
 				assert.Equal(t, tt.expected[i], c.Messages[i])
-				assert.Equal(t, tt.expected[i], c.Messages[i])
 			}
 		})
 	}

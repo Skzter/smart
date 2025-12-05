@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -57,13 +56,11 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 	defer span.End()
 
 	if request.ChatId == "" {
-		id := uuid.NewString()
-		c.logger.Info("creating new chat", "user", request.UserId, "id", id)
-
 		chat := entity.NewChat(request.UserId, []entity.Message{})
+		c.logger.Info("creating new chat", "user", request.UserId, "id", chat.Id)
 		span.AddEvent("new chat created", trace.WithAttributes(
 			attribute.String("user", request.UserId),
-			attribute.String("id", id),
+			attribute.String("id", chat.Id),
 		))
 
 		span.SetStatus(codes.Ok, "")

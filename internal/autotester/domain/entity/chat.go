@@ -79,11 +79,10 @@ func (m *Chat) Filter(t MessageType) []*shared.Message {
 		return nil
 	}
 
-	result := make([]*shared.Message, 0, len(m.Messages)) // pre allocation for memory efficiency
+	result := make([]*shared.Message, 0, len(index)) // pre allocation for memory efficiency
 
 	for _, i := range index {
-		msgcopy := m.Messages[i].Message
-		result = append(result, &msgcopy)
+		result = append(result, &m.Messages[i].Message)
 	}
 
 	return result

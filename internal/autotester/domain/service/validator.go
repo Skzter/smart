@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -64,6 +65,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	}
 
 	if err := s.ValidateRequest(ctx, req); err != nil {
+		s.logger.Error("Request validation failed", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
 		return false, "Invalid Request", errors.ErrValidation
@@ -94,8 +96,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 // Returns an error if any required field is empty or invalid.
 func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
-		s.logger.Error(err.Error())
-		return errors.ErrInternalServer
+		return err
 	}
 
 	_, span := s.tracer.Start(ctx, "validator.ValidateChat")
@@ -105,39 +106,35 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 		chat.Id,
 		chat.UserId,
 	); err != nil {
-		s.logger.Error("Empty string(s) in Chat", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing fields")
-		return errors.ErrValidation
+		return fmt.Errorf("missing fields %w", err)
 	}
 
 	if chat.UpdatedAt.IsZero() {
-		s.logger.Error("UpdatedAt is Zero")
-		err := errors.ErrValidation
+		err := fmt.Errorf("updatedAt is zero")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "updatedAt zero")
 		return err
 	}
 	if chat.CreatedAt.IsZero() {
-		s.logger.Error("CreatedAt is Zero")
-		err := errors.ErrValidation
+		err := fmt.Errorf("createdAt is Zero")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "createdAt zero")
 		return err
 	}
 
 	if err := assert.ArrayLengthGreaterThan(chat.Messages, 0); err != nil {
-		s.logger.Error("Messages Empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing messages")
-		return errors.ErrValidation
+		return err
 	}
 
 	for _, msg := range chat.Messages {
 		if err := s.ValidateMessage(ctx, &msg.Message); err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "message validation failed")
-			return errors.ErrValidation
+			return fmt.Errorf("invalid message: %w", err)
 		}
 	}
 
@@ -149,8 +146,7 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 // before sending it to OpenAI.
 func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Request) error {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error(err.Error())
-		return errors.ErrInternalServer
+		return err
 	}
 
 	_, span := s.tracer.Start(ctx, "validator.ValidateRequest")
@@ -161,26 +157,31 @@ func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Reques
 	)
 
 	if req.Model == "" {
-		s.logger.Error("Model empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("model is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing model")
 		return err
 	}
 	if req.SystemPrompt == "" {
-		s.logger.Error("SystemPrompt empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("systemPrompt is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing system prompt")
 		return err
 	}
 
 	if len(req.Messages) == 0 {
-		s.logger.Error("Messages empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("messages is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing messages")
 		return err
+	}
+
+	for _, msg := range req.Messages {
+		if err := s.ValidateMessage(ctx, msg); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "message validation failed")
+			return fmt.Errorf("invalid message: %w", err)
+		}
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -191,39 +192,35 @@ func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Reques
 // Returns an error if any required field is empty or invalid.
 func (s *validator) ValidateMessage(ctx context.Context, msg *sharedEntity.Message) error {
 	if err := assert.NotNil(ctx, msg); err != nil {
-		s.logger.Error(err.Error())
-		return errors.ErrInternalServer
+		return err
 	}
 
 	_, span := s.tracer.Start(ctx, "validator.ValidateMessage")
 	defer span.End()
 
 	if msg.Body == "" {
-		s.logger.Error("Body empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("body is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing body")
 		return err
 	}
 
 	if msg.Role == "" {
-		s.logger.Error("Role empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("role is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing role")
 		return err
 	}
 
 	if err := uuid.Validate(msg.Id); err != nil {
-		s.logger.Error("Invalid Id", "err", err)
+		err := fmt.Errorf("invalid Id: %w", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid id")
-		return errors.ErrValidation
+		return err
 	}
 
 	if msg.CreatedAt.IsZero() {
-		s.logger.Error("CreatedAt is Zero")
-		err := errors.ErrValidation
+		err := fmt.Errorf("createdAt is Zero")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "createdAt zero")
 		return err

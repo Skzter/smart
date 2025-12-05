@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -102,7 +101,7 @@ func TestValidatePrompt(t *testing.T) {
 		mockResp  sharedEntity.Message
 		wantValid bool
 		wantMsg   string
-		wantErr   error
+		wantErr   bool
 	}{
 		{
 			name:    "valid prompt",
@@ -116,7 +115,7 @@ func TestValidatePrompt(t *testing.T) {
 			},
 			wantValid: true,
 			wantMsg:   "",
-			wantErr:   nil,
+			wantErr:   false,
 		},
 		{
 			name:    "invalid prompt",
@@ -130,7 +129,7 @@ func TestValidatePrompt(t *testing.T) {
 			},
 			wantValid: false,
 			wantMsg:   "alle gründe warum es schiefgelaufen",
-			wantErr:   nil,
+			wantErr:   false,
 		},
 		{
 			name:    "invalid JSON response",
@@ -141,7 +140,7 @@ func TestValidatePrompt(t *testing.T) {
 			},
 			wantValid: false,
 			wantMsg:   "",
-			wantErr:   sharedErrors.ErrInternalServer,
+			wantErr:   true,
 		},
 		{
 			name:      "service error",
@@ -150,7 +149,7 @@ func TestValidatePrompt(t *testing.T) {
 			mockResp:  sharedEntity.Message{},
 			wantValid: false,
 			wantMsg:   "",
-			wantErr:   sharedErrors.ErrValidation,
+			wantErr:   true,
 		},
 		{
 			name:      "invalid",
@@ -159,7 +158,7 @@ func TestValidatePrompt(t *testing.T) {
 			mockResp:  sharedEntity.Message{},
 			wantValid: false,
 			wantMsg:   "",
-			wantErr:   sharedErrors.ErrValidation,
+			wantErr:   true,
 		},
 	}
 
@@ -172,20 +171,12 @@ func TestValidatePrompt(t *testing.T) {
 			valid, msg, err := svc.ValidatePrompt(context.Background(), &entity.Chat{}, tt.request)
 
 			// Check results
-			if tt.wantErr != nil {
-				if !errors.Is(err, tt.wantErr) {
-					t.Fatalf("expected error %v, got %v", tt.wantErr, err)
-				}
+			if tt.wantErr {
+				assert.Error(t, err)
 			} else {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-				if valid != tt.wantValid {
-					t.Fatalf("expected valid=%v, got %v", tt.wantValid, valid)
-				}
-				if msg != tt.wantMsg {
-					t.Fatalf("expected msg=%q, got %q", tt.wantMsg, msg)
-				}
+				assert.Nil(t, err)
+				assert.Equal(t, tt.wantValid, valid)
+				assert.Equal(t, tt.wantMsg, msg)
 			}
 
 			// Assert that the mock was called as expected
@@ -204,7 +195,7 @@ func TestValidateRequest(t *testing.T) {
 	systemPrompt := "You are a helpful assistant."
 	msg := []*sharedEntity.Message{
 		{
-			Id:        "",
+			Id:        uuid.NewString(),
 			Role:      sharedEntity.RoleUser,
 			Body:      "some message",
 			CreatedAt: time.Now(),
@@ -212,11 +203,10 @@ func TestValidateRequest(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		ctx         context.Context
-		request     sharedEntity.Request
-		wantErr     bool
-		expectedErr error
+		name    string
+		ctx     context.Context
+		request sharedEntity.Request
+		wantErr bool
 	}{
 		{
 			name: "valid request",
@@ -226,8 +216,7 @@ func TestValidateRequest(t *testing.T) {
 				Model:        model,
 				SystemPrompt: systemPrompt,
 			},
-			wantErr:     false,
-			expectedErr: nil,
+			wantErr: false,
 		},
 		{
 			name: "nil ctx",
@@ -237,8 +226,7 @@ func TestValidateRequest(t *testing.T) {
 				Model:        model,
 				SystemPrompt: systemPrompt,
 			},
-			wantErr:     true,
-			expectedErr: sharedErrors.ErrInternalServer,
+			wantErr: true,
 		},
 		{
 			name: "empty Model",
@@ -248,8 +236,7 @@ func TestValidateRequest(t *testing.T) {
 				Model:        "",
 				SystemPrompt: systemPrompt,
 			},
-			wantErr:     true,
-			expectedErr: sharedErrors.ErrValidation,
+			wantErr: true,
 		},
 		{
 			name: "empty SystemPrompt",
@@ -259,8 +246,7 @@ func TestValidateRequest(t *testing.T) {
 				Model:        model,
 				SystemPrompt: "",
 			},
-			wantErr:     true,
-			expectedErr: sharedErrors.ErrValidation,
+			wantErr: true,
 		},
 		{
 			name: "empty Messages",
@@ -270,8 +256,17 @@ func TestValidateRequest(t *testing.T) {
 				Model:        model,
 				SystemPrompt: systemPrompt,
 			},
-			wantErr:     true,
-			expectedErr: sharedErrors.ErrValidation,
+			wantErr: true,
+		},
+		{
+			name: "contains invalid message",
+			ctx:  context.Background(),
+			request: sharedEntity.Request{
+				Messages:     []*sharedEntity.Message{{}},
+				Model:        model,
+				SystemPrompt: systemPrompt,
+			},
+			wantErr: true,
 		},
 	}
 
@@ -279,15 +274,9 @@ func TestValidateRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := svc.ValidateRequest(tt.ctx, tt.request)
 			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("got nil error, expected => %v", tt.expectedErr)
-				} else if !errors.Is(err, tt.expectedErr) {
-					t.Fatalf("unexpected error: got => %v, wanted => %v", err, tt.expectedErr)
-				}
+				assert.Error(t, err)
 			} else {
-				if err != nil {
-					t.Fatalf("unexpected error: got => %v, wanted nil", err)
-				}
+				assert.Nil(t, err)
 			}
 		})
 	}
