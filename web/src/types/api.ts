@@ -34,7 +34,7 @@ export type ApiSaveTestLocal = {
     code: string;
 };
 
-export type ApiSaveTEstLocalResponse = {
+export type ApiSaveTestLocalResponse = {
     testcaseId: string;
     action: string;
 };
@@ -43,4 +43,16 @@ export type ApiRunContainer = {
     userId: string;
     testId: string;
     sessionId: string;
+};
+
+export type ApiGetChatByIdResponse = {
+    id: string;
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
+    title: string;
+    messages: ApiMessage[];
+    lastTest: string;
+    systemPrompt: string;
+    initialPrompt: string;
 };

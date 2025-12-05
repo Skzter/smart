@@ -13,7 +13,7 @@
     } = $props();
 
     let saveState = $state<SaveState>("idle");
-    let testId = "";
+    let testId = $state("");
 
     $effect(() => {
         console.log("SaveState: " + saveState + " TestID: " + testId);

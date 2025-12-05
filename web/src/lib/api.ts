@@ -7,7 +7,9 @@ import type {
     ApiSaveTestLocal,
     ApiSaveTEstLocalResponse,
     ApiRunContainer,
+    ApiGetChatByIdResponse,
 } from "$types/api";
+import { chat, user } from "./shared.svelte";
 
 const baseURL = "http://localhost:8081/api/v1/";
 
@@ -41,11 +43,11 @@ export async function getChatResponse(
  * @param params: parameters for api
  * @param url: url for api
  */ // schön mit Rechtschreibfehler vom main
-export async function getUserChats(userId: string): Promise<ApiChatSummary[]> {
+export async function getUserChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `chats/${userId}`,
+            url: `chats/${user.id}`,
             baseURL: baseURL,
         });
         return response.data.chatSummarys;
@@ -97,6 +99,37 @@ export async function runContainer(request: ApiRunContainer): Promise<string> {
         return response.data.result;
     } catch (error) {
         throw getErrorMessage(error);
+    }
+}
+
+export async function getChatById(): Promise<ApiGetChatByIdResponse> {
+    try {
+        const response = await axios({
+            method: "get",
+            url: `/users/${user.id}/chats/${chat.id}`,
+            baseURL: baseURL,
+        });
+        return response.data;
+    } catch (err) {
+        throw getErrorMessage(err);
+    }
+}
+
+export async function deleteLocalTest(testcaseId: string): Promise<string> {
+    try {
+        const response = await axios({
+            method: "delete",
+            baseURL: baseURL,
+            url: "/deleteLocal",
+            params: {
+                testcaseId,
+                conversationId: chat.id,
+                userId: user.id,
+            },
+        });
+        return response.data;
+    } catch (err) {
+        throw getErrorMessage(err);
     }
 }
 
