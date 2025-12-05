@@ -30,7 +30,7 @@
             return;
         }
         try {
-            items = (await getUserChats(user.id)) as ApiChatSummary[];
+            items = (await getUserChats()) as ApiChatSummary[];
         } catch (err) {
             error = "Unbekannter Fehler";
             if (err instanceof Error) {
