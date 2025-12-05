@@ -23,7 +23,7 @@
             >
             <div class="flex items-center gap-2">
                 <SwitchView />
-                <span class="text-sm text-muted-foreground">⏱ 8.160s</span>
+
             </div>
         </div>
 
