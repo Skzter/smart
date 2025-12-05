@@ -10,7 +10,7 @@
     import RunButton from "./RunButton.svelte";
 
     let {
-        code,
+        code = $bindable(),
     }: {
         code: string;
     } = $props();

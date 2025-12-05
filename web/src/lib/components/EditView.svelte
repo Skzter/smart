@@ -14,12 +14,11 @@
         isLoading: boolean;
         activeTab: string;
     } = $props();
-    let localCode = $derived(code);
 </script>
 
 <div class="flex-1 grid gap-0 h-full" style="grid-template-columns: 70% 30%">
     <div class="overflow-y-auto h-full">
-        <MonacoEditor bind:value={localCode} language="typescript" />
+        <MonacoEditor bind:value={code} language="typescript" />
     </div>
     <div
         class="bg-gray-300 flex items-center justify-center border-l overflow-y-auto p-6"

@@ -10,7 +10,7 @@
     import { toast } from "svelte-sonner";
 
     let {
-        code,
+        code = $bindable(),
         classes,
         variant,
         size,
