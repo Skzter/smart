@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 // HandleChatRequest processes a chat request from the frontend.
@@ -133,14 +133,21 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 	chatID := c.Param("chatId")
 	userID := c.Param("userId")
 
-	if chatID == "" || userID == "" {
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "chatId and userId are required"})
+	if !isValid(userID) {
+		a.logger.Error("invalid userId format", "userId", userID)
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
+		return
+	}
+
+	if _, err := uuid.Parse(chatID); err != nil {
+		a.logger.Error("invalid chatId format", "chatId", chatID, "error", err)
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid chatId format"})
 		return
 	}
 
 	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), userID, chatID)
 	if err != nil {
-		if errors.Is(err, service.ErrChatNotFound) {
+		if errors.Is(err, sharedErrors.ErrChatNotFound) {
 			a.logger.Info("chat not found", "chatId", chatID, "userId", userID)
 			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
 			return

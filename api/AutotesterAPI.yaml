@@ -278,15 +278,19 @@ paths:
   /api/v1/users/{userId}/chats/{chatId}:
     get:
       summary: Get full chat by ID
+      description: |
+        Returns a full chat (conversation) for the given user, including all messages.
       parameters:
         - in: path
           name: userId
           required: true
+          description: "Unique identifier of the user who owns the chat."
           schema:
             type: string
         - in: path
           name: chatId
           required: true
+          description: "Unique identifier of the chat to retrieve."
           schema:
             type: string
       responses:
@@ -295,7 +299,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Conversation'
+                $ref: '#/components/schemas/Chat'
         '400':
           description: Bad Request
           content:
@@ -356,7 +360,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Conversation'
-          
+
+    Chat:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "Unique identifier of the chat."
+        userId:
+          type: string
+          description: "ID of the user who owns the chat."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the chat was created."
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the chat was last updated."
+        title:
+          type: string
+          description: "Human-readable title of the chat."
+        messages:
+          type: array
+          description: "List of all messages in this chat."
+          items:
+            $ref: '#/components/schemas/Message'
+        lastTest:
+          type: string
+          nullable: true
+          description: "Information about the last executed test (if any)."
+        systemPrompt:
+          type: string
+          nullable: true
+          description: "System prompt used for this chat (if any)."
+        initialPrompt:
+          type: string
+          nullable: true
+          description: "Initial prompt that started this chat (if any)."
+      required:
+        - id
+        - userId
+        - createdAt
+        - updatedAt
+        - title
+        - messages
+      
     ChatRequest:
       type: object
       properties:

@@ -18,7 +18,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
-	autotesterService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
@@ -473,15 +472,23 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	controller := newTestControllerWithChatMock(t, nil, autotesterService.ErrChatNotFound)
+	// gültige IDs, die die neue Validierung bestehen
+	validUserID := "auth0|user-42"
+	validChatID := "550e8400-e29b-41d4-a716-446655440000" // irgendeine gültige UUID
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/user-42/chat-123", nil)
+	controller := newTestControllerWithChatMock(t, nil, sharedErrors.ErrChatNotFound)
+
+	req, _ := http.NewRequest(
+		http.MethodGet,
+		"/api/v1/users/"+validUserID+"/chats/"+validChatID,
+		nil,
+	)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
-		{Key: "userId", Value: "user-42"},
-		{Key: "chatId", Value: "chat-123"},
+		{Key: "userId", Value: validUserID},
+		{Key: "chatId", Value: validChatID},
 	}
 
 	controller.GetChatById(ctx)
@@ -494,20 +501,27 @@ func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	validUserID := "auth0|user-42"
+	validChatID := "550e8400-e29b-41d4-a716-446655440000"
+
 	expectedChat := &entity.Chat{
-		Id:     "chat-123",
-		UserId: "user-42",
+		Id:     validChatID,
+		UserId: validUserID,
 	}
 
 	controller := newTestControllerWithChatMock(t, expectedChat, nil)
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/chats/user-42/chat-123", nil)
+	req, _ := http.NewRequest(
+		http.MethodGet,
+		"/api/v1/users/"+validUserID+"/chats/"+validChatID,
+		nil,
+	)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
-		{Key: "userId", Value: "user-42"},
-		{Key: "chatId", Value: "chat-123"},
+		{Key: "userId", Value: validUserID},
+		{Key: "chatId", Value: validChatID},
 	}
 
 	controller.GetChatById(ctx)
