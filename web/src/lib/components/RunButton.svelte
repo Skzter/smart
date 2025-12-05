@@ -53,7 +53,7 @@
 </script>
 
 <Button
-    variant="ghost"
+    variant="outline"
     size="sm"
     class="h-7 gap-1.5 px-2 cursor-pointer"
     onclick={runTest}
