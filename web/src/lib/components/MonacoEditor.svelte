@@ -1,5 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
+    import type * as Monaco from "monaco-editor";
+    import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
     let {
         value = $bindable(),
@@ -8,11 +10,20 @@
     }: {
         value?: string;
         language?: string;
-        options?: Record<string, unknown>;
+        options?: Monaco.editor.IStandaloneEditorConstructionOptions;
     } = $props();
 
-    let container = $state<HTMLElement | null>(null);
-    let editor = $state(null);
+    let container = $state<HTMLElement | undefined>(undefined);
+    let editor = $state<Monaco.editor.IStandaloneCodeEditor | undefined>(
+        undefined,
+    );
+    let disposable = $state<Monaco.IDisposable | undefined>(undefined);
+
+    self.MonacoEnvironment = {
+        getWorker() {
+            return new tsWorker();
+        },
+    };
 
     onMount(async () => {
         if (!container) return;
@@ -26,27 +37,22 @@
             minimap: { enabled: false },
             theme: "vs-dark",
             // enable word wrap by default; can be overridden via `options` prop
-            wordWrap:
-                (options && (options as Record<string, unknown>).wordWrap) ??
-                "on",
-            wrappingStrategy:
-                (options &&
-                    (options as Record<string, unknown>).wrappingStrategy) ??
-                "advanced",
+            wordWrap: options.wordWrap ?? "on",
+            wrappingStrategy: options.wrappingStrategy ?? "advanced",
             ...options,
         });
 
         const model = editor.getModel();
-        const disposable = model?.onDidChangeContent(() => {
-            const v = editor.getValue();
+        disposable = model?.onDidChangeContent(() => {
+            const v = editor?.getValue();
             // update bindable value so parent bindings update
             value = v;
         });
+    });
 
-        onDestroy(() => {
-            disposable?.dispose();
-            editor?.dispose();
-        });
+    onDestroy(() => {
+        disposable?.dispose();
+        editor?.dispose();
     });
 
     $effect(() => {
