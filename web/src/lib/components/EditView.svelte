@@ -2,18 +2,15 @@
     import Code from "./Code.svelte";
     import { Play, Save } from "@lucide/svelte";
     import { runContainer } from "$lib/api";
+    import { chat, user } from "$lib/shared.svelte";
 
     let {
         code,
-        userId,
         testId,
-        sessionId,
         onRunClick,
     }: {
         code: string;
-        userId: string;
         testId: string;
-        sessionId: string;
         onRunClick: (result: string) => void;
     } = $props();
 
@@ -23,9 +20,9 @@
         isLoading = true;
         try {
             const response = await runContainer({
-                userId,
+                userId: user.id,
                 testId,
-                sessionId,
+                sessionId: chat.id,
             });
             onRunClick(response.result);
         } catch (error) {
