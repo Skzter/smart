@@ -6,11 +6,9 @@
 
     let {
         code,
-        testId,
         onRunClick,
     }: {
         code: string;
-        testId: string;
         onRunClick: (result: string) => void;
     } = $props();
 
@@ -21,7 +19,7 @@
         try {
             const response = await runContainer({
                 userId: user.id,
-                testId,
+                testId: chat.currTestId,
                 sessionId: chat.id,
             });
             onRunClick(response);

@@ -9,4 +9,5 @@ export const user = $state({
 export const chat = $state({
     id: "",
     isLoading: false,
+    currTestId: "",
 });
