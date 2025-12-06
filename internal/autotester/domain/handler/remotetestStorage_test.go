@@ -172,6 +172,63 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			expectedResponse: nil,
 			SetupMock:        func(m *mocks.MockTestcaseStorageService) {},
 		},
+		{
+			TestName:       "Filter with limit only",
+			QueryParams:    map[string]string{"limit": "2"},
+			ExpectedStatus: http.StatusOK,
+			expectedResponse: []*entity.TestcaseMetadata{
+				{Key: "testcase/test1_1701456000.parquet", Author: "9177b856-46a0-11f0-9fe2-0242ac120002", Created: "1701456000", Updated: "1701460000", Name: "Test 1"},
+				{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+			},
+			SetupMock: func(m *mocks.MockTestcaseStorageService) {
+				m.EXPECT().ReadAllMetadataWithFilter(mock.Anything, mock.Anything).Return([]*entity.TestcaseMetadata{
+					{Key: "testcase/test1_1701456000.parquet", Author: "9177b856-46a0-11f0-9fe2-0242ac120002", Created: "1701456000", Updated: "1701460000", Name: "Test 1"},
+					{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+				}, nil)
+			},
+		},
+		{
+			TestName:       "Filter with offset only",
+			QueryParams:    map[string]string{"offset": "1"},
+			ExpectedStatus: http.StatusOK,
+			expectedResponse: []*entity.TestcaseMetadata{
+				{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+				{Key: "testcase/test3_1701458000.parquet", Author: "9177b856-46a0-11f0-9fe2-0242ac120002", Created: "1701458000", Updated: "1701462000", Name: "Test 3"},
+			},
+			SetupMock: func(m *mocks.MockTestcaseStorageService) {
+				m.EXPECT().ReadAllMetadataWithFilter(mock.Anything, mock.Anything).Return([]*entity.TestcaseMetadata{
+					{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+					{Key: "testcase/test3_1701458000.parquet", Author: "9177b856-46a0-11f0-9fe2-0242ac120002", Created: "1701458000", Updated: "1701462000", Name: "Test 3"},
+				}, nil)
+			},
+		},
+		{
+			TestName:       "Filter with limit and offset",
+			QueryParams:    map[string]string{"limit": "1", "offset": "1"},
+			ExpectedStatus: http.StatusOK,
+			expectedResponse: []*entity.TestcaseMetadata{
+				{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+			},
+			SetupMock: func(m *mocks.MockTestcaseStorageService) {
+				m.EXPECT().ReadAllMetadataWithFilter(mock.Anything, mock.Anything).Return([]*entity.TestcaseMetadata{
+					{Key: "testcase/test2_1701457000.parquet", Author: "8177b856-46a0-11f0-9fe2-0242ac120003", Created: "1701457000", Updated: "1701461000", Name: "Test 2"},
+				}, nil)
+			},
+		},
+		{
+			TestName:         "Invalid limit (less than 1)",
+			QueryParams:      map[string]string{"limit": "0"},
+			ExpectedStatus:   http.StatusBadRequest,
+			expectedResponse: nil,
+			SetupMock:        func(m *mocks.MockTestcaseStorageService) {},
+		},
+		{
+			TestName:         "Invalid offset (negative)",
+			QueryParams:      map[string]string{"offset": "-1"},
+			ExpectedStatus:   http.StatusBadRequest,
+			expectedResponse: nil,
+			SetupMock:        func(m *mocks.MockTestcaseStorageService) {},
+		},
 	}
 
 	for _, test := range tests {

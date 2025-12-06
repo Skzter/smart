@@ -259,4 +259,7 @@ template: String = """
 
 defaultLimitChats: String = "10"
 
+defaultLimitTests: Int = 50
+defaultOffsetTests: Int = 0
+
 taglistConfig: taglist = taglist
