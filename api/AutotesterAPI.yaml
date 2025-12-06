@@ -566,6 +566,11 @@ components:
           type: string
           description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
           example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
+        testcaseId:
+          type: string
+          format: uuid
+          description: "UUID of the testcase."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
         author:
           type: string
           format: uuid

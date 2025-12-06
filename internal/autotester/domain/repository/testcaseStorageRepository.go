@@ -99,10 +99,11 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 	key := r.generateTestCaseKey(obj.TestID)
 	time := fmt.Sprintf("%d", time.Now().UTC().Unix())
 	metadata := map[string]string{
-		"author":  userId,
-		"created": time,
-		"updated": time,
-		"name":    "",
+		"testcase-id": obj.TestID,
+		"author":      userId,
+		"created":     time,
+		"updated":     time,
+		"name":        "",
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
@@ -203,11 +204,12 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 		))
 
 		allMetadata = append(allMetadata, &entity.TestcaseMetadata{
-			Key:     fileKey,
-			Author:  metadata["author"],
-			Created: metadata["created"],
-			Updated: metadata["updated"],
-			Name:    metadata["name"],
+			Key:        fileKey,
+			TestcaseId: metadata["testcase-id"],
+			Author:     metadata["author"],
+			Created:    metadata["created"],
+			Updated:    metadata["updated"],
+			Name:       metadata["name"],
 		})
 	}
 

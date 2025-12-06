@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -106,13 +105,26 @@ func (t *testcaseStorageService) ReadAllMetadataWithFilter(ctx context.Context, 
 
 	filteredMetadata := t.filter(metadata, filterParams)
 
+	offset := *filterParams.Offset
+	limit := *filterParams.Limit
+	if offset > len(filteredMetadata) {
+		filteredMetadata = []*entity.TestcaseMetadata{}
+	} else {
+		end := min(offset+limit, len(filteredMetadata))
+		filteredMetadata = filteredMetadata[offset:end]
+	}
+
 	t.logger.Debug("metadata filtered",
 		slog.Int("original", len(metadata)),
 		slog.Int("filtered", len(filteredMetadata)),
+		slog.Int("offset", offset),
+		slog.Int("limit", limit),
 	)
 	span.AddEvent("metadata filtered", trace.WithAttributes(
 		attribute.Int("original", len(metadata)),
 		attribute.Int("filtered", len(filteredMetadata)),
+		attribute.Int("offset", offset),
+		attribute.Int("limit", limit),
 	))
 
 	span.SetStatus(codes.Ok, "")
@@ -136,7 +148,7 @@ func (t *testcaseStorageService) passesAllFilters(metadata *entity.TestcaseMetad
 		return false
 	}
 
-	if filterParams.TestcaseId != "" && !strings.Contains(metadata.Key, filterParams.TestcaseId) {
+	if filterParams.TestcaseId != "" && metadata.TestcaseId != filterParams.TestcaseId {
 		return false
 	}
 
