@@ -4,4 +4,4 @@ package entity
 // ENUM(pending, not_run, running, passed, failed, skipped)
 type TestStatus int
 
-//go:generate go-enum -f=$GOFILE --marshal
+//go:generate go tool go-enum -f=$GOFILE --marshal
