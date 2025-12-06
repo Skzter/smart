@@ -74,6 +74,10 @@ func NewTestcaseStorageRepository(
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
 // nolint:dupl
 func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return "", fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Create")
 	defer span.End()
 
@@ -121,6 +125,10 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // Returns the TestCase or an error.
 // nolint:dupl
 func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Read")
 	defer span.End()
 
@@ -162,6 +170,10 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 // ReadAllMetadata retrieves metadata for all stored test cases from S3.
 // Returns a slice of TestcaseMetadata containing key, author, timestamps, and name for each test case.
 func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
 	defer span.End()
 
@@ -207,6 +219,10 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 // Returns an error if the key does not exist or the operation fails.
 // nolint:dupl
 func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Update")
 	defer span.End()
 
@@ -242,7 +258,14 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("failed to serialize object: %w", err)
 	}
 
+	// TODO: metadaten setzen reparieren
 	metadata := map[string]string{}
+	//{
+	//	"author":  userId,
+	//	"created": time,
+	//	"updated": time,
+	//	"name":    "",
+	//}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
@@ -264,6 +287,10 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // Returns an error if the deletion fails.
 // nolint:dupl
 func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Delete")
 	defer span.End()
 
