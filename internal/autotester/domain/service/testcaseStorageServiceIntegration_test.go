@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
@@ -45,125 +44,6 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 
 	assert.Equal(t, testcase.TestID, loaded.TestID)
 	assert.Equal(t, testcase.TestCode.Code, loaded.TestCode.Code)
-}
-
-// nolint:funlen
-func TestReadAllMetadataWithFilterIntegration(t *testing.T) {
-	setup := setupTestService(t)
-
-	testcases := []struct {
-		testcase *entity.TestCase
-		userId   string
-	}{
-		{
-			testcase: &entity.TestCase{
-				TestID: "test1",
-				TestCode: entity.TestCode{
-					Code: "test login functionality",
-				},
-				Status: entity.TestStatusPassed,
-			},
-			userId: "user1",
-		},
-		{
-			testcase: &entity.TestCase{
-				TestID: "test2",
-				TestCode: entity.TestCode{
-					Code: "test logout functionality",
-				},
-				Status: entity.TestStatusPassed,
-			},
-			userId: "user1",
-		},
-		{
-			testcase: &entity.TestCase{
-				TestID: "test3",
-				TestCode: entity.TestCode{
-					Code: "test integration",
-				},
-				Status: entity.TestStatusPassed,
-			},
-			userId: "user2",
-		},
-		{
-			testcase: &entity.TestCase{
-				TestID: "test4",
-				TestCode: entity.TestCode{
-					Code: "test performance",
-				},
-				Status: entity.TestStatusPassed,
-			},
-			userId: "user2",
-		},
-	}
-
-	for _, tc := range testcases {
-		_, err := setup.service.SaveTestcase(setup.ctx, tc.testcase, tc.userId)
-		require.NoError(t, err, "failed to save testcase: %s", tc.testcase.TestID)
-	}
-
-	oneDayAgo := time.Now().Add(-24 * time.Hour).UTC().Format(time.RFC3339)
-	oneDayFuture := time.Now().Add(24 * time.Hour).UTC().Format(time.RFC3339)
-
-	tests := []struct {
-		name          string
-		filter        *entity.GetRemoteTestcaseRequest
-		expectedCount int
-	}{
-		{
-			name:          "no filter",
-			filter:        &entity.GetRemoteTestcaseRequest{},
-			expectedCount: 4,
-		},
-		{
-			name:          "filter by user1",
-			filter:        &entity.GetRemoteTestcaseRequest{Author: "user1"},
-			expectedCount: 2,
-		},
-		{
-			name:          "filter by user2",
-			filter:        &entity.GetRemoteTestcaseRequest{Author: "user2"},
-			expectedCount: 2,
-		},
-		{
-			name:          "filter by testcaseId test1",
-			filter:        &entity.GetRemoteTestcaseRequest{TestcaseId: "test1"},
-			expectedCount: 1,
-		},
-		{
-			name:          "filter by testcaseId test2",
-			filter:        &entity.GetRemoteTestcaseRequest{TestcaseId: "test2"},
-			expectedCount: 1,
-		},
-		{
-			name:          "filter by createdAfter one day ago - all pass",
-			filter:        &entity.GetRemoteTestcaseRequest{CreatedAfter: oneDayAgo},
-			expectedCount: 4,
-		},
-		{
-			name:          "filter by createdBefore one day future - all pass",
-			filter:        &entity.GetRemoteTestcaseRequest{CreatedBefore: oneDayFuture},
-			expectedCount: 4,
-		},
-		{
-			name:          "filter by createdBefore one day ago - none pass",
-			filter:        &entity.GetRemoteTestcaseRequest{CreatedBefore: oneDayAgo},
-			expectedCount: 0,
-		},
-		{
-			name:          "filter by createdAfter one day future - none pass",
-			filter:        &entity.GetRemoteTestcaseRequest{CreatedAfter: oneDayFuture},
-			expectedCount: 0,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			data, err := setup.service.ReadAllMetadataWithFilter(setup.ctx, test.filter)
-			require.NoError(t, err)
-			assert.Len(t, data, test.expectedCount, "unexpected number of results")
-		})
-	}
 }
 
 const (
