@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,7 @@ func (a *AutotesterController) HandleGetRemoteTestcase(c *gin.Context) {
 	var query entity.GetRemoteTestcaseRequest
 
 	if err := c.ShouldBindQuery(&query); err != nil {
+		a.logger.Debug(fmt.Sprintf("GetRemoteTestcase request invalid: %s\n", err.Error()))
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}

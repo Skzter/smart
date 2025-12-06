@@ -74,6 +74,8 @@ func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *ent
 	t.logger.Debug("testcase successfully saved",
 		slog.String("testID", testcase.TestID),
 	)
+	span.SetStatus(codes.Ok, "")
+
 	return key, nil
 }
 
