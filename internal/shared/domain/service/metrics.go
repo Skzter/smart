@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log/slog"
 	"os"
 	"time"
 
@@ -31,12 +32,13 @@ type MetricsService interface {
 
 type metricsService struct {
 	client *statsd.Client
+	logger *slog.Logger
 }
 
 // NewMetricsService creates a new MetricsService with DogStatsD client.
 // serviceName is used as the namespace prefix (e.g., "suproxy" -> "smart.suproxy.").
 // It reads DD_AGENT_HOST and DD_DOGSTATSD_PORT from environment variables.
-func NewMetricsService(serviceName string) (MetricsService, error) {
+func NewMetricsService(serviceName string, logger *slog.Logger) (MetricsService, error) {
 	addr := os.Getenv("DD_AGENT_HOST")
 	if addr == "" {
 		addr = "localhost"
@@ -58,23 +60,35 @@ func NewMetricsService(serviceName string) (MetricsService, error) {
 		return nil, err
 	}
 
-	return &metricsService{client: client}, nil
+	return &metricsService{client: client, logger: logger}, nil
 }
 
 func (m *metricsService) IncRequestSuccess() {
-	_ = m.client.Incr(MetricRequestSuccess, nil, 1)
+	err := m.client.Incr(MetricRequestSuccess, nil, 1)
+	if err != nil {
+		m.logger.Error("failed to increment request success", "error", err)
+	}
 }
 
 func (m *metricsService) IncRequestError(errorType string) {
-	_ = m.client.Incr(MetricRequestError, []string{"error_type:" + errorType}, 1)
+	err := m.client.Incr(MetricRequestError, []string{"error_type:" + errorType}, 1)
+	if err != nil {
+		m.logger.Error("failed to increment request error", "error", err)
+	}
 }
 
 func (m *metricsService) RecordRequestDuration(duration time.Duration) {
-	_ = m.client.Timing(MetricRequestDuration, duration, nil, 1)
+	err := m.client.Timing(MetricRequestDuration, duration, nil, 1)
+	if err != nil {
+		m.logger.Error("failed to record request duration", "error", err)
+	}
 }
 
 func (m *metricsService) RecordStatusCode(statusCode int) {
-	_ = m.client.Histogram(MetricStatusCode, float64(statusCode), nil, 1)
+	err := m.client.Histogram(MetricStatusCode, float64(statusCode), nil, 1)
+	if err != nil {
+		m.logger.Error("failed to record status code", "error", err)
+	}
 }
 
 func (m *metricsService) Close() error {

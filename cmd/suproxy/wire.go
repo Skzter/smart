@@ -51,8 +51,8 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 }
 
 // MetricsServiceProvider provides a new metrics service.
-func MetricsServiceProvider() (sharedService.MetricsService, error) {
-	return sharedService.NewMetricsService("suproxy")
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("suproxy", logger)
 }
 
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
