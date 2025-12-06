@@ -3,15 +3,17 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	autotesterEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -19,8 +21,10 @@ import (
 
 // Validator defines the interface for validating user prompts and requests.
 type Validator interface {
-	ValidatePrompt(ctx context.Context, userPrompt string) (bool, string, error)
-	ValidateRequest(ctx context.Context, req entity.Request) error
+	ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error)
+	ValidateRequest(ctx context.Context, req sharedEntity.Request) error
+	ValidateChat(ctx context.Context, chat *entity.Chat) error
+	ValidateMessage(ctx context.Context, msg *sharedEntity.Message) error
 }
 
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
@@ -44,8 +48,8 @@ func NewValidatorService(openAIservice sharedService.OpenAI, config *config.Conf
 // ValidatePrompt checks if the user prompt contains required information for test generation.
 // It uses OpenAI service to validate the prompt against predefined validation rules.
 // Returns nil if valid, ErrPromptInvalid if validation fails, or other errors on request failure.
-func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool, string, error) {
-	if err := assert.NotNil(ctx); err != nil {
+func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error) {
+	if err := assert.NotNil(ctx, chat, request); err != nil {
 		s.logger.Error(err.Error())
 		return false, "", errors.ErrInternalServer
 	}
@@ -53,15 +57,18 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 	ctx, span := s.tracer.Start(ctx, "validatePrompt.ValidatePrompt")
 	defer span.End()
 
-	req := entity.Request{
-		Messages:     []entity.Message{{Role: entity.RoleUser, Body: userPrompt}},
+	chat.AddMessage(sharedEntity.NewMessage(request.Prompt, sharedEntity.RoleUser), entity.MessageTypeValidation)
+	req := sharedEntity.Request{
+		Messages:     chat.Filter(entity.MessageTypeValidation),
 		Model:        s.config.Model,
 		SystemPrompt: s.config.Prompts.ValidationPrompt,
 	}
+
 	if err := s.ValidateRequest(ctx, req); err != nil {
+		s.logger.Error("Request validation failed", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
-		return false, "Invalid Request", err
+		return false, "Invalid Request", errors.ErrValidation
 	}
 
 	resp, err := s.openAIservice.Request(ctx, req)
@@ -71,7 +78,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		return false, "", errors.ErrValidation
 	}
 
-	llmResponse := autotesterEntity.LlmValidationResponse{}
+	llmResponse := entity.LlmValidationResponse{}
 	if err = json.Unmarshal([]byte(resp.Body), &llmResponse); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "json unmarshalling failed")
@@ -79,16 +86,71 @@ func (s *validator) ValidatePrompt(ctx context.Context, userPrompt string) (bool
 		return false, "", errors.ErrInternalServer
 	}
 
+	if llmResponse.Valid {
+		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeUser
+	}
+
+	chat.AddMessage(resp, entity.MessageTypeValidation)
+
 	span.SetStatus(codes.Ok, "")
 	return llmResponse.Valid, llmResponse.Message, nil
 }
 
+// ValidateChat validates a Chat entity.
+// Returns an error if any required field is empty or invalid.
+func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
+	if err := assert.NotNil(ctx, chat); err != nil {
+		return err
+	}
+
+	_, span := s.tracer.Start(ctx, "validator.ValidateChat")
+	defer span.End()
+
+	if err := assert.StringsNotEmpty(
+		chat.Id,
+		chat.UserId,
+	); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing fields")
+		return fmt.Errorf("missing fields %w", err)
+	}
+
+	if chat.UpdatedAt.IsZero() {
+		err := fmt.Errorf("updatedAt is zero")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "updatedAt zero")
+		return err
+	}
+	if chat.CreatedAt.IsZero() {
+		err := fmt.Errorf("createdAt is Zero")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "createdAt zero")
+		return err
+	}
+
+	if err := assert.ArrayLengthGreaterThan(chat.Messages, 0); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing messages")
+		return err
+	}
+
+	for _, msg := range chat.Messages {
+		if err := s.ValidateMessage(ctx, &msg.Message); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "message validation failed")
+			return fmt.Errorf("invalid message: %w", err)
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
 // ValidateRequest checks if the request contains all necessary fields
 // before sending it to OpenAI.
-func (s *validator) ValidateRequest(ctx context.Context, req entity.Request) error {
+func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Request) error {
 	if err := assert.NotNil(ctx); err != nil {
-		s.logger.Error(err.Error())
-		return errors.ErrInternalServer
+		return err
 	}
 
 	_, span := s.tracer.Start(ctx, "validator.ValidateRequest")
@@ -99,17 +161,72 @@ func (s *validator) ValidateRequest(ctx context.Context, req entity.Request) err
 	)
 
 	if req.Model == "" {
-		s.logger.Error("Model empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("model is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing model")
 		return err
 	}
 	if req.SystemPrompt == "" {
-		s.logger.Error("SystemPrompt empty")
-		err := errors.ErrValidation
+		err := fmt.Errorf("systemPrompt is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing system prompt")
+		return err
+	}
+
+	if len(req.Messages) == 0 {
+		err := fmt.Errorf("messages is empty")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing messages")
+		return err
+	}
+
+	for _, msg := range req.Messages {
+		if err := s.ValidateMessage(ctx, msg); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "message validation failed")
+			return fmt.Errorf("invalid message: %w", err)
+		}
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+// ValidateMessage validates a Message entity.
+// Returns an error if any required field is empty or invalid.
+func (s *validator) ValidateMessage(ctx context.Context, msg *sharedEntity.Message) error {
+	if err := assert.NotNil(ctx, msg); err != nil {
+		return err
+	}
+
+	_, span := s.tracer.Start(ctx, "validator.ValidateMessage")
+	defer span.End()
+
+	if msg.Body == "" {
+		err := fmt.Errorf("body is empty")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing body")
+		return err
+	}
+
+	if msg.Role == "" {
+		err := fmt.Errorf("role is empty")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing role")
+		return err
+	}
+
+	if err := uuid.Validate(msg.Id); err != nil {
+		err := fmt.Errorf("invalid Id: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid id")
+		return err
+	}
+
+	if msg.CreatedAt.IsZero() {
+		err := fmt.Errorf("createdAt is Zero")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "createdAt zero")
 		return err
 	}
 

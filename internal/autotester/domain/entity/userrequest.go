@@ -1,10 +1,8 @@
 package entity
 
-import sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-
 // UserRequest represents a user request within a session, including prompt and log information.
 type UserRequest struct {
-	ChatId  string               `json:"conversationId"`
-	Message sharedEntity.Message `json:"message"`
-	UserId  string               `json:"userId"`
+	ChatId string `json:"conversationId"`
+	Prompt string `json:"prompt"`
+	UserId string `json:"userId"`
 }

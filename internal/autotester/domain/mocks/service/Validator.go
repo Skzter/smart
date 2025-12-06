@@ -8,7 +8,8 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	entity0 "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
 // NewMockValidator creates a new instance of MockValidator. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -38,9 +39,123 @@ func (_m *MockValidator) EXPECT() *MockValidator_Expecter {
 	return &MockValidator_Expecter{mock: &_m.Mock}
 }
 
+// ValidateChat provides a mock function for the type MockValidator
+func (_mock *MockValidator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
+	ret := _mock.Called(ctx, chat)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateChat")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat) error); ok {
+		r0 = returnFunc(ctx, chat)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockValidator_ValidateChat_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateChat'
+type MockValidator_ValidateChat_Call struct {
+	*mock.Call
+}
+
+// ValidateChat is a helper method to define mock.On call
+//   - ctx context.Context
+//   - chat *entity.Chat
+func (_e *MockValidator_Expecter) ValidateChat(ctx interface{}, chat interface{}) *MockValidator_ValidateChat_Call {
+	return &MockValidator_ValidateChat_Call{Call: _e.mock.On("ValidateChat", ctx, chat)}
+}
+
+func (_c *MockValidator_ValidateChat_Call) Run(run func(ctx context.Context, chat *entity.Chat)) *MockValidator_ValidateChat_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *entity.Chat
+		if args[1] != nil {
+			arg1 = args[1].(*entity.Chat)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockValidator_ValidateChat_Call) Return(err error) *MockValidator_ValidateChat_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockValidator_ValidateChat_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat) error) *MockValidator_ValidateChat_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ValidateMessage provides a mock function for the type MockValidator
+func (_mock *MockValidator) ValidateMessage(ctx context.Context, msg *entity0.Message) error {
+	ret := _mock.Called(ctx, msg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateMessage")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity0.Message) error); ok {
+		r0 = returnFunc(ctx, msg)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockValidator_ValidateMessage_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateMessage'
+type MockValidator_ValidateMessage_Call struct {
+	*mock.Call
+}
+
+// ValidateMessage is a helper method to define mock.On call
+//   - ctx context.Context
+//   - msg *entity0.Message
+func (_e *MockValidator_Expecter) ValidateMessage(ctx interface{}, msg interface{}) *MockValidator_ValidateMessage_Call {
+	return &MockValidator_ValidateMessage_Call{Call: _e.mock.On("ValidateMessage", ctx, msg)}
+}
+
+func (_c *MockValidator_ValidateMessage_Call) Run(run func(ctx context.Context, msg *entity0.Message)) *MockValidator_ValidateMessage_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *entity0.Message
+		if args[1] != nil {
+			arg1 = args[1].(*entity0.Message)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockValidator_ValidateMessage_Call) Return(err error) *MockValidator_ValidateMessage_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockValidator_ValidateMessage_Call) RunAndReturn(run func(ctx context.Context, msg *entity0.Message) error) *MockValidator_ValidateMessage_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ValidatePrompt provides a mock function for the type MockValidator
-func (_mock *MockValidator) ValidatePrompt(ctx context.Context, userPrompt string) (bool, string, error) {
-	ret := _mock.Called(ctx, userPrompt)
+func (_mock *MockValidator) ValidatePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error) {
+	ret := _mock.Called(ctx, chat, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidatePrompt")
@@ -49,21 +164,21 @@ func (_mock *MockValidator) ValidatePrompt(ctx context.Context, userPrompt strin
 	var r0 bool
 	var r1 string
 	var r2 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, string, error)); ok {
-		return returnFunc(ctx, userPrompt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) (bool, string, error)); ok {
+		return returnFunc(ctx, chat, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
-		r0 = returnFunc(ctx, userPrompt)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) bool); ok {
+		r0 = returnFunc(ctx, chat, request)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) string); ok {
-		r1 = returnFunc(ctx, userPrompt)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.Chat, *entity.UserRequest) string); ok {
+		r1 = returnFunc(ctx, chat, request)
 	} else {
 		r1 = ret.Get(1).(string)
 	}
-	if returnFunc, ok := ret.Get(2).(func(context.Context, string) error); ok {
-		r2 = returnFunc(ctx, userPrompt)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, *entity.Chat, *entity.UserRequest) error); ok {
+		r2 = returnFunc(ctx, chat, request)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -77,24 +192,30 @@ type MockValidator_ValidatePrompt_Call struct {
 
 // ValidatePrompt is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userPrompt string
-func (_e *MockValidator_Expecter) ValidatePrompt(ctx interface{}, userPrompt interface{}) *MockValidator_ValidatePrompt_Call {
-	return &MockValidator_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, userPrompt)}
+//   - chat *entity.Chat
+//   - request *entity.UserRequest
+func (_e *MockValidator_Expecter) ValidatePrompt(ctx interface{}, chat interface{}, request interface{}) *MockValidator_ValidatePrompt_Call {
+	return &MockValidator_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, chat, request)}
 }
 
-func (_c *MockValidator_ValidatePrompt_Call) Run(run func(ctx context.Context, userPrompt string)) *MockValidator_ValidatePrompt_Call {
+func (_c *MockValidator_ValidatePrompt_Call) Run(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest)) *MockValidator_ValidatePrompt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 *entity.Chat
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].(*entity.Chat)
+		}
+		var arg2 *entity.UserRequest
+		if args[2] != nil {
+			arg2 = args[2].(*entity.UserRequest)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -105,13 +226,13 @@ func (_c *MockValidator_ValidatePrompt_Call) Return(b bool, s string, err error)
 	return _c
 }
 
-func (_c *MockValidator_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, userPrompt string) (bool, string, error)) *MockValidator_ValidatePrompt_Call {
+func (_c *MockValidator_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (bool, string, error)) *MockValidator_ValidatePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ValidateRequest provides a mock function for the type MockValidator
-func (_mock *MockValidator) ValidateRequest(ctx context.Context, req entity.Request) error {
+func (_mock *MockValidator) ValidateRequest(ctx context.Context, req entity0.Request) error {
 	ret := _mock.Called(ctx, req)
 
 	if len(ret) == 0 {
@@ -119,7 +240,7 @@ func (_mock *MockValidator) ValidateRequest(ctx context.Context, req entity.Requ
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, entity.Request) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, entity0.Request) error); ok {
 		r0 = returnFunc(ctx, req)
 	} else {
 		r0 = ret.Error(0)
@@ -134,20 +255,20 @@ type MockValidator_ValidateRequest_Call struct {
 
 // ValidateRequest is a helper method to define mock.On call
 //   - ctx context.Context
-//   - req entity.Request
+//   - req entity0.Request
 func (_e *MockValidator_Expecter) ValidateRequest(ctx interface{}, req interface{}) *MockValidator_ValidateRequest_Call {
 	return &MockValidator_ValidateRequest_Call{Call: _e.mock.On("ValidateRequest", ctx, req)}
 }
 
-func (_c *MockValidator_ValidateRequest_Call) Run(run func(ctx context.Context, req entity.Request)) *MockValidator_ValidateRequest_Call {
+func (_c *MockValidator_ValidateRequest_Call) Run(run func(ctx context.Context, req entity0.Request)) *MockValidator_ValidateRequest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 entity.Request
+		var arg1 entity0.Request
 		if args[1] != nil {
-			arg1 = args[1].(entity.Request)
+			arg1 = args[1].(entity0.Request)
 		}
 		run(
 			arg0,
@@ -162,7 +283,7 @@ func (_c *MockValidator_ValidateRequest_Call) Return(err error) *MockValidator_V
 	return _c
 }
 
-func (_c *MockValidator_ValidateRequest_Call) RunAndReturn(run func(ctx context.Context, req entity.Request) error) *MockValidator_ValidateRequest_Call {
+func (_c *MockValidator_ValidateRequest_Call) RunAndReturn(run func(ctx context.Context, req entity0.Request) error) *MockValidator_ValidateRequest_Call {
 	_c.Call.Return(run)
 	return _c
 }
