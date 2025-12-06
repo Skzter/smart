@@ -32,7 +32,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  
+  /api/v1/validationRes:
+    post:
+      summary: "Validates the prompt sent by the user."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  example: "Test prompt to validate"
+      responses:
+        '200':
+          description: Successful validation of the prompt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Prompt is valid."
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
   /api/v1/userInfo:
     post:
       summary: "Requests User Info from Backend on inital load"
