@@ -153,7 +153,11 @@ tasks:
     dir: "deployments"
     cmds:
       - docker login gitlab.dit.htwk-leipzig.de:5050
-      - "PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d"
+      - >
+        PATH=$LPATH;
+        DOPPLER_PROJECT=htwk-projekt DOPPLER_CONFIG=dev
+        doppler run --project htwk-projekt --config dev --
+        docker compose -f compose.dev.yml up -d
 
   compose-local-down:
     desc: "Stop all the containers in local environment"

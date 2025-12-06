@@ -3,12 +3,25 @@ services:
     build:
       context: ..
       dockerfile: deployments/suproxy/Dockerfile.dev
+    working_dir: /app
+    command: ["dev-entrypoint.sh"]
+    volumes:
+      - ..:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
     ports:
       - "8080:8080"
     networks:
       - default
     environment:
-      - OPEN_AI_KEY=${OPEN_AI_KEY}
+      - APP_CMD=./cmd/suproxy
+      - VERSION=dev
+      - VERSION_VAR=gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build.Version
+      - OPENAI_KEY_VAR=gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build.OpenAIKey
+      - OPENAI_KEY=${OPENAI_KEY}
+      - DOPPLER_PROJECT=${DOPPLER_PROJECT:-htwk-projekt}
+      - DOPPLER_CONFIG=${DOPPLER_CONFIG:-dev}
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}
       - DD_AGENT_HOST=datadog
       - DD_TRACE_AGENT_PORT=8126
       - DD_SITE=us5.datadoghq.com
@@ -17,12 +30,25 @@ services:
     build:
       context: ..
       dockerfile: deployments/autotester/Dockerfile.dev
+    working_dir: /app
+    command: ["dev-entrypoint.sh"]
+    volumes:
+      - ..:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
     ports:
       - "8081:8081"
     networks:
       - default
     environment:
-      - OPEN_AI_KEY=${OPEN_AI_KEY}
+      - APP_CMD=./cmd/autotester
+      - VERSION=dev
+      - VERSION_VAR=gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build.Version
+      - OPENAI_KEY_VAR=gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build.OpenAIKey
+      - OPENAI_KEY=${OPENAI_KEY}
+      - DOPPLER_PROJECT=${DOPPLER_PROJECT:-htwk-projekt}
+      - DOPPLER_CONFIG=${DOPPLER_CONFIG:-dev}
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}
       - DD_AGENT_HOST=datadog
       - DD_TRACE_AGENT_PORT=8126
       - DD_SITE=us5.datadoghq.com
@@ -73,3 +99,7 @@ services:
       - DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
       - DD_CONTAINER_EXCLUDE_LOGS="name:dd-agent"
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
