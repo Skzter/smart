@@ -52,3 +52,10 @@ tmp/
 
 # Test output for autotester
 fixtures/autotester/out/output.txt
+
+# k6 
+test/k6/suproxy/k6-summary.json
+test/k6/suproxy/k6-summary.png
+scripts/k6/k6-summary.png
+scripts/k6/.venv/
+scripts/k6/k6_plotting.egg-info/

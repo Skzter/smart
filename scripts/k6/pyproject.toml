@@ -1,0 +1,12 @@
+[project]
+name = "k6-plotting"
+version = "0.1.0"
+description = "Plot k6 summary outputs for suproxy load tests"
+requires-python = ">=3.10"
+dependencies = [
+  "matplotlib>=3.8",
+]
+
+[tool.uv]
+package = true
+
