@@ -7,6 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -16,6 +21,8 @@ import (
 func TestHandleTemplate(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		TestName       string
 		template       string
@@ -41,6 +48,13 @@ func TestHandleTemplate(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -56,7 +70,18 @@ func TestHandleTemplate(t *testing.T) {
 			ctx.Errors.Errors()
 
 			cfg.Template = test.template
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				tracer,
+				mockMetricsServ,
+			)
 
 			if err != nil {
 				t.Errorf("build failed")

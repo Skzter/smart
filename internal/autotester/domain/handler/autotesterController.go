@@ -3,6 +3,10 @@ package handler
 import (
 	"log/slog"
 
+	"go.opentelemetry.io/otel/trace"
+
+	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -19,6 +23,8 @@ type AutotesterController struct {
 	dockerService                service.Docker
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
+	tracer                       trace.Tracer
+	metricsService               shared.MetricsService
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -32,6 +38,8 @@ func NewAutotesterController(
 	dockerService service.Docker,
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
+	tracer trace.Tracer,
+	metricsService shared.MetricsService,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -42,6 +50,8 @@ func NewAutotesterController(
 		dockerService,
 		remoteTestcaseStorageService,
 		chatStorageService,
+		tracer,
+		metricsService,
 	); err != nil {
 		return nil, err
 	}
@@ -55,5 +65,7 @@ func NewAutotesterController(
 		dockerService:                dockerService,
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
+		tracer:                       tracer,
+		metricsService:               metricsService,
 	}, nil
 }
