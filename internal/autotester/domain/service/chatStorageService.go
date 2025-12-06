@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"slices"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -26,63 +29,102 @@ type ChatStorageService interface {
 // chatStorageService implements the ChatStorageService interface
 // and provides logic for storing Chat entities via the underlying repository.
 type chatStorageService struct {
-	logger *slog.Logger
-	repo   repository.ChatStorageRepository
+	logger    *slog.Logger
+	repo      repository.ChatStorageRepository
+	validator Validator
+	tracer    trace.Tracer
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository) (ChatStorageService, error) {
-	if err := assert.NotNil(logger, repo); err != nil {
+func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer) (ChatStorageService, error) {
+	if err := assert.NotNil(logger, repo, validator); err != nil {
 		return nil, err
 	}
 
 	return &chatStorageService{
-		logger: logger,
-		repo:   repo,
+		logger:    logger,
+		repo:      repo,
+		validator: validator,
+		tracer:    tracer,
 	}, nil
 }
 
 // SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
-func (s *chatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
-	if err := assert.NotNil(summary); err != nil {
+func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
+	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}
-	if err := summary.Validate(); err != nil {
+	ctx, span := s.tracer.Start(ctx, "chatStorageService.SaveChat")
+	defer span.End()
+
+	if err := s.validator.ValidateChat(ctx, chat); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error during validation")
 		return err
 	}
-	return s.repo.Create(ctx, summary)
+	if err := s.repo.Create(ctx, chat); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat")
+		return err
+	}
+	return nil
 }
 
 // LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
+	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadChat")
+	defer span.End()
+
 	if err := assert.StringNotEmpty(userId); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing userId")
 		return nil, fmt.Errorf("userId must not be empty")
 	}
 	if err := assert.StringNotEmpty(chatId); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing chatId")
 		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
 	chat, err := s.repo.Read(ctx, userId, chatId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while reading chat")
 		return nil, err
 	}
 
-	if err := chat.Validate(); err != nil {
+	if err := s.validator.ValidateChat(ctx, chat); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "retrieved invalid chat")
 		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return chat, nil
 }
 
 // FindByUserId retrieves an all ChatSummarys associated with the given userId
 // The resulting slice is ordered by updatedAt in descending order
 func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
+	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadUserChats")
+	defer span.End()
+
 	if err := assert.StringNotEmpty(userId); err != nil {
-		return nil, fmt.Errorf("key must not be empty")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing userId")
+		return nil, fmt.Errorf("userId must not be empty")
 	}
 	summaries, err := s.repo.FindByUserID(ctx, userId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while retrieving chatSummaries")
 		return nil, err
 	}
 
@@ -90,5 +132,6 @@ func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) (
 	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
 		return -a.UpdatedAt.Compare(b.UpdatedAt)
 	})
+	span.SetStatus(codes.Ok, "")
 	return summaries, nil
 }

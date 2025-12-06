@@ -6,11 +6,11 @@ import "shared/taglist.pkl"
 
 const model: String = "gpt-5-mini-2025-08-07"
 const autoplaywright_debug: Boolean = true
-logDir_autopw: String = "/var/log/smart/"
+logDir_autopw: String = "/tmp/smart/logs"
 
 port: String = "8081" 
 
-logLevel: String = "debug"
+logLevel: String = "info"
 
 class Prompts {
     validationPrompt : String = 

@@ -73,7 +73,7 @@ func TestRequest(t *testing.T) {
 		{
 			testName: "Valid Request",
 			request: entity.Request{
-				Messages: []entity.Message{
+				Messages: []*entity.Message{
 					{Role: "user", Body: "user prompt"},
 				},
 			},

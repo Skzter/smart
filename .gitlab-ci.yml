@@ -320,7 +320,7 @@ deploy_htwk:
     name: alpine:latest
   stage: deploy
   tags:
-    - fdit
+    - image
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
