@@ -5,12 +5,15 @@
     import CopyButton from "./CopyButton.svelte";
     import * as Dialog from "./ui/dialog";
     import RunButton from "./RunButton.svelte";
+    import { Runner } from "$lib/runner.svelte";
 
     let {
         message = $bindable(),
+        testRunner = $bindable(),
         iscode,
     }: {
         message: string;
+        testRunner: Runner;
         iscode: boolean;
     } = $props();
 
@@ -21,24 +24,36 @@
     <CopyButton bind:code={message} />
     {#if iscode}
         <Dialog.Root>
-            <Dialog.Trigger>
+            {#if testRunner.getCurTest() !== ""}
+                <Dialog.Trigger>
+                    <RunButton
+                        classes="h-7 gap-1.5 px-2 cursor-pointer"
+                        variant="outline"
+                        size="sm"
+                        bind:activeTab
+                        bind:testRunner
+                    />
+                </Dialog.Trigger>
+            {:else}
                 <RunButton
                     classes="h-7 gap-1.5 px-2 cursor-pointer"
                     variant="outline"
                     size="sm"
                     bind:activeTab
+                    bind:testRunner
                 />
-            </Dialog.Trigger>
+            {/if}
             <Dialog.Trigger>
-                <EditButton />
+                <EditButton bind:activeTab />
             </Dialog.Trigger>
             <SaveButton
                 classes="h-7 gap-1.5 px-2 cursor-pointer"
                 variant="outline"
                 size="sm"
                 bind:code={message}
+                bind:testRunner
             />
-            <RunWindow bind:code={message} bind:activeTab />
+            <RunWindow bind:code={message} bind:activeTab bind:testRunner />
         </Dialog.Root>
     {/if}
 </div>

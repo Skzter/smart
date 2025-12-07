@@ -5,16 +5,17 @@
         type ButtonSize,
         type ButtonVariant,
     } from "$lib/components/ui/button/index.js";
-    import { runner } from "$lib/shared.svelte";
+    import type { Runner } from "$lib/runner.svelte";
 
     let {
         activeTab = $bindable(),
+        testRunner = $bindable(),
         classes,
         variant,
         size,
     }: {
         activeTab: string;
-
+        testRunner: Runner;
         classes: string;
         variant: ButtonVariant;
         size: ButtonSize;
@@ -26,9 +27,11 @@
     {variant}
     {size}
     onclick={() => {
-        runner.run();
+        activeTab = "run";
+        testRunner.run();
     }}
+    disabled={testRunner.isRunning() || testRunner.getCurTest() === ""}
 >
     <Play class="h-3.5 w-3.5" />
-    <p>{runner.isRunning() ? "Lädt..." : "Ausführen"}</p>
+    <p>{testRunner.isRunning() ? "Lädt..." : "Ausführen"}</p>
 </Button>

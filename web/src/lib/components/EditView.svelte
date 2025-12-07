@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Runner } from "$lib/runner.svelte";
     import MonacoEditor from "./MonacoEditor.svelte";
     import { Play, Save } from "@lucide/svelte";
     import { runContainer } from "$lib/api";
@@ -7,9 +8,11 @@
     let {
         code = $bindable(),
         activeTab = $bindable(),
+        testRunner = $bindable(),
     }: {
         code: string;
         activeTab: string;
+        testRunner: Runner;
     } = $props();
 </script>
 
@@ -41,12 +44,14 @@
                         variant="ghost"
                         size="sm"
                         bind:activeTab
+                        bind:testRunner
                     />
                     <SaveButton
                         classes="flex justify-start"
                         variant="ghost"
                         size="sm"
                         {code}
+                        bind:testRunner
                     />
                 </div>
             </div>

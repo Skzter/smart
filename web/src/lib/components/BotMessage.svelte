@@ -2,6 +2,7 @@
     import { Bot } from "@lucide/svelte";
     import Code from "./Code.svelte";
     import TestButtons from "./TestButtons.svelte";
+    import { Runner } from "$lib/runner.svelte";
 
     let {
         msg,
@@ -12,6 +13,8 @@
     // treat message as code when it looks like code or contains Playwright imports/markers
     const messageIsCode = $derived((msg || "").includes("@playwright"));
     let message = $derived(msg);
+
+    let runner = new Runner();
 </script>
 
 <div class="flex justify-start gap-2 items-start">
@@ -22,7 +25,11 @@
     </div>
 
     <div class="bg-muted rounded-2xl rounded-tl-sm max-w-[80%] overflow-hidden">
-        <TestButtons iscode={messageIsCode} bind:message></TestButtons>
+        <TestButtons
+            iscode={messageIsCode}
+            bind:message
+            bind:testRunner={runner}
+        ></TestButtons>
 
         {#if messageIsCode}
             <Code bind:code={message} />
