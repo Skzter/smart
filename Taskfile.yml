@@ -113,9 +113,9 @@ tasks:
       ENVIRONMENT: "production"
     cmds:
       - echo "building suproxy with version {{.VERSION}}"
-      - CGO_ENABLED=0 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
       - echo "building autotester with version {{.VERSION}}"
-      - CGO_ENABLED=0 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
     silent: true
 
   # --------------------------------------------------------------------------------

@@ -67,7 +67,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "", Body: "prompt"}},
+				Messages:     []*entity.Message{{Role: "", Body: "prompt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -76,7 +76,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: ""}},
+				Messages:     []*entity.Message{{Role: "role", Body: ""}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -85,7 +85,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty model",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "",
 				SystemPrompt: "sys prompt",
 			},
@@ -94,7 +94,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty system prompt",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "",
 			},
@@ -103,7 +103,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "happy path",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -296,7 +296,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "user prompt"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -306,7 +306,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid with history",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages: []entity.Message{
+				Messages: []*entity.Message{
 					{
 						Role: "user",
 						Body: "what is 3 + 2?",
@@ -338,7 +338,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		{
 			name: "nil context",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "user prompt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -349,7 +349,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "create Error",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "error please"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "error please"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -359,7 +359,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "no choices",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "no choices"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "no choices"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -369,7 +369,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "empty response",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "empty response"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "empty response"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},

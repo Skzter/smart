@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	autotesterMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
@@ -110,6 +112,7 @@ func TestGeneratePrompt(t *testing.T) {
 	tests := []struct {
 		name              string
 		expectedResult    string
+		validateReturns   []any
 		requestReturns    []any
 		getTaglistReturns []any
 		expectErr         bool
@@ -118,8 +121,18 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:              "success",
 			expectedResult:    code,
+			validateReturns:   []any{nil},
 			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
 			getTaglistReturns: []any{tags, nil},
+			expectErr:         false,
+			ctx:               context.Background(),
+		},
+		{
+			name:              "getTaglist error",
+			expectedResult:    code,
+			validateReturns:   []any{nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			getTaglistReturns: []any{nil, errors.New("err")},
 			expectErr:         false,
 			ctx:               context.Background(),
 		},
@@ -129,7 +142,16 @@ func TestGeneratePrompt(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:              "validate error",
+			expectedResult:    code,
+			validateReturns:   []any{errors.New("err")},
+			getTaglistReturns: []any{tags, nil},
+			expectErr:         true,
+			ctx:               context.Background(),
+		},
+		{
 			name:              "empty code segment in openau response",
+			validateReturns:   []any{nil},
 			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: ""}, nil},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
@@ -137,6 +159,7 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "openai error",
+			validateReturns:   []any{nil},
 			requestReturns:    []any{nil, sharedErrors.ErrInternalServer},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
@@ -150,8 +173,8 @@ func TestGeneratePrompt(t *testing.T) {
 			taglist := mocks.NewMockTaglistStorage(t)
 			validator := autotesterMocks.NewMockValidator(t)
 
-			if tt.ctx != nil {
-				validator.On("ValidateRequest", mock.Anything, mock.Anything).Return(nil)
+			if tt.validateReturns != nil {
+				validator.On("ValidateRequest", mock.Anything, mock.Anything).Return(tt.validateReturns...)
 			}
 
 			if tt.requestReturns != nil {
@@ -163,7 +186,7 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator, tracer)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi")
+			got, err := svc.GeneratePrompt(tt.ctx, &entity.Chat{}, &entity.UserRequest{})
 
 			if tt.expectErr {
 				assert.NotNil(t, err)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	openai "github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -116,12 +115,7 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 		return nil, err
 	}
 
-	return &entity.Message{
-		Id:        uuid.NewString(),
-		Role:      openai.ChatMessageRoleAssistant,
-		Body:      text,
-		CreatedAt: time.Now(),
-	}, nil
+	return entity.NewMessage(text, entity.RoleAssistant), nil
 }
 
 func validateRequestEntity(request entity.Request) error {
