@@ -23,6 +23,7 @@ type AutotesterController struct {
 	dockerService                service.Docker
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
+	chatManager                  service.ChatManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
 }
@@ -38,6 +39,7 @@ func NewAutotesterController(
 	dockerService service.Docker,
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
+	chatManager service.ChatManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
 ) (*AutotesterController, error) {
@@ -50,6 +52,7 @@ func NewAutotesterController(
 		dockerService,
 		remoteTestcaseStorageService,
 		chatStorageService,
+		chatManager,
 		tracer,
 		metricsService,
 	); err != nil {
@@ -65,6 +68,7 @@ func NewAutotesterController(
 		dockerService:                dockerService,
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
+		chatManager:                  chatManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
 	}, nil

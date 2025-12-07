@@ -42,6 +42,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 
 	for _, test := range tests {
@@ -55,6 +56,7 @@ func TestNewAutoTesterController(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockChatManager,
 				tracer,
 				mockMetricsServ,
 			)

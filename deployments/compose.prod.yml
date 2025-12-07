@@ -17,7 +17,7 @@ services:
     restart: always
     volumes:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
-      - /var/log/smart/:/var/log/smart/
+      - /tmp/smart/logs/:/tmp/smart/logs/
       - /tmp/tests:/tmp/tests
     ports:
       - "8079:8081"

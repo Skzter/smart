@@ -46,6 +46,7 @@ func TestHandleTemplate(t *testing.T) {
 	mockValServ := mocks.NewMockValidator(t)
 	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
+	mockChatManager := mocks.NewMockChatManager(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
@@ -79,6 +80,7 @@ func TestHandleTemplate(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockChatManager,
 				tracer,
 				mockMetricsServ,
 			)

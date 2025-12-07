@@ -189,6 +189,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 
@@ -221,6 +222,7 @@ func TestHandleRunContainer(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockChatManager,
 				tracer,
 				mockMetricsServ,
 			)

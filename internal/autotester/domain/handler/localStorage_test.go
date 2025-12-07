@@ -69,6 +69,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
@@ -100,6 +101,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockChatManager,
 				tracer,
 				mockMetricsServ,
 			)
@@ -168,6 +170,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
@@ -211,6 +214,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockChatManager,
 				tracer,
 				mockMetricsServ,
 			)
