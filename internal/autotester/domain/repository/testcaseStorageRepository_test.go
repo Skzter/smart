@@ -411,6 +411,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func testcaseUpdateTestCaseProvider() []struct {
 	name        string
 	obj         *entity.TestCase
@@ -434,7 +435,13 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			ctx:  ctx,
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
+				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("old data"), map[string]string{
+					"testcase-id": "id",
+					"author":      "original-author",
+					"created":     "1234567890",
+					"updated":     "1234567890",
+					"name":        "test-name",
+				}, nil)
 				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, "valid-key", []byte("dummy parquet data"), mock.Anything).Return(nil)
 			},
@@ -469,22 +476,12 @@ func testcaseUpdateTestCaseProvider() []struct {
 			expectError: true,
 		},
 		{
-			name: "file exists check error",
+			name: "download metadata error",
 			obj:  &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
 			key:  "valid-key",
 			ctx:  ctx,
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(false, errors.New("exists error"))
-			},
-			expectError: true,
-		},
-		{
-			name: "file does not exist",
-			obj:  &entity.TestCase{TestID: "id", TestCode: entity.TestCode{Code: "code"}, Status: entity.TestStatusPassed},
-			key:  "valid-key",
-			ctx:  ctx,
-			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(false, nil)
+				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return(nil, nil, errors.New("download error"))
 			},
 			expectError: true,
 		},
@@ -494,7 +491,13 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			ctx:  ctx,
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
+				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("old data"), map[string]string{
+					"testcase-id": "id",
+					"author":      "original-author",
+					"created":     "1234567890",
+					"updated":     "1234567890",
+					"name":        "test-name",
+				}, nil)
 				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return(nil, errors.New("parquet error"))
 			},
 			expectError: true,
@@ -505,7 +508,13 @@ func testcaseUpdateTestCaseProvider() []struct {
 			key:  "valid-key",
 			ctx:  ctx,
 			setupMock: func(s3 *mocks.MockS3StorageWrapper, parquet *mocks.MockParquetFileWrapper[entity.TestCase]) {
-				s3.EXPECT().FileExists(mock.Anything, "valid-key").Return(true, nil)
+				s3.EXPECT().DownloadParquetFile(mock.Anything, "valid-key").Return([]byte("old data"), map[string]string{
+					"testcase-id": "id",
+					"author":      "original-author",
+					"created":     "1234567890",
+					"updated":     "1234567890",
+					"name":        "test-name",
+				}, nil)
 				parquet.EXPECT().WriteStructToParquet(mock.Anything, mock.AnythingOfType("entity.TestCase")).Return([]byte("dummy parquet data"), nil)
 				s3.EXPECT().UploadParquetFile(mock.Anything, "valid-key", []byte("dummy parquet data"), mock.Anything).Return(errors.New("s3 error"))
 			},

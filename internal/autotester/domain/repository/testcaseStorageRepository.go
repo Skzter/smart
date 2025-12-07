@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -240,17 +239,11 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	exists, err := r.s3Wrapper.FileExists(ctx, key)
+	_, oldMetadata, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to check if key exists")
-		return fmt.Errorf("failed to check if key exists: %w", err)
-	}
-	if !exists {
-		err := errors.New("cannot update: key does not exist")
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "key does not exist")
-		return err
+		span.SetStatus(codes.Error, "failed to read old metadata")
+		return fmt.Errorf("failed to read old metadata: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(ctx, *obj)
@@ -260,14 +253,13 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("failed to serialize object: %w", err)
 	}
 
-	// TODO: metadaten setzen reparieren
-	metadata := map[string]string{}
-	//{
-	//	"author":  userId,
-	//	"created": time,
-	//	"updated": time,
-	//	"name":    "",
-	//}
+	metadata := map[string]string{
+		"testcase-id": oldMetadata["testcase-id"],
+		"author":      oldMetadata["author"],
+		"created":     oldMetadata["created"],
+		"updated":     fmt.Sprintf("%d", time.Now().UTC().Unix()),
+		"name":        oldMetadata["name"],
+	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
@@ -276,7 +268,7 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return fmt.Errorf("failed to upload updated object: %w", err)
 	}
 
-	span.AddEvent("object successfully overwritten", trace.WithAttributes(
+	span.AddEvent("object successfully updated", trace.WithAttributes(
 		attribute.String("key", key),
 		attribute.String("type", "testcase"),
 	))
