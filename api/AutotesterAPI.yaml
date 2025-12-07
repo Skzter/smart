@@ -59,18 +59,7 @@ paths:
                   type: string
                 chatId:
                   type: string
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+        
                 
   /api/v1/userInfo:
     post:

@@ -9,7 +9,7 @@ const baseURL = "/api/v1/";
 export async function getChatResponse(params: object, url: string) {
     const response = await axios({
         method: "post",
-        url: url,
+        url: "chat",
         baseURL: baseURL,
         data: params,
     });

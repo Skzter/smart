@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -51,6 +50,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		}
 	}()
 
+	//TODO: re-enable validation after testing: dont return any messages
 	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
@@ -92,10 +92,6 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		a.logger.Error("JSON binding failed", "error", err)
 		return
-	}
-
-	if userRequest.ChatId == "" {
-		userRequest.ChatId = uuid.NewString()
 	}
 
 	if assert.StringNotEmpty(userRequest.UserId) != nil {

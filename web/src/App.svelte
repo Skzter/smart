@@ -9,7 +9,7 @@
     import LogoutButton from "./components/LogoutButton.svelte";
 
     let prompt = $state("");
-    let convo = $state<{ id: number; question: string; answer: string }[]>([]);
+    let convo = $state<{ id: number; role: string, content: string }[]>([]);
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
@@ -47,82 +47,86 @@
         userId: userId,
         conversationId: conversationId,
     });
-    const chatUrl = "/chat";
+    const chatUrl = "chat";
 
     let isLoading = $state(false);
+    
     async function onclick() {
         if (!userId) {
             console.error("User is not authenticated.");
             return;
         }
 
-        const userQuestion = prompt;
+        const userQuestion = prompt.trim();
+        if (!userQuestion) {
+            console.warn("Prompt is empty, skipping request.");
+            return;
+        }
+
         prompt = "";
-        // push question early so UI shows it immediately
+
+        // Push user message
         convo.push({
-            question: userQuestion,
-            answer: "",
+            role: "user",
+            content: userQuestion,
         });
 
-        // Validate prompt first
         isLoading = true;
         try {
-            const valResp = await validatePrompt({ userId, conversationId, prompt: userQuestion });
+            // === VALIDATE PROMPT ===
+            const valResp = await validatePrompt({
+                userId,
+                conversationId,
+                prompt: userQuestion,
+            });
 
-            // Backend may return either a simple { isValid, message } (spec) or the project's
-            // ResponseForUser shape { message: { body }, userId, chatId }.
-            const data = valResp.data ?? {};
+            conversationId = valResp.data.chatId ?? "";
 
-            // If API uses explicit isValid flag, honour it
-            if (typeof data.isValid === "boolean") {
-                if (!data.isValid) {
-                    const msg = data.message ?? "Prompt invalid";
-                    convo[convo.length - 1].answer = typeof msg === "string" ? msg : msg?.body ?? JSON.stringify(msg);
-                    isLoading = false;
-                    return;
-                }
-            } else if (data.message) {
-                // If backend returns ResponseForUser, check message body. If it is not the success message,
-                // treat it as invalid and show the message returned.
-                const body = (data.message && (data.message.body ?? data.message)) as string;
-                if (body && body !== "Prompt validated successfully!") {
-                    convo[convo.length - 1].answer = body;
-                    // capture conversation id if backend returned it
-                    conversationId = data.chatId ?? data.conversationId ?? conversationId;
-                    isLoading = false;
-                    return;
-                }
-                // if success, keep going
-                conversationId = data.chatId ?? data.conversationId ?? conversationId;
+            if (valResp.data.message?.body) {
+                convo.push({
+                    role: "system",
+                    content: valResp.data.message.body,
+                });
             }
 
-            // If validation passed, proceed to chat/generation
+            if (valResp.data.message?.body !== "Prompt validated successfully!") {
+                isLoading = false;
+                return;
+            }
+
+            // === CALL MAIN CHAT ===
+            // keep old paramsChatRequest style
             paramsChatRequest.prompt = userQuestion;
             paramsChatRequest.userId = userId;
             paramsChatRequest.conversationId = conversationId;
 
-            try {
-                const answer = await getChatResponse(paramsChatRequest, chatUrl);
-                convo[convo.length - 1].answer = answer.data.message.body;
-                conversationId = answer.data.conversationId ?? "";
-            } catch (err) {
-                if (err && (err as any).isAxiosError) {
-                    convo[convo.length - 1].answer = (err as any).response?.data?.message ?? "Server error";
-                } else {
-                    convo[convo.length - 1].answer = "no axios error returned - something went horribly wrong";
-                }
+            const answer = await getChatResponse(paramsChatRequest, chatUrl);
+
+            if (answer.data.message?.body) {
+                convo.push({
+                    role: "assistant",
+                    content: answer.data.message.body,
+                });
             }
+
+            conversationId = answer.data.conversationId ?? "";
+
         } catch (err) {
-            // validation call failed (network/server error)
-            if (err && (err as any).isAxiosError) {
-                convo[convo.length - 1].answer = (err as any).response?.data?.message ?? "Validation failed";
-            } else {
-                convo[convo.length - 1].answer = "Validation failed: unknown error";
+            let errorMsg = "An unexpected error occurred.";
+            if (err.isAxiosError && err.response?.data?.message) {
+                errorMsg = err.response.data.message;
             }
+            convo.push({
+                role: "system",
+                content: errorMsg,
+            });
         } finally {
             isLoading = false;
         }
     }
+
+
+
 
     let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes
@@ -149,15 +153,18 @@
             bind:this={container}
         >
             {#each convo as c}
-                <Box msg={c.question} name="User" {userId} {conversationId} />
-                {#if c.answer}
+                {#if c.role === "user"}
+                    <Box msg={c.content} name="User" {userId} {conversationId} />
+                {:else if c.role === "assistant"}
                     <Box
-                        msg={c.answer}
+                        msg={c.content}
                         name="Bot"
                         {userId}
                         {conversationId}
-                        isCode={c.answer.startsWith("import")}
+                        isCode={c.content.startsWith("import")}
                     />
+                {:else if c.role === "system"}
+                    <Box msg={c.content} name="System" {userId} {conversationId} />
                 {/if}
             {/each}
             {#if isLoading}
