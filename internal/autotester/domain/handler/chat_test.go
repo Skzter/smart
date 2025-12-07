@@ -264,24 +264,29 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: "validating err", ResponseError: sharedErrors.ErrValidation},
+				{Function: "ValidatePrompt", UserPrompt: "validating err", ResponseError: errors.New("err")},
 			},
 		},
 	}
 
-	mockValServ := mocks.NewMockValidator(t)
-	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
-	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatStorageServ := mocks.NewMockChatStorageService(t)
-	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
-
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
+			mockValServ := mocks.NewMockValidator(t)
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockChatManager := mocks.NewMockChatManager(t)
+
 			for _, mc := range test.MockSetup {
-				mockValServ.EXPECT().
-					ValidatePrompt(mock.Anything, mc.UserPrompt).
+				mockValServ.On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).
 					Return(mc.ExpectedBool, mc.ExpectedResponse, mc.ResponseError)
+			}
+
+			// Only expect LoadChat for requests that successfully parse (not invalid JSON)
+			if test.ExpectedStatus != http.StatusBadRequest {
+				mockChatManager.On("LoadChat", mock.Anything, mock.Anything).Return(&entity.Chat{}, nil)
 			}
 
 			req, _ := http.NewRequest(http.MethodPost, "/api/v1/chat/validity", bytes.NewBufferString(test.RequestBody))
@@ -290,7 +295,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
 
 			controller.HandleChatRequestValidity(ctx)
 

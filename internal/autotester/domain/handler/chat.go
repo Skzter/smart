@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -93,10 +94,23 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 	}
 
 	if userRequest.ChatId == "" {
-		userRequest.ChatId = uuid.New().String()
+		userRequest.ChatId = uuid.NewString()
 	}
 
-	valid, msg, err := a.validationService.ValidatePrompt(c, userRequest.Message.Body)
+	if assert.StringNotEmpty(userRequest.UserId) != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		a.logger.Error("No UserID provided in Request")
+		return
+	}
+
+	chat, err := a.chatManager.LoadChat(c, userRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: errors.ErrInternalServer.Error()})
+		a.logger.Error("Loading Chat failed", "error", err)
+		return
+	}
+
+	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		a.logger.Error("Validation failed", "error", err)
