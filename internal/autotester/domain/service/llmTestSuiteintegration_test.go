@@ -18,8 +18,7 @@ import (
 )
 
 // nolint: funlen
-func PromptTestSuite(t *testing.T) {
-	// Skip wenn kein API Key
+func TestPromptTestSuite(t *testing.T) {
 	if os.Getenv("OPENAI_KEY") == "" {
 		t.Skip("Skipping integration test: OPENAI_KEY not set")
 	}
@@ -158,8 +157,6 @@ func PromptTestSuite(t *testing.T) {
 			if llmResp.Valid != tc.expectedOutput {
 				t.Errorf("Expected Valid=%v, got Valid=%v\nMessage: %s\nRaw: %s",
 					tc.expectedOutput, llmResp.Valid, llmResp.Message, resp.Body)
-			} else {
-				t.Logf("Test passed: Valid=%v as expected", llmResp.Valid)
 			}
 		})
 	}

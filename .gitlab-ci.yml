@@ -204,7 +204,7 @@ llm_test_suite:
   stage: llm_testing
   script:
     - echo "Running LLM test suite..."
-    - doppler run -- go test -tags=llmtest ./internal/autotester/domain/service/llmTestSuiteintegration_test.go -v
+    - doppler run -- go test -tags=llmtest -run TestPromptTestSuite ./internal/autotester/domain/service -v
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
