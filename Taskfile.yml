@@ -125,6 +125,7 @@ tasks:
     internal: true
     env:
       APP_CMD: "./cmd/{{.APP_NAME}}"
+      FLAGS: "{{.FLAGS}}"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
       DD_AGENT_HOST: localhost
@@ -148,6 +149,14 @@ tasks:
         vars:
           APP_NAME: autotester
 
+  run-autotester-headless:
+    desc: "Run the autotester service in headless mode"
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: autotester
+          FLAGS: "--headless"
+          
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
     dir: "deployments"

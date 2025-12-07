@@ -6,7 +6,7 @@
     } from "./ui/button/button.svelte";
     import { saveTestLocal } from "$lib/api";
     import type { SaveState } from "$types/save";
-    import { chat, user } from "$lib/shared.svelte";
+    import { chat, runner, user } from "$lib/shared.svelte";
     import { toast } from "svelte-sonner";
 
     let {
@@ -24,7 +24,9 @@
     let saveState = $state<SaveState>("idle");
 
     $effect(() => {
-        console.log("SaveState: " + saveState + " TestID: " + chat.currTestId);
+        console.log(
+            "SaveState: " + saveState + " TestID: " + runner.getCurTest(),
+        );
     });
 
     async function saveTest(testcode: string) {
@@ -51,7 +53,7 @@
                 code: testcode,
             });
 
-            chat.currTestId = test.testcaseId;
+            runner.setTest(test.testcaseId);
             console.log("Test saved successfully:", test);
             saveState = "success";
 
