@@ -7,13 +7,16 @@
     import TabsView from "./TabsView.svelte";
     import EditView from "./EditView.svelte";
     import ResultView from "./ResultView.svelte";
+    import type { Runner } from "$lib/runner.svelte";
 
     let {
         code = $bindable(),
         activeTab = $bindable(),
+        testRunner = $bindable(),
     }: {
         code: string;
         activeTab: string;
+        testRunner: Runner;
     } = $props();
 
     let view = $state("split");
@@ -54,7 +57,7 @@
 
     {#if activeTab === "edit"}
         <div class="flex-1 overflow-hidden">
-            <EditView bind:activeTab bind:code />
+            <EditView bind:activeTab bind:code bind:testRunner />
         </div>
     {:else if activeTab === "run"}
         <div
@@ -63,7 +66,7 @@
                 : 'grid grid-cols-1'} gap-0 overflow-hidden"
         >
             {#if view == "split" || view == "code"}
-                <OutputView />
+                <OutputView bind:testRunner />
             {/if}
             {#if view == "split" || view == "browser"}
                 <BrowserView />

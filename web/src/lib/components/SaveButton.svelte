@@ -4,18 +4,18 @@
         type ButtonSize,
         type ButtonVariant,
     } from "./ui/button/button.svelte";
-    import { saveTestLocal } from "$lib/api";
     import type { SaveState } from "$types/save";
-    import { chat, runner, user } from "$lib/shared.svelte";
-    import { toast } from "svelte-sonner";
+    import type { Runner } from "$lib/runner.svelte";
 
     let {
         code = $bindable(),
+        testRunner = $bindable(),
         classes,
         variant,
         size,
     }: {
         code: string;
+        testRunner: Runner;
         classes: string;
         variant: ButtonVariant;
         size: ButtonSize;
@@ -25,64 +25,16 @@
 
     $effect(() => {
         console.log(
-            "SaveState: " + saveState + " TestID: " + runner.getCurTest(),
+            "SaveState: " + saveState + " TestID: " + testRunner.getCurTest(),
         );
     });
-
-    async function saveTest(testcode: string) {
-        if (!user.id || !chat.id) {
-            console.error(
-                "Missing IDs - ChatID: " + chat.id + " UserID: " + user.id,
-            );
-            toast.error("Speichern fehlgeschlagen", {
-                description: "Benutzer- oder Konversations-ID fehlt.",
-            });
-            return;
-        }
-
-        const sanitizedUserId = user.id.includes("|")
-            ? user.id.split("|")[1]
-            : user.id;
-
-        saveState = "saving";
-
-        try {
-            let test = await saveTestLocal({
-                userId: sanitizedUserId,
-                conversationId: chat.id,
-                code: testcode,
-            });
-
-            runner.setTest(test.testcaseId);
-            console.log("Test saved successfully:", test);
-            saveState = "success";
-
-            toast.success("Test erfolgreich gespeichert!");
-        } catch (error) {
-            console.error("Failed to save test:", error);
-            saveState = "error";
-
-            let errorMsg = "Unbekannter Fehler";
-            if (error instanceof Error) {
-                errorMsg = error.message;
-            }
-
-            toast.error("Speichern fehlgeschlagen", {
-                description: errorMsg,
-            });
-        } finally {
-            setTimeout(() => {
-                saveState = "idle";
-            }, 2000);
-        }
-    }
 </script>
 
 <Button
     {variant}
     {size}
     class={classes}
-    onclick={() => saveTest(code)}
+    onclick={() => testRunner.storeTest(code)}
     disabled={saveState === "saving"}
 >
     <Save class="h-3.5 w-3.5" />
