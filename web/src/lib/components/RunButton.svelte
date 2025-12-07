@@ -9,7 +9,7 @@
 
     let {
         activeTab = $bindable(),
-        testRunner = $bindable(),
+        testRunner,
         classes,
         variant,
         size,

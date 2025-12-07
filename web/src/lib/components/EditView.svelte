@@ -7,7 +7,7 @@
     let {
         code = $bindable(),
         activeTab = $bindable(),
-        testRunner = $bindable(),
+        testRunner,
     }: {
         code: string;
         activeTab: string;
@@ -43,14 +43,14 @@
                         variant="ghost"
                         size="sm"
                         bind:activeTab
-                        bind:testRunner
+                        {testRunner}
                     />
                     <SaveButton
                         classes="flex justify-start"
                         variant="ghost"
                         size="sm"
                         {code}
-                        bind:testRunner
+                        {testRunner}
                     />
                 </div>
             </div>

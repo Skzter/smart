@@ -9,7 +9,7 @@
 
     let {
         message = $bindable(),
-        testRunner = $bindable(),
+        testRunner,
         iscode,
     }: {
         message: string;
@@ -31,7 +31,7 @@
                         variant="outline"
                         size="sm"
                         bind:activeTab
-                        bind:testRunner
+                        {testRunner}
                     />
                 </Dialog.Trigger>
             {:else}
@@ -40,7 +40,7 @@
                     variant="outline"
                     size="sm"
                     bind:activeTab
-                    bind:testRunner
+                    {testRunner}
                 />
             {/if}
             <Dialog.Trigger>
@@ -51,9 +51,9 @@
                 variant="outline"
                 size="sm"
                 bind:code={message}
-                bind:testRunner
+                {testRunner}
             />
-            <RunWindow bind:code={message} bind:activeTab bind:testRunner />
+            <RunWindow bind:code={message} bind:activeTab {testRunner} />
         </Dialog.Root>
     {/if}
 </div>

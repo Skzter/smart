@@ -4,12 +4,12 @@
         type ButtonSize,
         type ButtonVariant,
     } from "./ui/button/button.svelte";
-    import type { SaveState } from "$types/save";
     import type { Runner } from "$lib/runner.svelte";
+    import Spinner from "./ui/spinner/spinner.svelte";
 
     let {
         code = $bindable(),
-        testRunner = $bindable(),
+        testRunner,
         classes,
         variant,
         size,
@@ -21,11 +21,12 @@
         size: ButtonSize;
     } = $props();
 
-    let saveState = $state<SaveState>("idle");
-
     $effect(() => {
         console.log(
-            "SaveState: " + saveState + " TestID: " + testRunner.getCurTest(),
+            "SaveState: " +
+                testRunner.getStorageState() +
+                " TestID: " +
+                testRunner.getCurTest(),
         );
     });
 </script>
@@ -35,8 +36,12 @@
     {size}
     class={classes}
     onclick={() => testRunner.storeTest(code)}
-    disabled={saveState === "saving"}
+    disabled={testRunner.getStorageState() === "saving"}
 >
-    <Save class="h-3.5 w-3.5" />
+    {#if testRunner.getStorageState() === "saving"}
+        <Spinner></Spinner>
+    {:else}
+        <Save class="h-3.5 w-3.5" />
+    {/if}
     <p>Speichern</p>
 </Button>
