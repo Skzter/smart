@@ -16,11 +16,11 @@ export async function getChatResponse(params: object, url: string) {
     return response;
 }
 
-/** Validates the prompt by sending it to the /validate endpoint
- * @param body: object containing the prompt to be validated
+/** Validates the prompt by sending it to the /validationRes endpoint
+ * @param body: object containing userId, conversationId, and prompt
  */
-export async function validatePrompt(body: { prompt: string }) {
-    return axios.post("/validate", body);
+export async function validatePrompt(body: { userId: string; conversationId: string; prompt: string }) {
+    return axios.post("validationRes", body, { baseURL });
 }
 
 /**

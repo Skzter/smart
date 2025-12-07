@@ -2,7 +2,7 @@
     import Prompt from "./components/Prompt.svelte";
     import Box from "./components/Box.svelte";
     import { Spinner } from "flowbite-svelte";
-    import { getChatResponse } from "./lib/Api.ts";
+    import { getChatResponse, validatePrompt } from "./lib/Api.ts";
     import { onMount } from "svelte";
     import { auth } from "./lib/authService";
     import LoginButton from "./components/LoginButton.svelte";
@@ -58,25 +58,66 @@
 
         const userQuestion = prompt;
         prompt = "";
+        // push question early so UI shows it immediately
         convo.push({
             question: userQuestion,
             answer: "",
         });
-        isLoading = true;
-        paramsChatRequest.prompt = userQuestion;
-        paramsChatRequest.userId = userId;
-        paramsChatRequest.conversationId = conversationId;
 
+        // Validate prompt first
+        isLoading = true;
         try {
-            const answer = await getChatResponse(paramsChatRequest, chatUrl);
-            convo[convo.length - 1].answer = answer.data.message.body;
-            conversationId = answer.data.conversationId ?? "";
+            const valResp = await validatePrompt({ userId, conversationId, prompt: userQuestion });
+
+            // Backend may return either a simple { isValid, message } (spec) or the project's
+            // ResponseForUser shape { message: { body }, userId, chatId }.
+            const data = valResp.data ?? {};
+
+            // If API uses explicit isValid flag, honour it
+            if (typeof data.isValid === "boolean") {
+                if (!data.isValid) {
+                    const msg = data.message ?? "Prompt invalid";
+                    convo[convo.length - 1].answer = typeof msg === "string" ? msg : msg?.body ?? JSON.stringify(msg);
+                    isLoading = false;
+                    return;
+                }
+            } else if (data.message) {
+                // If backend returns ResponseForUser, check message body. If it is not the success message,
+                // treat it as invalid and show the message returned.
+                const body = (data.message && (data.message.body ?? data.message)) as string;
+                if (body && body !== "Prompt validated successfully!") {
+                    convo[convo.length - 1].answer = body;
+                    // capture conversation id if backend returned it
+                    conversationId = data.chatId ?? data.conversationId ?? conversationId;
+                    isLoading = false;
+                    return;
+                }
+                // if success, keep going
+                conversationId = data.chatId ?? data.conversationId ?? conversationId;
+            }
+
+            // If validation passed, proceed to chat/generation
+            paramsChatRequest.prompt = userQuestion;
+            paramsChatRequest.userId = userId;
+            paramsChatRequest.conversationId = conversationId;
+
+            try {
+                const answer = await getChatResponse(paramsChatRequest, chatUrl);
+                convo[convo.length - 1].answer = answer.data.message.body;
+                conversationId = answer.data.conversationId ?? "";
+            } catch (err) {
+                if (err && (err as any).isAxiosError) {
+                    convo[convo.length - 1].answer = (err as any).response?.data?.message ?? "Server error";
+                } else {
+                    convo[convo.length - 1].answer = "no axios error returned - something went horribly wrong";
+                }
+            }
         } catch (err) {
-            if (err.isAxiosError) {
-                convo[convo.length - 1].answer = err.response.data.message;
+            // validation call failed (network/server error)
+            if (err && (err as any).isAxiosError) {
+                convo[convo.length - 1].answer = (err as any).response?.data?.message ?? "Validation failed";
             } else {
-                convo[convo.length - 1].answer =
-                    "no axios error returned - something went horribly wrong";
+                convo[convo.length - 1].answer = "Validation failed: unknown error";
             }
         } finally {
             isLoading = false;
