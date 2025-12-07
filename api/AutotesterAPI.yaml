@@ -290,11 +290,10 @@ paths:
           in: query
           schema:
             type: string
-            format: uuid
           description:  >
             Optional: Filters results by a specific user ID. 
             Can be combined with other filters. 
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+          example: "687385280dca20b77cfdcf74"
 
         - name: testcaseId
           in: query

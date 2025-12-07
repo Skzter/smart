@@ -47,7 +47,7 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 		},
 		{
 			TestName:       "Filter by author only",
-			QueryParams:    map[string]string{"author": "9177b856-46a0-11f0-9fe2-0242ac120002"},
+			QueryParams:    map[string]string{"author": "687385280dca20b77cfdcf74"},
 			ExpectedStatus: http.StatusOK,
 			expectedResponse: []*entity.TestcaseMetadata{
 				{Key: "testcase/test1_1701456000.parquet", Author: "9177b856-46a0-11f0-9fe2-0242ac120002", Created: "1701456000", Updated: "1701460000", Name: "Test 1"},
@@ -143,13 +143,6 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			SetupMock: func(m *mocks.MockTestcaseStorageService) {
 				m.EXPECT().ReadAllMetadataWithFilter(mock.Anything, mock.Anything).Return(nil, fmt.Errorf("storage service error"))
 			},
-		},
-		{
-			TestName:         "Invalid author format",
-			QueryParams:      map[string]string{"author": "invalid-uuid"},
-			ExpectedStatus:   http.StatusBadRequest,
-			expectedResponse: nil,
-			SetupMock:        func(m *mocks.MockTestcaseStorageService) {},
 		},
 		{
 			TestName:         "Invalid testcaseId format",
