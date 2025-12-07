@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -116,11 +117,10 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 		a.logger.Error("Validation failed", "error", err)
 		return
 	}
-
 	if !valid {
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
-				Message: sharedEntity.Message{Body: msg}, // show reason for failure
+				Message: sharedEntity.Message{Body: msg},
 				UserId:  userRequest.UserId,
 				ChatId:  userRequest.ChatId,
 			})
@@ -128,10 +128,15 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK,
-		&entity.ResponseForUser{
-			Message: sharedEntity.Message{Body: "Prompt validated successfully!"},
-			UserId:  userRequest.UserId,
-			ChatId:  userRequest.ChatId,
+		entity.ResponseForUser{
+			Message: sharedEntity.Message{
+				Id:        "",
+				Role:      "assistant",
+				Body:      "Prompt validated successfully!",
+				CreatedAt: time.Now().UTC(),
+			},
+			UserId: userRequest.UserId,
+			ChatId: userRequest.ChatId,
 		})
 }
 

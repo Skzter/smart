@@ -32,33 +32,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+                
   /api/v1/validationRes:
     post:
-      summary: "Validates the prompt sent by the user."
-      requestBody:
-        required: true
+      summary: "Validates a prompt with user/chat context"
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ChatRequest'
+    responses:
+      '200':
+        description: Validation result wrapped in ResponseForUser
         content:
           application/json:
             schema:
               type: object
               properties:
-                prompt:
+                message:
+                  type: object
+                  properties:
+                    body:
+                      type: string
+                userId:
                   type: string
-                  example: "Test prompt to validate"
-      responses:
-        '200':
-          description: Successful validation of the prompt
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  isValid:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Prompt is valid."
+                chatId:
+                  type: string
         '400':
           description: Bad request
           content:
