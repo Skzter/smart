@@ -65,7 +65,6 @@
 
         prompt = "";
 
-        // Push user message
         convo.push({
             role: "user",
             content: userQuestion,
@@ -73,7 +72,7 @@
 
         isLoading = true;
         try {
-            // === VALIDATE PROMPT ===
+            // validate prompt
             const valResp = await validatePrompt({
                 userId,
                 conversationId,
@@ -94,8 +93,7 @@
                 return;
             }
 
-            // === CALL MAIN CHAT ===
-            // keep old paramsChatRequest style
+            // get chat response
             paramsChatRequest.prompt = userQuestion;
             paramsChatRequest.userId = userId;
             paramsChatRequest.conversationId = conversationId;
