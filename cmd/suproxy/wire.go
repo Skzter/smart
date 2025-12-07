@@ -44,9 +44,15 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		S3WrapperProvider,
 		TagsearchServiceProvider,
 		TaglistConfigProvider,
+		MetricsServiceProvider,
 	)
 
 	return nil, nil
+}
+
+// MetricsServiceProvider provides a new metrics service.
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("suproxy", logger)
 }
 
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {

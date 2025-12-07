@@ -239,8 +239,19 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}
