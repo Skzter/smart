@@ -8,15 +8,6 @@
 
     let input = $state("");
 
-    let paramsChatRequest: ApiChatRequest = $derived({
-        message: {
-            body: "",
-            role: "user",
-        },
-        userId: user.id,
-        conversationId: chat.id,
-    });
-
     async function onclick() {
         if (!user.id) {
             console.error("User is not authenticated.");
@@ -30,8 +21,11 @@
             answer: "",
         });
         chat.isLoading = true;
-        paramsChatRequest.message.body = userQuestion;
-        paramsChatRequest.userId = user.id;
+        let paramsChatRequest: ApiChatRequest = {
+            prompt: userQuestion,
+            userId: user.id,
+            conversationId: chat.id,
+        };
 
         try {
             const answer = await getChatResponse(paramsChatRequest);

@@ -5,7 +5,7 @@ import type {
     ApiChatRequest,
     ApiChatResponse,
     ApiSaveTestLocal,
-    ApiSaveTEstLocalResponse,
+    ApiSaveTestLocalResponse,
     ApiRunContainer,
     ApiGetChatByIdResponse,
 } from "$types/api";
@@ -71,7 +71,7 @@ export async function getTemplate(): Promise<string> {
 
 export async function saveTestLocal(
     request: ApiSaveTestLocal,
-): Promise<ApiSaveTEstLocalResponse> {
+): Promise<ApiSaveTestLocalResponse> {
     try {
         const response = await axios({
             method: "post",

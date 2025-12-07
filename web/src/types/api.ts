@@ -14,10 +14,7 @@ export type ApiChatSummary = {
 };
 
 export type ApiChatRequest = {
-    message: {
-        body: string;
-        role: string;
-    };
+    prompt: string;
     userId: string;
     conversationId: string;
 };
