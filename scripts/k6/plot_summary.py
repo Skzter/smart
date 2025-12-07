@@ -1,82 +1,89 @@
 #!/usr/bin/env python3
-"""
-Plot latency percentiles and RPS from a k6 summary JSON.
-
-Usage (with uv):
-  uv run scripts/k6/plot_summary.py --input k6-summary.json --output k6-summary.png --duration 60
-
-Requires: matplotlib (uv will install automatically if not present).
-"""
-
-import argparse
 import json
-from pathlib import Path
-
+import argparse
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 def load_summary(path: Path) -> dict:
-  with path.open(encoding="utf-8") as f:
-    return json.load(f)
-
-
-def extract_percentiles(metric: dict) -> dict:
-  vals = metric.get("values", {})
-  def nz(key: str) -> float:
-    val = vals.get(key)
-    return float(val) if val is not None else 0.0
-
-  return {
-      "avg": nz("avg"),
-      "p50": nz("p(50)"),
-      "p90": nz("p(90)"),
-      "p95": nz("p(95)"),
-      "p99": nz("p(99)"),
-  }
-
-
-def plot_latency(ax, label: str, percentiles: dict):
-  order = ["avg", "p50", "p90", "p95", "p99"]
-  data = [percentiles.get(k) for k in order]
-  ax.bar(order, data, color="#4e79a7")
-  ax.set_title(f"{label} (ms)")
-  ax.set_ylabel("ms")
-  ax.grid(axis="y", linestyle="--", alpha=0.4)
-
-
-def plot_rps(ax, http_reqs: dict, duration_seconds: float):
-  total = http_reqs.get("count", 0)
-  rps = total / duration_seconds if duration_seconds > 0 else 0
-  ax.bar(["rps"], [rps], color="#f28e2b")
-  ax.set_title("Requests per second")
-  ax.set_ylabel("req/s")
-  ax.grid(axis="y", linestyle="--", alpha=0.4)
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def main():
-  parser = argparse.ArgumentParser(description="Plot k6 summary JSON to PNG")
-  parser.add_argument("--input", default="k6-summary.json", help="Path to k6 summary JSON")
-  parser.add_argument("--output", default="k6-summary.png", help="Output PNG path")
-  parser.add_argument("--duration", type=float, default=60.0, help="Test duration in seconds (for RPS)")
-  args = parser.parse_args()
+    parser = argparse.ArgumentParser(description="Create ONE PNG containing all k6 load test graphs")
+    parser.add_argument("-i", "--input", required=True, type=Path, help="Path to k6-summary.json")
+    parser.add_argument("-o", "--output", required=True, type=Path, help="Output PNG file (will be overwritten)")
+    args = parser.parse_args()
 
-  summary = load_summary(Path(args.input))
-  metrics = summary.get("metrics", {})
+    if not args.input.exists():
+        raise SystemExit(f"Input file not found: {args.input}")
 
-  http_req_duration = extract_percentiles(metrics.get("http_req_duration", {}))
-  custom_latency = extract_percentiles(metrics.get("suproxy_response_time", {}))
-  http_reqs = metrics.get("http_reqs", {})
+    summary = load_summary(args.input)
+    metrics = summary["metrics"]
 
-  fig, axes = plt.subplots(1, 3, figsize=(10, 4))
-  plot_latency(axes[0], "http_req_duration", http_req_duration)
-  plot_latency(axes[1], "suproxy_response_time", custom_latency)
-  plot_rps(axes[2], http_reqs, args.duration)
+    # ---- Create combined figure ----
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))  # 3 plots side-by-side
 
-  plt.tight_layout()
-  plt.savefig(args.output, dpi=150)
-  print(f"Wrote {args.output}")
+    # === Plot 1: Duration percentiles ===
+    dur = metrics["http_req_duration"]
+    labels = ["avg", "p50", "p90", "p95", "p99"]
+    values = [
+        dur.get("avg"),
+        dur.get("p(50)"),
+        dur.get("p(90)"),
+        dur.get("p(95)"),
+        dur.get("p(99)"),
+    ]
+    ax = axes[0]
+    ax.bar(labels, values)
+    ax.set_ylabel("Duration (ms)")
+    ax.set_title("HTTP request duration")
+    for i, v in enumerate(values):
+        ax.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
+
+    # === Plot 2: Timing breakdown ===
+    blocked = metrics["http_req_blocked"]["avg"]
+    connecting = metrics["http_req_connecting"]["avg"]
+    sending = metrics["http_req_sending"]["avg"]
+    waiting = metrics["http_req_waiting"]["avg"]
+    receiving = metrics["http_req_receiving"]["avg"]
+
+    labels2 = ["blocked", "connecting", "sending", "waiting", "receiving"]
+    values2 = [blocked, connecting, sending, waiting, receiving]
+
+    ax = axes[1]
+    ax.bar(labels2, values2)
+    ax.set_ylabel("Duration (ms)")
+    ax.set_title("HTTP timing breakdown")
+    for i, v in enumerate(values2):
+        ax.text(i, v, f"{v:.3f}", ha="center", va="bottom", fontsize=7)
+
+    # === Plot 3: RPS ===
+    http_reqs = metrics["http_reqs"]
+    iterations = metrics.get("iterations", {})
+
+    labels3 = ["http_reqs/s"]
+    values3 = [http_reqs["rate"]]
+
+    if "rate" in iterations:
+        labels3.append("iterations/s")
+        values3.append(iterations["rate"])
+
+    ax = axes[2]
+    ax.bar(labels3, values3)
+    ax.set_ylabel("Rate (per second)")
+    ax.set_title("Load (rates)")
+    for i, v in enumerate(values3):
+        ax.text(i, v, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
+
+    # ---- Save combined PNG ----
+    plt.tight_layout()
+    plt.savefig(args.output, dpi=150)
+    plt.close()
+
+    print(f"Created PNG: {args.output}")
 
 
 if __name__ == "__main__":
-  main()
-
+    main()
