@@ -12,7 +12,7 @@
     let {
         code = $bindable(),
         activeTab = $bindable(),
-        testRunner = $bindable(),
+        testRunner,
     }: {
         code: string;
         activeTab: string;
@@ -57,7 +57,7 @@
 
     {#if activeTab === "edit"}
         <div class="flex-1 overflow-hidden">
-            <EditView bind:activeTab bind:code bind:testRunner />
+            <EditView bind:activeTab bind:code {testRunner} />
         </div>
     {:else if activeTab === "run"}
         <div

@@ -2,12 +2,16 @@ import { toast } from "svelte-sonner";
 import { Mutex } from "async-ts";
 import { user, chat } from "$lib/shared.svelte";
 import { saveTestLocal } from "./api";
+import type { SaveState } from "$types/save";
 
+function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 export class Runner {
     private m: Mutex = new Mutex();
     private running: boolean = $state(false);
 
-    private storedState: string = $state("idle");
+    private storageState: SaveState = $state("idle");
     private storedTest: string = $state("");
 
     public result: string = $state("");
@@ -40,7 +44,7 @@ export class Runner {
             ? user.id.split("|")[1]
             : user.id;
 
-        this.storedState = "saving";
+        this.storageState = "saving";
 
         try {
             const test = await saveTestLocal({
@@ -48,15 +52,16 @@ export class Runner {
                 conversationId: chat.id,
                 code: testcode,
             });
+            await sleep(3000);
 
             this.setTest(test.testcaseId);
             console.log("Test saved successfully:", test);
-            this.storedTest = "success";
+            this.storageState = "success";
 
             toast.success("Test erfolgreich gespeichert!");
         } catch (error) {
             console.error("Failed to save test:", error);
-            this.storedTest = "error";
+            this.storageState = "error";
 
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof Error) {
@@ -71,13 +76,17 @@ export class Runner {
             });
         } finally {
             setTimeout(() => {
-                this.storedState = "idle";
+                this.storageState = "idle";
             }, 2000);
         }
     }
 
     public getCurTest(): string {
         return this.storedTest;
+    }
+
+    public getStorageState(): string {
+        return this.storageState;
     }
 
     public async run() {
@@ -112,10 +121,6 @@ export class Runner {
         toast.message("Test wird ausgeführt", {
             description: `Id: ${this.storedTest}`,
         });
-
-        const sleep = (ms: number) => {
-            return new Promise((resolve) => setTimeout(resolve, ms));
-        };
 
         await sleep(5000);
 
