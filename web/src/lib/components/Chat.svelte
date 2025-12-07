@@ -37,7 +37,7 @@
                     {#each messages as message}
                         <UserMessage message={message.question} />
                         {#if message.answer}
-                            <BotMessage message={message.answer} />
+                            <BotMessage msg={message.answer} />
                         {/if}
                     {/each}
                     <!-- Loading indicator, auch eigener component und vllt auf vorgefertigte component zurück greifen -->

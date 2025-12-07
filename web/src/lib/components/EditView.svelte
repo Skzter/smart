@@ -5,14 +5,10 @@
     import { chat, user } from "$lib/shared.svelte";
 
     let {
-        testResult = $bindable(),
         code = $bindable(),
-        isLoading = $bindable(),
         activeTab = $bindable(),
     }: {
-        testResult: string;
         code: string;
-        isLoading: boolean;
         activeTab: string;
     } = $props();
 </script>
@@ -44,9 +40,7 @@
                         classes="flex justify-start"
                         variant="ghost"
                         size="sm"
-                        bind:isLoading
                         bind:activeTab
-                        bind:testResult
                     />
                     <SaveButton
                         classes="flex justify-start"

@@ -2,7 +2,7 @@
     import { Copy, Check } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
 
-    let { code }: { code: string } = $props();
+    let { code = $bindable() }: { code: string } = $props();
 
     let copied = $state(false);
 
