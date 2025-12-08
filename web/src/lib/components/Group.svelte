@@ -3,25 +3,11 @@
     import type { ApiChatSummary } from "$types/api";
     import { LucideMessageSquare } from "@lucide/svelte";
 
-    export let group: { label: string; summaries: ApiChatSummary[] };
-
-    function formatToCET(iso?: string) {
-        if (!iso) return "";
-        try {
-            const d = new Date(iso);
-            return new Intl.DateTimeFormat("de-DE", {
-                hour: "2-digit",
-                minute: "2-digit",
-                timeZone: "Europe/Berlin",
-            }).format(d);
-        } catch {
-            return iso.substring ? iso.substring(11, 16) : "";
-        }
-    }
-
-    function openChat(userId?: string, chatId?: string) {
-        console.log("changing to: ", userId, chatId);
-    }
+    let {
+        group,
+    }: {
+        group: { label: string; summaries: ApiChatSummary[] };
+    } = $props();
 </script>
 
 <Sidebar.Group>
