@@ -14,7 +14,7 @@
                 minute: "2-digit",
                 timeZone: "Europe/Berlin",
             }).format(d);
-        } catch (e) {
+        } catch {
             return iso.substring ? iso.substring(11, 16) : "";
         }
     }
