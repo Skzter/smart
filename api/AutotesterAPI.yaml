@@ -409,8 +409,9 @@ components:
     ChatRequest:
       type: object
       properties:
-        message:
-          $ref: '#/components/schemas/Message'
+        prompt:
+          type: string
+          example: "generate something"
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"

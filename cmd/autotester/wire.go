@@ -48,11 +48,12 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
+		service.NewChatManager,
+		service.NewChatStorageService,
+		repository.NewChatStorageRepository,
 		ChatParquetConfigProvider,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
-		repository.NewChatStorageRepository,
-		service.NewChatStorageService,
 	)
 
 	return nil, nil
@@ -77,14 +78,14 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 	return sharedService.NewOpenAI(repo, tracer)
 }
 
-// ChatSummaryParquetWrapperProvider provides a new chat summary parquet wrapper.
-func ChatSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
-	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, cfg, tracer)
-}
-
 // ChatParquetWrapperProvider provides a new session summary parquet wrapper.
 func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
 	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg, tracer)
+}
+
+// ChatSummaryParquetWrapperProvider provides a new ChatSummary parquet wrapper.
+func ChatSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
+	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, cfg, tracer)
 }
 
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper with default parquet config.
@@ -94,7 +95,6 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
-
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
 		AccessKey: build.AwsAccessKey,
