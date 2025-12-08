@@ -3,8 +3,11 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 
+	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino/components/model"
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
@@ -50,6 +53,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		service.NewDocker,
 		service.NewChatManager,
 		service.NewChatStorageService,
+		EinoChatModelProvider,
 		repository.NewChatStorageRepository,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
@@ -128,4 +132,12 @@ func TestCaseStorageRepositoryProvider(
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
+}
+
+// EinoChatModelProvider provides a new Eino ChatModel.
+func EinoChatModelProvider(cfg *config.Config) (model.ChatModel, error) {
+	return openai.NewChatModel(context.Background(), &openai.ChatModelConfig{
+		APIKey: build.OpenAIKey,
+		Model:  cfg.Model,
+	})
 }

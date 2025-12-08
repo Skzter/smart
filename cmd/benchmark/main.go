@@ -19,6 +19,14 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/cmd/benchmark/tests"
 )
 
+// Headless mode output structure
+type BenchmarkReport struct {
+	TotalTests      int
+	SuccessfulTests int
+	SuccessRate     float64
+	Failures        []string
+}
+
 const (
 	// for whole integration 15
 	// login 90
@@ -420,11 +428,17 @@ func runBenchmark(p *tea.Program, parallelism int, iterations int, testsPerMinut
 }
 
 func main() {
+	headless := flag.Bool("headless", false, "run in headless mode (no TUI) and output JSON report")
 	debug := flag.Bool("debug", false, "show debug information")
 	parallelism := flag.Int("p", defaultParallelism, "number of parallel tests to run")
 	iterations := flag.Int("i", iterationsPerTest, "number of iterations per test")
 	testsPerMinute := flag.Int("tpm", defaultTestsPerMinute, "number of tests per minute to run")
 	flag.Parse()
+
+	if *headless {
+		runHeadlessBenchmark(*parallelism, *iterations, *testsPerMinute)
+		return
+	}
 
 	const logfileName = "benchmark.log"
 	// We remove the logfile on each start to ensure a clean log.
