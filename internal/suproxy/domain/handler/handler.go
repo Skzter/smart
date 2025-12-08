@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -30,6 +32,7 @@ type SuproxyController struct {
 	tracer    trace.Tracer
 	syncer    service.TaglistSync
 	tagSearch service.TagSearchService
+	metrics   sharedService.MetricsService
 	cache     service.CacheService
 }
 
@@ -43,9 +46,10 @@ func NewSuproxyController(
 	tracer trace.Tracer,
 	syncer service.TaglistSync,
 	tagSearch service.TagSearchService,
+	metrics sharedService.MetricsService,
 	cache service.CacheService,
 ) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db, tracer, syncer, tagSearch, cache); err != nil {
+	if err := assert.NotNil(logger, config, val, client, db, tracer, syncer, tagSearch, metrics, cache); err != nil {
 		return nil, err
 	}
 
@@ -58,12 +62,14 @@ func NewSuproxyController(
 		tracer:    tracer,
 		syncer:    syncer,
 		tagSearch: tagSearch,
+		metrics:   metrics,
 		cache:     cache,
 	}, nil
 }
 
 // PostOfferlist handles the POST request to the /api/v1/Offerlist endpoint
 func (s *SuproxyController) PostOfferlist(c *gin.Context) {
+	start := time.Now()
 	ctx := c.Request.Context()
 	var request entity.Request
 
@@ -74,6 +80,8 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to bind JSON")
 		s.logger.Error("Failed to bind JSON", "error", err)
+		s.metrics.IncRequestError("invalid_json")
+		s.metrics.RecordRequestDuration(time.Since(start))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
@@ -103,16 +111,22 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to fetch offers")
 		s.logger.Error("Failed to fetch offers", "error", err)
+		s.metrics.IncRequestError("fetch_failed")
+		s.metrics.RecordRequestDuration(time.Since(start))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
 		return
 	}
 
+	s.metrics.RecordStatusCode(code)
+
 	if code == http.StatusOK {
 		go s.HandleRequest(c.Copy(), request, body)
 		span.SetStatus(codes.Ok, "supplier request successful")
+		s.metrics.IncRequestSuccess()
 	} else {
 		span.SetStatus(codes.Error, "supplier request failed")
 		s.logger.Error("supplier request failed", "code", code)
+		s.metrics.IncRequestError("supplier_error")
 	}
 
 	isError := code != http.StatusOK
@@ -120,6 +134,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 		s.logger.Error("cache: failed to store response", "error", err)
 	}
 
+	s.metrics.RecordRequestDuration(time.Since(start))
 	c.Data(code, "application/json", *body)
 }
 

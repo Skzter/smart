@@ -56,7 +56,7 @@ packages:
       dir: './internal/autotester/domain/mocks/repository'
     interfaces:
       ChatStorageRepository:
-      TestCaseStorageRepository:
+      TestcaseStorageRepository:
       FileSystem:
       TestcaseLocalStorageRepository:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service:
@@ -68,5 +68,6 @@ packages:
       TestcaseLocalStorageService:
       Docker:
       DockerClient:
+      ChatManager:
       ChatStorageService: 
       TestcaseStorageService:

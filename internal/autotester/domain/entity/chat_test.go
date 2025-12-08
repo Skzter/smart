@@ -2,161 +2,125 @@ package entity
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
 
-func validChat() *Chat {
-	return &Chat{
-		Id:            "chat123",
-		UserId:        "user123",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-		LastTest:      "test123",
-		SystemPrompt:  "sys prompt",
-		InitialPrompt: "usr prompt",
-		Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
+func TestNewChat(t *testing.T) {
+	tests := []struct {
+		name     string
+		id       string
+		messages []*Message
+	}{
+		{
+			name: "happy path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chat := NewChat(tt.id, tt.messages)
+
+			assert.NotNil(t, chat)
+		})
 	}
 }
 
-// nolint:funlen
-func TestValidate(t *testing.T) {
+func TestAddMessage(t *testing.T) {
 	tests := []struct {
-		name    string
-		obj     *Chat
-		wantErr bool
+		name     string
+		initial  []*Message
+		add      *entity.Message
+		expected []*Message
 	}{
 		{
-			name:    "valid Chat",
-			obj:     validChat(),
-			wantErr: false,
+			name:    "add to empty",
+			initial: nil,
+			add:     &entity.Message{Id: "m1"},
+			expected: []*Message{
+				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
+			},
 		},
 		{
-			name: "empty id",
-			obj: &Chat{
-				Id:            "",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
+			name:    "append to existing",
+			initial: []*Message{{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation}},
+			add:     &entity.Message{Id: "m2"},
+			expected: []*Message{
+				{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
+				{Message: entity.Message{Id: "m2"}, Type: MessageTypeValidation},
 			},
-			wantErr: true,
-		},
-		{
-			name: "empty userId",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty initialPrompt",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty systemprompt",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty messages",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty body",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "user", Body: ""}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty id",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "", Role: "user", Body: "msg"}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "message with empty role",
-			obj: &Chat{
-				Id:            "chat123",
-				UserId:        "user123",
-				CreatedAt:     time.Now(),
-				UpdatedAt:     time.Now(),
-				LastTest:      "test123",
-				SystemPrompt:  "sys prompt",
-				InitialPrompt: "usr prompt",
-				Messages:      []sharedEntity.Message{{Id: "id", Role: "", Body: "msg"}},
-			},
-			wantErr: true,
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := test.obj.Validate()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewChat("u", tt.initial)
+			// satisfy Validate precondition
+			c.LastAutoPlaywrightPrompt = "p"
 
-			if test.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.Nil(t, err)
+			c.AddMessage(tt.add, MessageTypeValidation)
+
+			assert.Len(t, c.Messages, len(tt.expected))
+			for i := range tt.expected {
+				assert.Equal(t, tt.expected[i], c.Messages[i])
 			}
+		})
+	}
+}
+
+func TestFilter(t *testing.T) {
+	base := []*Message{
+		{Message: entity.Message{Id: "m0"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m2"}, Type: MessageTypeGeneration},
+		{Message: entity.Message{Id: "m3"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m4"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m5"}, Type: MessageTypeValidation},
+		{Message: entity.Message{Id: "m6"}, Type: MessageTypeGeneration},
+	}
+
+	tests := []struct {
+		name         string
+		messages     []*Message
+		wantType     MessageType
+		wantMessages []*entity.Message
+	}{
+		{
+			name:         "no matches",
+			messages:     []*Message{{Message: entity.Message{Id: "only gen"}, Type: MessageTypeGeneration}},
+			wantType:     MessageTypeValidation,
+			wantMessages: nil,
+		},
+		{
+			name:     "multiple matches",
+			messages: base,
+			wantType: MessageTypeValidation,
+			wantMessages: []*entity.Message{
+				&base[0].Message,
+				&base[1].Message,
+				&base[3].Message,
+				&base[4].Message,
+				&base[5].Message,
+			},
+		},
+		{
+			name:         "single match",
+			messages:     base[1:4],
+			wantType:     MessageTypeGeneration,
+			wantMessages: []*entity.Message{&base[2].Message},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewChat("u", tt.messages)
+			c.LastAutoPlaywrightPrompt = "p"
+
+			got := c.Filter(tt.wantType)
+			c.Filter(tt.wantType)
+			assert.Equal(t, tt.wantMessages, got)
 		})
 	}
 }
