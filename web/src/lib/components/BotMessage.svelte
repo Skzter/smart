@@ -1,8 +1,8 @@
 <script lang="ts">
     import { Bot } from "@lucide/svelte";
-    import Code from "./Code.svelte";
     import TestButtons from "./TestButtons.svelte";
     import { Runner } from "$lib/runner.svelte";
+    import MonacoEditor from "./MonacoEditor.svelte";
 
     let {
         msg,
@@ -24,12 +24,16 @@
         <Bot class="h-5 w-5" />
     </div>
 
-    <div class="bg-muted rounded-2xl rounded-tl-sm max-w-[80%] overflow-hidden">
+    <div class="bg-muted rounded-2xl rounded-tl-sm w-[80%] overflow-hidden">
         <TestButtons iscode={messageIsCode} bind:message testRunner={runner}
         ></TestButtons>
 
         {#if messageIsCode}
-            <Code bind:code={message} />
+            <MonacoEditor
+                bind:value={message}
+                class="w-full h-full min-h-[200px]"
+                options={{ useTextHeight: true, maxHeight: 600 }}
+            ></MonacoEditor>
         {:else}
             <div class="px-4 py-2 wrap-break-word whitespace-pre-wrap">
                 {message}

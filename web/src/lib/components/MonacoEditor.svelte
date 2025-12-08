@@ -1,69 +1,79 @@
 <script lang="ts">
+    import { Editor, Environment, ModelManager } from "$lib/editor.svelte";
+    import { editor } from "monaco-editor";
     import { onMount, onDestroy } from "svelte";
-    import type * as Monaco from "monaco-editor";
-    import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
     let {
         value = $bindable(),
-        language = "typescript",
-        options = {},
+        class: className = "",
+        options,
     }: {
         value?: string;
-        language?: string;
-        options?: Monaco.editor.IStandaloneEditorConstructionOptions;
+        class?: string;
+        options?: {
+            maxHeight?: number;
+            useTextHeight?: boolean;
+        };
     } = $props();
 
-    let container = $state<HTMLElement | undefined>(undefined);
-    let editor: Monaco.editor.IStandaloneCodeEditor | undefined = undefined;
-    let disposable = $state<Monaco.IDisposable | undefined>(undefined);
+    let model = ModelManager.getModel("id");
+    if (!model) {
+        model = ModelManager.createModel("id", value ?? "", () => {
+            if (model) {
+                value = model.getMonacoModel().getValue();
+            }
+        });
+    }
 
-    self.MonacoEnvironment = {
-        getWorker() {
-            return new tsWorker();
-        },
-    };
+    let codeEditor: editor.IStandaloneCodeEditor | undefined = $state();
+    let editorContainer: HTMLElement = document.createElement("div");
 
     onMount(async () => {
-        if (!container) return;
-
-        const monaco = await import("monaco-editor");
-
-        editor = monaco.editor.create(container as HTMLElement, {
-            value: value ?? "",
-            language,
-            automaticLayout: true,
-            minimap: { enabled: false },
+        console.log("mount");
+        Environment();
+        codeEditor = await Editor(editorContainer, {
             theme: "vs-dark",
-            // enable word wrap by default; can be overridden via `options` prop
-            wordWrap: options.wordWrap ?? "on",
-            wrappingStrategy: options.wrappingStrategy ?? "advanced",
-            ...options,
+            wordWrap: "on",
+            allowOverflow: true,
+            minimap: {
+                enabled: false,
+            },
+            lineHeight: 1.5,
+            scrollBeyondLastLine: false,
         });
 
-        const model = editor.getModel();
-        disposable = model?.onDidChangeContent(() => {
-            const v = editor?.getValue();
-            // update bindable value so parent bindings update
-            value = v;
-        });
-    });
-
-    onDestroy(() => {
-        disposable?.dispose();
-        editor?.dispose();
+        codeEditor.setModel(model.getMonacoModel());
     });
 
     $effect(() => {
-        if (!editor) return;
-        if (value !== undefined && editor.getValue() !== value) {
-            const pos = editor.getPosition();
-            editor.setValue(value);
-            if (pos) editor.setPosition(pos);
+        if (model) {
+            const monacoModel = model.getMonacoModel();
+
+            if (monacoModel.getValue() !== (value ?? "")) {
+                monacoModel.setValue(value ?? "");
+            }
+
+            if (codeEditor) {
+                let height: number;
+                if (options?.useTextHeight) {
+                    height = codeEditor.getContentHeight();
+                } else {
+                    height = editorContainer.clientHeight;
+                }
+                codeEditor.layout({
+                    height: Math.min(height, options?.maxHeight ?? 10000),
+                    width: editorContainer.clientWidth,
+                });
+            }
         }
+    });
+
+    onDestroy(() => {
+        codeEditor?.dispose();
     });
 </script>
 
-<div bind:this={container} class="h-full min-h-[200px] w-full"></div>
+<div bind:this={editorContainer} class={className}></div>
 
 <style>
     :global(.monaco-editor) {

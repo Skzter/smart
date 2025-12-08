@@ -56,7 +56,7 @@
     <TabsView bind:activeTab on:tabChange={handleTabChange} />
 
     {#if activeTab === "edit"}
-        <div class="flex-1 overflow-hidden">
+        <div class="flex-1 overflow-visible">
             <EditView bind:activeTab bind:code {testRunner} />
         </div>
     {:else if activeTab === "run"}

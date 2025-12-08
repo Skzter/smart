@@ -17,8 +17,8 @@
 </script>
 
 <div class="flex-1 grid gap-0 h-full" style="grid-template-columns: 70% 30%">
-    <div class="overflow-y-auto h-full">
-        <MonacoEditor bind:value={code} language="typescript" />
+    <div class="h-full overflow-y-visible">
+        <MonacoEditor bind:value={code} class="h-full w-full" />
     </div>
     <div
         class="bg-gray-300 flex items-center justify-center border-l overflow-y-auto p-6"
