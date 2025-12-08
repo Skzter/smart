@@ -19,6 +19,7 @@ type AutotesterController struct {
 	dockerService                service.Docker
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
+	chatManager                  service.ChatManager
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -32,6 +33,7 @@ func NewAutotesterController(
 	dockerService service.Docker,
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
+	chatManager service.ChatManager,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -42,6 +44,7 @@ func NewAutotesterController(
 		dockerService,
 		remoteTestcaseStorageService,
 		chatStorageService,
+		chatManager,
 	); err != nil {
 		return nil, err
 	}
@@ -55,5 +58,6 @@ func NewAutotesterController(
 		dockerService:                dockerService,
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
+		chatManager:                  chatManager,
 	}, nil
 }
