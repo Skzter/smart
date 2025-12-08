@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach } from "vitest";
 import NewChatButton from "../../src/lib/components/NewChatButton.svelte";
 import { chat, messages } from "$lib/shared.svelte";
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
 describe("NewChatButton", () => {
     beforeEach(() => {
@@ -11,7 +11,9 @@ describe("NewChatButton", () => {
         chat.isLoading = false;
 
         messages.length = 0;
-        messages.push({ question: "Hello", answer: "Hi there!" });
+        messages.push(
+            { question: "Hello", answer: "Hi there!" }
+        );
     });
 
     it("renders a button with 'New Chat' text", () => {
@@ -24,7 +26,7 @@ describe("NewChatButton", () => {
     it("displays Plus icon", () => {
         const { container } = render(NewChatButton);
 
-        const svg = container.querySelector("svg");
+        const svg = container.querySelector('svg');
         expect(svg).toBeInTheDocument();
     });
 
@@ -63,7 +65,7 @@ describe("NewChatButton", () => {
         const user = userEvent.setup();
         messages.push(
             { question: "Message 1", answer: "Response 1" },
-            { question: "Message 2", answer: "Response 2" },
+            { question: "Message 2", answer: "Response 2" }
         );
 
         expect(messages.length).toBeGreaterThan(0);
@@ -81,7 +83,9 @@ describe("NewChatButton", () => {
 
         chat.id = "old-chat-123";
         chat.isLoading = true;
-        messages.push({ question: "Test message", answer: "Test response" });
+        messages.push(
+            { question: "Test message", answer: "Test response" }
+        );
 
         render(NewChatButton);
 
@@ -169,7 +173,9 @@ describe("NewChatButton", () => {
 
     it("preserves messages structure after clearing", async () => {
         const user = userEvent.setup();
-        messages.push({ question: "Test 1", answer: "Response 1" });
+        messages.push(
+            { question: "Test 1", answer: "Response 1" }
+        );
 
         render(NewChatButton);
 
