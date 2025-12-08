@@ -41,8 +41,3 @@ HTMLDialogElement.prototype.showModal = vi.fn(function (
 HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
     this.open = false;
 });
-
-// Mock document.queryCommandSupported for Monaco Editor
-if (!document.queryCommandSupported) {
-    document.queryCommandSupported = vi.fn(() => false);
-}

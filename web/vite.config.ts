@@ -8,16 +8,7 @@ import { svelteTesting } from "@testing-library/svelte/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-    server: {
-        https: true,
-    },
     plugins: [tailwindcss(), svelte(), mkcert(), svelteTesting()],
-    resolve: {
-        alias: {
-            $lib: path.resolve("./src/lib"),
-            $types: path.resolve("./src/types"),
-        },
-    },
     test: {
         globals: true,
         environment: "jsdom",
@@ -41,6 +32,12 @@ export default defineConfig({
                 functions: 80,
                 lines: 80,
             },
+        },
+    },
+    resolve: {
+        alias: {
+            $lib: path.resolve("./src/lib"),
+            $types: path.resolve("./src/types"),
         },
     },
 });
