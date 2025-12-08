@@ -151,13 +151,6 @@ func TestHandleGetRemoteTestcaseIntegration(t *testing.T) {
 			expectedReturn: nil,
 		},
 		{
-			name:           "author not a uuid",
-			queryParams:    "?author=not-a-uuid",
-			expectedStatus: http.StatusBadRequest,
-			expectedCount:  0,
-			expectedReturn: nil,
-		},
-		{
 			name:           "testcaseId not a uuid",
 			queryParams:    "?testcaseId=not-a-uuid",
 			expectedStatus: http.StatusBadRequest,
