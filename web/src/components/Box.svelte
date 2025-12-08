@@ -2,8 +2,9 @@
     import { Button, Spinner, Modal, type ModalProps } from "flowbite-svelte";
     import { saveTestLocal, runContainer } from "../lib/Api.ts";
     import { AxiosError } from "axios";
-    let { msg, name, userId, conversationId, showSave = false } = $props();
+    import Code from "./Code.svelte";
 
+    let { msg, name, userId, conversationId, isCode = false } = $props();
     let saveState = $state<"idle" | "saving" | "success" | "error">("idle");
     let errorMessage = $state("");
     let testId = $state<string | undefined>(undefined);
@@ -108,15 +109,19 @@
         class:w-[75%]={name === "User"}
         class:w-fit={name === "Bot"}
         class:bg-sky-300={name === "User"}
-        class:bg-gray-200={name === "Bot"}
+        class:bg-gray-200={name === "Bot" && !isCode}
+        class:bg-(--code-background)={name === "Bot" && isCode}
     >
         <div class="flex items-start justify-between">
-            <h1 class="tracking-wide uppercase font-bold text-xl">
+            <h1
+                class="tracking-wide uppercase font-bold text-xl"
+                class:text-(--heading)={name === "Bot" && isCode}
+            >
                 {name}
             </h1>
             <div class="flex">
                 <div class="ml-2">
-                    {#if showSave}
+                    {#if isCode}
                         <Button
                             color={saveState === "success"
                                 ? "green"
@@ -140,7 +145,7 @@
                     {/if}
                 </div>
                 <div class="ml-2">
-                    {#if showSave && saveState === "success"}
+                    {#if isCode && saveState === "success"}
                         <Button color="purple" onclick={RunTest}
                             >Run Test</Button
                         >
@@ -148,9 +153,14 @@
                 </div>
             </div>
         </div>
-        <p class="font-sans whitespace-pre-wrap break-words">
-            {msg}
-        </p>
+        {#if isCode}
+            <Code message={msg} />
+        {:else}
+            <p class="font-sans whitespace-pre-wrap break-words">
+                {msg}
+            </p>
+        {/if}
+
         {#if testId && saveState === "success"}
             <p class="text-xs text-gray-600 mt-2 font-mono">
                 Test ID: {testId}

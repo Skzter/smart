@@ -10,8 +10,10 @@ import (
 	"slices"
 	"strings"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -32,11 +34,10 @@ func emptyOfferTag() sharedEntity.Tag {
 	}
 }
 
-// staticly generated tags
+// staticly generated tags for non-valid offers
 const (
 	NoOffersInResponse = "no_offer"
 	ReponseNot200      = "non_200"
-	ValidOffer         = "valid"
 )
 
 // OpenAIValidationResult models the expected JSON structure of the OpenAI validation response
@@ -57,10 +58,11 @@ type validator struct {
 	openAiService sharedService.OpenAI
 	Logger        *slog.Logger
 	cfg           *config.Config
+	tracer        trace.Tracer
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI) (Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI, tracer trace.Tracer) (Validator, error) {
 	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}
@@ -69,15 +71,20 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService
 		openAiService: service,
 		Logger:        logger,
 		cfg:           cfg,
+		tracer:        tracer,
 	}, nil
 }
 
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
+// nolint:funlen
 func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}
+
+	ctx, span := v.tracer.Start(ctx, "validator.Validate")
+	defer span.End()
 
 	if offers.HTTPStatusCode != http.StatusOK {
 		return &sharedEntity.TagList{
@@ -124,26 +131,32 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 
 		req := sharedEntity.Request{
 			Model:        v.cfg.Model,
-			Prompt:       item,
+			Messages:     []*sharedEntity.Message{{Role: sharedEntity.RoleUser, Body: item}},
 			SystemPrompt: sysPrompt,
 		}
-		result, err := v.openAiService.Request(ctx, req)
+		msg, err := v.openAiService.Request(ctx, req)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "OpenAI request failed")
 			return nil, err
 		}
 
-		if strings.TrimSpace(result.Text) == "" {
-			v.Logger.Error(fmt.Sprintf("empty openai result for req: %v", req))
-			return nil, sharedErrors.ErrGeneration
+		if strings.TrimSpace(msg.Body) == "" {
+			err := fmt.Errorf("empty openai result for req: %v", req)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "empty OpenAI result")
+			return nil, err
 		}
 
 		var validationResult OpenAIValidationResult
 
-		err = json.Unmarshal([]byte(result.Text), &validationResult)
+		err = json.Unmarshal([]byte(msg.Body), &validationResult)
 
 		if err != nil {
-			v.Logger.Error(fmt.Sprintf("invalid OpenAI response format at index %d: %v", i, err))
-			return nil, sharedErrors.ErrGeneration
+			err := fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "invalid OpenAI response format")
+			return nil, err
 		}
 
 		if !validationResult.Valid {
@@ -157,15 +170,13 @@ func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse
 		}
 	}
 
+	// Return no tags if all offers are valid
 	if len(newTags) == 0 {
+		span.SetStatus(codes.Ok, "")
 		return &sharedEntity.TagList{
-			Tags: []sharedEntity.Tag{
-				{
-					Name:        ValidOffer,
-					Description: "",
-				},
-			},
+			Tags: []sharedEntity.Tag{},
 		}, nil
 	}
+	span.SetStatus(codes.Ok, "")
 	return &sharedEntity.TagList{Tags: newTags}, nil
 }

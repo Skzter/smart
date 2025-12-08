@@ -13,6 +13,9 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
 	sharedError "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
@@ -79,10 +82,11 @@ type S3Wrapper struct {
 	client *s3.Client
 	config entity.S3Config
 	logger *slog.Logger
+	tracer trace.Tracer
 }
 
 // NewS3Wrapper creates a new S3Wrapper instance
-func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper, error) {
+func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Tracer) (S3StorageWrapper, error) {
 	if err := assert.NotNil(logger); err != nil {
 		logger.Error(fmt.Sprintf("S3 Wrapper is nil, cannot be created: %s", ErrNilLogger))
 		return nil, sharedError.ErrInternalServer
@@ -137,9 +141,10 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config) (S3StorageWrapper
 		client: s3Client,
 		config: config,
 		logger: logger,
+		tracer: tracer,
 	}
 
-	logger.Info("S3Wrapper initialized",
+	logger.Debug("S3Wrapper initialized",
 		slog.String("region", config.Region),
 		slog.String("bucket", config.Bucket),
 		slog.String("endpoint", config.Endpoint),
@@ -154,12 +159,21 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 		return ErrNilContext
 	}
 
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.UploadParquetFile")
+	defer span.End()
+
 	if key == "" {
-		return ErrEmptyKey
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return err
 	}
 
 	if len(data) == 0 {
-		return ErrEmptyData
+		err := ErrEmptyData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return err
 	}
 
 	// Ensure key ends with .parquet
@@ -175,7 +189,7 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 	metadata["File-Type"] = "parquet"
 	metadata["Upload-Time"] = time.Now().UTC().Format(time.RFC3339)
 
-	s.logger.Info("Uploading parquet file to S3",
+	s.logger.Debug("Uploading parquet file to S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 		slog.Int("size_bytes", len(data)),
@@ -192,6 +206,8 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 
 	_, err := s.client.PutObject(ctx, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 upload failed")
 		s.logger.Error("Failed to upload parquet file",
 			slog.String("bucket", s.config.Bucket),
 			slog.String("key", key),
@@ -201,7 +217,13 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 		return sharedError.ErrInternalServer
 	}
 
-	s.logger.Info("Successfully uploaded parquet file",
+	span.AddEvent("Parquet file uploaded", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	s.logger.Debug("Successfully uploaded parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -215,11 +237,17 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 		return nil, nil, ErrNilContext
 	}
 
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DownloadParquetFile")
+	defer span.End()
+
 	if key == "" {
-		return nil, nil, ErrEmptyKey
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return nil, nil, err
 	}
 
-	s.logger.Info("Downloading parquet file from S3",
+	s.logger.Debug("Downloading parquet file from S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -232,6 +260,8 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 
 	result, err := s.client.GetObject(ctx, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 download failed")
 		s.logger.Error("Failed to download parquet file",
 			slog.String("bucket", s.config.Bucket),
 			slog.String("key", key),
@@ -252,6 +282,8 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 	// Read the data
 	data, err := io.ReadAll(result.Body)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to read downloaded file")
 		s.logger.Error("Failed to read downloaded file",
 			slog.String("key", key),
 			slog.String("error", err.Error()),
@@ -260,7 +292,14 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 		return nil, nil, sharedError.ErrInternalServer
 	}
 
-	s.logger.Info("Successfully downloaded parquet file",
+	span.AddEvent("Parquet file downloaded", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+		attribute.Int("size_bytes", len(data)),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	s.logger.Debug("Successfully downloaded parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 		slog.Int("size_bytes", len(data)),
@@ -275,7 +314,10 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 		return nil, ErrNilContext
 	}
 
-	s.logger.Info("Listing parquet files",
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.ListParquetFiles")
+	defer span.End()
+
+	s.logger.Debug("Listing parquet files",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("prefix", prefix),
 	)
@@ -294,6 +336,8 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "S3 list objects failed")
 			s.logger.Error("Failed to list objects",
 				slog.String("bucket", s.config.Bucket),
 				slog.String("error", err.Error()),
@@ -311,7 +355,13 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 		}
 	}
 
-	s.logger.Info("Listed parquet files",
+	span.AddEvent("Parquet files listed", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.Int("count", len(keys)),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	s.logger.Debug("Listed parquet files",
 		slog.String("bucket", s.config.Bucket),
 		slog.Int("count", len(keys)),
 	)
@@ -325,11 +375,17 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 		return ErrNilContext
 	}
 
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.DeleteParquetFile")
+	defer span.End()
+
 	if key == "" {
-		return ErrEmptyKey
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return err
 	}
 
-	s.logger.Info("Deleting parquet file from S3",
+	s.logger.Debug("Deleting parquet file from S3",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -341,6 +397,8 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 
 	_, err := s.client.DeleteObject(ctx, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 delete failed")
 		s.logger.Error("Failed to delete parquet file",
 			slog.String("bucket", s.config.Bucket),
 			slog.String("key", key),
@@ -350,7 +408,13 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 		return sharedError.ErrInternalServer
 	}
 
-	s.logger.Info("Successfully deleted parquet file",
+	span.AddEvent("Parquet file deleted", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	s.logger.Debug("Successfully deleted parquet file",
 		slog.String("bucket", s.config.Bucket),
 		slog.String("key", key),
 	)
@@ -364,8 +428,14 @@ func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
 		return false, ErrNilContext
 	}
 
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.FileExists")
+	defer span.End()
+
 	if key == "" {
-		return false, ErrEmptyKey
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return false, err
 	}
 
 	input := &s3.HeadObjectInput{
@@ -377,10 +447,19 @@ func (s *S3Wrapper) FileExists(ctx context.Context, key string) (bool, error) {
 	if err != nil {
 		var notFound *types.NotFound
 		if errors.As(err, &notFound) {
+			span.SetStatus(codes.Ok, "")
 			return false, nil
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 head object failed")
 		return false, err
 	}
+
+	span.AddEvent("Parquet file exists", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	return true, nil
 }
@@ -391,8 +470,14 @@ func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) 
 		return 0, ErrNilContext
 	}
 
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.GetFileSize")
+	defer span.End()
+
 	if key == "" {
-		return 0, ErrEmptyKey
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return 0, err
 	}
 
 	input := &s3.HeadObjectInput{
@@ -402,8 +487,17 @@ func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) 
 
 	result, err := s.client.HeadObject(ctx, input)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to get file metadata")
 		return 0, ErrFailedToGetFileMetadata
 	}
+
+	span.AddEvent("Parquet file size retrieved", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+		attribute.Int64("size_bytes", aws.ToInt64(result.ContentLength)),
+	))
+	span.SetStatus(codes.Ok, "")
 
 	return aws.ToInt64(result.ContentLength), nil
 }

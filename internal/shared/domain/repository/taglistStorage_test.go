@@ -8,9 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 )
 
 const EntryPrefix = "taglist/"
@@ -39,10 +40,16 @@ func TestCreateTaglist(t *testing.T) {
 			ctx:          nil,
 		},
 		{
-			name:         "validation error",
+			name:         "empty taglist",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          context.Background(),
+			ctx:          t.Context(),
+		},
+		{
+			name:         "taglist with empty name",
+			taglist:      &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
+			expectsError: true,
+			ctx:          t.Context(),
 		},
 		{
 			name:         "parquet error",
@@ -62,6 +69,7 @@ func TestCreateTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -73,10 +81,10 @@ func TestCreateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			err := repo.CreateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -147,6 +155,7 @@ func TestReadTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -158,10 +167,10 @@ func TestReadTaglist(t *testing.T) {
 			}
 
 			if tt.readReturns != nil {
-				parquet.On("ReadStructsFromParquet", mock.Anything).Return(*tt.readReturns...)
+				parquet.On("ReadStructsFromParquet", mock.Anything, mock.Anything).Return(*tt.readReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			taglist, err := repo.ReadTaglist(tt.ctx)
 
 			if tt.expectsError {
@@ -202,10 +211,16 @@ func TestUpdateTaglist(t *testing.T) {
 			ctx:          nil,
 		},
 		{
-			name:         "invalid taglist",
+			name:         "empty taglist",
 			taglist:      &entity.TagList{},
 			expectsError: true,
-			ctx:          context.Background(),
+			ctx:          t.Context(),
+		},
+		{
+			name:         "taglist with empty name",
+			taglist:      &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
+			expectsError: true,
+			ctx:          t.Context(),
 		},
 		{
 			name:            "s3 download error",
@@ -234,6 +249,7 @@ func TestUpdateTaglist(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -245,14 +261,14 @@ func TestUpdateTaglist(t *testing.T) {
 			}
 
 			if tt.writeReturns != nil {
-				parquet.On("WriteStructToParquet", mock.Anything).Return(*tt.writeReturns...)
+				parquet.On("WriteStructToParquet", mock.Anything, mock.Anything).Return(*tt.writeReturns...)
 			}
 
 			if tt.downloadReturns != nil {
 				s3.On("DownloadParquetFile", mock.Anything, mock.Anything).Return(*tt.downloadReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			err := repo.UpdateTaglist(tt.ctx, tt.taglist)
 
 			if tt.expectsError {
@@ -294,6 +310,7 @@ func TestTaglistExists(t *testing.T) {
 	}
 
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -304,7 +321,7 @@ func TestTaglistExists(t *testing.T) {
 				s3.On("FileExists", mock.Anything, mock.Anything).Return(*tt.existReturns...)
 			}
 
-			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix)
+			repo, _ := NewTaglistStorage(logger, s3, parquet, EntryPrefix, tracer)
 			exists, err := repo.TaglistExists(tt.ctx)
 
 			if tt.expectedError {
@@ -319,6 +336,7 @@ func TestTaglistExists(t *testing.T) {
 
 func TestNewTaglistStorage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -350,7 +368,7 @@ func TestNewTaglistStorage(t *testing.T) {
 				parquet = mocks.NewMockParquetFileWrapper[entity.TagList](t)
 			}
 
-			repo, err := NewTaglistStorage(tt.logger, s3, parquet, EntryPrefix)
+			repo, err := NewTaglistStorage(tt.logger, s3, parquet, EntryPrefix, tracer)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -358,6 +376,46 @@ func TestNewTaglistStorage(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, repo)
+			}
+		})
+	}
+}
+
+func TestValidateTaglist(t *testing.T) {
+	tests := []struct {
+		name        string
+		taglist     *entity.TagList
+		expectError bool
+	}{
+		{
+			name:        "valid taglist",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
+			expectError: false,
+		},
+		{
+			name:        "nil taglist",
+			taglist:     nil,
+			expectError: true,
+		},
+		{
+			name:        "taglist with empty name",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Description: "TAG1"}}},
+			expectError: true,
+		},
+		{
+			name:        "taglist with empty description",
+			taglist:     &entity.TagList{Tags: []entity.Tag{{Name: "TAG1"}}},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateTaglist(tc.taglist)
+			if tc.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}

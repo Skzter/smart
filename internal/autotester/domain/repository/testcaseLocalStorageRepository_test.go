@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 )
 
 const (
@@ -176,6 +176,88 @@ func TestSave(t *testing.T) {
 				}
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestRead(t *testing.T) {
+	logger := slog.Default()
+	testID := "123e4567-e89b-12d3-a456-426614174000"
+	sessionID := "0001"
+	userID := "user1"
+	expectedContent := []byte("console.log('hello');")
+
+	tests := []struct {
+		name      string
+		testID    string
+		userID    string
+		sessionID string
+		setupMock func(m *mocks.MockFileSystem, relativePath string)
+		wantErr   bool
+		wantData  []byte
+	}{
+		{
+			name:      "success",
+			testID:    testID,
+			userID:    userID,
+			sessionID: sessionID,
+			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
+				m.EXPECT().ReadFile(relativePath).Return(expectedContent, nil).Once()
+			},
+			wantErr:  false,
+			wantData: expectedContent,
+		},
+		{
+			name:      "invalid path elements",
+			testID:    testID,
+			userID:    "",
+			sessionID: "",
+			setupMock: nil,
+			wantErr:   true,
+			wantData:  nil,
+		},
+		{
+			name:      "invalid filename",
+			testID:    "invalid/test:id",
+			userID:    userID,
+			sessionID: sessionID,
+			setupMock: nil,
+			wantErr:   true,
+			wantData:  nil,
+		},
+		{
+			name:      "read file fails",
+			testID:    testID,
+			userID:    userID,
+			sessionID: sessionID,
+			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
+				m.EXPECT().ReadFile(relativePath).Return(nil, assert.AnError).Once()
+			},
+			wantErr:  true,
+			wantData: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockFS := mocks.NewMockFileSystem(t)
+			repo, err := NewTestcaseLocalStorageRepository(logger, mockFS)
+			assert.NoError(t, err)
+			assert.NotNil(t, repo)
+
+			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+"."+testcaseLanguageDefault)
+			if tc.setupMock != nil {
+				tc.setupMock(mockFS, relativePath)
+			}
+
+			data, err := repo.Read(tc.testID, tc.userID, tc.sessionID)
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, data)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.wantData, data)
 			}
 		})
 	}

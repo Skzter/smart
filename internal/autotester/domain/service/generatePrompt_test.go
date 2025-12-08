@@ -2,17 +2,21 @@ package service
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	autotesterMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 	srv "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/mocks"
 )
 
 // nolint: dupl
@@ -21,57 +25,74 @@ func TestNewGeneratePromptService(t *testing.T) {
 	taglist := mocks.NewMockTaglistStorage(t)
 	logger := slog.Default()
 	cfg := config.Config{}
+	validator := autotesterMocks.NewMockValidator(t)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name    string
-		openai  srv.OpenAI
-		taglist srv.TaglistStorage
-		config  *config.Config
-		logger  *slog.Logger
-		wantErr bool
+		name      string
+		openai    srv.OpenAI
+		taglist   srv.TaglistStorage
+		config    *config.Config
+		logger    *slog.Logger
+		validator Validator
+		wantErr   bool
 	}{
 		{
-			name:    "all not nil",
-			openai:  openai,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  logger,
-			wantErr: false,
+			name:      "all not nil",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: validator,
+			wantErr:   false,
 		},
 		{
-			name:    "nil openai",
-			openai:  nil,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  logger,
-			wantErr: true,
+			name:      "nil openai",
+			openai:    nil,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: validator,
+			wantErr:   true,
 		},
 		{
-			name:    "nil config",
-			openai:  openai,
-			taglist: taglist,
-			config:  nil,
-			logger:  logger,
-			wantErr: true,
+			name:      "nil config",
+			openai:    openai,
+			taglist:   taglist,
+			config:    nil,
+			logger:    logger,
+			validator: validator,
+			wantErr:   true,
 		},
 		{
-			name:    "nil logger",
-			openai:  openai,
-			taglist: taglist,
-			config:  &cfg,
-			logger:  nil,
-			wantErr: true,
+			name:      "nil logger",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    nil,
+			validator: validator,
+			wantErr:   true,
+		},
+		{
+			name:      "nil validator",
+			openai:    openai,
+			taglist:   taglist,
+			config:    &cfg,
+			logger:    logger,
+			validator: nil,
+			wantErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger)
-			if (err != nil) != test.wantErr {
-				t.Errorf("NewGeneratePromptService() error = %v, wantErr %v", err, test.wantErr)
-			}
-			if !test.wantErr && repo == nil {
-				t.Errorf("NewGeneratePromptService() returned nil service")
+			repo, err := NewGeneratePromptService(test.openai, test.taglist, test.config, test.logger, test.validator, tracer)
+			if test.wantErr {
+				assert.NotNil(t, err)
+				assert.Nil(t, repo)
+			} else {
+				assert.Nil(t, err)
+				assert.NotNil(t, repo)
 			}
 		})
 	}
@@ -86,10 +107,12 @@ func TestGeneratePrompt(t *testing.T) {
 	}
 	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
 	code := "some code"
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name              string
 		expectedResult    string
+		validateReturns   []any
 		requestReturns    []any
 		getTaglistReturns []any
 		expectErr         bool
@@ -98,8 +121,18 @@ func TestGeneratePrompt(t *testing.T) {
 		{
 			name:              "success",
 			expectedResult:    code,
-			requestReturns:    []any{&sharedEntity.Response{Text: code}, nil},
+			validateReturns:   []any{nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
 			getTaglistReturns: []any{tags, nil},
+			expectErr:         false,
+			ctx:               context.Background(),
+		},
+		{
+			name:              "getTaglist error",
+			expectedResult:    code,
+			validateReturns:   []any{nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			getTaglistReturns: []any{nil, errors.New("err")},
 			expectErr:         false,
 			ctx:               context.Background(),
 		},
@@ -109,14 +142,24 @@ func TestGeneratePrompt(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:              "validate error",
+			expectedResult:    code,
+			validateReturns:   []any{errors.New("err")},
+			getTaglistReturns: []any{tags, nil},
+			expectErr:         true,
+			ctx:               context.Background(),
+		},
+		{
 			name:              "empty code segment in openau response",
-			requestReturns:    []any{&sharedEntity.Response{Text: ""}, nil},
+			validateReturns:   []any{nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: ""}, nil},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
 			ctx:               context.Background(),
 		},
 		{
 			name:              "openai error",
+			validateReturns:   []any{nil},
 			requestReturns:    []any{nil, sharedErrors.ErrInternalServer},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
@@ -128,6 +171,11 @@ func TestGeneratePrompt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			openai := mocks.NewMockOpenAI(t)
 			taglist := mocks.NewMockTaglistStorage(t)
+			validator := autotesterMocks.NewMockValidator(t)
+
+			if tt.validateReturns != nil {
+				validator.On("ValidateRequest", mock.Anything, mock.Anything).Return(tt.validateReturns...)
+			}
 
 			if tt.requestReturns != nil {
 				openai.On("Request", mock.Anything, mock.Anything).Return(tt.requestReturns...)
@@ -137,8 +185,8 @@ func TestGeneratePrompt(t *testing.T) {
 				taglist.On("GetTaglist", mock.Anything).Return(tt.getTaglistReturns...)
 			}
 
-			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger)
-			got, err := svc.GeneratePrompt(tt.ctx, "user says hi", "session-123")
+			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator, tracer)
+			got, err := svc.GeneratePrompt(tt.ctx, &entity.Chat{}, &entity.UserRequest{})
 
 			if tt.expectErr {
 				assert.NotNil(t, err)
