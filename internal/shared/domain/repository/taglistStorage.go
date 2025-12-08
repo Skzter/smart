@@ -74,24 +74,27 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 
 	if len(taglist.Tags) == 0 {
 		err := fmt.Errorf("empty taglist")
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return err
+		return errors.ErrValidation
 	}
 
 	if err := validateTaglist(taglist); err != nil {
 		err = fmt.Errorf("failed to validate TagList: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return err
+		return errors.ErrValidation
 	}
 
 	parquetData, err := tR.parquetWrapper.WriteStructToParquet(ctx, *taglist)
 	if err != nil {
 		err = fmt.Errorf("failed to write parquet: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to serialize taglist")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -104,9 +107,10 @@ func (tR *taglistStorage) CreateTaglist(ctx context.Context, taglist *entity.Tag
 	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
 		err = fmt.Errorf("failed to upload existing parquet: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload taglist parquet")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	span.AddEvent("taglist stored", trace.WithAttributes(
@@ -130,9 +134,10 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 	parquetData, metadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
 		err := fmt.Errorf("failed to download existing parquet: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to download taglist parquet")
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 	tR.logger.Debug("file downloaded",
 		slog.Int("size", len(parquetData)),
@@ -141,26 +146,29 @@ func (tR *taglistStorage) ReadTaglist(ctx context.Context) (*entity.TagList, err
 	taglists, err := tR.parquetWrapper.ReadStructsFromParquet(ctx, parquetData)
 	if err != nil {
 		err := fmt.Errorf("failed to read parquet data: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to parse taglist parquet")
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 	tR.logger.Debug("events read from parquet", slog.Int("count", len(taglists)))
 
 	if len(taglists) == 0 {
 		err := fmt.Errorf("no taglist found with key: %s", tR.entryPrefix+tR.key)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no taglist found")
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 
 	firstEntry := taglists[0]
 
 	if err := validateTaglist(&firstEntry); err != nil {
 		err := fmt.Errorf("read invalid taglist: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "taglist validation failed")
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -182,32 +190,36 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 
 	if len(taglist.Tags) == 0 {
 		err := fmt.Errorf("empty taglist")
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	if err := validateTaglist(taglist); err != nil {
 		err := fmt.Errorf("failed to validate TagList: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return err
+		return errors.ErrValidation
 	}
 
 	_, oldmetadata, err := tR.s3Wrapper.DownloadParquetFile(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
 		err = fmt.Errorf("failed to download data: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to download existing taglist")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	parquetData, err := tR.parquetWrapper.WriteStructToParquet(ctx, *taglist)
 	if err != nil {
 		err = fmt.Errorf("failed to write parquet: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to serialize taglist")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	tR.logger.Debug("TaglistStorage: parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -221,9 +233,10 @@ func (tR *taglistStorage) UpdateTaglist(ctx context.Context, taglist *entity.Tag
 	err = tR.s3Wrapper.UploadParquetFile(ctx, tR.entryPrefix+tR.key, parquetData, metadata)
 	if err != nil {
 		err = fmt.Errorf("failed to upload file: %w", err)
+		tR.logger.Error((err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload updated taglist")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	span.AddEvent("taglist updated", trace.WithAttributes(
@@ -245,9 +258,10 @@ func (tR *taglistStorage) TaglistExists(ctx context.Context) (bool, error) {
 
 	exists, err := tR.s3Wrapper.FileExists(ctx, tR.entryPrefix+tR.key)
 	if err != nil {
+		tR.logger.Error("failed to check taglist existence", "error", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to check taglist existence")
-		return false, err
+		return false, errors.ErrInternalServer
 	}
 
 	span.SetAttributes(attribute.Bool("taglist.exists", exists))
