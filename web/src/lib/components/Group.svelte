@@ -4,8 +4,10 @@
     import { LucideMessageSquare } from "@lucide/svelte";
 
     let {
-        group = $bindable(),
-    }: { group: { label: string; summaries: ApiChatSummary[] } } = $props();
+        group,
+    }: {
+        group: { label: string; summaries: ApiChatSummary[] };
+    } = $props();
 </script>
 
 <Sidebar.Group>
