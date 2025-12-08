@@ -8,6 +8,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	openai "github.com/sashabaranov/go-openai"
 	"go.opentelemetry.io/otel"
 
@@ -26,23 +29,22 @@ func TestPromptTestSuite(t *testing.T) {
 	ctx := context.Background()
 	tracer := otel.Tracer("test")
 
-	client := openai.NewClient(os.Getenv("OPENAI_KEY"))
+	apiKey := os.Getenv("OPENAI_KEY")
+	client := openai.NewClient(apiKey)
+
 	timeout := 120
 
 	OpenAIrepo, err := repository.NewOpenAiRepository(client, timeout, tracer)
-	if err != nil {
-		t.Fatalf("couldn't create OpenAI repository: %v", err)
-	}
+	require.NoError(t, err, "couldn't create OpenAI repository")
+	require.NotNil(t, OpenAIrepo)
 
 	openAI, err := sharedService.NewOpenAI(OpenAIrepo, tracer)
-	if err != nil {
-		t.Fatalf("couldn't create OpenAI service: %v", err)
-	}
+	require.NoError(t, err, "couldn't create OpenAI service")
+	require.NotNil(t, openAI)
 
 	cfg, err := config.LoadConfig()
-	if err != nil {
-		t.Fatalf("couldn't load config: %v", err)
-	}
+	require.NoError(t, err, "couldn't load config")
+
 	systemPrompt := cfg.Prompts.ValidationPrompt
 	model := cfg.Model
 
@@ -115,7 +117,7 @@ func TestPromptTestSuite(t *testing.T) {
 				{
 					Role: "user",
 					Body: "Erstelle einen Autoplaywright-Test für Check24." +
-						" Base-URL: https://staging.check24.de/reise." +
+						" Base-URL: https://staging/check24.de/reise." +
 						" Szenario: Flugstornierung prüfen. " +
 						"Assertions: Bestätigungstext erscheint, Buchung wird als storniert angezeigt. " +
 						"Testdaten/Setup: Testbuchung existiert; Teardown: Buchung zurücksetzen.",
@@ -127,37 +129,35 @@ func TestPromptTestSuite(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			msgs := make([]*entity.Message, len(tc.messages))
+			for i := range tc.messages {
+				msgs[i] = &tc.messages[i]
+			}
+
 			request := entity.Request{
-				Messages:     tc.messages,
+				Messages:     msgs,
 				SystemPrompt: systemPrompt,
 				Model:        model,
 			}
 
 			resp, err := openAI.Request(ctx, request)
+
 			if tc.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				} else {
-					t.Logf("Got expected error: %v", err)
-				}
+				require.Error(t, err, "expected error but got none")
 				return
 			}
-			if err != nil {
-				t.Fatalf("OpenAI request failed: %v", err)
-			}
+
+			require.NoError(t, err, "OpenAI request failed")
+			require.NotEmpty(t, resp.Body, "LLM response body empty")
 
 			t.Logf("Raw response for '%s': %s", tc.name, resp.Body)
 
 			var llmResp LLMResponse
-			if err := json.Unmarshal([]byte(resp.Body), &llmResp); err != nil {
-				t.Fatalf("could not unmarshal response JSON: %v\nRaw response: %s",
-					err, resp.Body)
-			}
+			err = json.Unmarshal([]byte(resp.Body), &llmResp)
+			require.NoErrorf(t, err, "could not unmarshal response JSON\nRaw response: %s", resp.Body)
 
-			if llmResp.Valid != tc.expectedOutput {
-				t.Errorf("Expected Valid=%v, got Valid=%v\nMessage: %s\nRaw: %s",
-					tc.expectedOutput, llmResp.Valid, llmResp.Message, resp.Body)
-			}
+			assert.Equal(t, tc.expectedOutput, llmResp.Valid,
+				"Message: %s\nRaw: %s", llmResp.Message, resp.Body)
 		})
 	}
 }
