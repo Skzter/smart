@@ -1,17 +1,21 @@
 <script lang="ts">
     import { Plus } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
+    import { chat, messages } from "$lib/shared.svelte";
 
-    function handleNewChat() {
-        console.log("New chat started");
+    function NewChat() {
+        chat.id = "";
+        chat.isLoading = false;
+        // empty the array
+        messages.length = 0;
     }
 </script>
 
 <Button
     variant="ghost"
     class="w-full justify-start gap-2 h-10 bg-muted hover:bg-muted/80"
-    onclick={handleNewChat}
+    onclick={NewChat}
 >
     <Plus class="h-4 w-4" />
-    <span>New Chat</span>
+    <p>New Chat</p>
 </Button>
