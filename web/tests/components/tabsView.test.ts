@@ -1,10 +1,11 @@
 import { render, screen, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect } from "vitest";
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
 import TabsComponent from "../../src/lib/components/TabsView.svelte";
 
 describe("TabsComponent", () => {
+
     it("renders all tabs", () => {
         render(TabsComponent);
 
@@ -46,4 +47,5 @@ describe("TabsComponent", () => {
 
         expect(resultTab).toHaveAttribute("aria-selected", "true");
     });
+
 });
