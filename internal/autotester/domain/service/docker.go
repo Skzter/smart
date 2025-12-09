@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -106,11 +107,13 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 
 	resp, err := d.client.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
-		return fmt.Errorf("failed to create container: %w", err)
+		d.logger.Error(fmt.Sprintf("failed to create container: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return fmt.Errorf("failed to start container: %w", err)
+		d.logger.Error(fmt.Sprintf("failed to start container: %s", err))
+		return errors.ErrInternalServer
 	}
 
 	d.logger.Debug("Container started, waiting for completion...")
@@ -119,11 +122,13 @@ func (d *docker) RunTest(ctx context.Context, filename string) error {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			return fmt.Errorf("error waiting for container: %w", err)
+			d.logger.Error(fmt.Sprintf("error waiting for container: %s", err))
+			return errors.ErrInternalServer
 		}
 	case status := <-statusCh:
 		if status.StatusCode != 0 {
-			return fmt.Errorf("container exited with Status Code: %d and Error: %s", status.StatusCode, status.Error.Message)
+			d.logger.Error(fmt.Sprintf("container exited with Status Code: %d and Error: %s", status.StatusCode, status.Error.Message))
+			return errors.ErrGeneration
 		}
 	}
 
