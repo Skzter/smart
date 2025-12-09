@@ -109,20 +109,23 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 
 func (r *testcaseLocalStorageRepository) Read(testId, userId, sessionId string) ([]byte, error) {
 	if err := validatePathNameElements(userId, sessionId); err != nil {
-		return nil, fmt.Errorf("validate path elements: %w", err)
+		r.logger.Error(fmt.Sprintf("validate path elements: %s", err))
+		return nil, errors.ErrValidation
 	}
 
 	dir := filepath.Join(userId, sessionId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
-		return nil, fmt.Errorf("invalid testcase filename %s: %w", filename, err)
+		r.logger.Error(fmt.Sprintf("invalid testcase filename %s: %s", filename, err))
+		return nil, errors.ErrValidation
 	}
 
 	relativePath := filepath.Join(dir, filename)
 
 	fileContent, err := r.filesystem.ReadFile(relativePath)
 	if err != nil {
-		return nil, fmt.Errorf("read file failed, path: %s", relativePath)
+		r.logger.Error(fmt.Sprintf("read file failed, path: %s", relativePath))
+		return nil, errors.ErrInternalServer
 	}
 
 	return fileContent, nil
