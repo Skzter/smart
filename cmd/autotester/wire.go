@@ -133,5 +133,5 @@ func TestCaseStorageRepositoryProvider(
 
 // ChatParquetConfigProvider provides a ParquetConfig for chat parquet files.
 func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
-	return wrapperService.DefaultParquetConfig()
+	return wrapperService.DefaultParquetConfig() 
 }
