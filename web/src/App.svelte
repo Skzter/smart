@@ -2,9 +2,9 @@
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import AppSidebar from "$lib/components/Sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
-    import SaveToaster from "$lib/components/SaveToaster.svelte";
     import { user } from "$lib/shared.svelte";
     import { onMount } from "svelte";
+    import { Toaster } from "$lib/components/ui/sonner";
 
     onMount(() => {
         const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -33,4 +33,5 @@
         <Main />
     </Sidebar.Inset>
 </Sidebar.Provider>
-<SaveToaster />
+
+<Toaster richColors position="top-right" />

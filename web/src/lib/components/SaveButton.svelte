@@ -20,15 +20,6 @@
         variant: ButtonVariant;
         size: ButtonSize;
     } = $props();
-
-    $effect(() => {
-        console.log(
-            "SaveState: " +
-                testRunner.getStorageState() +
-                " TestID: " +
-                testRunner.getCurTest(),
-        );
-    });
 </script>
 
 <Button

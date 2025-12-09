@@ -56,12 +56,10 @@ export class Runner {
             await sleep(3000);
 
             this.setTest(test.testcaseId);
-            console.log("Test saved successfully:", test);
             this.storageState = "success";
 
             toast.success("Test erfolgreich gespeichert!");
         } catch (error) {
-            console.error("Failed to save test:", error);
             this.storageState = "error";
 
             let errorMsg = "Unbekannter Fehler";
@@ -116,6 +114,8 @@ export class Runner {
         }
 
         toast.message("Test wird ausgeführt", {
+            class: "!bg-purple",
+            style: "!bg-red",
             description: `Id: ${this.storedTest}`,
         });
 
