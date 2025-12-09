@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import SaveButton from "../../src/lib/components/SaveButton.svelte";
 import type { Runner } from "../../src/lib/runner.svelte";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 describe("SaveButton", () => {
     let mockTestRunner: Runner;

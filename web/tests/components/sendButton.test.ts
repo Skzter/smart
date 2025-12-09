@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import SendButton from "$lib/components/SendButton.svelte";
 import { chat } from "$lib/shared.svelte";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 describe("SendButton", () => {
     let mockOnClick: () => void;
@@ -32,7 +32,7 @@ describe("SendButton", () => {
             },
         });
 
-        const svg = container.querySelector('svg');
+        const svg = container.querySelector("svg");
         expect(svg).toBeInTheDocument();
     });
 
