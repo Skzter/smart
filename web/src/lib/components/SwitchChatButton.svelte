@@ -29,8 +29,12 @@
 
     async function invokeSwitchChat() {
         try {
+            user.id = currChat.userId;
+            chat.id = currChat.chatId;
+            chat.isLoading = false;
             const response = await getChatById();
-            changeChat(response.userId, response.id, response.messages);
+            messages.length = 0;
+            messages.push(...convertApiMessagesToMessages(response.messages));
         } catch (error) {
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof Error) {
@@ -43,30 +47,65 @@
         }
     }
 
-    function changeChat(userId: string, chatId: string, msg: ApiMessage[]) {
-        messages.length = 0;
-        messages.push(...convertApiMessagesToMessages(msg));
-        user.id = userId;
-        chat.id = chatId;
-        chat.isLoading = false;
-    }
-
     function convertApiMessagesToMessages(
         apiMessages: ApiMessage[],
     ): Message[] {
         const messages: Message[] = [];
 
-        for (let i = 0; i < apiMessages.length - 1; i += 2) {
+        for (let i = 0; i < apiMessages.length; i++) {
             const userMessage = apiMessages[i];
-            const assistantMessage = apiMessages[i + 1];
 
-            if (
-                userMessage?.role === "user" &&
-                assistantMessage?.role === "assistant"
-            ) {
+            // Skip if not a user message
+            if (userMessage?.role !== "user") {
+                continue;
+            }
+
+            let answerMessage = null;
+
+            // Check next messages for assistant responses
+            for (let j = i + 1; j < apiMessages.length; j++) {
+                const currentMsg = apiMessages[j];
+
+                // Stop if we hit another user message
+                if (currentMsg.role === "user") {
+                    break;
+                }
+
+                // If it's an assistant message
+                if (currentMsg.role === "assistant") {
+                    // Try to parse as JSON to check if it's a validation message
+                    try {
+                        const parsed = JSON.parse(currentMsg.body);
+                        if (
+                            Object.prototype.hasOwnProperty.call(
+                                parsed,
+                                "valid",
+                            )
+                        ) {
+                            // If validation failed, use the message as answer
+                            if (!parsed.valid && parsed.message) {
+                                answerMessage = parsed.message;
+                                break;
+                            }
+                            // If valid is true, continue looking for actual answer
+                        } else {
+                            // Not a validation message, use as answer
+                            answerMessage = currentMsg.body;
+                            break;
+                        }
+                    } catch {
+                        // Not JSON, use as regular answer
+                        answerMessage = currentMsg.body;
+                        break;
+                    }
+                }
+            }
+
+            // Only add if we found an answer
+            if (answerMessage) {
                 messages.push({
                     question: userMessage.body,
-                    answer: assistantMessage.body,
+                    answer: answerMessage,
                 });
             }
         }
