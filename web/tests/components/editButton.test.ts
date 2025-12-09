@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import EditButton from "$lib/components/EditButton.svelte";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 describe("EditButton", () => {
     it("renders a button with text 'Bearbeiten'", () => {
@@ -40,7 +40,7 @@ describe("EditButton", () => {
             },
         });
 
-        const svg = container.querySelector('svg');
+        const svg = container.querySelector("svg");
         expect(svg).toBeInTheDocument();
     });
 
