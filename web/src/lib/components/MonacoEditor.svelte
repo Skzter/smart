@@ -1,79 +1,85 @@
 <script lang="ts">
-    import { Editor, Environment, ModelManager } from "$lib/editor.svelte";
-    import { editor } from "monaco-editor";
+    import { editor, type IDisposable } from "monaco-editor";
     import { onMount, onDestroy } from "svelte";
+    import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
     let {
         value = $bindable(),
-        class: className = "",
         options,
+        class: className = "",
     }: {
-        value?: string;
-        class?: string;
+        value: string;
         options?: {
             maxHeight?: number;
             useTextHeight?: boolean;
         };
+        class?: string;
     } = $props();
 
-    let model = ModelManager.getModel("id");
-    if (!model) {
-        model = ModelManager.createModel("id", value ?? "", () => {
-            if (model) {
-                value = model.getMonacoModel().getValue();
-            }
-        });
-    }
+    let container = document.createElement("div");
+    let codeEditor = $state<editor.IStandaloneCodeEditor | undefined>(
+        undefined,
+    );
+    let disposable = $state<IDisposable | undefined>(undefined);
 
-    let codeEditor: editor.IStandaloneCodeEditor | undefined = $state();
-    let editorContainer: HTMLElement = document.createElement("div");
+    self.MonacoEnvironment = {
+        getWorker() {
+            return new tsWorker();
+        },
+    };
 
     onMount(async () => {
-        console.log("mount");
-        Environment();
-        codeEditor = await Editor(editorContainer, {
+        if (!container) return;
+
+        const monaco = await import("monaco-editor");
+
+        codeEditor = monaco.editor.create(container as HTMLElement, {
+            value: value ?? "",
+            language: "typescript",
+            minimap: { enabled: false },
             theme: "vs-dark",
             wordWrap: "on",
             allowOverflow: true,
-            minimap: {
-                enabled: false,
-            },
             lineHeight: 1.5,
             scrollBeyondLastLine: false,
         });
 
-        codeEditor.setModel(model.getMonacoModel());
-    });
-
-    $effect(() => {
-        if (model) {
-            const monacoModel = model.getMonacoModel();
-
-            if (monacoModel.getValue() !== (value ?? "")) {
-                monacoModel.setValue(value ?? "");
-            }
-
-            if (codeEditor) {
-                let height: number;
-                if (options?.useTextHeight) {
-                    height = codeEditor.getContentHeight();
-                } else {
-                    height = editorContainer.clientHeight;
-                }
-                codeEditor.layout({
-                    height: Math.min(height, options?.maxHeight ?? 10000),
-                    width: editorContainer.clientWidth,
-                });
-            }
-        }
+        const model = codeEditor.getModel();
+        disposable = model?.onDidChangeContent(() => {
+            const v = codeEditor?.getValue();
+            // update bindable value so parent bindings update
+            value = v ?? "";
+        });
     });
 
     onDestroy(() => {
+        disposable?.dispose();
         codeEditor?.dispose();
+    });
+
+    $effect(() => {
+        if (!codeEditor) return;
+        if (value !== undefined && codeEditor.getValue() !== value) {
+            const pos = codeEditor.getPosition();
+            codeEditor.setValue(value);
+            if (pos) codeEditor.setPosition(pos);
+        }
+
+        let height: number;
+        if (options?.useTextHeight) {
+            height = codeEditor.getContentHeight();
+        } else {
+            height = container.clientHeight;
+        }
+        console.log(Math.min(height, options?.maxHeight ?? 10000));
+        codeEditor.layout({
+            height: Math.min(height, options?.maxHeight ?? 10000),
+            width: container.clientWidth,
+        });
     });
 </script>
 
-<div bind:this={editorContainer} class={className}></div>
+<div bind:this={container} class={className}></div>
 
 <style>
     :global(.monaco-editor) {
