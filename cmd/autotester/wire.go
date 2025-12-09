@@ -133,9 +133,5 @@ func TestCaseStorageRepositoryProvider(
 
 // ChatParquetConfigProvider provides a ParquetConfig for chat parquet files.
 func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
-	return wrapperEntity.ParquetConfig{
-		CompressionCodec: "snappy",
-		PageSize:         int64(8 * 1024),
-		RowGroupSize:     int64(1000),
-	}
+	return wrapperService.DefaultParquetConfig()
 }
