@@ -2,7 +2,7 @@ export type ApiMessage = {
     id: string;
     body: string;
     role: string;
-    createdAt: number;
+    createdAt: string;
 };
 
 export type ApiChatSummary = {
@@ -50,6 +50,5 @@ export type ApiGetChatByIdResponse = {
     title: string;
     messages: ApiMessage[];
     lastTest: string;
-    systemPrompt: string;
-    initialPrompt: string;
+    lastAutoPlaywrightPrompt: string;
 };
