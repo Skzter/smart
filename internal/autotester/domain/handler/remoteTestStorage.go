@@ -24,9 +24,6 @@ func (a *AutotesterController) HandleGetRemoteTestcase(c *gin.Context) {
 	if query.Limit == nil {
 		query.Limit = &a.config.DefaultLimitTests
 	}
-	if query.Offset == nil {
-		query.Offset = &a.config.DefaultOffsetTests
-	}
 
 	metadata, err := a.remoteTestcaseStorageService.ReadAllMetadataWithFilter(c, &query)
 	if err != nil {

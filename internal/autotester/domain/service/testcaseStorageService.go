@@ -105,7 +105,7 @@ func (t *testcaseStorageService) ReadAllMetadataWithFilter(ctx context.Context, 
 
 	filteredMetadata := t.filter(metadata, filterParams)
 
-	offset := *filterParams.Offset
+	offset := filterParams.Offset
 	limit := *filterParams.Limit
 	if offset > len(filteredMetadata) {
 		filteredMetadata = []*entity.TestcaseMetadata{}

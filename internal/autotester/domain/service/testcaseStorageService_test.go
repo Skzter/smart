@@ -165,7 +165,7 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 		{
 			name:             "success - no filter",
 			context:          ctx,
-			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: &defaultOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: defaultOffset},
 			wantErr:          false,
 			expectedResponse: allMetadata,
 			setupMock: func(mockRepo *mocks.MockTestcaseStorageRepository) {
@@ -175,7 +175,7 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 		{
 			name:             "success - with filter",
 			context:          ctx,
-			filter:           &entity.GetRemoteTestcaseRequest{Author: "user1", Limit: &defaultLimit, Offset: &defaultOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Author: "user1", Limit: &defaultLimit, Offset: defaultOffset},
 			wantErr:          false,
 			expectedResponse: []*entity.TestcaseMetadata{metadata1},
 			setupMock: func(mockRepo *mocks.MockTestcaseStorageRepository) {
@@ -185,7 +185,7 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 		{
 			name:             "success - no results",
 			context:          ctx,
-			filter:           &entity.GetRemoteTestcaseRequest{Author: "user3", Limit: &defaultLimit, Offset: &defaultOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Author: "user3", Limit: &defaultLimit, Offset: defaultOffset},
 			wantErr:          false,
 			expectedResponse: []*entity.TestcaseMetadata{},
 			setupMock: func(mockRepo *mocks.MockTestcaseStorageRepository) {
@@ -195,7 +195,7 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 		{
 			name:             "success - offset > filteredmetadata",
 			context:          ctx,
-			filter:           &entity.GetRemoteTestcaseRequest{Author: "user3", Limit: &defaultLimit, Offset: &highOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Author: "user3", Limit: &defaultLimit, Offset: highOffset},
 			wantErr:          false,
 			expectedResponse: []*entity.TestcaseMetadata{},
 			setupMock: func(mockRepo *mocks.MockTestcaseStorageRepository) {
@@ -205,14 +205,14 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 		{
 			name:             "nil context",
 			context:          nil,
-			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: &defaultOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: defaultOffset},
 			wantErr:          true,
 			expectedResponse: nil,
 		},
 		{
 			name:             "repo returns error",
 			context:          ctx,
-			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: &defaultOffset},
+			filter:           &entity.GetRemoteTestcaseRequest{Limit: &defaultLimit, Offset: defaultOffset},
 			wantErr:          true,
 			expectedResponse: nil,
 			setupMock: func(mockRepo *mocks.MockTestcaseStorageRepository) {
