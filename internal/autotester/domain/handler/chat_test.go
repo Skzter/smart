@@ -522,9 +522,8 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	// gültige IDs, die die neue Validierung bestehen
 	validUserID := "auth0|user-42"
-	validChatID := "550e8400-e29b-41d4-a716-446655440000" // irgendeine gültige UUID
+	validChatID := "550e8400-e29b-41d4-a716-446655440000"
 
 	controller := newTestControllerWithChatMock(t, nil, sharedErrors.ErrChatNotFound)
 
