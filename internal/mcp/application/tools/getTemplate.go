@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 )
 
@@ -35,6 +36,11 @@ func NewGetTemplateTool(cfg *config.Config) *GetTemplateTool {
 // Returns a GetTemplateOutput containing the template or an error if execution fails.
 func (t *GetTemplateTool) Execute(ctx context.Context, in GetTemplateInput) (*GetTemplateOutput, error) {
 	return &GetTemplateOutput{
-		Template: t.cfg.TestTemplate,
+		Template: t.cfg.Template,
 	}, nil
+}
+
+// GetTemplate returns the template from the config.
+func (g *GetTemplateTool) GetTemplate(ctx context.Context, req *mcp.CallToolRequest, input GetTemplateInput) (interface{}, GetTemplateOutput, error) {
+	return nil, GetTemplateOutput{Template: g.cfg.Template}, nil
 }

@@ -1,4 +1,4 @@
-package main
+package mcp
 
 import (
 	"context"
@@ -39,7 +39,12 @@ func main() {
 		Name:        "getTemplate",
 		Description: "asks for generated test template"},
 		func(c context.Context, req *mcp.CallToolRequest, in tools.GetTemplateInput) (*mcp.CallToolResult, tools.GetTemplateOutput, error) {
-			return getTemplateTool.GetTemplate(c, req, in)
+			res, out, err := getTemplateTool.GetTemplate(c, req, in)
+			callRes, ok := res.(*mcp.CallToolResult)
+			if !ok {
+				return nil, tools.GetTemplateOutput{}, fmt.Errorf("unexpected type for CallToolResult")
+			}
+			return callRes, out, err
 		})
 	/*mcp.AddTool(server, &mcp.Tool{
 		Name: "generateTest",
