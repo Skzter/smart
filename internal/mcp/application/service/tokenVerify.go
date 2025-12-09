@@ -8,6 +8,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/auth"
 )
 
+// TokenInfo represents extracted authentication information from a verified token.
+// It contains the user identifier, granted scopes, and the token expiration time as a unix timestamp.
 type TokenInfo struct {
 	UserID    string
 	Scopes    []string

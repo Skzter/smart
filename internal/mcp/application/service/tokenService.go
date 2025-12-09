@@ -6,18 +6,29 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// JWT secret (in production, use environment variables).
-// This should be a strong, randomly generated secret in real applications.
+// jwtSecret is the HMAC secret used to sign JWTs.
+// In production this must be provided via secure configuration (env/secret manager) and be strong and random.
 var jwtSecret = []byte("your-secret-key") //SECRET-KEY NOCH ÄNDERN!!!
 
-// JWTClaims represents the claims in our JWT tokens.
-// In a real application, you would include additional claims like issuer, audience, etc.
+// JWTClaims represents the custom claims stored in our JWT tokens.
+// It embeds jwt.RegisteredClaims and adds application-specific fields such as UserID and Scopes.
 type JWTClaims struct {
 	UserID string   `json:"user_id"` // User identifier
-	Scopes []string `json:"scopes"`  // Permissions/roles for the user
+	Scopes []string `json:"scopes"`  // Permissions/roles assigned to the user
 	jwt.RegisteredClaims
 }
 
+// GenerateToken creates and signs a JWT for the given user with the provided scopes and expiration.
+// It returns the signed token string or an error if signing fails.
+//
+// Parameters:
+//   - userID: unique identifier of the user for whom the token is issued.
+//   - scopes: list of permission scopes to embed in the token.
+//   - expiration: validity duration from the current time.
+//
+// Returns:
+//   - signed JWT string on success
+//   - error if token creation or signing fails
 func GenerateToken(userID string, scopes []string, expiration time.Duration) (string, error) {
 	claims := JWTClaims{
 		UserID: userID,

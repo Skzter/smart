@@ -1,9 +1,15 @@
 package tools
 
+// GenerateTestInput represents the input payload for generating a test.
+// Template contains the test template or instructions used to create the test code.
 type GenerateTestInput struct {
 	Template string `json:"template"`
 }
 
+// GenerateTestOutput represents the result of a test generation request.
+// TestID is the identifier of the created test.
+// TestCode contains the generated test source code.
+// TestStatus indicates the current state of the generated test (e.g., "created", "failed").
 type GenerateTestOutput struct {
 	TestID     string `json:"test_id"`
 	TestCode   string `json:"test_code"`

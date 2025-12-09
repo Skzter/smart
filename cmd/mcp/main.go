@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/application/tools"
 )
@@ -41,12 +42,16 @@ func main() {
 			return getTemplateTool.GetTemplate(c, req, in)
 		})
 	/*mcp.AddTool(server, &mcp.Tool{
-		Name: "generateTest"
+		Name: "generateTest",
+		Description: "",
+
 	})
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "runTest"
+		Name: "runTest",
+		Description: "Test are runned ",
 	})
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "getTestResult"
+		Name: "getTestResult",
+		Description: "",
 	})*/
 }
