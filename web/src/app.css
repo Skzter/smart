@@ -5,35 +5,35 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* ===== Primary Colors ===== */
-  --color-primary-button: #0e3a82;
-  --color-primary-button-hover: #0a2d63;
-  --color-primary-active: #081f46;
-  --color-primary-active-hover: #0a2d63;
+    /* ===== Primary Colors ===== */
+  --color-primary-button: #0a4daf;
+  --color-primary-button-hover: #083e8a;
+  --color-primary-active: #062f67;
+  --color-primary-active-hover: #083e8a;
 
   /* ===== Secondary Colors ===== */
-  --color-secondary-field-passive: #143951;
-  --color-secondary-field-passive2: #0f2e43;
+  --color-secondary-field-passive: #dde6f7;   /* filter, passive button */
+  --color-secondary-field-passive2: #b8e3fc;  /* hover / active secondary */
 
-  /* ===== Neutral Colors (Dark-Style) ===== */
-  --color-neutral-bg-side:  #0f141a;
-  --color-neutral-bg-side2: #181f26;
-  --color-neutral-bg-side3: #212931;
-  --color-neutral-bg-side4: #2f3a45;
-  --color-neutral-bg-side5: #3e4a56;
+  /* ===== Neutral Colors (Light-Style) ===== */
+  --color-neutral-bg-side:  #f7fafe; /* sidebar / app bg */
+  --color-neutral-bg-side2: #ffffff; /* panels, inputs */
+  --color-neutral-bg-side3: #e3e8ef; /* secondary panels */
+  --color-neutral-bg-side4: #cbd2da; /* border */
+  --color-neutral-bg-side5: #c2cbd4; /* disabled */
 
   /* ===== Accent Colors ===== */
-  --color-accent:  #46cfe6; /* electric aqua */
-  --color-accent2: #254b58; /* deep accent background */
+  --color-accent:  #30b2c9; /* markers, small highlights */
+  --color-accent2: #cff5f9; /* soft accent */
 
   /* ===== Semantic Text Colors ===== */
   --color-text-on-primary: #ffffff;
-  --color-text-primary:    #ffffff;
-  --color-text-secondary:  #e2e8f0;
-  --color-text-tertiary:   #94a3b8;
+  --color-text-primary:    #0f172a;
+  --color-text-secondary:  #374151;
+  --color-text-tertiary:   #6b7280;
   --color-text-dark:       #0f172a;
-  --color-text-muted:      #64748b;
-  --color-text-hover:      #cbd5f5;
+  --color-text-muted:      #9ca3af;
+  --color-text-hover:      #4b5563;
 
   /* ===== Error Colors (Red) ===== */
   --color-error-50:  #fef2f2;
@@ -44,13 +44,13 @@
   --color-error-800: #991b1b;
   --color-error-900: #7f1d1d;
 
-  /* ===== Warning Colors (Yellow, Dark) ===== */
-  --color-warning-50:  #2a1c09;
-  --color-warning-100: #3b2a10;
-  --color-warning-200: #5a4319;
-  --color-warning-600: #d29b23;
-  --color-warning-800: #f0d58a;
-  --color-warning-900: #b6892e;
+  /* ===== Warning Colors (Yellow, Light) ===== */
+  --color-warning-50:  #fefce8;
+  --color-warning-100: #fef9c3;
+  --color-warning-200: #fef08a;
+  --color-warning-600: #ca8a04;
+  --color-warning-800: #854d0e;
+  --color-warning-900: #713f12;
 
   /* ===== Success Colors (Green) ===== */
   --color-success-50:  #f0fdf4;
