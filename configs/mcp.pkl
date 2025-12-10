@@ -28,4 +28,4 @@ class HttpClientConfig {
 
 httpClient: HttpClientConfig 
 
-autotesterAPIBaseURL: String = ""
+autotesterAPIBaseURL: String = "http://localhost:8081" // zum testen für live ändern
