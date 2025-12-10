@@ -28,6 +28,20 @@ services:
       - DD_TRACE_AGENT_PORT=8126
       - DD_SITE=us5.datadoghq.com
 
+  mcp:
+    build:
+      context: ..
+      dockerfile: deployments/mcp/Dockerfile.dev
+    ports:
+      - "8084:8084"
+    networks:
+      - default
+    environment:
+      - AUTOTESTER_BASE_URL=http://autotester:8081
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com    
+
   frontend-mock:
     platform: linux/amd64
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/frontend-mock
