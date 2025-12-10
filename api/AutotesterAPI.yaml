@@ -36,31 +36,42 @@ paths:
   /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ChatRequest'
-    responses:
-      '200':
-        description: Validation result wrapped in ResponseForUser
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                message:
-                  type: object
-                  properties:
-                    body:
-                      type: string
-                userId:
-                  type: string
-                chatId:
-                  type: string
-        
-                
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Validation result wrapped in ResponseForUser
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: object
+                    properties:
+                      body:
+                        type: string
+                  userId:
+                    type: string
+                  chatId:
+                    type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'  
+                             
   /api/v1/userInfo:
     post:
       summary: "Requests User Info from Backend on inital load"
