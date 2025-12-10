@@ -64,7 +64,7 @@ func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 
 // LoggerProvider provides a new logger.
 func LoggerProvider(cfg *config.Config) *slog.Logger {
-	return logger.NewLogger(cfg.LogLevel)
+	return logger.NewLogger(cfg.LogLevel, cfg.LogFilePath)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
