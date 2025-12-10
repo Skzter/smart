@@ -38,8 +38,8 @@ describe("EditView", () => {
             },
         });
 
-        // MonacoEditor component should be present
-        const editorContainer = container.querySelector('.overflow-y-auto.h-full');
+        // MonacoEditor component should be present (check for parent container)
+        const editorContainer = container.querySelector('.h-full.overflow-y-visible');
         expect(editorContainer).toBeInTheDocument();
     });
 

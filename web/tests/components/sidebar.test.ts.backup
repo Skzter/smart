@@ -50,24 +50,24 @@ describe("Sidebar", () => {
     it("loads user chats successfully", async () => {
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Test chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
     it("displays error when API call fails", async () => {
-        vi.mocked(getChats).mockRejectedValue(new Error("API Error"));
+        vi.mocked(getUserChats).mockRejectedValue(new Error("API Error"));
 
         render(SidebarTestWrapper);
         
@@ -82,26 +82,26 @@ describe("Sidebar", () => {
         render(SidebarTestWrapper);
         await tick();
 
-        expect(getChats).not.toHaveBeenCalled();
+        expect(getUserChats).not.toHaveBeenCalled();
     });
 
     it("categorizes chat as 'Heute' for today's chats", async () => {
         const today = new Date();
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Today's chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -111,19 +111,19 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-2",
+                chatId: "conv-2",
                 userId: "test-user-123",
                 title: "Yesterday's chat",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -133,19 +133,19 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-3",
+                chatId: "conv-3",
                 userId: "test-user-123",
                 title: "Last week's chat",
                 createdAt: lastWeek.toISOString(),
                 updatedAt: lastWeek.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -155,19 +155,19 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-4",
+                chatId: "conv-4",
                 userId: "test-user-123",
                 title: "This month's chat",
                 createdAt: thisMonth.toISOString(),
                 updatedAt: thisMonth.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -177,19 +177,19 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-5",
+                chatId: "conv-5",
                 userId: "test-user-123",
                 title: "Old chat",
                 createdAt: older.toISOString(),
                 updatedAt: older.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -215,19 +215,19 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
                 updatedAt: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -236,19 +236,19 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -268,36 +268,36 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-2",
+                chatId: "conv-2",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
     it("handles empty chat list", async () => {
-        vi.mocked(getChats).mockResolvedValue([]);
+        vi.mocked(getUserChats).mockResolvedValue([]);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -308,43 +308,43 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Today 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-2",
+                chatId: "conv-2",
                 userId: "test-user-123",
                 title: "Today 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-3",
+                chatId: "conv-3",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
     it("renders SidebarHeader component", async () => {
-        vi.mocked(getChats).mockResolvedValue([]);
+        vi.mocked(getUserChats).mockResolvedValue([]);
 
         const { container } = render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
         
         // SidebarHeader should be rendered
@@ -358,31 +358,38 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-2",
+                chatId: "conv-2",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
+    it("displays error message in sidebar when error occurs", async () => {
+        vi.mocked(getUserChats).mockRejectedValue(new Error("Network error"));
+
+        render(SidebarTestWrapper);
+        
+        await waitFor(() => {
+
     it("handles non-Error exceptions", async () => {
-        vi.mocked(getChats).mockRejectedValue("String error");
+        vi.mocked(getUserChats).mockRejectedValue("String error");
 
         render(SidebarTestWrapper);
         
@@ -397,19 +404,19 @@ describe("Sidebar", () => {
     it("updates groups when ChatDate.Range changes", async () => {
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
 
         // Change date range
@@ -451,19 +458,19 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 
@@ -483,33 +490,33 @@ describe("Sidebar", () => {
         
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "chat-1",
+                chatId: "conv-1",
                 userId: "test-user-123",
                 title: "Chat 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-2",
+                chatId: "conv-2",
                 userId: "test-user-123",
                 title: "Chat 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "chat-3",
+                chatId: "conv-3",
                 userId: "test-user-123",
                 title: "Chat 3",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getUserChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
         
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalled();
+            expect(getUserChats).toHaveBeenCalled();
         });
     });
 });

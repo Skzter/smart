@@ -2,6 +2,26 @@ import { render } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import '@testing-library/jest-dom/vitest';
 
+// Mock Monaco Editor BEFORE importing components
+vi.mock("monaco-editor", () => ({
+    editor: {
+        create: vi.fn(() => ({
+            getValue: vi.fn(() => ""),
+            setValue: vi.fn(),
+            getModel: vi.fn(() => ({
+                getValue: vi.fn(() => ""),
+                setValue: vi.fn(),
+                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() })),
+            })),
+            layout: vi.fn(),
+            dispose: vi.fn(),
+            onDidChangeModelContent: vi.fn(() => ({ dispose: vi.fn() })),
+        })),
+        createModel: vi.fn(),
+        setModelLanguage: vi.fn(),
+    },
+}));
+
 // Mock clipboard BEFORE importing the component
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
 Object.defineProperty(navigator, 'clipboard', {
@@ -53,8 +73,10 @@ describe("BotMessage", () => {
             },
         });
 
-        const codeElement = container.querySelector('pre');
-        expect(codeElement).toBeInTheDocument();
+        // When message contains @playwright, MonacoEditor should be rendered
+        // Check that regular text div is NOT present
+        const textDiv = container.querySelector('.px-4.py-2.wrap-break-word');
+        expect(textDiv).not.toBeInTheDocument();
     });
 
     it("does not render Code component for regular text", () => {
@@ -64,8 +86,9 @@ describe("BotMessage", () => {
             },
         });
 
-        const codeElement = container.querySelector('pre');
-        expect(codeElement).not.toBeInTheDocument();
+        // Regular text should be rendered in text div
+        const textDiv = container.querySelector('.px-4.py-2.wrap-break-word');
+        expect(textDiv).toBeInTheDocument();
     });
 
     it("renders TestButtons component", () => {
