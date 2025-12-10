@@ -3,7 +3,7 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-logLevel: String = "info"
+logLevel: String = "debug"
 
 /// Server implementation details
 class McpServerImplementation {
