@@ -314,6 +314,7 @@ tasks:
     sources:
       - configs/suproxy.pkl
       - configs/autotester.pkl
+      - configs/mcp.pkl
 
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
@@ -322,6 +323,13 @@ tasks:
     sources:
       - cmd/autotester/wire.go
       - internal/shared/wire.go
+
+  di-generate-mcp:
+    desc: "generate dependency injection code for mcp"
+    cmds:
+      - go tool wire ./cmd/mcp
+    sources:
+      - cmd/mcp/wire.go
 
   di-generate-suproxy:
     desc: "generate dependency injection code for suproxy"

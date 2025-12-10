@@ -6,10 +6,10 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 )
 
-// LoadAppConfig loads application config
-func LoadAppConfig() (*Config, error) {
+// LoadMCPConfig loads application config
+func LoadMCPConfig() (*Config, error) {
 	var cfg Config
-	bytes, err := build.SuproxyEmbedConfigs.ReadFile("configs/suproxy.msgpack")
+	bytes, err := build.MCPEmbedConfigs.ReadFile("configs/mcp.msgpack")
 	if err != nil {
 		return nil, err
 	}
