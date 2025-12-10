@@ -9,7 +9,7 @@ const baseURL = "/api/v1/";
 export async function getChatResponse(params: object, url: string) {
     const response = await axios({
         method: "post",
-        url: "chat",
+        url: url,
         baseURL: baseURL,
         data: params,
     });
@@ -19,8 +19,17 @@ export async function getChatResponse(params: object, url: string) {
 /** Validates the prompt by sending it to the /validationRes endpoint
  * @param body: object containing userId, conversationId, and prompt
  */
-export async function validatePrompt(body: { userId: string; conversationId: string; prompt: string }) {
-    return axios.post("validationRes", body, { baseURL });
+export async function validatePrompt(params: {
+  userId: string;
+  conversationId: string;
+  prompt: string;
+}) {
+  return axios({
+    method: "post",
+    url: "/validate",
+    baseURL: "/api/v1/",
+    data: params,
+  });
 }
 
 /**

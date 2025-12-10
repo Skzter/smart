@@ -6,6 +6,7 @@ import {
     getTemplate,
     saveTestLocal,
     runContainer,
+    validatePrompt,
 } from "../../src/lib/Api.ts";
 
 // Mock axios
@@ -131,6 +132,9 @@ describe("API Functions", () => {
     });
 
     describe("validatePrompt", () => {
+        const mockedAxios = axios as vi.Mocked<typeof axios>;
+        mockedAxios.mockResolvedValue({ data: mockResponseData });
+
         it("should make a POST request to /validate with proper params", async () => {
             const mockedAxios = axios as vi.Mocked<typeof axios>;
             mockedAxios.mockResolvedValue(mockValidateResponse);

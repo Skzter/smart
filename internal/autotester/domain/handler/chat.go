@@ -1,6 +1,5 @@
 package handler
 
-// TODO: add API api "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/api"
 import (
 	"fmt"
 	"net/http"
@@ -50,8 +49,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		}
 	}()
 
-	//TODO: re-enable validation after testing: dont return any messages
-	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
+	valid, _, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		a.logger.Error("Validation failed", "error", err)
@@ -59,12 +57,6 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	}
 
 	if !valid {
-		c.JSON(http.StatusOK,
-			&entity.ResponseForUser{
-				Message: sharedEntity.Message{Body: msg},
-				UserId:  chat.UserId,
-				ChatId:  chat.Id,
-			})
 		return
 	}
 
