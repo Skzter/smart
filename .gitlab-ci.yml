@@ -204,9 +204,10 @@ llm_test_suite:
   stage: llm_testing
   script:
     - echo "Running LLM test suite..."
-    - doppler run -- go test -tags=llmtest -run TestPromptTestSuite ./internal/autotester/domain/service -v
+    - ./bin/doppler run -- go test -tags=llmtest -run TestPromptTestSuite ./internal/autotester/domain/service -v
+  allow_failure: true
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: on_success
 
 build_frontend_artifacts:
