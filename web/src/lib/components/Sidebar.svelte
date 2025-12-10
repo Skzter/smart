@@ -14,6 +14,7 @@
     let items = $state<ApiChatSummary[] | undefined>(undefined);
 
     let groupState = $derived(updateGroupsWithDateRange(items, ChatDate.Range));
+    $inspect(groupState[0].summaries[0].title);
 
     (async () => {
         if (user.id == undefined) {
@@ -62,6 +63,7 @@
         groups.forEach((value, key) => {
             result.push({ label: key, summaries: value });
         });
+        $inspect(result);
 
         return result;
     }
@@ -117,7 +119,7 @@
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}
-                <Group group={groupState[index]}></Group>
+                <Group bind:group={groupState[index]}></Group>
             {/each}
         {/if}
     </Sidebar.Content>
