@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -15,12 +17,12 @@ import (
 func main() {
 	cfg, err := config.LoadMCPConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		panic(err)
 	}
 
 	mcpServer, err := InitializeMcpServer(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize MCP server: %v", err)
+		panic(err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -35,11 +37,29 @@ func main() {
 		cancel()
 	}()
 
-	log.Println("Starting MCP server on stdio...")
+	log.Println("Starting MCP server on HTTP :8084...")
 
-	transport := mcp.StdioTransport{}
+	// Create SSE-Handler erzeugen (Transport Layer)
+	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+		return mcpServer.Server()
+	}, nil)
 
-	if err := mcpServer.Run(ctx, &transport); err != nil {
+	// HTTP-Server configuration
+	srv := &http.Server{
+		Addr:              ":8084",
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	// Server shuts down
+	go func() {
+		<-ctx.Done()
+		log.Println("Shutting down MCP HTTP server...")
+		_ = srv.Shutdown(context.Background())
+	}()
+
+	// Start HTTP-Server
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}
 }
