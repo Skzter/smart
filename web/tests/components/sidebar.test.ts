@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import '@testing-library/jest-dom/vitest';
 import { tick } from "svelte";
 import SidebarTestWrapper from "../helpers/SidebarTestWrapper.svelte";
-import type { ApiChatSummary } from "../../src/lib/types";
+import type { ApiChatSummary } from "$lib/types";
 import type { DateRange } from "bits-ui";
 
 // Mock toast
@@ -14,18 +14,18 @@ vi.mock("svelte-sonner", () => ({
 }));
 
 // Mock API
-vi.mock("../../src/lib/api", () => ({
+vi.mock("$lib/api", () => ({
     getUserChats: vi.fn(),
 }));
 
 // Mock shared state
-vi.mock("../../src/lib/shared.svelte", () => ({
+vi.mock("$lib/shared.svelte", () => ({
     user: { id: "test-user-123" },
     ChatDate: { Range: undefined },
 }));
 
-import { getUserChats } from "../../src/lib/api";
-import { user, ChatDate } from "../../src/lib/shared.svelte";
+import { getUserChats } from "$lib/api";
+import { user, ChatDate } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 
 describe("Sidebar", () => {
