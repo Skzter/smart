@@ -67,11 +67,11 @@ func (m *McpServer) registerTools() error {
 	m.logger.Info("Registered tool: get_template")
 
 	mcp.AddTool(m.server, &mcp.Tool{
-		Name:        "generate_Test",
+		Name:        "generate_test",
 		Description: "takes prompt, sends it to backend and receives feedback to display in frontend",
 	}, generateTestTool.GenerateTest)
 
-	m.logger.Info("Registered tool: generate_task")
+	m.logger.Info("Registered tool: generate_test")
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "run_test",

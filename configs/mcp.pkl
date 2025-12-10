@@ -17,13 +17,13 @@ mcpServerImplementation : McpServerImplementation
 
 /// HTTP Client configuration
 class HttpClientConfig {
-  timeoutSeconds: Int = 30
+  timeoutSeconds: Int = 600
   
   maxIdleConns: Int = 100
   
   maxIdleConnsPerHost: Int = 10
   
-  idleConnTimeoutSeconds: Int = 90
+  idleConnTimeoutSeconds: Int = 300
 }
 
 httpClient: HttpClientConfig 

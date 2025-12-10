@@ -5,5 +5,5 @@ package entity
 type RunTestRequest struct {
 	TestId         string `json:"testId"`
 	UserId         string `json:"userId"`
-	ConversationId string `json:"conversationId"`
+	ConversationId string `json:"sessionId"`
 }
