@@ -5,4 +5,5 @@ package entity
 // exit codes or structured results. Documenting the type now keeps the
 // package consistent and ready for future fields.
 type ExecuteTestResponse struct {
+	Result string `json:"result"`
 }
