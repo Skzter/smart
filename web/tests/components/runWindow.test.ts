@@ -24,7 +24,7 @@ vi.mock("monaco-editor/esm/vs/language/typescript/ts.worker?worker", () => ({
 }));
 
 import { Runner } from "../../src/lib/runner.svelte";
-import TestWrapper from "./runWindowWrapper.svelte";
+import RunWindowTestWrapper from "../helpers/RunWindowTestWrapper.svelte";
 
 describe("RunWindow", () => {
     let testRunner: Runner;
@@ -34,7 +34,7 @@ describe("RunWindow", () => {
     });
 
     it("renders the dialog content with correct styling", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "const test = 'hello';",
                 activeTab: "edit",
@@ -47,7 +47,7 @@ describe("RunWindow", () => {
     });
 
     it("renders the dialog title", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -60,7 +60,7 @@ describe("RunWindow", () => {
     });
 
     it("renders header with correct structure", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -72,7 +72,7 @@ describe("RunWindow", () => {
     });
 
     it("renders CloseButton when activeTab is 'edit'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -85,7 +85,7 @@ describe("RunWindow", () => {
     });
 
     it("renders SwitchView when activeTab is 'run'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -97,7 +97,7 @@ describe("RunWindow", () => {
     });
 
     it("renders CloseButton when activeTab is 'result'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "result",
@@ -110,7 +110,7 @@ describe("RunWindow", () => {
     });
 
     it("renders TabsView component", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -122,7 +122,7 @@ describe("RunWindow", () => {
     });
 
     it("renders EditView when activeTab is 'edit'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -134,7 +134,7 @@ describe("RunWindow", () => {
     });
 
     it("renders split view when activeTab is 'run' and view is 'split'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -146,7 +146,7 @@ describe("RunWindow", () => {
     });
 
     it("renders OutputView when activeTab is 'run'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -159,7 +159,7 @@ describe("RunWindow", () => {
     });
 
     it("renders BrowserView when activeTab is 'run'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -172,7 +172,7 @@ describe("RunWindow", () => {
     });
 
     it("renders ResultView when activeTab is 'result'", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "result",
@@ -184,7 +184,7 @@ describe("RunWindow", () => {
     });
 
     it("renders hidden Dialog.Close button", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -198,7 +198,7 @@ describe("RunWindow", () => {
     it("renders with different testRunner instances", () => {
         const customRunner = new Runner();
         customRunner.result = "Custom result";
-        const { container } = render(TestWrapper, {
+        const { container } = render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -209,7 +209,7 @@ describe("RunWindow", () => {
     });
 
     it("renders all required components", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -225,7 +225,7 @@ describe("RunWindow", () => {
     });
 
     it("handles empty code string", () => {
-        const { container } = render(TestWrapper, {
+        const { container } = render(RunWindowTestWrapper, {
             props: {
                 code: "",
                 activeTab: "edit",
@@ -237,7 +237,7 @@ describe("RunWindow", () => {
 
     it("handles long code strings", () => {
         const longCode = "const test = 'hello';\n".repeat(100);
-        const { container } = render(TestWrapper, {
+        const { container } = render(RunWindowTestWrapper, {
             props: {
                 code: longCode,
                 activeTab: "edit",
@@ -250,7 +250,7 @@ describe("RunWindow", () => {
     it("renders with all three activeTab options", () => {
         const tabs = ["edit", "run", "result"];
         tabs.forEach(tab => {
-            const { container } = render(TestWrapper, {
+            const { container } = render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
                     activeTab: tab,
@@ -262,7 +262,7 @@ describe("RunWindow", () => {
     });
 
     it("maintains proper layout structure", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -276,7 +276,7 @@ describe("RunWindow", () => {
     });
 
     it("renders overflow handling correctly", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -290,7 +290,7 @@ describe("RunWindow", () => {
     it("handles all conditional rendering branches for header controls", () => {
         const tabs = ["edit", "run", "result"];
         tabs.forEach(tab => {
-            render(TestWrapper, {
+            render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
                     activeTab: tab,
@@ -303,16 +303,16 @@ describe("RunWindow", () => {
     });
 
     it("renders content area correctly for each tab", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test",
                 activeTab: "edit",
                 testRunner,
             },
         });
-        expect(document.body.querySelector('.flex-1.overflow-hidden')).toBeInTheDocument();
+        expect(document.body.querySelector('.flex-1.overflow-visible')).toBeInTheDocument();
 
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test",
                 activeTab: "run",
@@ -321,7 +321,7 @@ describe("RunWindow", () => {
         });
         expect(document.body.querySelector('.flex-1')).toBeInTheDocument();
 
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test",
                 activeTab: "result",
@@ -332,7 +332,7 @@ describe("RunWindow", () => {
     });
 
     it("integrates all child components properly", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -347,7 +347,7 @@ describe("RunWindow", () => {
 
     it("passes testRunner prop correctly to child components", () => {
         testRunner.result = "Test result from runner";
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -360,7 +360,7 @@ describe("RunWindow", () => {
     });
 
     it("renders with proper responsive classes", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -372,7 +372,7 @@ describe("RunWindow", () => {
     });
 
     it("renders height classes correctly", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -384,7 +384,7 @@ describe("RunWindow", () => {
     });
 
     it("handles view state in run tab - code view", () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "run",
@@ -398,7 +398,7 @@ describe("RunWindow", () => {
 
     it("renders all conditional branches", () => {
         ["edit", "run", "result"].forEach(tab => {
-            render(TestWrapper, {
+            render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
                     activeTab: tab,
@@ -410,7 +410,7 @@ describe("RunWindow", () => {
     });
 
     it("handles tab change event", async () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -431,7 +431,7 @@ describe("RunWindow", () => {
     });
 
     it("handles close button click", async () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -455,7 +455,7 @@ describe("RunWindow", () => {
     });
 
     it("switches tabs via tab change handler", async () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
@@ -476,7 +476,7 @@ describe("RunWindow", () => {
     });
 
     it("changes activeTab when switching between tabs", async () => {
-        render(TestWrapper, {
+        render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
                 activeTab: "edit",
