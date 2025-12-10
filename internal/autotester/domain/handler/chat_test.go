@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -23,6 +27,7 @@ import (
 func TestHandleChatRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type MockSetup struct {
 		Function         string
@@ -160,6 +165,13 @@ func TestHandleChatRequest(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -185,7 +197,19 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 
 			controller.HandleChatRequest(ctx)
 
@@ -199,6 +223,7 @@ func TestHandleChatRequest(t *testing.T) {
 func TestHandleUserInfoRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		TestName        string
 		UserRequestBody string
@@ -239,6 +264,13 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -253,7 +285,19 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -267,9 +311,11 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func TestGetUserChats(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
 		requestID        string
@@ -337,6 +383,13 @@ func TestGetUserChats(t *testing.T) {
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -347,7 +400,19 @@ func TestGetUserChats(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
 
 			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
