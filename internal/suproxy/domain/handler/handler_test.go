@@ -14,13 +14,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/service"
+	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
 )
 
 type slicewriter struct {
@@ -51,6 +54,8 @@ func RejectValidator(t testing.TB) service.Validator {
 }
 
 func TestNewSuproxyController(t *testing.T) {
+	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		name       string
 		log        *slog.Logger
@@ -60,6 +65,7 @@ func TestNewSuproxyController(t *testing.T) {
 		db         service.DatabaseService
 		syncer     service.TaglistSync
 		tagservice service.TagSearchService
+		metrics    sharedService.MetricsService
 		err        bool
 	}{
 		{
@@ -71,6 +77,7 @@ func TestNewSuproxyController(t *testing.T) {
 			db:         mocks.NewMockDatabaseService(t),
 			syncer:     mocks.NewMockTaglistSync(t),
 			tagservice: mocks.NewMockTagSearchService(t),
+			metrics:    sharedMocks.NewMockMetricsService(t),
 			err:        false,
 		},
 		{
@@ -82,13 +89,14 @@ func TestNewSuproxyController(t *testing.T) {
 			db:         nil,
 			syncer:     nil,
 			tagservice: nil,
+			metrics:    nil,
 			err:        true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tt.syncer, tt.tagservice)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tracer, tt.syncer, tt.tagservice, tt.metrics)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -228,8 +236,16 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
 			mockTagsearch := mocks.NewMockTagSearchService(t)
+			mockMetrics := sharedMocks.NewMockMetricsService(t)
+			tracer := otel.Tracer("test")
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+			// Setup metrics mock to accept any calls
+			mockMetrics.On("IncRequestSuccess").Return().Maybe()
+			mockMetrics.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetrics.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetrics.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch, mockMetrics)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
@@ -375,9 +391,12 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
 	mockTagsearch := mocks.NewMockTagSearchService(t)
+	mockMetrics := sharedMocks.NewMockMetricsService(t)
+	tracer := otel.Tracer("test")
+
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, mockSyncer, mockTagsearch)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch, mockMetrics)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -437,14 +456,23 @@ func TestHandlerHandleRequest(t *testing.T) {
 }
 
 func BenchmarkPostOfferList(b *testing.B) {
+	tracer := otel.Tracer("test")
+	mockMetrics := sharedMocks.NewMockMetricsService(b)
+	mockMetrics.On("IncRequestSuccess").Return().Maybe()
+	mockMetrics.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetrics.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetrics.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Config{},
 		RejectValidator(b),
 		&http.Client{},
 		mocks.NewMockDatabaseService(b),
+		tracer,
 		mocks.NewMockTaglistSync(b),
 		mocks.NewMockTagSearchService(b),
+		mockMetrics,
 	)
 
 	router := SetupRouter(ctrl)

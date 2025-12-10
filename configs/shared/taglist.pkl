@@ -3,7 +3,7 @@ module taglist
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
-bucket: String = "smart-taglist"
+taglistBucket: String = "smart-taglist"
 
 region: String = "eu-central-1"
 

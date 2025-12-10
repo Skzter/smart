@@ -13,7 +13,21 @@
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
-    var conversationId = $state(localStorage.getItem("conversationId") || "");
+    var conversationId = $state("");
+
+    onMount(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        const updateTheme = () => {
+            document.documentElement.setAttribute(
+                "data-theme",
+                media.matches ? "dark" : "light",
+            );
+        };
+
+        media.addEventListener("change", updateTheme);
+        updateTheme();
+    });
 
     onMount(async () => {
         await auth.initAuth();
@@ -29,7 +43,7 @@
     });
 
     let paramsChatRequest = $derived({
-        message: { body: "", role: "user" },
+        prompt: "",
         userId: userId,
         conversationId: conversationId,
     });
@@ -49,12 +63,14 @@
             answer: "",
         });
         isLoading = true;
-        paramsChatRequest.message.body = userQuestion;
+        paramsChatRequest.prompt = userQuestion;
         paramsChatRequest.userId = userId;
+        paramsChatRequest.conversationId = conversationId;
 
         try {
             const answer = await getChatResponse(paramsChatRequest, chatUrl);
             convo[convo.length - 1].answer = answer.data.message.body;
+            conversationId = answer.data.conversationId ?? "";
         } catch (err) {
             if (err.isAxiosError) {
                 convo[convo.length - 1].answer = err.response.data.message;
@@ -99,7 +115,7 @@
                         name="Bot"
                         {userId}
                         {conversationId}
-                        showSave={c.answer.startsWith("import")}
+                        isCode={c.answer.startsWith("import")}
                     />
                 {/if}
             {/each}

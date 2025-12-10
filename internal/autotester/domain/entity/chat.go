@@ -1,11 +1,18 @@
 package entity
 
 import (
-	"errors"
 	"time"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	"github.com/google/uuid"
+
+	shared "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 )
+
+// MessageType represents a Type of Message stored in Chat entity
+// ENUM(Validation, Generation, User)
+type MessageType uint
+
+//go:generate go tool go-enum -f=$GOFILE --marshal
 
 // Chat represents a single Chat, identified by a unique id and associated with a user.
 type Chat struct {
@@ -13,40 +20,69 @@ type Chat struct {
 	UserId    string    `json:"userId"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	Title     string    `json:"title"`
 
-	Title    string           `json:"title"`
-	Messages []entity.Message `json:"messages"`
+	Messages []*Message `json:"messages"`
+	index    map[MessageType][]int
 
-	LastTest      string `json:"lastTest"`
-	SystemPrompt  string `json:"systemPrompt"`
-	InitialPrompt string `json:"initialPrompt"`
+	LastTest                 string `json:"lastTest"`
+	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
 }
 
-// Validate validates a Chat entity.
-// Returns an error if any required field is empty or invalid.
-func (chat *Chat) Validate() error {
-	switch {
-	case chat.InitialPrompt == "":
-		return errors.New("initial prompt is empty")
-	case chat.SystemPrompt == "":
-		return errors.New("system prompt is empty")
-	case chat.Id == "":
-		return errors.New("id is empty")
-	case chat.UserId == "":
-		return errors.New("userId is empty")
-	case len(chat.Messages) == 0:
-		return errors.New("contains no messages")
+// NewChat creates a new chat with for the given user with the given messages
+func NewChat(userId string, messages []*Message) *Chat {
+	now := time.Now().UTC()
+	return &Chat{
+		Id:        uuid.NewString(),
+		UserId:    userId,
+		CreatedAt: now,
+		UpdatedAt: now,
+		Messages:  messages,
 	}
+}
 
-	for _, msg := range chat.Messages {
-		switch {
-		case msg.Body == "":
-			return errors.New("contains empty messages")
-		case msg.Id == "":
-			return errors.New("contains messages with empty id")
-		case msg.Role == "":
-			return errors.New("contains message with empty role")
+// AddMessage adds a Message of the given type to the chats Messages
+func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
+	t := MessageTypeUser
+	if len(ts) > 0 {
+		t = ts[0]
+	}
+	m.Messages = append(m.Messages, &Message{Message: *message, Type: t})
+
+	m.index = nil
+}
+
+func (m *Chat) buildIndex() {
+	if m.index != nil {
+		return
+	}
+	m.index = make(map[MessageType][]int)
+
+	for i, msg := range m.Messages {
+		if msg.Type == MessageTypeUser {
+			for t := range _MessageTypeMap {
+				m.index[t] = append(m.index[t], i)
+			}
+		} else {
+			m.index[msg.Type] = append(m.index[msg.Type], i)
 		}
 	}
-	return nil
+}
+
+// Filter returns a slice of all Messages associated with the Type
+func (m *Chat) Filter(t MessageType) []*shared.Message {
+	m.buildIndex()
+
+	index, ok := m.index[t]
+	if !ok {
+		return nil
+	}
+
+	result := make([]*shared.Message, 0, len(index)) // pre allocation for memory efficiency
+
+	for _, i := range index {
+		result = append(result, &m.Messages[i].Message)
+	}
+
+	return result
 }

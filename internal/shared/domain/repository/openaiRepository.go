@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	openai "github.com/sashabaranov/go-openai"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
@@ -30,10 +31,11 @@ type OpenAIClient interface {
 type openAI struct {
 	client  OpenAIClient
 	timeout int // timeout in seconds
+	tracer  trace.Tracer
 }
 
 // NewOpenAiRepository creates a new OpenAI client instance with the provided API key.
-func NewOpenAiRepository(client OpenAIClient, timeout int) (OpenAI, error) {
+func NewOpenAiRepository(client OpenAIClient, timeout int, tracer trace.Tracer) (OpenAI, error) {
 	if err := assert.NotNil(client); err != nil {
 		return nil, err
 	}
@@ -45,6 +47,7 @@ func NewOpenAiRepository(client OpenAIClient, timeout int) (OpenAI, error) {
 	return &openAI{
 		client:  client,
 		timeout: timeout,
+		tracer:  tracer,
 	}, nil
 }
 
@@ -55,7 +58,12 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 		return nil, err
 	}
 
+	ctx, span := qa.tracer.Start(ctx, "openAI.CreateRequest")
+	defer span.End()
+
 	if err := validateRequestEntity(req); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "request validation failed")
 		return nil, err
 	}
 
@@ -85,26 +93,29 @@ func (qa *openAI) CreateRequest(ctx context.Context, req entity.Request) (*entit
 		})
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "OpenAI API request failed")
 		return nil, err
 	}
 
 	// check if there are responses from api
 	if len(resp.Choices) == 0 {
-		return nil, errors.ErrInternalServer
+		err := errors.ErrInternalServer
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "empty response array")
+		return nil, err
 	}
 
 	// first choice of all responses
 	text := resp.Choices[0].Message.Content
 	if text == "" {
-		return nil, errors.ErrEmptyResponse
+		err := errors.ErrEmptyResponse
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "empty response content")
+		return nil, err
 	}
 
-	return &entity.Message{
-		Id:        uuid.NewString(),
-		Role:      openai.ChatMessageRoleAssistant,
-		Body:      text,
-		CreatedAt: time.Now(),
-	}, nil
+	return entity.NewMessage(text, entity.RoleAssistant), nil
 }
 
 func validateRequestEntity(request entity.Request) error {

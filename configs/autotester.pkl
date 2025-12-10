@@ -6,11 +6,11 @@ import "shared/taglist.pkl"
 
 const model: String = "gpt-5-mini-2025-08-07"
 const autoplaywright_debug: Boolean = true
-logDir_autopw: String = "/var/log/smart/"
+logDir_autopw: String = "/tmp/smart/logs"
 
 port: String = "8081" 
 
-logLevel: String = "debug"
+logLevel: String = "info"
 
 class Prompts {
     validationPrompt : String = 
@@ -243,6 +243,8 @@ region: String = "eu-central-1"
 
 bucket: String = "smart-autotester"
 
+s3TestcasePrefix: String = "testcase"
+
 testsRootDir: String = "/tmp/tests"
 enableCleanUp: Boolean = true
 
@@ -254,5 +256,7 @@ template: String = """
     Assertions: {{Erfolgsbedingungen}}  
     Testdaten/Setup: {{Voraussetzungen an Testdaten und Teardown-Anweisungen}}
 """
+
+defaultLimitChats: String = "10"
 
 taglistConfig: taglist = taglist

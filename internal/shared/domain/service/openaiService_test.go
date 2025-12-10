@@ -4,16 +4,19 @@ import (
 	"context"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
 )
 
 // Test for Service
 func TestNewService(t *testing.T) {
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		testName      string
 		repo          repository.OpenAI
@@ -33,7 +36,7 @@ func TestNewService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
-			service, err := NewOpenAI(test.repo)
+			service, err := NewOpenAI(test.repo, tracer)
 
 			if test.expectedError {
 				if err == nil {
@@ -52,6 +55,8 @@ func TestNewService(t *testing.T) {
 
 // Test for request
 func TestRequest(t *testing.T) {
+	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		testName       string
 		requestReturns []any
@@ -68,7 +73,7 @@ func TestRequest(t *testing.T) {
 		{
 			testName: "Valid Request",
 			request: entity.Request{
-				Messages: []entity.Message{
+				Messages: []*entity.Message{
 					{Role: "user", Body: "user prompt"},
 				},
 			},
@@ -88,7 +93,7 @@ func TestRequest(t *testing.T) {
 				mockOpenAiRepo.On("CreateRequest", mock.Anything, mock.Anything).Return(test.requestReturns...)
 			}
 
-			service, err := NewOpenAI(mockOpenAiRepo)
+			service, err := NewOpenAI(mockOpenAiRepo, tracer)
 
 			if err != nil {
 				t.Errorf("WARNING: Failed to create openAIService")

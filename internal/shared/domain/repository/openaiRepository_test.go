@@ -7,13 +7,15 @@ import (
 
 	openai "github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository/mocks"
+	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 )
 
 // Test for creating new OpenAiRepository
 func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name            string
 		timeout         int
@@ -38,7 +40,7 @@ func TestOpenaiRepositoryNewOpenAiRepo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			repo, err := NewOpenAiRepository(mockClient, test.timeout)
+			repo, err := NewOpenAiRepository(mockClient, test.timeout, tracer)
 			if test.expectedError {
 				if err == nil {
 					t.Errorf("expected error, but got nil")
@@ -65,7 +67,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "", Body: "prompt"}},
+				Messages:     []*entity.Message{{Role: "", Body: "prompt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -74,7 +76,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty role",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: ""}},
+				Messages:     []*entity.Message{{Role: "role", Body: ""}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -83,7 +85,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty model",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "",
 				SystemPrompt: "sys prompt",
 			},
@@ -92,7 +94,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "validating incorrect request entity => empty system prompt",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "",
 			},
@@ -101,7 +103,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 		{
 			name: "happy path",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "pormpt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "pormpt"}},
 				Model:        "nano",
 				SystemPrompt: "sys prompt",
 			},
@@ -131,6 +133,7 @@ func TestOpenAiRepoValidateRequestEntity(t *testing.T) {
 func TestOpenaiReposCreateRequest(t *testing.T) {
 	model := openai.GPT4Dot1Nano20250414
 	timeout := 5
+	tracer := otel.Tracer("test")
 
 	mockClient := mocks.NewMockOpenAIClient(t)
 
@@ -293,7 +296,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "user prompt"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -303,7 +306,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "valid with history",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages: []entity.Message{
+				Messages: []*entity.Message{
 					{
 						Role: "user",
 						Body: "what is 3 + 2?",
@@ -335,7 +338,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		{
 			name: "nil context",
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "role", Body: "user prompt"}},
+				Messages:     []*entity.Message{{Role: "role", Body: "user prompt"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -346,7 +349,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "create Error",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "error please"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "error please"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -356,7 +359,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "no choices",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "no choices"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "no choices"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -366,7 +369,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 			name: "empty response",
 			ctx:  t.Context(),
 			request: entity.Request{
-				Messages:     []entity.Message{{Role: "user", Body: "empty response"}},
+				Messages:     []*entity.Message{{Role: "user", Body: "empty response"}},
 				Model:        model,
 				SystemPrompt: "sys prompt",
 			},
@@ -384,7 +387,7 @@ func TestOpenaiReposCreateRequest(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			repo, _ := NewOpenAiRepository(mockClient, timeout)
+			repo, _ := NewOpenAiRepository(mockClient, timeout, tracer)
 			_, err := repo.CreateRequest(test.ctx, test.request)
 			if test.expectedError {
 				if err == nil {

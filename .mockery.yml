@@ -14,20 +14,20 @@ packages:
   # SHARED
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper:
     config:
-      dir: './internal/shared/domain/mocks'
+      dir: './internal/shared/domain/mocks/wrapper'
     interfaces:
       S3StorageWrapper:
       ParquetFileWrapper:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository:
     config:
-      dir: './internal/shared/domain/repository/mocks'
+      dir: './internal/shared/domain/mocks/repository'
     interfaces:
       OpenAI:
       OpenAIClient:
       TaglistStorage:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service:
     config:
-      dir: './internal/shared/domain/service/mocks'
+      dir: './internal/shared/domain/mocks/service'
     interfaces:
       OpenAI:
       TaglistStorage:
@@ -35,7 +35,7 @@ packages:
   # SUPROXY
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service:
     config:
-      dir: './internal/suproxy/domain/service/mocks'
+      dir: './internal/suproxy/domain/mocks/service'
     interfaces:
       Validator:
       DatabaseService:
@@ -50,18 +50,21 @@ packages:
   # AUTOTESTER
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository:
     config:
-      dir: './internal/autotester/domain/repository/mocks'
+      dir: './internal/autotester/domain/mocks/repository'
     interfaces:
       ChatStorageRepository:
-      TestCaseStorageRepository:
+      TestcaseStorageRepository:
       FileSystem:
       TestcaseLocalStorageRepository:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service:
     config:
-      dir: './internal/autotester/domain/service/mocks'
+      dir: './internal/autotester/domain/mocks/service'
     interfaces:
       GeneratePrompt:
-      ValidatePrompt:
+      Validator:
       TestcaseLocalStorageService:
       Docker:
       DockerClient:
+      ChatManager:
+      ChatStorageService: 
+      TestcaseStorageService:
