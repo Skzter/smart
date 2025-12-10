@@ -10,7 +10,7 @@ variables:
 
 default:
   tags:
-    - aws
+    - fdit
   image:
     name: golang:$GO_VERSION
 
