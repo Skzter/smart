@@ -33,7 +33,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
                 
-  /api/v1/validation:
+  /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"
     requestBody:

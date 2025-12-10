@@ -73,22 +73,22 @@
         isLoading = true;
         try {
             // validate prompt
-            const valResp = await validatePrompt({
+            const validate = await validatePrompt({
                 userId,
                 conversationId,
                 prompt: userQuestion,
             });
 
-            conversationId = valResp.data.chatId ?? "";
+            conversationId = validate.data.chatId ?? "";
 
-            if (valResp.data.message?.body) {
+            if (validate.data.message?.body) {
                 convo.push({
                     role: "system",
-                    content: valResp.data.message.body,
+                    content: validate.data.message.body,
                 });
             }
 
-            if (valResp.data.message?.body !== "Prompt validated successfully!") {
+            if (validate.data.message?.body !== "Prompt validated successfully!") {
                 isLoading = false;
                 return;
             }
