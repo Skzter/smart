@@ -188,10 +188,10 @@ tasks:
       - go tool gotestsum -- -coverprofile=coverage.out ./...
 
   test-ci:
-    desc: "Run the tests with coverage"
+    desc: "Run integration tests with coverage"
     cmds:
-      - echo "Running unit tests with coverage"
-      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
+      - echo "Running integration tests with coverage"
+      - go tool gotestsum --format testname --junitfile junit.xml -- -tags=integration -p 1 -v -coverprofile=coverage.out -covermode=count ./...
       - go tool cover -func=coverage.out
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"
@@ -207,7 +207,7 @@ tasks:
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
     cmds:
-      - go tool gotestsum -- -tags=integration -- -coverprofile=coverage.out ./...
+      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
 
   test-frontend:
@@ -275,6 +275,7 @@ tasks:
       - task: generate-config-autotester
       - task: generate-config-suproxy
       - task: generate-config-embedded
+      - task: generate-config-mcp
       - task: di-generate-autotester
       - task: di-generate-suproxy
 
@@ -285,6 +286,13 @@ tasks:
     sources:
       - configs/autotester.pkl
       - configs/shared/*
+
+  generate-config-mcp:
+    desc: "generate code for reading mcp config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/mcp.pkl
+    sources:
+      - configs/mcp.pkl
 
   generate-config-suproxy:
     desc: "generate code for reading suproxy config"

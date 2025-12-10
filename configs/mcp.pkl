@@ -1,0 +1,103 @@
+@go.Package { name = "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config" }
+module config
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+
+/// Server implementation details
+class Implementation {
+  /// Name of the MCP server
+  name: String
+  
+  /// Version of the MCP server
+  version: String
+}
+
+/// Completion options for AI models
+class CompletionOptions {
+  /// Maximum number of tokens to generate
+  maxTokens: Int
+}
+
+/// AI model configuration
+class Model {
+  /// Display name of the model
+  name: String
+  
+  /// Provider (e.g., openai, anthropic)
+  provider: String
+  
+  /// Model identifier
+  model: String
+  
+  /// Roles this model can perform
+  roles: Listing<String>
+  
+  /// Default completion options
+  defaultCompletionOptions: CompletionOptions
+}
+
+/// Context provider configuration
+class Context {
+  /// Type of context provider
+  provider: String
+}
+
+/// MCP Server configuration
+class McpServer {
+  /// Name of the MCP server
+  name: String
+  
+  /// Command to start the server
+  command: String
+}
+
+/// Root configuration properties
+name: String = "mcp-tools-config"
+
+version: String = "1.0.0"
+
+schema: String = "v1"
+
+implementation: Implementation = new {
+  name = "check24-smart-mcp"
+  version = "1.0.0"
+}
+
+models: Listing<Model> = new {
+  new {
+    name = "GPT-4o"
+    provider = "openai"
+    model = "gpt-4o"
+    roles {
+      "chat"
+      "edit"
+      "apply"
+    }
+    defaultCompletionOptions = new {
+      maxTokens = 1500
+    }
+  }
+  new {
+    name = "Claude-v1"
+    provider = "anthropic"
+    model = "claude-v1"
+    roles {
+      "chat"
+      "edit"
+    }
+    defaultCompletionOptions = new {
+      maxTokens = 2000
+    }
+  }
+}
+
+context: Context = new {
+  provider = "web"
+}
+
+mcpServers: Listing<McpServer> = new {
+  new {
+    name = "check24-smart-mcp"
+    command = "go run ../../../cmd/mcp-server/main.go"
+  }
+}
