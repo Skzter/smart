@@ -12,11 +12,23 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 )
 
+//nolint:gochecknoglobals // test helper – allows injection in unit tests
+var (
+	// PipeFactory allows tests to override io.Pipe
+	PipeFactory = pipeFactory
+
+	// StdcopyFunc allows tests to override stdcopy.StdCopy
+	StdcopyFunc = stdcopyFunc
+
+	// CloseFunc allows tests to override io.Closer.Close
+	CloseFunc = closeFunc
+)
+
 func pipeFactory() (*io.PipeReader, *io.PipeWriter) {
 	return io.Pipe()
 }
 
-func stdcopyFunc(dstout io.Writer, dsterr io.Writer, src io.Reader) (int64, error) {
+func stdcopyFunc(dstout, dsterr io.Writer, src io.Reader) (int64, error) {
 	return stdcopy.StdCopy(dstout, dsterr, src)
 }
 
@@ -56,34 +68,28 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 
 	sseChan := make(chan service.SSEvent, 100)
 
-	// ========== LOG-STREAMER GOROUTINE ==========
 	go func() {
 		defer close(sseChan)
 
-		stdoutReader, stdoutWriter := pipeFactory()
-		stderrReader, stderrWriter := pipeFactory()
+		stdoutReader, stdoutWriter := PipeFactory()
+		stderrReader, stderrWriter := PipeFactory()
 
-		// --- Copy logs from container ---
 		go func() {
-			_, stdcopyErr := stdcopyFunc(stdoutWriter, stderrWriter, attachResp.Reader)
+			_, stdcopyErr := StdcopyFunc(stdoutWriter, stderrWriter, attachResp.Reader)
 
-			// stdout close
-			if err := closeFunc(stdoutWriter); err != nil {
+			if err := CloseFunc(stdoutWriter); err != nil {
 				_ = safeSend(sseChan, service.SSEvent{
 					Type:    "error",
 					Message: "Failed to close stdoutWriter: " + err.Error(),
 				})
 			}
-
-			// stderr close
-			if err := closeFunc(stderrWriter); err != nil {
+			if err := CloseFunc(stderrWriter); err != nil {
 				_ = safeSend(sseChan, service.SSEvent{
 					Type:    "error",
 					Message: "Failed to close stderrWriter: " + err.Error(),
 				})
 			}
 
-			// real stdcopy error
 			if stdcopyErr != nil && stdcopyErr != io.EOF {
 				_ = safeSend(sseChan, service.SSEvent{
 					Type:    "error",
@@ -92,7 +98,6 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 			}
 		}()
 
-		// --- Stream stdout logs ---
 		go func() {
 			scanner := bufio.NewScanner(stdoutReader)
 			for scanner.Scan() {
@@ -103,7 +108,6 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 			}
 		}()
 
-		// --- Stream stderr logs ---
 		scanner := bufio.NewScanner(stderrReader)
 		for scanner.Scan() {
 			_ = safeSend(sseChan, service.SSEvent{
@@ -116,30 +120,25 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 	// Container status channels
 	statusCh, errCh := a.dockerService.WaitContainer(c.Request.Context(), containerID)
 
-	// ========== SSE STREAM TO CLIENT ==========
 	c.Stream(func(w io.Writer) bool {
 		select {
-		// normal log events
 		case ev, ok := <-sseChan:
 			if !ok {
-				return true // still allow status updates
+				return true
 			}
 			c.SSEvent(ev.Type, ev.Message)
 			return true
 
-		// container exited normally
 		case status := <-statusCh:
 			c.SSEvent("status", status)
 			c.SSEvent("finished", "container exited")
 			return false
 
-		// container error
 		case err := <-errCh:
 			c.SSEvent("error", err)
 			c.SSEvent("error", "container errored")
 			return false
 
-		// client disconnected
 		case <-c.Request.Context().Done():
 			return false
 		}
