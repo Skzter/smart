@@ -40,6 +40,6 @@ func (tt *GenerateTestTool) GenerateTest(ctx context.Context,
 		return nil, entity.GenerateTestResponse{}, err
 	}
 
-	tt.logger.Info("Template retrieved successfully", "length", len(test.Result))
-	return nil, entity.GenerateTestResponse{Result: test.Result}, nil
+	tt.logger.Info("Template retrieved successfully", "length", len(test.Result.Body))
+	return nil, *test, nil
 }

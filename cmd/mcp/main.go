@@ -37,28 +37,27 @@ func main() {
 		cancel()
 	}()
 
-	log.Println("Starting MCP server on HTTP :8084...")
+	log.Printf("Starting MCP server on HTTP %s\n", cfg.Port)
 
-	// Create SSE-Handler erzeugen (Transport Layer)
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
 		return mcpServer.Server()
 	}, nil)
 
-	// HTTP-Server configuration
+	mux := http.NewServeMux()
+	mux.Handle("/mcp/", handler)
+
 	srv := &http.Server{
-		Addr:              ":8084",
-		Handler:           handler,
+		Addr:              cfg.Port,
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	// Server shuts down
 	go func() {
 		<-ctx.Done()
 		log.Println("Shutting down MCP HTTP server...")
 		_ = srv.Shutdown(context.Background())
 	}()
 
-	// Start HTTP-Server
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panic(err)
 	}

@@ -67,7 +67,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 		return nil, err
 	}
 
-	s.logger.Info("Successfully generated test", "resultLength", len(resp.Result))
+	s.logger.Info("Successfully generated test", "resultLength", len(resp.Result.Body))
 	return resp, nil
 }
 

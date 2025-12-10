@@ -4,6 +4,7 @@ module config
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
 logLevel: String = "debug"
+port: String = ":8084"
 
 /// Server implementation details
 class McpServerImplementation {

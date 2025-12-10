@@ -95,7 +95,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 		return nil, err
 	}
 
-	a.logger.Info("Successfully generated test")
+	a.logger.Info("Successfully saved test locally")
 	return &result, nil
 }
 
@@ -112,7 +112,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 		return nil, err
 	}
 
-	a.logger.Info("Successfully generated test")
+	a.logger.Info("Successfully completed test run")
 	return &result, nil
 }
 
