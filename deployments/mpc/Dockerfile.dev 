@@ -1,0 +1,43 @@
+FROM golang:latest AS builder
+
+WORKDIR /app
+
+COPY go.mod ./
+COPY go.sum ./
+
+RUN go mod download
+
+# Copy only necessary files and directories for the mcp build
+COPY cmd/mcp/ ./cmd/mcp/
+COPY internal/ ./internal/
+COPY configs/ ./configs/
+COPY web/embed.go ./web/
+COPY web/auth_config.json ./web/
+COPY web/dist/ ./web/dist/
+
+RUN go tool golangci-lint run
+
+RUN go test ./...
+
+# CGO_ENABLED=0 ensures static linking for scratch container
+# -ldflags="-s -w" reduces binary size by stripping debug information
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/mcp ./cmd/mcp
+
+FROM alpine:latest AS security_provider
+RUN addgroup -g 1001 -S nonroot && \
+    adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
+
+FROM scratch AS production
+
+# Copy user configuration from security_provider stage
+COPY --from=security_provider /etc/passwd /etc/passwd
+COPY --from=security_provider /etc/group /etc/group
+
+# Set non-root user before copying binary
+USER nonroot
+
+COPY --from=builder /app/bin/mcp /bin/mcp
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+ENTRYPOINT ["/bin/mcp"]
