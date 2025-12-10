@@ -23,8 +23,44 @@ import (
 )
 
 func TestSaveTestcaseIntegration(t *testing.T) {
+	setup := setupTestService(t)
+
+	testID := "integration-test-id"
+	testcase := &entity.TestCase{
+		TestID: testID,
+		TestCode: entity.TestCode{
+			Code: "best auto-playwrigth test in existens",
+		},
+		Status: entity.TestStatusPassed,
+	}
+	userId := "integration-user"
+
+	key, err := setup.service.SaveTestcase(setup.ctx, testcase, userId)
+	require.NoError(t, err)
+
+	loaded, err := setup.repo.Read(setup.ctx, key)
+	require.NoError(t, err)
+	require.NotNil(t, loaded)
+
+	assert.Equal(t, testcase.TestID, loaded.TestID)
+	assert.Equal(t, testcase.TestCode.Code, loaded.TestCode.Code)
+}
+
+const (
+	testBucketName = "test-bucket"
+	testAccessKey  = "minioadmin"
+	testSecretKey  = "minioadmin"
+)
+
+type testServiceSetup struct {
+	service TestcaseStorageService
+	repo    repository.TestcaseStorageRepository
+	ctx     context.Context
+}
+
+func setupTestService(t *testing.T) *testServiceSetup {
 	minioContainer, cleanup := setupMinIOContainer(t)
-	defer cleanup()
+	t.Cleanup(cleanup)
 
 	ctx := context.Background()
 	logger := slog.Default()
@@ -35,6 +71,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
 		endpoint = "http://" + endpoint
 	}
+
 	s3Config := wrapperEntity.S3Config{
 		Region:    "us-east-1",
 		Bucket:    testBucketName,
@@ -54,7 +91,7 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, parquetWrapper)
 
-	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest", tracer)
+	s3Repo, err := repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, "prefixTest/", tracer)
 	require.NoError(t, err)
 	require.NotNil(t, s3Repo)
 
@@ -62,32 +99,12 @@ func TestSaveTestcaseIntegration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, service)
 
-	testID := "integration-test-id"
-	testcase := &entity.TestCase{
-		TestID: testID,
-		TestCode: entity.TestCode{
-			Code: "best auto-playwrigth test in existens",
-		},
-		Status: entity.TestStatusPassed,
+	return &testServiceSetup{
+		service: service,
+		repo:    s3Repo,
+		ctx:     ctx,
 	}
-	userId := "integration-user"
-
-	key, err := service.SaveTestcase(ctx, testcase, userId)
-	require.NoError(t, err)
-
-	loaded, err := s3Repo.Read(ctx, key)
-	require.NoError(t, err)
-	require.NotNil(t, loaded)
-
-	assert.Equal(t, testcase.TestID, loaded.TestID)
-	assert.Equal(t, testcase.TestCode.Code, loaded.TestCode.Code)
 }
-
-const (
-	testBucketName = "test-bucket"
-	testAccessKey  = "minioadmin"
-	testSecretKey  = "minioadmin"
-)
 
 // createBucket creates the test bucket using the MinIO container
 func createBucket(t *testing.T, minioContainer *minio.MinioContainer) {

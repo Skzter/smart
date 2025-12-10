@@ -3,7 +3,10 @@ package service
 import (
 	"context"
 	"log/slog"
+	"strconv"
+	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
@@ -17,6 +20,10 @@ type TestcaseStorageService interface {
 	// SaveTestCase persists the provided TestCase entity into the storage.
 	// Returns an error if the operation fails.
 	SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error)
+
+	// ReadAllMetadataWithFilter retrieves all test case metadata and applies optional filters.
+	// Filters by author, testcaseId, and creation timestamps. Returns filtered metadata or an error.
+	ReadAllMetadataWithFilter(ctx context.Context, filter *entity.GetRemoteTestcaseRequest) ([]*entity.TestcaseMetadata, error)
 }
 
 // testcaseStorageService implements the TestcaseStorageService interface
@@ -48,14 +55,13 @@ func NewTestcaseStorageService(
 // SaveTestCase saves the given TestCase entity using the configured repository.
 // Validates the input context and returns an error if it is nil or if the repository operation fails.
 func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *entity.TestCase, userId string) (string, error) {
-	ctx, span := t.tracer.Start(ctx, "testcaseStorageService.SaveTestCase")
-	defer span.End()
-
 	if err := assert.NotNil(ctx); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "context validation failed")
+		t.logger.Error("context validation failed", "error", err)
 		return "", err
 	}
+
+	ctx, span := t.tracer.Start(ctx, "testcaseStorageService.SaveTestCase")
+	defer span.End()
 
 	key, err := t.repo.Create(ctx, testcase, userId)
 	if err != nil {
@@ -67,5 +73,118 @@ func (t *testcaseStorageService) SaveTestcase(ctx context.Context, testcase *ent
 	t.logger.Debug("testcase successfully saved",
 		slog.String("testID", testcase.TestID),
 	)
+	span.SetStatus(codes.Ok, "")
+
 	return key, nil
+}
+
+// ReadAllMetadataWithFilter retrieves all test case metadata and applies optional filters.
+// Filters by author, testcaseId, and creation timestamps. Returns filtered metadata or an error.
+func (t *testcaseStorageService) ReadAllMetadataWithFilter(ctx context.Context, filterParams *entity.GetRemoteTestcaseRequest) ([]*entity.TestcaseMetadata, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		t.logger.Error("context validation failed", "error", err)
+		return nil, err
+	}
+
+	ctx, span := t.tracer.Start(ctx, "testcaseStorageService.ReadAllMetadata")
+	defer span.End()
+
+	metadata, err := t.repo.ReadAllMetadata(ctx)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to read all metadata")
+		return nil, err
+	}
+
+	t.logger.Debug("all metadata successfully read",
+		slog.Int("count", len(metadata)),
+	)
+	span.AddEvent("metadata successfully read", trace.WithAttributes(
+		attribute.Int("count", len(metadata)),
+	))
+
+	filteredMetadata := t.filter(metadata, filterParams)
+
+	offset := filterParams.Offset
+	limit := *filterParams.Limit
+	if offset > len(filteredMetadata) {
+		filteredMetadata = []*entity.TestcaseMetadata{}
+	} else {
+		end := min(offset+limit, len(filteredMetadata))
+		filteredMetadata = filteredMetadata[offset:end]
+	}
+
+	t.logger.Debug("metadata filtered",
+		slog.Int("original", len(metadata)),
+		slog.Int("filtered", len(filteredMetadata)),
+		slog.Int("offset", offset),
+		slog.Int("limit", limit),
+	)
+	span.AddEvent("metadata filtered", trace.WithAttributes(
+		attribute.Int("original", len(metadata)),
+		attribute.Int("filtered", len(filteredMetadata)),
+		attribute.Int("offset", offset),
+		attribute.Int("limit", limit),
+	))
+
+	span.SetStatus(codes.Ok, "")
+	return filteredMetadata, nil
+}
+
+func (t *testcaseStorageService) filter(metadata []*entity.TestcaseMetadata, filterParams *entity.GetRemoteTestcaseRequest) []*entity.TestcaseMetadata {
+	result := make([]*entity.TestcaseMetadata, 0, len(metadata))
+
+	for _, m := range metadata {
+		if t.passesAllFilters(m, filterParams) {
+			result = append(result, m)
+		}
+	}
+
+	return result
+}
+
+func (t *testcaseStorageService) passesAllFilters(metadata *entity.TestcaseMetadata, filterParams *entity.GetRemoteTestcaseRequest) bool {
+	if filterParams.Author != "" && metadata.Author != filterParams.Author {
+		return false
+	}
+
+	if filterParams.TestcaseId != "" && metadata.TestcaseId != filterParams.TestcaseId {
+		return false
+	}
+
+	if filterParams.CreatedAfter != "" {
+		afterTimestamp := t.iso8601ToUnix(filterParams.CreatedAfter)
+		createdUnix := t.stringToInt64(metadata.Created)
+		if afterTimestamp > 0 && createdUnix < afterTimestamp {
+			return false
+		}
+	}
+
+	if filterParams.CreatedBefore != "" {
+		beforeTimestamp := t.iso8601ToUnix(filterParams.CreatedBefore)
+		createdUnix := t.stringToInt64(metadata.Created)
+		if beforeTimestamp > 0 && createdUnix > beforeTimestamp {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (t *testcaseStorageService) stringToInt64(s string) int64 {
+	val, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		t.logger.Warn("failed to parse unix timestamp string", "timestamp", s, "error", err)
+		return 0
+	}
+	return val
+}
+
+func (t *testcaseStorageService) iso8601ToUnix(iso8601 string) int64 {
+	parsedTime, err := time.Parse(time.RFC3339, iso8601)
+	if err != nil {
+		t.logger.Warn("failed to parse ISO 8601 timestamp", "timestamp", iso8601, "error", err)
+		return 0
+	}
+	return parsedTime.UTC().Unix()
 }

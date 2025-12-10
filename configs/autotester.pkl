@@ -243,7 +243,7 @@ region: String = "eu-central-1"
 
 bucket: String = "smart-autotester"
 
-s3TestcasePrefix: String = "testcase"
+s3TestcasePrefix: String = "testcase/"
 
 testsRootDir: String = "/tmp/tests"
 enableCleanUp: Boolean = true
@@ -258,5 +258,7 @@ template: String = """
 """
 
 defaultLimitChats: String = "10"
+
+defaultLimitTests: Int = 50
 
 taglistConfig: taglist = taglist
