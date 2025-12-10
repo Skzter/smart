@@ -15,10 +15,10 @@ type AutotesterAPIService interface {
 	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
 
 	// GenerateTest creates a new test from the provided specification.
-	GenerateTest()
+	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)
 
 	// ExecuteTest runs an existing test by ID.
-	ExecuteTest()
+	ExecuteTest(ctx context.Context, requesst *entity.ExecuteTestRequest) (*entity.ExecuteTestResponse, error)
 }
 
 type autotesterAPIService struct {
@@ -52,10 +52,12 @@ func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.Templat
 	return template, nil
 }
 
-func (s *autotesterAPIService) GenerateTest() {
+func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
 	// TODO: Implement
+	return nil, nil
 }
 
-func (s *autotesterAPIService) ExecuteTest() {
+func (s *autotesterAPIService) ExecuteTest(ctx context.Context, requesst *entity.ExecuteTestRequest) (*entity.ExecuteTestResponse, error) {
 	// TODO: Implement
+	return nil, nil
 }

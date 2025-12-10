@@ -18,13 +18,13 @@ type AutotesterAPIRepository interface {
 	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
 
 	// GenerateTest sends a test generation request to the API.
-	GenerateTest(ctx context.Context)
+	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)
 
 	// SaveTest persists a generated test to the API.
-	SaveTest(ctx context.Context)
+	SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error)
 
 	// RunTest executes a test by ID via the API.
-	RunTest(ctx context.Context)
+	RunTest(ctx context.Context, requst *entity.RunTestRequest) (*entity.RunTestResponse, error)
 }
 
 type autotesterAPIRepository struct {
@@ -88,12 +88,18 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) GenerateTest(ctx context.Context) {
-
+func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
+	// TODO: Implement
+	// url := fmt.Sprintf("%s/api/v1/chat", a.baseURL)
+	return nil, nil
 }
-func (a *autotesterAPIRepository) SaveTest(ctx context.Context) {
 
+func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error) {
+	// TODO: Implement
+	return nil, nil
 }
-func (a *autotesterAPIRepository) RunTest(ctx context.Context) {
 
+func (a *autotesterAPIRepository) RunTest(ctx context.Context, requst *entity.RunTestRequest) (*entity.RunTestResponse, error) {
+	// TODO: Implement
+	return nil, nil
 }
