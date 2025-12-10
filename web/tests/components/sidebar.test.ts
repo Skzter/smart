@@ -42,7 +42,6 @@ describe("Sidebar", () => {
         
         await tick();
         
-        // Should show spinner while loading
         const spinner = container.querySelector('.size-6');
         expect(spinner).toBeInTheDocument();
     });
@@ -198,20 +197,20 @@ describe("Sidebar", () => {
         
         ChatDate.Range = {
             start: {
-                toDate: (tz: string) => {
+                toDate: () => {
                     const d = new Date(today);
                     d.setUTCHours(0, 0, 0, 0);
                     return d;
                 },
             },
             end: {
-                toDate: (tz: string) => {
+                toDate: () => {
                     const d = new Date(today);
                     d.setUTCHours(23, 59, 59, 999);
                     return d;
                 },
             },
-        } as any;
+        } as DateRange;
 
         const mockChats: ApiChatSummary[] = [
             {
@@ -259,10 +258,10 @@ describe("Sidebar", () => {
         
         ChatDate.Range = {
             start: {
-                toDate: (_tz: string) => today,
+                toDate: () => today,
             },
             end: {
-                toDate: (_tz: string) => today,
+                toDate: () => today,
             },
         } as DateRange;
 
@@ -347,7 +346,6 @@ describe("Sidebar", () => {
             expect(getUserChats).toHaveBeenCalled();
         });
         
-        // SidebarHeader should be rendered
         expect(container).toBeInTheDocument();
     });
 
@@ -412,16 +410,15 @@ describe("Sidebar", () => {
             expect(getUserChats).toHaveBeenCalled();
         });
 
-        // Change date range
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         
         ChatDate.Range = {
             start: {
-                toDate: (_tz: string) => new Date(),
+                toDate: () => new Date(),
             },
             end: {
-                toDate: (_tz: string) => tomorrow,
+                toDate: () => tomorrow,
             },
         } as DateRange;
 
@@ -430,24 +427,24 @@ describe("Sidebar", () => {
 
     it("correctly sets time boundaries for date range filtering", async () => {
         const today = new Date();
-        today.setHours(15, 30, 45, 500); // Specific time during the day
+        today.setHours(15, 30, 45, 500);
         
         ChatDate.Range = {
             start: {
-                toDate: (tz: string) => {
+                toDate: () => {
                     const d = new Date(today);
                     d.setUTCHours(0, 0, 0, 0);
                     return d;
                 },
             },
             end: {
-                toDate: (tz: string) => {
+                toDate: () => {
                     const d = new Date(today);
                     d.setUTCHours(23, 59, 59, 999);
                     return d;
                 },
             },
-        } as any;
+        } as DateRange;
 
         const mockChats: ApiChatSummary[] = [
             {
@@ -468,12 +465,11 @@ describe("Sidebar", () => {
     });
 
     it("returns empty array when items is undefined in updateGroupsWithDateRange", async () => {
-        vi.mocked(getUserChats).mockImplementation(() => new Promise(() => {})); // Never resolves
+        vi.mocked(getUserChats).mockImplementation(() => new Promise(() => {}));
         
         const { container } = render(SidebarTestWrapper);
         await tick();
 
-        // Should show spinner because items is undefined
         const spinner = container.querySelector('.size-6');
         expect(spinner).toBeInTheDocument();
     });
