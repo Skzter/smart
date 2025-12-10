@@ -2,23 +2,32 @@ package application
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/tools"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // McpServer wraps the MCP SDK server and provides dependency injection
 type McpServer struct {
-	server *mcp.Server
-	config *config.Config
+	server            *mcp.Server
+	autotesterService service.AutotesterAPIService
+	logger            *slog.Logger
 }
 
 // NewMcpServer creates a new MCP server instance with all dependencies
-func NewMcpServer(server *mcp.Server, cfg *config.Config) (*McpServer, error) {
+func NewMcpServer(server *mcp.Server, autotesterService service.AutotesterAPIService, logger *slog.Logger) (*McpServer, error) {
+	if err := assert.NotNil(server, autotesterService, logger); err != nil {
+		return nil, err
+	}
+
 	wrapper := &McpServer{
-		server: server,
-		config: cfg,
+		server:            server,
+		autotesterService: autotesterService,
+		logger:            logger,
 	}
 
 	if err := wrapper.registerTools(); err != nil {
@@ -35,8 +44,19 @@ func (m *McpServer) Run(ctx context.Context, transport mcp.Transport) error {
 
 // registerTools registers all available tools with the MCP server
 func (m *McpServer) registerTools() error {
-	// TODO: Tools registrieren
-	// - GetTemplate
+	getTemplateTool, err := tools.NewGetTemplateTool(m.logger, m.autotesterService)
+	if err != nil {
+		return err
+	}
+
+	mcp.AddTool(m.server, &mcp.Tool{
+		Name:        "get_template",
+		Description: "Retrieves the test generation template from the autotester backend",
+	}, getTemplateTool.GetTemplate)
+
+	m.logger.Info("Registered tool: get_template")
+
+	// TODO: Weitere Tools
 	// - GenerateTest
 	// - RunTest
 	// - GetTestStatus (später)

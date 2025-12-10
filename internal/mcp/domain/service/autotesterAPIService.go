@@ -1,13 +1,61 @@
 package service
 
+import (
+	"context"
+	"log/slog"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
+)
+
 // AutotesterAPIService provides business logic for interacting with the Autotester API.
 type AutotesterAPIService interface {
 	// GetTemplate retrieves the test generation template.
-	GetTemplate()
+	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
 
 	// GenerateTest creates a new test from the provided specification.
 	GenerateTest()
 
 	// ExecuteTest runs an existing test by ID.
 	ExecuteTest()
+}
+
+type autotesterAPIService struct {
+	logger *slog.Logger
+	repo   repository.AutotesterAPIRepository
+}
+
+// NewAutotesterAPIService creates a new service for the Autotester API.
+// Expects a logger and a repository, checks both for nil.
+func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIRepository) (AutotesterAPIService, error) {
+	if err := assert.NotNil(logger, repo); err != nil {
+		return nil, err
+	}
+
+	return &autotesterAPIService{
+		logger: logger,
+		repo:   repo,
+	}, nil
+}
+
+func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
+	s.logger.Info("Fetching test template from API")
+
+	template, err := s.repo.GetTemplate(ctx)
+	if err != nil {
+		s.logger.Error("Failed to fetch template", "error", err)
+		return nil, err
+	}
+
+	s.logger.Info("Successfully retrieved template", "templateLength", len(template.Content))
+	return template, nil
+}
+
+func (s *autotesterAPIService) GenerateTest() {
+	// TODO: Implement
+}
+
+func (s *autotesterAPIService) ExecuteTest() {
+	// TODO: Implement
 }

@@ -17,11 +17,11 @@ type GetTemplateTool struct {
 	autotesterAPIService service.AutotesterAPIService
 }
 
-// Creates a new TemplateTool
-func NewGetTemplateTool(
-	logger *slog.Logger,
-	autotesterAPIService service.AutotesterAPIService,
-) (*GetTemplateTool, error) {
+// NewGetTemplateTool creates a new TemplateTool
+func NewGetTemplateTool(logger *slog.Logger, autotesterAPIService service.AutotesterAPIService) (*GetTemplateTool, error) {
+	if err := assert.NotNil(logger, autotesterAPIService); err != nil {
+		return nil, err
+	}
 	return &GetTemplateTool{
 		logger:               logger,
 		autotesterAPIService: autotesterAPIService,
@@ -30,9 +30,14 @@ func NewGetTemplateTool(
 
 // GetTemplate Requests template from backend
 func (tt *GetTemplateTool) GetTemplate(ctx context.Context, request *mcp.CallToolRequest, input entity.TemplateIn) (result *mcp.CallToolResult, output entity.TemplateResponse, _ error) {
-	if err := assert.NotNil(tt.logger, tt.autotesterAPIService); err != nil {
+	tt.logger.Info("GetTemplate tool called")
+
+	template, err := tt.autotesterAPIService.GetTemplate(ctx)
+	if err != nil {
+		tt.logger.Error("Failed to get template", "error", err)
 		return nil, entity.TemplateResponse{}, err
 	}
-	tt.logger.Log(ctx, slog.LevelInfo, "Getting template")
-	return nil, tt.autotesterAPIService.GetTemplate(), nil
+
+	tt.logger.Info("Template retrieved successfully", "length", len(template.Content))
+	return nil, entity.TemplateResponse{Content: template.Content}, nil
 }

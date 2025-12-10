@@ -3,13 +3,29 @@ module config
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
+logLevel: String = "info"
+
 /// Server implementation details
 class McpServerImplementation {
-  /// Name of the MCP server
-  name: String = "name is in progress"
+
+  name: String = "autotester-mcp"
   
-  /// Version of the MCP server
   version: String = "1.0.0"
 }
 
 mcpServerImplementation : McpServerImplementation
+
+/// HTTP Client configuration
+class HttpClientConfig {
+  timeoutSeconds: Int = 30
+  
+  maxIdleConns: Int = 100
+  
+  maxIdleConnsPerHost: Int = 10
+  
+  idleConnTimeoutSeconds: Int = 90
+}
+
+httpClient: HttpClientConfig 
+
+autotesterAPIBaseURL: String = ""
