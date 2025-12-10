@@ -1,6 +1,6 @@
 import { render } from "@testing-library/svelte";
 import { describe, it, expect, vi } from "vitest";
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
 // Mock Monaco Editor
 vi.mock("monaco-editor", () => ({
@@ -9,18 +9,18 @@ vi.mock("monaco-editor", () => ({
             getValue: vi.fn(() => ""),
             setValue: vi.fn(),
             getModel: vi.fn(() => ({
-                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() })),
+                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() }))
             })),
             getPosition: vi.fn(),
             setPosition: vi.fn(),
-            dispose: vi.fn(),
-        })),
-    },
+            dispose: vi.fn()
+        }))
+    }
 }));
 
 // Mock the worker
 vi.mock("monaco-editor/esm/vs/language/typescript/ts.worker?worker", () => ({
-    default: class MockWorker {},
+    default: class MockWorker {}
 }));
 
 import EditView from "../../src/lib/components/EditView.svelte";
@@ -38,10 +38,8 @@ describe("EditView", () => {
             },
         });
 
-        // MonacoEditor component should be present (check for parent container)
-        const editorContainer = container.querySelector(
-            ".h-full.overflow-y-visible",
-        );
+        // MonacoEditor component should be present
+        const editorContainer = container.querySelector('.overflow-y-auto.h-full');
         expect(editorContainer).toBeInTheDocument();
     });
 
@@ -54,8 +52,8 @@ describe("EditView", () => {
             },
         });
 
-        const heading = container.querySelector("h1.text-md.font-semibold");
-        expect(heading?.textContent).toContain("Test Information");
+        const heading = container.querySelector('h1.text-md.font-semibold');
+        expect(heading?.textContent).toContain('Test Information');
     });
 
     it("displays test statistics labels", () => {
@@ -67,13 +65,13 @@ describe("EditView", () => {
             },
         });
 
-        const labels = container.querySelectorAll(".space-y-3 p");
+        const labels = container.querySelectorAll('.space-y-3 p');
         expect(labels.length).toBeGreaterThanOrEqual(3);
-
-        const labelTexts = Array.from(labels).map((l) => l.textContent);
-        expect(labelTexts).toContain("Zeilen:");
-        expect(labelTexts).toContain("Zeichen:");
-        expect(labelTexts).toContain("Status:");
+        
+        const labelTexts = Array.from(labels).map(l => l.textContent);
+        expect(labelTexts).toContain('Zeilen:');
+        expect(labelTexts).toContain('Zeichen:');
+        expect(labelTexts).toContain('Status:');
     });
 
     it("renders quick actions panel", () => {
@@ -85,9 +83,9 @@ describe("EditView", () => {
             },
         });
 
-        const headings = container.querySelectorAll("h1.text-md.font-semibold");
-        const quickActionsHeading = Array.from(headings).find((h) =>
-            h.textContent?.includes("Schnellaktionen"),
+        const headings = container.querySelectorAll('h1.text-md.font-semibold');
+        const quickActionsHeading = Array.from(headings).find(h => 
+            h.textContent?.includes('Schnellaktionen')
         );
         expect(quickActionsHeading).toBeInTheDocument();
     });
@@ -101,7 +99,7 @@ describe("EditView", () => {
             },
         });
 
-        const buttons = container.querySelectorAll(".flex.flex-col button");
+        const buttons = container.querySelectorAll('.flex.flex-col button');
         expect(buttons.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -114,11 +112,9 @@ describe("EditView", () => {
             },
         });
 
-        const gridContainer = container.querySelector(".flex-1.grid");
+        const gridContainer = container.querySelector('.flex-1.grid');
         expect(gridContainer).toBeInTheDocument();
-        expect(gridContainer).toHaveStyle({
-            "grid-template-columns": "70% 30%",
-        });
+        expect(gridContainer).toHaveStyle({ 'grid-template-columns': '70% 30%' });
     });
 
     it("renders sidebar with correct styling", () => {
@@ -130,7 +126,7 @@ describe("EditView", () => {
             },
         });
 
-        const sidebar = container.querySelector(".bg-gray-300.border-l");
+        const sidebar = container.querySelector('.bg-gray-300.border-l');
         expect(sidebar).toBeInTheDocument();
     });
 
@@ -143,7 +139,7 @@ describe("EditView", () => {
             },
         });
 
-        const cards = container.querySelectorAll(".bg-gray-50.rounded-lg.p-6");
+        const cards = container.querySelectorAll('.bg-gray-50.rounded-lg.p-6');
         expect(cards.length).toBe(2);
     });
 });

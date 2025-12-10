@@ -1,30 +1,10 @@
 import { render } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import "@testing-library/jest-dom/vitest";
-
-// Mock Monaco Editor BEFORE importing components
-vi.mock("monaco-editor", () => ({
-    editor: {
-        create: vi.fn(() => ({
-            getValue: vi.fn(() => ""),
-            setValue: vi.fn(),
-            getModel: vi.fn(() => ({
-                getValue: vi.fn(() => ""),
-                setValue: vi.fn(),
-                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() })),
-            })),
-            layout: vi.fn(),
-            dispose: vi.fn(),
-            onDidChangeModelContent: vi.fn(() => ({ dispose: vi.fn() })),
-        })),
-        createModel: vi.fn(),
-        setModelLanguage: vi.fn(),
-    },
-}));
+import '@testing-library/jest-dom/vitest';
 
 // Mock clipboard BEFORE importing the component
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
-Object.defineProperty(navigator, "clipboard", {
+Object.defineProperty(navigator, 'clipboard', {
     value: {
         writeText: mockWriteText,
     },
@@ -34,7 +14,7 @@ Object.defineProperty(navigator, "clipboard", {
 
 import BotMessage from "../../src/lib/components/BotMessage.svelte";
 
-describe.skip("BotMessage TODO: fix this test", () => {
+describe("BotMessage", () => {
     beforeEach(() => {
         mockWriteText.mockClear();
         mockWriteText.mockResolvedValue(undefined);
@@ -47,11 +27,9 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        const botIcon = container.querySelector("svg");
-        const messageContainer = container.querySelector(
-            ".bg-muted.rounded-2xl",
-        );
-
+        const botIcon = container.querySelector('svg');
+        const messageContainer = container.querySelector('.bg-muted.rounded-2xl');
+        
         expect(botIcon).toBeInTheDocument();
         expect(messageContainer).toBeInTheDocument();
     });
@@ -63,7 +41,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        const textDiv = container.querySelector(".px-4.py-2");
+        const textDiv = container.querySelector('.px-4.py-2');
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toBe("This is a regular message");
     });
@@ -75,10 +53,8 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        // When message contains @playwright, MonacoEditor should be rendered
-        // Check that regular text div is NOT present
-        const textDiv = container.querySelector(".px-4.py-2.wrap-break-word");
-        expect(textDiv).not.toBeInTheDocument();
+        const codeElement = container.querySelector('pre');
+        expect(codeElement).toBeInTheDocument();
     });
 
     it("does not render Code component for regular text", () => {
@@ -88,9 +64,8 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        // Regular text should be rendered in text div
-        const textDiv = container.querySelector(".px-4.py-2.wrap-break-word");
-        expect(textDiv).toBeInTheDocument();
+        const codeElement = container.querySelector('pre');
+        expect(codeElement).not.toBeInTheDocument();
     });
 
     it("renders TestButtons component", () => {
@@ -100,7 +75,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        const testButtons = container.querySelector(".border-b");
+        const testButtons = container.querySelector('.border-b');
         expect(testButtons).toBeInTheDocument();
     });
 
@@ -111,7 +86,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        const textDiv = container.querySelector(".px-4.py-2");
+        const textDiv = container.querySelector('.px-4.py-2');
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toBe("");
     });
@@ -123,7 +98,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
             },
         });
 
-        const textDiv = container.querySelector(".whitespace-pre-wrap");
+        const textDiv = container.querySelector('.whitespace-pre-wrap');
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toContain("\n");
     });

@@ -28,6 +28,7 @@ export default defineConfig({
                 "src/lib/components/ui",
                 "src/lib/hooks/",
                 "src/lib/actions/",
+                "src/lib/components/MonacoEditor.svelte",
             ],
             reportsDirectory: "./coverage",
             thresholds: {
