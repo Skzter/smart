@@ -59,7 +59,8 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 	}()
 
 	// Create CacheService instance using the real repository
-	cacheSvc := NewCacheService(logger, cfg, cacheRepo)
+	cacheSvc, err := NewCacheService(logger, cfg, cacheRepo)
+	require.NoError(t, err)
 
 	// Build example request used as cache key input
 	reqEntity := entity.Request{
