@@ -4,4 +4,8 @@ package entity
 // execute a previously generated test. Add fields (e.g. TestID,
 // SessionID, Options) when the executor interface requires them.
 type ExecuteTestRequest struct {
+	TestId         string `json:"testId"`
+	UserId         string `json:"userId"`
+	ConversationId string `json:"conversationId"`
+	Test           string `json:"test"`
 }

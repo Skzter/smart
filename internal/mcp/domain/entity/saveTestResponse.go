@@ -4,4 +4,6 @@ package entity
 // generated test. Add fields (e.g. TestID, Action) once the API returns
 // structured responses.
 type SaveTestResponse struct {
+	TestId string `json:"testId"`
+	Action string `json:"action"`
 }
