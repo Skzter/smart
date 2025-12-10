@@ -49,6 +49,11 @@ func (m *McpServer) registerTools() error {
 		return err
 	}
 
+	runTestTool, err := tools.NewRunTestTool(m.logger, m.autotesterService)
+	if err != nil {
+		return err
+	}
+
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "get_template",
 		Description: "Retrieves the test generation template from the autotester backend",
@@ -56,9 +61,13 @@ func (m *McpServer) registerTools() error {
 
 	m.logger.Info("Registered tool: get_template")
 
+	mcp.AddTool(m.server, &mcp.Tool{
+		Name:        "run_test",
+		Description: "Runs test based on testId, returns either success or failed",
+	}, runTestTool.RunTest)
+
 	// TODO: Weitere Tools
 	// - GenerateTest
-	// - RunTest
 	// - GetTestStatus (später)
 
 	return nil
