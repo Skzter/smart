@@ -274,9 +274,10 @@ tasks:
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
-      - task: generate-config-embedded
       - task: generate-config-mcp
+      - task: generate-config-embedded
       - task: di-generate-autotester
+      - task: di-generate-mcp
       - task: di-generate-suproxy
 
   generate-config-autotester:
