@@ -1,6 +1,6 @@
 package config
 
-import (
+/* import (
 	"fmt"
 	"os"
 
@@ -52,3 +52,4 @@ func LoadConfig(path string) (*Config, error) {
 
 	return &cfg, nil
 }
+*/

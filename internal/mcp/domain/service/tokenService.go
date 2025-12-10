@@ -8,7 +8,7 @@ import (
 
 // jwtSecret is the HMAC secret used to sign JWTs.
 // In production this must be provided via secure configuration (env/secret manager) and be strong and random.
-var jwtSecret = []byte("your-secret-key") //SECRET-KEY NOCH ÄNDERN!!!
+const jwtSecret = "your-secret-key" // SECRET-KEY NOCH ÄNDERN!!!
 
 // JWTClaims represents the custom claims stored in our JWT tokens.
 // It embeds jwt.RegisteredClaims and adds application-specific fields such as UserID and Scopes.

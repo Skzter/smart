@@ -1,10 +1,4 @@
-package tools
-
-// GenerateTestInput represents the input payload for generating a test.
-// Template contains the test template or instructions used to create the test code.
-type GenerateTestInput struct {
-	Template string `json:"template"`
-}
+package entity
 
 // GenerateTestOutput represents the result of a test generation request.
 // TestID is the identifier of the created test.

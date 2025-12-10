@@ -1,13 +1,5 @@
 package service
 
-import (
-	"context"
-	"fmt"
-
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/modelcontextprotocol/go-sdk/auth"
-)
-
 // TokenInfo represents extracted authentication information from a verified token.
 // It contains the user identifier, granted scopes, and the token expiration time as a unix timestamp.
 type TokenInfo struct {
@@ -18,7 +10,7 @@ type TokenInfo struct {
 
 // verifyJWT verifies JWT tokens and returns TokenInfo for the auth middleware.
 // This function implements the TokenVerifier interface required by auth.RequireBearerToken.
-func verifyJWT(ctx context.Context, tokenString string) (*auth.TokenInfo, error) {
+/* func verifyJWT(ctx context.Context, tokenString string) (*auth.TokenInfo, error) {
 	// Parse and validate the JWT token.
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (any, error) {
 		// Verify the signing method is HMAC.
@@ -41,7 +33,7 @@ func verifyJWT(ctx context.Context, tokenString string) (*auth.TokenInfo, error)
 	}
 
 	return nil, fmt.Errorf("%w: invalid token claims", auth.ErrInvalidToken)
-}
+} */
 
 /*func VerifyJWT(ctx context.Context, tokenString string) (*TokenInfo, error) {
 
