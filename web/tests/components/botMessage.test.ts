@@ -1,0 +1,105 @@
+import { render } from "@testing-library/svelte";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import '@testing-library/jest-dom/vitest';
+
+// Mock clipboard BEFORE importing the component
+const mockWriteText = vi.fn().mockResolvedValue(undefined);
+Object.defineProperty(navigator, 'clipboard', {
+    value: {
+        writeText: mockWriteText,
+    },
+    writable: true,
+    configurable: true,
+});
+
+import BotMessage from "../../src/lib/components/BotMessage.svelte";
+
+describe("BotMessage", () => {
+    beforeEach(() => {
+        mockWriteText.mockClear();
+        mockWriteText.mockResolvedValue(undefined);
+    });
+
+    it("renders bot icon and message container", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "Test message",
+            },
+        });
+
+        const botIcon = container.querySelector('svg');
+        const messageContainer = container.querySelector('.bg-muted.rounded-2xl');
+        
+        expect(botIcon).toBeInTheDocument();
+        expect(messageContainer).toBeInTheDocument();
+    });
+
+    it("renders regular text message correctly", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "This is a regular message",
+            },
+        });
+
+        const textDiv = container.querySelector('.px-4.py-2');
+        expect(textDiv).toBeInTheDocument();
+        expect(textDiv?.textContent).toBe("This is a regular message");
+    });
+
+    it("detects and renders Playwright code as Code component", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "import { test } from '@playwright/test';",
+            },
+        });
+
+        const codeElement = container.querySelector('pre');
+        expect(codeElement).toBeInTheDocument();
+    });
+
+    it("does not render Code component for regular text", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "Just a regular message",
+            },
+        });
+
+        const codeElement = container.querySelector('pre');
+        expect(codeElement).not.toBeInTheDocument();
+    });
+
+    it("renders TestButtons component", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "Test",
+            },
+        });
+
+        const testButtons = container.querySelector('.border-b');
+        expect(testButtons).toBeInTheDocument();
+    });
+
+    it("handles empty message in text mode", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "",
+            },
+        });
+
+        const textDiv = container.querySelector('.px-4.py-2');
+        expect(textDiv).toBeInTheDocument();
+        expect(textDiv?.textContent).toBe("");
+    });
+
+    it("preserves whitespace in text messages", () => {
+        const { container } = render(BotMessage, {
+            props: {
+                msg: "Line 1\n  Line 2\n    Line 3",
+            },
+        });
+
+        const textDiv = container.querySelector('.whitespace-pre-wrap');
+        expect(textDiv).toBeInTheDocument();
+        expect(textDiv?.textContent).toContain("\n");
+    });
+});
