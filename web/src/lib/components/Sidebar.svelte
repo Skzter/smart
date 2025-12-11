@@ -22,9 +22,13 @@
         try {
             items = (await getUserChats()) as ApiChatSummary[];
         } catch (err) {
-            error = "Unbekannter Fehler";
             if (err instanceof Error) {
                 error = err.message;
+                toast.error(error, {
+                    description: "Das war wohl nichts mit der Historie.",
+                });
+            } else {
+                error = "Unbekannter Fehler";
                 toast.error(error, {
                     description: "Das war wohl nichts mit der Historie.",
                 });
