@@ -426,7 +426,7 @@ func TestGetUserChats(t *testing.T) {
 				tracer,
 				mockMetricsServ,
 			)
-			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
+			router.GET("/api/v1/chats/:userId", controller.HandleGetUserChats)
 
 			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)

@@ -140,7 +140,8 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
-	userID := c.Param("UserID")
+	userID := c.Param("userId")
+	a.logger.Info(userID)
 	// checking if style: auth0|id is there
 	if !isValid(userID) {
 		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
