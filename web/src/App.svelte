@@ -30,12 +30,13 @@
             user.id = undefined;
         }
     });
-
-    // hier dann auth
-    // user.id = "auth0|687270280dca20b77cfdcf73";
+    {
+        console.log("App script", user.id);
+    }
 </script>
 
 {#if $auth.isAuthenticated}
+    {console.log("App", user.id)}
     <Sidebar.Provider>
         <AppSidebar />
         <Sidebar.Inset>
