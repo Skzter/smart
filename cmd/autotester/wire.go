@@ -53,6 +53,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		repository.NewChatStorageRepository,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
+		MetricsServiceProvider,
 	)
 
 	return nil, nil
@@ -128,4 +129,8 @@ func TestCaseStorageRepositoryProvider(
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
+}
+
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("autotester", logger)
 }
