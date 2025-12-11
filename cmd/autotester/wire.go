@@ -54,6 +54,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		ChatParquetConfigProvider,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
+		MetricsServiceProvider,
 	)
 
 	return nil, nil
@@ -133,5 +134,9 @@ func TestCaseStorageRepositoryProvider(
 
 // ChatParquetConfigProvider provides a ParquetConfig for chat parquet files.
 func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
-	return wrapperService.DefaultParquetConfig() 
+	return wrapperService.DefaultParquetConfig()
+}
+
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("autotester", logger)
 }

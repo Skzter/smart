@@ -11,6 +11,10 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -25,6 +29,7 @@ import (
 func TestHandleChatRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type MockSetup struct {
 		Function         string
@@ -158,6 +163,14 @@ func TestHandleChatRequest(t *testing.T) {
 		},
 	}
 
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
 			gin.SetMode(gin.TestMode)
@@ -197,7 +210,19 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 
 			controller.HandleChatRequest(ctx)
 
@@ -211,6 +236,7 @@ func TestHandleChatRequest(t *testing.T) {
 func TestHandleUserInfoRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		TestName        string
 		UserRequestBody string
@@ -251,6 +277,13 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
@@ -265,7 +298,19 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 
 			if err != nil {
 				t.Errorf("build failed")
@@ -279,66 +324,11 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	}
 }
 
-func TestGetUserChats_ValidationCases(t *testing.T) {
+//nolint:funlen
+func TestGetUserChats(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
-
-	tests := []struct {
-		name           string
-		requestID      string
-		limit          string
-		expectedStatus int
-	}{
-		{"error - No ID", "", "", http.StatusNotFound},
-		{"error - invalid ID format", "132", "", http.StatusBadRequest},
-		{"error - limit is not a number", "auth0|123", "hallo", http.StatusBadRequest},
-		{"error - limit is a negative number", "auth0|123", "-131", http.StatusBadRequest},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			gin.SetMode(gin.TestMode)
-
-			mockGenServ := mocks.NewMockGeneratePrompt(t)
-			mockValServ := mocks.NewMockValidator(t)
-			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
-			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
-			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatStorageServ := mocks.NewMockChatStorageService(t)
-			mockChatManager := mocks.NewMockChatManager(t)
-
-			router := gin.New()
-
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
-
-			router.GET("/api/v1/users/:userId/chats", controller.HandleGetUserChats)
-
-			var endpoint string
-			if tc.requestID == "" {
-				endpoint = "/api/v1/users/"
-			} else {
-				endpoint = "/api/v1/users/" + tc.requestID + "/chats"
-				if tc.limit != "" {
-					endpoint += "?limit=" + tc.limit
-				}
-			}
-
-			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
-			rec := httptest.NewRecorder()
-
-			router.ServeHTTP(rec, req)
-
-			if rec.Code != tc.expectedStatus {
-				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
-			}
-		})
-	}
-}
-
-func TestGetUserChats_LoadCases(t *testing.T) {
-	cfg, _ := config.LoadConfig()
-	logger := slog.New(slog.DiscardHandler)
-
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
 		requestID        string
@@ -347,21 +337,56 @@ func TestGetUserChats_LoadCases(t *testing.T) {
 		expectedStatus   int
 	}{
 		{
-			"error - no chat history for given user found",
-			"auth0|123",
-			"123",
-			[]any{nil, errors.New("no history found")},
-			http.StatusInternalServerError,
+			name:           "error - No ID",
+			requestID:      "",
+			expectedStatus: http.StatusNotFound,
 		},
 		{
-			"success",
-			"auth0|123",
-			"5",
-			[]any{[]*entity.ChatSummary{
-				{ChatId: "1", UpdatedAt: time.Now()},
-				{ChatId: "2", UpdatedAt: time.Now().Add(-10 * time.Hour)},
+			name:           "error - invalid ID format",
+			requestID:      "132",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "error - limit is not a number",
+			requestID:      "auth0|123",
+			limit:          "hallo",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "error - limit is a negative number",
+			requestID:      "auth0|123",
+			limit:          "-131",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:             "error - no chat history for given user found",
+			requestID:        "auth0|123",
+			limit:            "123",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
+		},
+		{
+			name:             "error - empty limit but no history found",
+			requestID:        "auth0|123",
+			limit:            "",
+			mockResponseLoad: []any{nil, errors.New("no history found")},
+			expectedStatus:   http.StatusInternalServerError,
+		},
+		{
+			name:      "success",
+			requestID: "auth0|123",
+			limit:     "5",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
 			}, nil},
-			http.StatusOK,
+			expectedStatus: http.StatusOK,
 		},
 	}
 
@@ -371,6 +396,13 @@ func TestGetUserChats_LoadCases(t *testing.T) {
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -378,18 +410,25 @@ func TestGetUserChats_LoadCases(t *testing.T) {
 			if tc.mockResponseLoad != nil {
 				mockChatStorageServ.On("LoadUserChats", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
-
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager)
-			router.GET("/api/v1/users/:userId/chats", controller.HandleGetUserChats)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
+			router.GET("/api/v1/chats/:UserID", controller.HandleGetUserChats)
 
-			endpoint := "/api/v1/users/" + tc.requestID + "/chats"
-			if tc.limit != "" {
-				endpoint += "?limit=" + tc.limit
-			}
-
+			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
@@ -455,6 +494,15 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
+	tracer := otel.Tracer("test")
 
 	mockChatStorageServ.
 		On("LoadChat", mock.Anything, mock.Anything, mock.Anything).
@@ -470,6 +518,8 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		mockChatStorageServ,
 		mockRemoteStorageServ,
 		mockChatManager,
+		tracer,
+		mockMetricsServ,
 	)
 	if buildErr != nil {
 		t.Fatalf("failed to build controller: %v", buildErr)
@@ -491,6 +541,15 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
+	tracer := otel.Tracer("test")
 
 	controller, err := NewAutotesterController(
 		logger,
@@ -502,6 +561,8 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 		mockChatStorageServ,
 		mockRemoteStorageServ,
 		mockChatManager,
+		tracer,
+		mockMetricsServ,
 	)
 	if err != nil {
 		t.Fatalf("failed to build controller: %v", err)
