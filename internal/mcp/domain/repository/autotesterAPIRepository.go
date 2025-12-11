@@ -144,50 +144,42 @@ func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, ur
 // doAndDecode executes the request, checks for a 200 OK response, and decodes
 // the JSON response into result (if non-nil). It logs errors using the provided logger.
 func doAndDecode[T any](client *http.Client, logger *slog.Logger, req *http.Request, result *T) error {
+	if err := assert.NotNil(client, logger, req); err != nil {
+		return err
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
-		if logger != nil {
-			logger.Error("Failed to execute request", "error", err, "url", req.URL.String())
-		}
+		logger.Error("Failed to execute request", "error", err, "url", req.URL.String())
 		return fmt.Errorf("failed to execute request: %w", err)
 	}
 
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			if logger != nil {
-				logger.Warn("Failed to close response body", "error", closeErr)
-			}
+			logger.Warn("Failed to close response body", "error", closeErr)
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			if logger != nil {
-				logger.Error("Failed to read error response body", "error", err, "status", resp.StatusCode)
-			}
+			logger.Error("Failed to read error response body", "error", err, "status", resp.StatusCode)
 			return fmt.Errorf("unexpected status code: %d (failed to read body: %w)", resp.StatusCode, err)
 		}
-		if logger != nil {
-			logger.Error("Unexpected status code", "status", resp.StatusCode, "body", string(body))
-		}
+		logger.Error("Unexpected status code", "status", resp.StatusCode, "body", string(body))
 		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	if result != nil {
 		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-			if logger != nil {
-				logger.Error("Failed to decode response", "error", err)
-			}
+			logger.Error("Failed to decode response", "error", err)
 			return fmt.Errorf("failed to decode response: %w", err)
 		}
 	} else {
 		// Drain any remaining response body so the HTTP connection can be reused.
 		// Check and propagate any error instead of ignoring it.
 		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			if logger != nil {
-				logger.Error("Failed to discard response body", "error", err)
-			}
+			logger.Error("Failed to discard response body", "error", err)
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
 	}
