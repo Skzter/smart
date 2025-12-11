@@ -22,10 +22,11 @@ vi.mock("$lib/api", () => ({
 vi.mock("$lib/shared.svelte", () => ({
     user: { id: "test-user-123" },
     ChatDate: { Range: undefined },
+    ChatFilter: { sortBy: "recent", timeFilter: "all" },
 }));
 
 import { getUserChats } from "$lib/api";
-import { user, ChatDate } from "$lib/shared.svelte";
+import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 
 describe("Sidebar", () => {
@@ -33,6 +34,8 @@ describe("Sidebar", () => {
         vi.clearAllMocks();
         user.id = "test-user-123";
         ChatDate.Range = undefined;
+        ChatFilter.sortBy = "recent";
+        ChatFilter.timeFilter = "all";
     });
 
     it("renders the sidebar with loading state initially", async () => {
