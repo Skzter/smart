@@ -128,7 +128,7 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T)
 		p.logger.Error("Data validation failed",
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrValidation
+		return nil, err
 	}
 
 	// Get the type of the struct
