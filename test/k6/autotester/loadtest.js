@@ -8,29 +8,26 @@ export const options = {
   duration: __ENV.K6_DURATION || '1m',
   thresholds: {
     http_req_failed: ['rate<0.05'],
-    http_req_duration: ['p(95)<1000'],
+    http_req_duration: ['p(95)<40000'], // LLM interactions can be slow
   },
   summaryTrendStats: ['avg', 'p(50)', 'p(90)', 'p(95)', 'p(99)'],
 };
 
 const payloads = new SharedArray('payloads', () => [
-  JSON.parse(open('./payloads/happy.json')),
+  JSON.parse(open('./payloads/prompt1.json')),
 ]);
 
-const baseUrl = __ENV.SUPROXY_URL || 'http://localhost:8080/api/v1/Offerlist';
-const destinationOverride = __ENV.SUPROXY_DESTINATION;
+const baseUrl = __ENV.AUTOTESTER_URL || 'http://localhost:8081/api/v1/chat';
 
-const responseTime = new Trend('suproxy_response_time', true);
-const responses = new Counter('suproxy_responses');
+const responseTime = new Trend('autotester_response_time', true);
+const responses = new Counter('autotester_responses');
 
 export default function () {
   const payload = { ...payloads[Math.floor(Math.random() * payloads.length)] };
 
-  if (destinationOverride) {
-    payload.destination = destinationOverride;
-  }
-
-  const headers = { 'Content-Type': 'application/json', ...payload.header };
+  // Randomize IDs if needed to simulate different sessions, but for now fixed is fine
+  
+  const headers = { 'Content-Type': 'application/json' };
   const res = http.post(baseUrl, JSON.stringify(payload), {
     headers,
   });
@@ -40,7 +37,6 @@ export default function () {
 
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'has body': (r) => r.body && r.body.length > 0,
   });
 
   sleep(Number(__ENV.K6_SLEEP || '1'));

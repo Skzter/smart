@@ -229,17 +229,14 @@ tasks:
     cmds:
       - |
         docker run --rm \
-          --network ${K6_DOCKER_NETWORK:-deployments_default} \
-          -e SUPROXY_URL=${SUPROXY_URL:-http://suproxy:8080/api/v1/Offerlist} \
-          -e SUPROXY_DESTINATION=${SUPROXY_DESTINATION:-http://supplier-mock:8083/api/v1/offers} \
-          -e K6_VUS=${K6_VUS:-10} \
-          -e K6_DURATION=${K6_DURATION:-1m} \
-          -e K6_SLEEP=${K6_SLEEP:-1} \
-          -e K6_SUMMARY_EXPORT=${K6_SUMMARY_EXPORT:-/scripts/k6-summary.json} \
-          ${K6_OUT:+-e K6_OUT=$K6_OUT} \
-          ${K6_DATADOG_ADDR:+-e K6_DATADOG_ADDR=$K6_DATADOG_ADDR} \
-          ${K6_DATADOG_TAGS:+-e K6_DATADOG_TAGS=$K6_DATADOG_TAGS} \
-          ${K6_DATADOG_PUSH_INTERVAL:+-e K6_DATADOG_PUSH_INTERVAL=$K6_DATADOG_PUSH_INTERVAL} \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e SUPROXY_URL=http://suproxy:8080/api/v1/Offerlist \
+          -e SUPROXY_DESTINATION=http://supplier-mock:8083/api/v1/offers \
+          -e K6_VUS=10 \
+          -e K6_DURATION=1m \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary.json \
           -v $(pwd):/scripts \
           grafana/k6:latest run /scripts/loadtest.js
 
@@ -249,17 +246,30 @@ tasks:
     cmds:
       - |
         docker run --rm \
-          --network ${K6_DOCKER_NETWORK:-deployments_default} \
-          -e SUPROXY_URL=${SUPROXY_URL:-http://suproxy:8080/api/v1/Offerlist} \
-          -e SUPROXY_DESTINATION=${SUPROXY_DESTINATION:-http://supplier-mock:8083/api/v1/offers} \
-          -e K6_SLEEP=${K6_SLEEP:-1} \
-          -e K6_SUMMARY_EXPORT=${K6_SUMMARY_EXPORT:-/scripts/k6-summary-ramp.json} \
-          ${K6_OUT:+-e K6_OUT=$K6_OUT} \
-          ${K6_DATADOG_ADDR:+-e K6_DATADOG_ADDR=$K6_DATADOG_ADDR} \
-          ${K6_DATADOG_TAGS:+-e K6_DATADOG_TAGS=$K6_DATADOG_TAGS} \
-          ${K6_DATADOG_PUSH_INTERVAL:+-e K6_DATADOG_PUSH_INTERVAL=$K6_DATADOG_PUSH_INTERVAL} \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e SUPROXY_URL=http://suproxy:8080/api/v1/Offerlist \
+          -e SUPROXY_DESTINATION=http://supplier-mock:8083/api/v1/offers \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary-ramp.json \
           -v $(pwd):/scripts \
           grafana/k6:latest run /scripts/ramp_up_loadtest.js
+  
+  k6-autotester:
+    desc: "Run a k6 load test against autotester (dockerized)"
+    dir: test/k6/autotester
+    cmds:
+      - |
+        docker run --rm \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e AUTOTESTER_URL=http://autotester:8081/api/v1/chat \
+          -e K6_VUS=10 \
+          -e K6_DURATION=1m \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary.json \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/loadtest.js
 
   k6-plot-install:
     desc: "Install plotting deps via uv (matplotlib)"
@@ -273,6 +283,14 @@ tasks:
     dir: scripts/k6
     cmds:
       - uv run plot_summary.py --input ../../test/k6/suproxy/k6-summary.json --output k6-suproxy-report.png
+    silent: true
+
+  k6-autotester-report:
+    desc: "Run k6 load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/autotester/k6-summary.json --output k6-autotester-report.png
     silent: true
 
   k6-suproxy-ramp-report:
