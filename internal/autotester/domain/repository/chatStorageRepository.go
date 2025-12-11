@@ -175,11 +175,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 		return nil, errors.ErrInternalServer
 	}
 	if len(items) == 0 {
-		r.logger.Error("no chat found for user and chat id",
-			slog.String("key", key),
-			slog.String("user_id", userId),
-			slog.String("chat_id", chatId),
-		)
+		err := errors.ErrChatNotFound
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no chat found for user and chat id")
 		return nil, errors.ErrInternalServer

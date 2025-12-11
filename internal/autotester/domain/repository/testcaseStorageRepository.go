@@ -24,6 +24,10 @@ type TestcaseStorageRepository interface {
 	// Read retrieves a TestCase object from storage by its key.
 	Read(ctx context.Context, key string) (*entity.TestCase, error)
 
+	// ReadAllMetadata retrieves metadata for all stored test cases.
+	// Returns a slice of TestcaseMetadata or an error if the operation fails.
+	ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error)
+
 	// Update modifies an existing TestCase object in the storage system.
 	Update(ctx context.Context, obj *entity.TestCase, key string) error
 
@@ -62,6 +66,7 @@ func NewTestcaseStorageRepository(
 		s3Wrapper:      s3Wrapper,
 		parquetWrapper: parquetWrapper,
 		logger:         logger,
+		s3Prefix:       s3Prefix,
 		tracer:         tracer,
 	}, nil
 }
@@ -69,6 +74,10 @@ func NewTestcaseStorageRepository(
 // Create serializes the given TestCase object to Parquet format and uploads it to S3.
 // nolint:dupl
 func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return "", fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Create")
 	defer span.End()
 
@@ -93,9 +102,13 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 		return "", sharedErrors.ErrInternalServer
 	}
 	key := r.generateTestCaseKey(obj.TestID)
+	time := fmt.Sprintf("%d", time.Now().UTC().Unix())
 	metadata := map[string]string{
-		"created": fmt.Sprintf("%d", time.Now().UTC().Unix()),
-		"author":  userId,
+		"testcase-id": obj.TestID,
+		"author":      userId,
+		"created":     time,
+		"updated":     time,
+		"name":        "",
 	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
@@ -119,6 +132,10 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // Returns the TestCase or an error.
 // nolint:dupl
 func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Read")
 	defer span.End()
 
@@ -161,10 +178,63 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 	return &items[0], nil
 }
 
+// ReadAllMetadata retrieves metadata for all stored test cases from S3.
+// Returns a slice of TestcaseMetadata containing key, author, timestamps, and name for each test case.
+func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, fmt.Errorf("context must not be nil: %w", err)
+	}
+
+	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
+	defer span.End()
+
+	fileKeys, err := r.s3Wrapper.ListParquetFiles(ctx, r.s3Prefix)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to list all parquet files")
+		return nil, fmt.Errorf("failed to list all parquet files: %w", err)
+	}
+
+	allMetadata := make([]*entity.TestcaseMetadata, 0, len(fileKeys))
+
+	for _, fileKey := range fileKeys {
+		_, metadata, err := r.s3Wrapper.DownloadParquetFile(ctx, fileKey)
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, fmt.Sprintf("failed to download parquet file with key: %s", fileKey))
+			span.AddEvent("download failed", trace.WithAttributes(
+				attribute.String("fileKey", fileKey),
+			))
+			r.logger.Warn("failed to download parquet file", "fileKey", fileKey, "error", err)
+			continue
+		}
+
+		span.AddEvent("parquet file downloaded", trace.WithAttributes(
+			attribute.String("fileKey", fileKey),
+		))
+
+		allMetadata = append(allMetadata, &entity.TestcaseMetadata{
+			Key:        fileKey,
+			TestcaseId: metadata["testcase-id"],
+			Author:     metadata["author"],
+			Created:    metadata["created"],
+			Updated:    metadata["updated"],
+			Name:       metadata["name"],
+		})
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return allMetadata, nil
+}
+
 // Update overwrites the existing Parquet file at the given key with the provided TestCase.
 // Returns an error if the key does not exist or the operation fails.
 // nolint:dupl
 func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Update")
 	defer span.End()
 
@@ -182,18 +252,12 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return sharedErrors.ErrValidation
 	}
 
-	exists, err := r.s3Wrapper.FileExists(ctx, key)
+	_, oldMetadata, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
 		r.logger.Error("failed to check if key exists", slog.String("error", err.Error()))
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to check if key exists")
-		return sharedErrors.ErrInternalServer
-	}
-	if !exists {
-		r.logger.Error("key does not exist", slog.String("key", key))
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "key does not exist")
-		return sharedErrors.ErrInternalServer
+		span.SetStatus(codes.Error, "failed to read old metadata")
+		return fmt.Errorf("failed to read old metadata: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(ctx, *obj)
@@ -204,7 +268,13 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return sharedErrors.ErrInternalServer
 	}
 
-	metadata := map[string]string{}
+	metadata := map[string]string{
+		"testcase-id": oldMetadata["testcase-id"],
+		"author":      oldMetadata["author"],
+		"created":     oldMetadata["created"],
+		"updated":     fmt.Sprintf("%d", time.Now().UTC().Unix()),
+		"name":        oldMetadata["name"],
+	}
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
@@ -214,7 +284,7 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		return sharedErrors.ErrInternalServer
 	}
 
-	span.AddEvent("object successfully overwritten", trace.WithAttributes(
+	span.AddEvent("object successfully updated", trace.WithAttributes(
 		attribute.String("key", key),
 		attribute.String("type", "testcase"),
 	))
@@ -227,6 +297,10 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // Returns an error if the deletion fails.
 // nolint:dupl
 func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return fmt.Errorf("context must not be nil: %w", err)
+	}
+
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Delete")
 	defer span.End()
 
@@ -257,7 +331,7 @@ func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) erro
 // The format is: "testcase/<testCaseID>_<timestamp>.parquet"
 func (r *testcaseStorageRepository) generateTestCaseKey(testcaseId string) string {
 	timestamp := time.Now().Unix()
-	return fmt.Sprintf("%s/%s_%d.parquet", r.s3Prefix, testcaseId, timestamp)
+	return fmt.Sprintf("%s%s_%d.parquet", r.s3Prefix, testcaseId, timestamp)
 }
 
 // validateTestCaseData checks if a TestCase object is valid.

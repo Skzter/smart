@@ -20,7 +20,7 @@ type ChatStorageService interface {
 	// Returns an error if the operation fails.
 	SaveChat(ctx context.Context, summary *entity.Chat) error
 	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
-	LoadChat(ctx context.Context, chatId string, userId string) (*entity.Chat, error)
+	LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
 	// FindByUserId retrieves an all ChatSummarys associated with the given userId
 	// The resulting slice is ordered by updatedAt in descending order
 	LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error)
