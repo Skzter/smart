@@ -134,7 +134,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/chats/${mockUserId}`,
+                url: `/users/${mockUserId}/chats`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatSummaries);
