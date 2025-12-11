@@ -14,7 +14,6 @@
     let items = $state<ApiChatSummary[] | undefined>(undefined);
 
     let groupState = $derived(updateGroupsWithDateRange(items, ChatDate.Range));
-    $inspect(groupState[0].summaries[0].title);
 
     (async () => {
         if (user.id == undefined) {
@@ -63,7 +62,6 @@
         groups.forEach((value, key) => {
             result.push({ label: key, summaries: value });
         });
-        $inspect(result);
 
         return result;
     }
@@ -109,13 +107,13 @@
 <Sidebar.Root>
     <SidebarHeader />
     <Sidebar.Content>
-        {#if items === undefined}
-            <Sidebar.Group class="mt-2 flex items-center justify-center">
-                <Spinner class="size-6"></Spinner>
-            </Sidebar.Group>
-        {:else if error != ""}
+        {#if error != ""}
             <Sidebar.Group>
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
+            </Sidebar.Group>
+        {:else if items === undefined}
+            <Sidebar.Group class="mt-2 flex items-center justify-center">
+                <Spinner class="size-6"></Spinner>
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}

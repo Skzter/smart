@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import TimeFilterButton from "$lib/components/TimeFilterButton.svelte";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 describe("TimeFilterButton", () => {
     it("renders a button with text 'Time Filter'", () => {
@@ -40,7 +40,7 @@ describe("TimeFilterButton", () => {
             },
         });
 
-        const svg = container.querySelector('svg');
+        const svg = container.querySelector("svg");
         expect(svg).toBeInTheDocument();
     });
 

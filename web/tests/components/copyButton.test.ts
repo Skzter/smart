@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 // Mock clipboard BEFORE importing the component
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
-Object.defineProperty(navigator, 'clipboard', {
+Object.defineProperty(navigator, "clipboard", {
     value: {
         writeText: mockWriteText,
     },
@@ -42,7 +42,7 @@ describe("CopyButton", () => {
             },
         });
 
-        const svg = container.querySelector('svg');
+        const svg = container.querySelector("svg");
         expect(svg).toBeInTheDocument();
     });
 

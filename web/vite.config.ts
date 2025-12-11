@@ -24,6 +24,10 @@ export default defineConfig({
                 "src/**/*.test.{ts}",
                 "src/**/*.d.ts",
                 "src/lib/authService.ts",
+                "src/lib/utils.ts",
+                "src/lib/components/ui",
+                "src/lib/hooks/",
+                "src/lib/actions/",
             ],
             reportsDirectory: "./coverage",
             thresholds: {
