@@ -55,11 +55,17 @@ tasks:
       - echo "building autotester with version {{.VERSION}}"
       - cmd: go build -o build/autotester -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [linux, darwin]
+      - echo "building mcp with version {{.VERSION}}"
+      - cmd: go build -o build/mcp -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
+        platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
       - cmd: go build -o build/suproxy.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/suproxy/
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
       - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
+        platforms: [windows/amd64]
+      - echo "building mcp.exe with version {{.VERSION}}"
+      - cmd: go build -o build/mcp.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
         platforms: [windows/amd64]
     silent: true
 
@@ -116,6 +122,8 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
       - echo "building autotester with version {{.VERSION}}"
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
+      - echo "building mcp with version {{.VERSION}}"
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/mcp -ldflags "{{.PROD_LDFLAGS}}" ./cmd/mcp/
     silent: true
 
   # --------------------------------------------------------------------------------
