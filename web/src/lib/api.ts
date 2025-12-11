@@ -98,7 +98,7 @@ export async function runContainer(
     },
 ): Promise<void> {
     try {
-        handler.onStepBegin?.("Gettign Results...");
+        handler.onStepBegin?.("Getting Results...");
         const response = await axios({
             method: "post",
             url: "run",

@@ -14,7 +14,7 @@
     // treat message as code when it looks like code or contains Playwright imports/markers
     const messageIsCode = $derived((msg || "").includes("@playwright"));
     let message = $derived(msg);
-    let runner: Runner = $derived(new Runner(chat.id, user.id));
+    let runner: Runner = $derived(new Runner(chat.id, user.id ?? ""));
 </script>
 
 <div class="flex justify-start gap-2 items-start">
