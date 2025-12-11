@@ -1,20 +1,23 @@
 import { toast } from "svelte-sonner";
 import { Mutex } from "async-ts";
-import { user, chat } from "$lib/shared.svelte";
-import { saveTestLocal } from "./api";
+import { runContainer, saveTestLocal } from "./api";
 import type { SaveState } from "$types/save";
-
-function sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 export class Runner {
+    private chatId: string;
+    private userId: string;
+
     private m: Mutex = new Mutex();
     private running: boolean = $state(false);
 
     private storageState: SaveState = $state("idle");
     private storedTest: string = $state("");
 
-    public result: string = $state("");
+    public result: { begin: string; end?: string }[] = $state([]);
+
+    constructor(chatId: string, userId: string) {
+        this.chatId = chatId;
+        this.userId = userId;
+    }
 
     public isRunning(): boolean {
         return this.running;
@@ -31,9 +34,12 @@ export class Runner {
     }
 
     public async storeTest(testcode: string) {
-        if (!user.id || !chat.id) {
+        if (!this.userId || !this.chatId) {
             console.error(
-                "Missing IDs - ChatID: " + chat.id + " UserID: " + user.id,
+                "Missing IDs - ChatID: " +
+                    this.chatId +
+                    " UserID: " +
+                    this.userId,
             );
             toast.error("Speichern fehlgeschlagen", {
                 description: "Benutzer- oder Konversations-ID fehlt.",
@@ -41,19 +47,18 @@ export class Runner {
             return;
         }
 
-        const sanitizedUserId = user.id.includes("|")
-            ? user.id.split("|")[1]
-            : user.id;
+        const sanitizedUserId = this.userId.includes("|")
+            ? this.userId.split("|")[1]
+            : this.userId;
 
         this.storageState = "saving";
 
         try {
             const test = await saveTestLocal({
                 userId: sanitizedUserId,
-                conversationId: chat.id,
+                conversationId: this.chatId,
                 code: testcode,
             });
-            await sleep(3000);
 
             this.setTest(test.testcaseId);
             this.storageState = "success";
@@ -86,12 +91,13 @@ export class Runner {
     }
 
     public async run() {
-        if (!user.id || !chat.id || !this.storedTest) {
+        this.result = [];
+        if (!this.userId || !this.chatId || !this.storedTest) {
             console.error(
                 "Missing IDs - ChatID: " +
-                    chat.id +
+                    this.chatId +
                     " UserID: " +
-                    user.id +
+                    this.userId +
                     " TestID: " +
                     this.storedTest,
             );
@@ -119,30 +125,31 @@ export class Runner {
             description: `Id: ${this.storedTest}`,
         });
 
-        await sleep(5000);
+        const sanitizedUserId = this.userId.includes("|")
+            ? this.userId.split("|")[1]
+            : this.userId;
 
-        this.result = "asaskjjsdkakjdashdjaskjdhaskjdhjaskd";
-        this.running = false;
-
-        /*
-        const sanitizedUserId = user.id.includes("|")
-            ? user.id.split("|")[1]
-            : user.id;
-
-        
         try {
-            const response = await runContainer({
-                userId: sanitizedUserId,
-                testId: this.currTestId,
-                sessionId: chat.id,
-            });
-            this.result = response;
+            await runContainer(
+                {
+                    userId: sanitizedUserId,
+                    testId: this.getCurTest(),
+                    sessionId: this.chatId,
+                },
+                {
+                    onStepBegin: (message) => {
+                        this.result.push({ begin: message });
+                    },
+                    onStepEnd: (message) => {
+                        this.result[this.result.length - 1].end = message;
+                    },
+                },
+            );
         } catch (error) {
             console.error("Error running test:", error);
         } finally {
             this.running = false;
         }
-        */
 
         toast.message("Testausführung beendet");
     }

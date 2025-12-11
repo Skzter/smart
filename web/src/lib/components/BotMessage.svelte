@@ -3,6 +3,7 @@
     import TestButtons from "./TestButtons.svelte";
     import { Runner } from "$lib/runner.svelte";
     import MonacoEditor from "./MonacoEditor.svelte";
+    import { chat, user } from "$lib/shared.svelte";
 
     let {
         msg,
@@ -13,8 +14,7 @@
     // treat message as code when it looks like code or contains Playwright imports/markers
     const messageIsCode = $derived((msg || "").includes("@playwright"));
     let message = $derived(msg);
-
-    const runner = new Runner();
+    let runner: Runner = $derived(new Runner(chat.id, user.id));
 </script>
 
 <div class="flex justify-start gap-2 items-start">

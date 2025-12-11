@@ -42,7 +42,7 @@ export async function getChatResponse(
  * Fetches data from the api and returns the data for the user
  * @param params: parameters for api
  * @param url: url for api
- */ // schön mit Rechtschreibfehler vom main
+ */
 export async function getUserChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
@@ -88,17 +88,26 @@ export async function saveTestLocal(
     }
 }
 
-export async function runContainer(request: ApiRunContainer): Promise<string> {
+// must block exectution until test is done
+export async function runContainer(
+    request: ApiRunContainer,
+    handler: {
+        onStepEnd?: (message: string) => void;
+        onError?: (error: Error) => void;
+        onStepBegin?: (message: string) => void;
+    },
+): Promise<void> {
     try {
+        handler.onStepBegin?.("Gettign Results...");
         const response = await axios({
             method: "post",
             url: "run",
             baseURL: baseURL,
             data: request,
         });
-        return response.data.result;
+        handler.onStepEnd?.(response.data.result);
     } catch (error) {
-        throw getErrorMessage(error);
+        handler.onError?.(getErrorMessage(error));
     }
 }
 

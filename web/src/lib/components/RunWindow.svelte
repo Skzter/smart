@@ -21,10 +21,6 @@
 
     let view = $state("split");
 
-    function handleTabChange(event: CustomEvent) {
-        activeTab = event.detail;
-    }
-
     function handleCloseClick() {
         const closeButton = document.querySelector(
             "[data-dialog-close]",
@@ -53,7 +49,7 @@
     </div>
     <Dialog.Close hidden data-dialog-close />
 
-    <TabsView bind:activeTab on:tabChange={handleTabChange} />
+    <TabsView bind:activeTab curTest={testRunner.getCurTest()} />
 
     {#if activeTab === "edit"}
         <div class="flex-1 overflow-visible">
@@ -66,7 +62,7 @@
                 : 'grid grid-cols-1'} gap-0 overflow-hidden"
         >
             {#if view == "split" || view == "code"}
-                <OutputView bind:testRunner />
+                <OutputView {testRunner} />
             {/if}
             {#if view == "split" || view == "browser"}
                 <BrowserView />
