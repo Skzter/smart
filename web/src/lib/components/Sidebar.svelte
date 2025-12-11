@@ -9,6 +9,7 @@
     import { SvelteMap } from "svelte/reactivity";
     import { toast } from "svelte-sonner";
     import type { DateRange } from "bits-ui";
+    import User from "./User.svelte";
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[] | undefined>(undefined);
@@ -127,4 +128,7 @@
             {/each}
         {/if}
     </Sidebar.Content>
+    <Sidebar.Footer>
+        <User />
+    </Sidebar.Footer>
 </Sidebar.Root>
