@@ -24,8 +24,6 @@
         }
     }
 
-    const classes = "h-full flex flex-col justify-between flex-1 min-w-0";
-
     function focusAction(el: HTMLInputElement) {
         if (summary.title === "") {
             el.select();
@@ -129,12 +127,11 @@
         onclick={invokeSwitchChat}
     >
         <LucideMessageSquare class="mr-1" />
-        <div class="flex flex-col justify-between flex-1 min-w-0">
+        <div class="flex flex-col justify-between min-w-0 mr-2">
             {#if edit}
                 <input
                     use:focusAction
                     id={`title${summary.chatId}`}
-                    class={classes}
                     value={summary.title === "" ? "Neuer Chat" : summary.title}
                     onfocusout={(e) => {
                         summary.title = (e.target as HTMLInputElement).value;
@@ -154,7 +151,7 @@
                     }}
                 />
             {:else}
-                <p class={classes}>
+                <p class="truncate">
                     {summary.title === "" ? "Neuer Chat" : summary.title}
                 </p>{/if}
             <span class="font-mono text-xs text-gray-500 dark:text-gray-400"
