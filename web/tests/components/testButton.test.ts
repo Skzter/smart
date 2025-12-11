@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 
 // Mock clipboard BEFORE importing components
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
-Object.defineProperty(navigator, "clipboard", {
+Object.defineProperty(navigator, 'clipboard', {
     value: {
         writeText: mockWriteText,
     },
@@ -55,7 +55,7 @@ describe("TestButtons", () => {
         });
 
         const buttonContainer = container.querySelector(
-            ".flex.justify-end.gap-1.px-2.py-2.border-b",
+            ".flex.justify-end.gap-1.px-2.py-2.border-b"
         );
         expect(buttonContainer).toBeInTheDocument();
     });
@@ -112,9 +112,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders RunButton without Dialog.Trigger when testRunner has no current test", () => {
@@ -128,9 +126,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders EditButton when iscode is true", () => {
@@ -142,9 +138,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders SaveButton with correct props when iscode is true", () => {
@@ -156,9 +150,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders RunWindow component when iscode is true", () => {
@@ -170,9 +162,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("verifies component renders correctly", () => {
@@ -185,9 +175,7 @@ describe("TestButtons", () => {
         });
 
         // Component renders without errors
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("initializes activeTab state to 'run'", () => {
@@ -226,9 +214,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container1.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container1.querySelector(".flex.justify-end")).toBeInTheDocument();
 
         // Test iscode = true branch
         const { container: container2 } = render(TestButtons, {
@@ -239,9 +225,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container2.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container2.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("handles both branches of getCurTest() condition", () => {
@@ -256,9 +240,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container1.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container1.querySelector(".flex.justify-end")).toBeInTheDocument();
 
         // Test when getCurTest returns empty string
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
@@ -271,9 +253,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container2.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container2.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders all nested conditional branches", () => {
@@ -513,9 +493,7 @@ describe("TestButtons", () => {
         });
 
         // CopyButton is always rendered regardless of iscode
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("maintains component structure with different prop combinations", () => {
@@ -537,9 +515,7 @@ describe("TestButtons", () => {
                 },
             });
 
-            expect(
-                container.querySelector(".flex.justify-end"),
-            ).toBeInTheDocument();
+            expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
         });
     });
 
@@ -554,9 +530,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders with empty message string", () => {
@@ -568,9 +542,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders with long message string", () => {
@@ -584,9 +556,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders with special characters in message", () => {
@@ -600,9 +570,7 @@ describe("TestButtons", () => {
             },
         });
 
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("renders all child components in correct order when iscode is true", () => {
@@ -685,9 +653,7 @@ describe("TestButtons", () => {
 
         // activeTab should be initialized to "run"
         // This is internal state, verified through rendering
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("handles re-rendering with prop changes", () => {
@@ -746,9 +712,7 @@ describe("TestButtons", () => {
         });
 
         // Verify component renders with bindable message prop
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("CopyButton receives code binding correctly", () => {
@@ -763,14 +727,14 @@ describe("TestButtons", () => {
         });
 
         // Verify CopyButton is rendered (it's the only button when iscode is false)
-        const buttons = container.querySelectorAll("button");
+        const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBe(1);
-
+        
         // The copy button should be present and receive the message binding
         // This ensures line 24 (CopyButton with bind:code={message}) is covered
         const copyButton = buttons[0];
         expect(copyButton).toBeInTheDocument();
-        expect(copyButton).toHaveClass("cursor-pointer");
+        expect(copyButton).toHaveClass('cursor-pointer');
     });
 
     it("CopyButton is always rendered first", () => {
@@ -782,7 +746,7 @@ describe("TestButtons", () => {
                 iscode: false,
             },
         });
-        expect(c1.querySelectorAll("button").length).toBe(1);
+        expect(c1.querySelectorAll('button').length).toBe(1);
 
         // Test with iscode true
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
@@ -793,7 +757,7 @@ describe("TestButtons", () => {
                 iscode: true,
             },
         });
-        expect(c2.querySelectorAll("button").length).toBeGreaterThan(1);
+        expect(c2.querySelectorAll('button').length).toBeGreaterThan(1);
     });
 
     it("renders RunWindow component when iscode is true", () => {
@@ -808,7 +772,7 @@ describe("TestButtons", () => {
         });
 
         // RunWindow is rendered as part of Dialog.Root
-        const buttons = container.querySelectorAll("button");
+        const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThan(1);
     });
 
@@ -828,15 +792,13 @@ describe("TestButtons", () => {
         // Line 54: </Dialog.Root>
         // Line 55: {/if}
         // Line 56: </div>
-
+        
         // Verify the component structure is complete
-        const outerDiv = container.querySelector(
-            ".flex.justify-end.gap-1.px-2.py-2.border-b",
-        );
+        const outerDiv = container.querySelector('.flex.justify-end.gap-1.px-2.py-2.border-b');
         expect(outerDiv).toBeInTheDocument();
-
+        
         // Verify buttons are rendered (proves Dialog.Root is closed properly)
-        const buttons = container.querySelectorAll("button");
+        const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThanOrEqual(3);
     });
 
@@ -849,10 +811,10 @@ describe("TestButtons", () => {
                 iscode: false,
             },
         });
-
+        
         // Only CopyButton rendered, proves line 24 executed and line 55 {/if} closed
-        expect(c1.querySelectorAll("button").length).toBe(1);
-        expect(c1.querySelector(".flex.justify-end")).toBeInTheDocument();
+        expect(c1.querySelectorAll('button').length).toBe(1);
+        expect(c1.querySelector('.flex.justify-end')).toBeInTheDocument();
 
         // Branch 2: iscode true with test (lines 22-24, 25-36, 46-56)
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-id");
@@ -863,10 +825,10 @@ describe("TestButtons", () => {
                 iscode: true,
             },
         });
-
+        
         // Multiple buttons rendered, proves all lines executed
-        expect(c2.querySelectorAll("button").length).toBeGreaterThan(1);
-
+        expect(c2.querySelectorAll('button').length).toBeGreaterThan(1);
+        
         // Branch 3: iscode true without test (lines 22-24, 25, 27-28, 37-45, 46-56)
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
         const { container: c3 } = render(TestButtons, {
@@ -876,9 +838,9 @@ describe("TestButtons", () => {
                 iscode: true,
             },
         });
-
+        
         // Multiple buttons rendered, different path
-        expect(c3.querySelectorAll("button").length).toBeGreaterThan(1);
+        expect(c3.querySelectorAll('button').length).toBeGreaterThan(1);
     });
 
     it("SaveButton receives code binding and testRunner", () => {
@@ -893,9 +855,7 @@ describe("TestButtons", () => {
         });
 
         // SaveButton is rendered with bindings
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("EditButton receives activeTab binding", () => {
@@ -910,9 +870,7 @@ describe("TestButtons", () => {
         });
 
         // EditButton is rendered with activeTab binding
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("RunButton receives all required props and bindings", () => {
@@ -927,7 +885,7 @@ describe("TestButtons", () => {
         });
 
         // RunButton with classes, variant, size, activeTab binding, and testRunner
-        const buttons = container.querySelectorAll("button");
+        const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThan(0);
     });
 
@@ -943,9 +901,7 @@ describe("TestButtons", () => {
         });
 
         // Dialog.Root contains RunButton, EditButton, SaveButton, and RunWindow
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("Dialog.Trigger wraps RunButton when test exists", () => {
@@ -960,7 +916,7 @@ describe("TestButtons", () => {
         });
 
         // RunButton is wrapped in Dialog.Trigger
-        expect(container.querySelectorAll("button").length).toBeGreaterThan(1);
+        expect(container.querySelectorAll('button').length).toBeGreaterThan(1);
     });
 
     it("Dialog.Trigger wraps EditButton", () => {
@@ -975,9 +931,7 @@ describe("TestButtons", () => {
         });
 
         // EditButton is always wrapped in Dialog.Trigger when iscode is true
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector(".flex.justify-end")).toBeInTheDocument();
     });
 
     it("complete integration test covering all branches", () => {
@@ -989,7 +943,7 @@ describe("TestButtons", () => {
                 iscode: false,
             },
         });
-        expect(c1.querySelectorAll("button").length).toBe(1);
+        expect(c1.querySelectorAll('button').length).toBe(1);
 
         // Test 2: All components with test ID (iscode=true, getCurTest()!=="")
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
@@ -1000,7 +954,7 @@ describe("TestButtons", () => {
                 iscode: true,
             },
         });
-        expect(c2.querySelectorAll("button").length).toBeGreaterThan(1);
+        expect(c2.querySelectorAll('button').length).toBeGreaterThan(1);
 
         // Test 3: All components without test ID (iscode=true, getCurTest()==="")
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
@@ -1011,7 +965,7 @@ describe("TestButtons", () => {
                 iscode: true,
             },
         });
-        expect(c3.querySelectorAll("button").length).toBeGreaterThan(1);
+        expect(c3.querySelectorAll('button').length).toBeGreaterThan(1);
     });
 
     it("verifies all child component props are passed correctly", () => {
@@ -1036,8 +990,8 @@ describe("TestButtons", () => {
 
     it("line 24 CopyButton with message binding", () => {
         const msgs = ["test1", "test2", ""];
-
-        msgs.forEach((msg) => {
+        
+        msgs.forEach(msg => {
             const { container } = render(TestButtons, {
                 props: {
                     message: msg,
@@ -1045,9 +999,9 @@ describe("TestButtons", () => {
                     iscode: false,
                 },
             });
-
+            
             // CopyButton must be rendered with message binding
-            expect(container.querySelector("button")).toBeInTheDocument();
+            expect(container.querySelector('button')).toBeInTheDocument();
         });
     });
 
@@ -1064,15 +1018,13 @@ describe("TestButtons", () => {
 
         // RunWindow should be rendered with bind:code, bind:activeTab, and testRunner
         // This covers line 53
-        expect(
-            container.querySelector(".flex.justify-end"),
-        ).toBeInTheDocument();
+        expect(container.querySelector('.flex.justify-end')).toBeInTheDocument();
     });
 
     it("lines 54-56 closing tags coverage", () => {
         // Test closing Dialog.Root (line 54)
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-xyz");
-
+        
         const { container } = render(TestButtons, {
             props: {
                 message: "closing tags",
@@ -1082,12 +1034,12 @@ describe("TestButtons", () => {
         });
 
         // If Dialog.Root closes properly, all buttons should be accessible
-        const buttons = container.querySelectorAll("button");
+        const buttons = container.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThan(0);
-
+        
         // Line 55: {/if} closes the iscode block
         // Line 56: </div> closes the container
-        const outerDiv = container.querySelector("div");
+        const outerDiv = container.querySelector('div');
         expect(outerDiv).toBeInTheDocument();
     });
 

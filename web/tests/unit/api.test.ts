@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
     getChatResponse,
@@ -55,7 +55,7 @@ describe("API Functions", () => {
         };
 
         it("should make a POST request to /chat with chat params", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue(mockApiResponse);
 
             const result = await getChatResponse(mockChatRequest);
@@ -74,7 +74,7 @@ describe("API Functions", () => {
         });
 
         it("should include all required chat parameters", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue(mockApiResponse);
 
             await getChatResponse(mockChatRequest);
@@ -89,7 +89,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Chat service unavailable");
             err.response = {
                 data: { message: "Chat service unavailable" },
@@ -124,8 +124,8 @@ describe("API Functions", () => {
             },
         ];
 
-        it("should make a GET request to /users/:userId/chats", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+        it("should make a GET request to /chats/:userId", async () => {
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: { chatSummarys: mockChatSummaries },
             });
@@ -134,14 +134,14 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `users/${mockUserId}/chats`,
+                url: `/chats/${mockUserId}`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatSummaries);
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Failed to fetch user chats");
             err.response = {
                 data: { message: "Failed to fetch user chats" },
@@ -162,7 +162,7 @@ describe("API Functions", () => {
         const mockTemplate = "test template content";
 
         it("should make a GET request to /template and return data", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: { template: mockTemplate },
             });
@@ -178,7 +178,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Template not found");
             err.response = {
                 data: { message: "Template not found" },
@@ -206,7 +206,7 @@ describe("API Functions", () => {
         };
 
         it("should make a POST request to /saveLocal and return data", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockSaveLocalResponse });
 
             const result = await saveTestLocal(mockSaveLocalRequest);
@@ -221,7 +221,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Failed to save test");
             err.response = {
                 data: { message: "Failed to save test" },
@@ -247,7 +247,7 @@ describe("API Functions", () => {
         const mockResult = "Container executed successfully";
 
         it("should make a POST request to /run and return data", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: { result: mockResult } });
 
             const result = await runContainer(mockParams);
@@ -262,7 +262,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Failed to run container");
             err.response = {
                 data: { message: "Failed to run container" },
@@ -279,7 +279,7 @@ describe("API Functions", () => {
         });
 
         it("should pass the correct params as request body", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: { result: mockResult } });
             const complexParams = {
                 userId: "user999",
@@ -324,7 +324,7 @@ describe("API Functions", () => {
         };
 
         it("should make a GET request to /users/:userId/chats/:chatId", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
             const result = await getChatById();
@@ -338,7 +338,7 @@ describe("API Functions", () => {
         });
 
         it("should use the current user and chat ids from shared state", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
             shared.user.id = "differentUser";
@@ -354,7 +354,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Chat not found");
             err.response = {
                 data: { message: "Chat not found" },
@@ -373,7 +373,7 @@ describe("API Functions", () => {
         const mockTestcaseId = "test123";
 
         it("should make a DELETE request to /deleteLocal with correct params", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: "Test deleted successfully",
             });
@@ -394,7 +394,7 @@ describe("API Functions", () => {
         });
 
         it("should use the current user and chat ids from shared state", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: "Test deleted" });
 
             shared.user.id = "user999";
@@ -415,7 +415,7 @@ describe("API Functions", () => {
         });
 
         it("should reject when the API call fails", async () => {
-            const mockedAxios = axios as unknown as vi.Mock;
+            const mockedAxios = axios as unknown as Mock;
             const err = new AxiosError("Failed to delete test");
             err.response = {
                 data: { message: "Failed to delete test" },
