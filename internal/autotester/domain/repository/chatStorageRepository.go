@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -168,7 +169,7 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 		return nil, err
 	}
 	if len(items) == 0 {
-		err := fmt.Errorf("no data found for key=%s generated from userId=%s and chatId=%s", key, userId, chatId)
+		err := sharedErrors.ErrChatNotFound
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no chat found for user and chat id")
 		return nil, err
