@@ -47,7 +47,7 @@ export async function getUserChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `/chats/${user.id}`,
+            url: `/users/${user.id}/chats`,
             baseURL: baseURL,
         });
         return response.data.chatSummarys;
