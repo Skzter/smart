@@ -38,7 +38,7 @@
     --sidebar-border: oklch(0.929 0.013 255.508);
     --sidebar-ring: oklch(0.704 0.04 256.788);
 
-    /* ===== Autotester Light Theme – Semantic Colors ===== */
+    /* ===== Ocean Modern Light Theme – Semantic Colors ===== */
 
     /* Primary */
     --color-primary-button: oklch(0.4460 0.1686 259.60);       /* #0a4daf */
@@ -127,6 +127,61 @@
     --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.551 0.027 264.364);
+
+    /* ===== Ocean Modern Dark Theme – Semantic Colors ===== */
+
+    /* Primary */
+    --color-primary-button: oklch(0.3667 0.1305 260.17);       
+    --color-primary-button-hover: oklch(0.3087 0.1036 259.38); 
+    --color-primary-active: oklch(0.2478 0.0789 260.26);       
+    --color-primary-active-hover: oklch(0.3087 0.1036 259.38); 
+
+    /* Secondary */
+    --color-secondary-field-passive:  oklch(0.3303 0.0596 240.51); 
+    --color-secondary-field-passive2: oklch(0.2892 0.0529 241.60); 
+
+    /* Neutral (Dark) */
+    --color-neutral-bg-side:  oklch(0.1889 0.0145 253.19); 
+    --color-neutral-bg-side2: oklch(0.2355 0.0170 248.55); 
+    --color-neutral-bg-side3: oklch(0.2767 0.0187 248.50); 
+    --color-neutral-bg-side4: oklch(0.3430 0.0243 248.54); 
+    --color-neutral-bg-side5: oklch(0.4033 0.0255 248.46); 
+
+    /* Accent */
+    --color-accent:  oklch(0.7908 0.1190 211.04); 
+    --color-accent2: oklch(0.3906 0.0485 222.58); 
+
+    /* Text */
+    --color-text-on-primary: oklch(1.0000 0.0000 89.88);  
+    --color-text-primary:    oklch(1.0000 0.0000 89.88);  
+    --color-text-secondary:  oklch(0.9288 0.0126 255.51); 
+    --color-text-tertiary:   oklch(0.7107 0.0351 256.79); 
+    --color-text-dark:       oklch(0.2077 0.0398 265.75); 
+    --color-text-muted:      oklch(0.5544 0.0407 257.42); 
+    --color-text-hover:      oklch(0.8755 0.0456 271.71); 
+
+    /* Error – gleich wie light, das ist okay */
+    --color-error-50:  oklch(0.9705 0.0129 17.38);
+    --color-error-100: oklch(0.9356 0.0309 17.72);
+    --color-error-200: oklch(0.8845 0.0593 18.33);
+    --color-error-600: oklch(0.5771 0.2152 27.33);
+    --color-error-700: oklch(0.5054 0.1905 27.52);
+    --color-error-800: oklch(0.4437 0.1613 26.90);
+    --color-error-900: oklch(0.3958 0.1331 25.72);
+
+    /* Warning (Dark) */
+    --color-warning-50:  oklch(0.2393 0.0378 72.62); 
+    --color-warning-100: oklch(0.2988 0.0469 75.81); 
+    --color-warning-200: oklch(0.3988 0.0659 79.82); 
+    --color-warning-600: oklch(0.7235 0.1402 81.13); 
+    --color-warning-800: oklch(0.8790 0.0988 90.41); 
+    --color-warning-900: oklch(0.6576 0.1181 81.16); 
+
+    /* Success  */
+    --color-success-50:  oklch(0.9819 0.0181 155.83);
+    --color-success-100: oklch(0.9624 0.0434 156.74);
+    --color-success-600: oklch(0.6271 0.1699 149.21);
+    --color-success-700: oklch(0.5273 0.1371 150.07);
 }
 
 @theme inline {
