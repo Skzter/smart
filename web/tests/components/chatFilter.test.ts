@@ -13,21 +13,21 @@ vi.mock("@lucide/svelte", () => ({
 }));
 
 vi.mock("$lib/components/ui/button/index.js", () => ({
-    Button: vi.fn((props: any) => ({
+    Button: vi.fn((props: Record<string, unknown>) => ({
         $$: {},
         ...props,
     })),
 }));
 
 vi.mock("$lib/components/ui/dropdown-menu/index.js", () => ({
-    Root: vi.fn((props: any) => ({ $$: {}, ...props })),
-    Trigger: vi.fn((props: any) => ({ $$: {}, ...props })),
-    Content: vi.fn((props: any) => ({ $$: {}, ...props })),
-    Group: vi.fn((props: any) => ({ $$: {}, ...props })),
-    Label: vi.fn((props: any) => ({ $$: {}, ...props })),
-    Separator: vi.fn((props: any) => ({ $$: {}, ...props })),
-    RadioGroup: vi.fn((props: any) => ({ $$: {}, ...props })),
-    RadioItem: vi.fn((props: any) => ({ $$: {}, ...props })),
+    Root: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Trigger: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Content: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Group: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Label: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Separator: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    RadioGroup: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    RadioItem: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
 }));
 
 describe("ChatFilter - Comprehensive Tests", () => {
@@ -512,7 +512,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
             const sortBy1 = shared.ChatFilter.sortBy;
             unmount1();
 
-            const { } = render(ChatFilter);
+            render(ChatFilter);
             await tick();
             const sortBy2 = shared.ChatFilter.sortBy;
 
