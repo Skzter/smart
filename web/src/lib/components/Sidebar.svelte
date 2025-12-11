@@ -3,44 +3,66 @@
     import Group from "./Group.svelte";
     import { getUserChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
-    import { ChatDate, user } from "$lib/shared.svelte";
+    import { ChatDate, ChatFilter, user } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
     import { toast } from "svelte-sonner";
     import type { DateRange } from "bits-ui";
+    import User from "./User.svelte";
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[] | undefined>(undefined);
 
-    let groupState = $derived(updateGroupsWithDateRange(items, ChatDate.Range));
+    let groupState = $derived(
+        updateGroupsWithDateRange(
+            items,
+            ChatDate.Range,
+            ChatFilter.sortBy,
+            ChatFilter.timeFilter,
+        ),
+    );
 
-    (async () => {
-        if (user.id == undefined) {
-            return;
-        }
-        try {
-            items = (await getUserChats()) as ApiChatSummary[];
-        } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
-            } else {
-                error = "Unbekannter Fehler";
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
+    $effect(() => {
+        if (!user.id) return;
+        (async () => {
+            try {
+                items = (await getUserChats()) as ApiChatSummary[];
+            } catch (err) {
+                if (err instanceof Error) {
+                    error = err.message;
+                    toast.error(error, {
+                        description: "Das war wohl nichts mit der Historie.",
+                    });
+                } else {
+                    error = "Unbekannter Fehler";
+                    toast.error(error, {
+                        description: "Das war wohl nichts mit der Historie.",
+                    });
+                }
             }
-        }
-    })();
+        })();
+    });
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
         dateRange: DateRange | undefined,
+        sortBy: "recent" | "created",
+        timeFilter: "all" | "today" | "week" | "month",
     ): { label: string; summaries: ApiChatSummary[] }[] {
         if (!items) return [];
+
+        let filteredItems = items.filter((item) => {
+            const time = new Date(Date.parse(item.updatedAt));
+            
+            if (!applyTimeFilter(time, timeFilter)) {
+                return false;
+            }
+            
+            return isWithinDateRange(time, dateRange);
+        });
+
+        filteredItems = sortItems(filteredItems, sortBy);
 
         const groups = new SvelteMap<string, ApiChatSummary[]>();
 
@@ -52,14 +74,10 @@
             }
         }
 
-        items.forEach((item) => {
+        filteredItems.forEach((item) => {
             const time = new Date(Date.parse(item.updatedAt));
-
-            // Check if item is within date range
-            if (isWithinDateRange(time, dateRange)) {
-                const category = categorizeByDate(time);
-                add(category, item);
-            }
+            const category = categorizeByDate(time);
+            add(category, item);
         });
 
         const result: { label: string; summaries: ApiChatSummary[] }[] = [];
@@ -68,6 +86,56 @@
         });
 
         return result;
+    }
+
+    function sortItems(
+        items: ApiChatSummary[],
+        sortBy: "recent" | "created",
+    ): ApiChatSummary[] {
+        return [...items].sort((a, b) => {
+            const dateA =
+                sortBy === "recent"
+                    ? new Date(a.updatedAt)
+                    : new Date(a.createdAt);
+            const dateB =
+                sortBy === "recent"
+                    ? new Date(b.updatedAt)
+                    : new Date(b.createdAt);
+            return dateB.getTime() - dateA.getTime();
+        });
+    }
+
+    function applyTimeFilter(
+        chatTime: Date,
+        timeFilter: "all" | "today" | "week" | "month",
+    ): boolean {
+        if (timeFilter === "all") return true;
+
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const chatDate = new Date(
+            chatTime.getFullYear(),
+            chatTime.getMonth(),
+            chatTime.getDate(),
+        );
+
+        if (timeFilter === "today") {
+            return chatDate.getTime() === today.getTime();
+        }
+
+        const daysDiff = Math.floor(
+            (today.getTime() - chatDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
+        if (timeFilter === "week") {
+            return daysDiff <= 7;
+        }
+
+        if (timeFilter === "month") {
+            return daysDiff <= 30;
+        }
+
+        return true;
     }
 
     function isWithinDateRange(
@@ -125,4 +193,7 @@
             {/each}
         {/if}
     </Sidebar.Content>
+    <Sidebar.Footer>
+        <User />
+    </Sidebar.Footer>
 </Sidebar.Root>
