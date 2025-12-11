@@ -16,26 +16,26 @@
 
     let groupState = $derived(updateGroupsWithDateRange(items, ChatDate.Range));
 
-    (async () => {
-        if (user.id == undefined) {
-            return;
-        }
-        try {
-            items = (await getUserChats()) as ApiChatSummary[];
-        } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
-            } else {
-                error = "Unbekannter Fehler";
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
+    $effect(() => {
+        if (!user.id) return;
+        (async () => {
+            try {
+                items = (await getUserChats()) as ApiChatSummary[];
+            } catch (err) {
+                if (err instanceof Error) {
+                    error = err.message;
+                    toast.error(error, {
+                        description: "Das war wohl nichts mit der Historie.",
+                    });
+                } else {
+                    error = "Unbekannter Fehler";
+                    toast.error(error, {
+                        description: "Das war wohl nichts mit der Historie.",
+                    });
+                }
             }
-        }
-    })();
+        })();
+    });
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
