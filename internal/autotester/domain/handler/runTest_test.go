@@ -8,6 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
@@ -19,6 +23,7 @@ import (
 func TestHandleRunContainer(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type mockSetupFunc func(
 		mockLocalStorageServ *mocks.MockTestcaseLocalStorageService,
@@ -184,8 +189,15 @@ func TestHandleRunContainer(t *testing.T) {
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatManger := mocks.NewMockChatManager(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+			// Setup metrics mock to accept any calls
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 			if test.MockSetup != nil {
 				test.MockSetup(mockLocalStorageServ, mockRemoteStorageServ, mockDockerServ)
@@ -201,7 +213,19 @@ func TestHandleRunContainer(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManger)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}
