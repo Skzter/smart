@@ -322,8 +322,7 @@ build_autotester_run_container:
         .
     - docker push $IMAGE_TAG
   rules:
-    - changes:
-        - build/auto-playwright/Dockerfile
+    - when: manual
 
 deploy_htwk:
   image:
