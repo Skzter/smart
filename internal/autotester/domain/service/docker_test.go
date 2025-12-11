@@ -12,9 +12,8 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	autoRepoMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 )
 
 func TestNewDocker(t *testing.T) {
@@ -25,7 +24,6 @@ func TestNewDocker(t *testing.T) {
 		name    string
 		logger  *slog.Logger
 		config  *config.Config
-		fs      repository.LogFileSystem
 		client  DockerClient
 		wantErr bool
 	}{
@@ -33,7 +31,6 @@ func TestNewDocker(t *testing.T) {
 			name:    "success",
 			logger:  logger,
 			config:  cfg,
-			fs:      autoRepoMocks.NewMockFileSystem(t),
 			client:  mocks.NewMockDockerClient(t),
 			wantErr: false,
 		},
@@ -41,7 +38,6 @@ func TestNewDocker(t *testing.T) {
 			name:    "error - nil arguments",
 			logger:  nil,
 			config:  nil,
-			fs:      nil,
 			client:  nil,
 			wantErr: true,
 		},
@@ -49,7 +45,7 @@ func TestNewDocker(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			srv, err := NewDocker(tc.logger, tc.config, tc.fs, tc.client)
+			srv, err := NewDocker(tc.logger, tc.config, tc.client)
 
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -61,10 +57,10 @@ func TestNewDocker(t *testing.T) {
 		})
 	}
 }
+
 func TestRunTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
-	fs := autoRepoMocks.NewMockFileSystem(t)
 
 	tests := []struct {
 		name       string
@@ -115,13 +111,16 @@ func TestRunTest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockClient := mocks.NewMockDockerClient(t)
 
+			// mock ContainerCreate
 			if tc.createResp != nil {
 				mockClient.On("ContainerCreate",
-					mock.Anything, mock.Anything, mock.Anything,
+					mock.Anything,
+					mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything,
 				).Return(tc.createResp...)
 			}
 
+			// mock ContainerStart
 			if tc.startResp != nil {
 				mockClient.On("ContainerStart",
 					mock.Anything, "123", mock.Anything,
@@ -131,12 +130,11 @@ func TestRunTest(t *testing.T) {
 			d := &docker{
 				logger:           logger,
 				config:           cfg,
-				filesystem:       fs,
 				client:           mockClient,
-				testContainerMap: make(map[string]string),
+				testContainerMap: make(map[string]entity.ContainerInfo),
 			}
 
-			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID)
+			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "sessionY")
 
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -144,22 +142,23 @@ func TestRunTest(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, "123", id)
-				assert.Equal(t, "123", d.testContainerMap[tc.testID])
+
+				info, ok := d.testContainerMap[tc.testID]
+				assert.True(t, ok)
+				assert.Equal(t, "123", info.ContainerID)
+				assert.Equal(t, "userX", info.UserID)
+				assert.Equal(t, "sessionY", info.SessionID)
 			}
 		})
 	}
 }
+
 func TestAttachToContainer(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
 
-	mockFilesystem := autoRepoMocks.NewMockFileSystem(t)
 	mockClient := mocks.NewMockDockerClient(t)
-
-	expectedValue := types.HijackedResponse{
-		Conn:   nil,
-		Reader: nil,
-	}
+	expectedValue := types.HijackedResponse{}
 
 	mockClient.On("ContainerAttach",
 		mock.Anything, "123", mock.Anything,
@@ -168,31 +167,24 @@ func TestAttachToContainer(t *testing.T) {
 	d := &docker{
 		logger:           logger,
 		config:           cfg,
-		filesystem:       mockFilesystem,
 		client:           mockClient,
-		testContainerMap: make(map[string]string),
+		testContainerMap: make(map[string]entity.ContainerInfo),
 	}
 
 	resp, err := d.AttachToContainer(context.Background(), "123")
 
-	// === Assertions ===
 	assert.NoError(t, err)
-
 	assert.Equal(t, expectedValue, *resp)
 }
 
 func TestWaitContainer(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
-
-	mockFilesystem := autoRepoMocks.NewMockFileSystem(t)
 	mockClient := mocks.NewMockDockerClient(t)
 
-	// echte Channels
 	status := make(chan container.WaitResponse)
 	errs := make(chan error)
 
-	// cast zu receive-only (GENAU das erwartet mockery)
 	statusCh := (<-chan container.WaitResponse)(status)
 	errCh := (<-chan error)(errs)
 
@@ -203,30 +195,27 @@ func TestWaitContainer(t *testing.T) {
 	d := &docker{
 		logger:           logger,
 		config:           cfg,
-		filesystem:       mockFilesystem,
 		client:           mockClient,
-		testContainerMap: make(map[string]string),
+		testContainerMap: make(map[string]entity.ContainerInfo),
 	}
 
 	s, e := d.WaitContainer(context.Background(), "123")
 
-	assert.NotNil(t, s)
-	assert.NotNil(t, e)
-
-	// optional: pointer compare
 	assert.Equal(t, statusCh, s)
 	assert.Equal(t, errCh, e)
 }
 
-func TestGetContainerID(t *testing.T) {
+func TestGetContainerInfo(t *testing.T) {
 	d := &docker{
-		testContainerMap: map[string]string{"t1": "cid123"},
+		testContainerMap: map[string]entity.ContainerInfo{
+			"t1": {ContainerID: "cid1", UserID: "u1", SessionID: "s1"},
+		},
 	}
 
-	id, found := d.GetContainerID("t1")
+	info, found := d.GetContainerInfo("t1")
 	assert.True(t, found)
-	assert.Equal(t, "cid123", id)
+	assert.Equal(t, "cid1", info.ContainerID)
 
-	_, found = d.GetContainerID("missing")
+	_, found = d.GetContainerInfo("missing")
 	assert.False(t, found)
 }

@@ -15,19 +15,15 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 )
-
-//nolint:gochecknoglobals // test helper
-var PipeOverrideDefault = io.Pipe
-
-//nolint:gochecknoglobals // test helper
-var StdCopyOverrideDefault = stdcopy.StdCopy
 
 type fakeConn struct{}
 
@@ -64,14 +60,15 @@ func TestHandleLogRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cfg, _ := config.LoadConfig()
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type testCase struct {
 		Name            string
-		SetupMocks      func(d *mocks.MockDocker)
-		PipeOverride    func()
-		StdCopyOverride func()
-		CloseOverride   func()
+		Setup           func(d *mocks.MockDocker)
+		PipeOverride    func() func() // returns restore function
+		StdcopyOverride func() func()
+		CloseOverride   func() func()
 		ExpectedStatus  int
 		ExpectedBody    []string
 	}
@@ -79,60 +76,49 @@ func TestHandleLogRequest(t *testing.T) {
 	tests := []testCase{
 		{
 			Name: "Container not found",
-			SetupMocks: func(d *mocks.MockDocker) {
-				d.On("GetContainerID", "abc").
-					Return("", false).
-					Once()
+			Setup: func(d *mocks.MockDocker) {
+				d.On("GetContainerInfo", "abc").Return(entity.ContainerInfo{}, false)
 			},
 			ExpectedStatus: http.StatusNotFound,
-			ExpectedBody:   []string{`Container not found`},
+			ExpectedBody:   []string{"Container not found"},
 		},
 		{
 			Name: "Attach fails",
-			SetupMocks: func(d *mocks.MockDocker) {
-				d.On("GetContainerID", "abc").
-					Return("cid123", true).
-					Once()
-
+			Setup: func(d *mocks.MockDocker) {
+				info := entity.ContainerInfo{ContainerID: "cid123"}
+				d.On("GetContainerInfo", "abc").Return(info, true)
 				d.On("AttachToContainer", mock.Anything, "cid123").
-					Return((*types.HijackedResponse)(nil), io.ErrUnexpectedEOF).
-					Once()
+					Return((*types.HijackedResponse)(nil), io.ErrUnexpectedEOF)
 			},
 			ExpectedStatus: http.StatusInternalServerError,
-			ExpectedBody:   []string{`Failed to attach`},
+			ExpectedBody:   []string{"Failed to attach"},
 		},
 		{
-			Name: "Full pipeline: stdcopy error + container error",
-			SetupMocks: func(d *mocks.MockDocker) {
-				d.On("GetContainerID", "abc").
-					Return("cid123", true).
-					Once()
+			Name: "Full pipeline: stdcopy + container error",
+			Setup: func(d *mocks.MockDocker) {
+				info := entity.ContainerInfo{ContainerID: "cid123"}
+				d.On("GetContainerInfo", "abc").Return(info, true)
 
 				d.On("AttachToContainer", mock.Anything, "cid123").
 					Return(&types.HijackedResponse{
 						Reader: bufio.NewReader(strings.NewReader("dummy")),
 						Conn:   fakeConn{},
-					}, nil).Once()
+					}, nil)
 
 				statusCh := make(chan container.WaitResponse, 1)
 				errCh := make(chan error, 1)
-
 				errCh <- errors.New("container boom")
 
-				var statusRecv <-chan container.WaitResponse = statusCh
-				var errRecv <-chan error = errCh
-
 				d.On("WaitContainer", mock.Anything, "cid123").
-					Return(statusRecv, errRecv).
-					Once()
+					Return((<-chan container.WaitResponse)(statusCh),
+						(<-chan error)(errCh))
 			},
-			PipeOverride: func() {
-				PipeFactory = PipeOverrideDefault
-			},
-			StdCopyOverride: func() {
+			StdcopyOverride: func() func() {
+				orig := StdcopyFunc
 				StdcopyFunc = func(_, _ io.Writer, _ io.Reader) (int64, error) {
-					return 0, errors.New("stdcopy boom")
+					return 0, errors.New("stdcopy fail")
 				}
+				return func() { StdcopyFunc = orig }
 			},
 			ExpectedStatus: http.StatusOK,
 			ExpectedBody: []string{
@@ -144,25 +130,41 @@ func TestHandleLogRequest(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests { //nolint:funlen // table-driven test is allowed
-		t.Run(test.Name, func(t *testing.T) {
-			PipeFactory = PipeOverrideDefault
-			StdcopyFunc = StdCopyOverrideDefault
-			CloseFunc = func(c io.Closer) error { return c.Close() }
+	// controller deps
+	mockGen := mocks.NewMockGeneratePrompt(t)
+	mockVal := mocks.NewMockValidator(t)
+	mockLocal := mocks.NewMockTestcaseLocalStorageService(t)
+	mockChat := mocks.NewMockChatStorageService(t)
+	mockRemote := mocks.NewMockTestcaseStorageService(t)
+	mockChatManager := mocks.NewMockChatManager(t)
+	mockMetrics := sharedMocks.NewMockMetricsService(t)
+
+	mockMetrics.On("IncRequestSuccess").Return().Maybe()
+	mockMetrics.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetrics.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+
+	for _, tc := range tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			restorePipe := func() {}
+			restoreCopy := func() {}
+			restoreClose := func() {}
+
+			if tc.PipeOverride != nil {
+				restorePipe = tc.PipeOverride()
+			}
+			if tc.StdcopyOverride != nil {
+				restoreCopy = tc.StdcopyOverride()
+			}
+			if tc.CloseOverride != nil {
+				restoreClose = tc.CloseOverride()
+			}
+
+			defer restorePipe()
+			defer restoreCopy()
+			defer restoreClose()
 
 			mockDocker := mocks.NewMockDocker(t)
-
-			if test.PipeOverride != nil {
-				test.PipeOverride()
-			}
-			if test.StdCopyOverride != nil {
-				test.StdCopyOverride()
-			}
-			if test.CloseOverride != nil {
-				test.CloseOverride()
-			}
-
-			test.SetupMocks(mockDocker)
+			tc.Setup(mockDocker)
 
 			rec := newCloseNotifyRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
@@ -171,26 +173,28 @@ func TestHandleLogRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Params = gin.Params{{Key: "testId", Value: "abc"}}
 
-			controller, _ := NewAutotesterController(
+			controller, err := NewAutotesterController(
 				logger, cfg,
-				mocks.NewMockValidator(t),
-				mocks.NewMockGeneratePrompt(t),
-				mocks.NewMockTestcaseLocalStorageService(t),
-				mockDocker,
-				mocks.NewMockChatStorageService(t),
-				mocks.NewMockTestcaseStorageService(t),
-				mocks.NewMockChatManager(t),
+				mockVal, mockGen,
+				mockLocal, mockDocker,
+				mockChat, mockRemote,
+				mockChatManager,
+				tracer,
+				mockMetrics,
 			)
+			if err != nil {
+				t.Fatalf("controller init failed: %v", err)
+			}
 
 			controller.HandleLogRequest(ctx)
 
-			if rec.Code != test.ExpectedStatus {
-				t.Fatalf("expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			if rec.Code != tc.ExpectedStatus {
+				t.Fatalf("expected %d got %d", tc.ExpectedStatus, rec.Code)
 			}
 
 			body := rec.Body.String()
-			for _, expect := range test.ExpectedBody {
-				if expect != "" && !strings.Contains(body, expect) {
+			for _, expect := range tc.ExpectedBody {
+				if !strings.Contains(body, expect) {
 					t.Fatalf("expected body to contain %q\nactual:\n%s", expect, body)
 				}
 			}

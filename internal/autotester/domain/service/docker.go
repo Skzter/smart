@@ -13,34 +13,26 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// Docker handles the execution of tests and reading of the log files
+// Docker interface
 type Docker interface {
-	// RunTest starts a container and returns the containerID
-	RunTest(ctx context.Context, filename string, testID string) (string, error)
-
-	// AttachToContainer attaches to an already running container
+	RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error)
 	AttachToContainer(ctx context.Context, containerID string) (*types.HijackedResponse, error)
-
-	// WaitContainer waits for a container to finish
 	WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error)
-
-	// GetContainerID retrieves the containerID for a testID
-	GetContainerID(testID string) (string, bool)
+	GetContainerInfo(testID string) (entity.ContainerInfo, bool)
 }
 
-// SSEvent represents a server-sent event with a type and message.
-// It is used to communicate events or messages between different parts of the system.
+// SSEvent for streaming logs
 type SSEvent struct {
 	Type    string
 	Message string
 }
 
-// DockerClient is an Interface to interact with a docker client
+// DockerClient interacts with Docker
 type DockerClient interface {
 	// nolint:lll
 	ContainerCreate(ctx context.Context,
@@ -75,27 +67,25 @@ type DockerClient interface {
 type docker struct {
 	logger           *slog.Logger
 	config           *config.Config
-	filesystem       repository.LogFileSystem
 	client           DockerClient
-	testContainerMap map[string]string
+	testContainerMap map[string]entity.ContainerInfo
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config, filesystem repository.LogFileSystem, client DockerClient) (Docker, error) {
-	if err := assert.NotNil(logger, config, filesystem); err != nil {
+func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient) (Docker, error) {
+	if err := assert.NotNil(logger, config); err != nil {
 		return nil, err
 	}
 	return &docker{
 		logger:           logger,
 		config:           config,
-		filesystem:       filesystem,
 		client:           client,
-		testContainerMap: make(map[string]string),
+		testContainerMap: make(map[string]entity.ContainerInfo),
 	}, nil
 }
 
 // RunTest creates and starts a container for running tests
-func (d *docker) RunTest(ctx context.Context, filename string, testID string) (string, error) {
+func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error) {
 	basefile := path.Base(filename)
 
 	containerConfig := &container.Config{
@@ -130,13 +120,17 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID string) (s
 		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 
-	d.testContainerMap[testID] = resp.ID
+	d.testContainerMap[testID] = entity.ContainerInfo{
+		ContainerID: resp.ID,
+		UserID:      userID,
+		SessionID:   sessionID,
+	}
+
 	d.logger.Debug("Container created",
 		slog.String("containerID", resp.ID),
 		slog.String("testID", testID),
 	)
 
-	// Container starten
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
 	}
@@ -161,19 +155,15 @@ func (d *docker) AttachToContainer(ctx context.Context, containerID string) (*ty
 		return &types.HijackedResponse{}, fmt.Errorf("failed to attach to container: %w", err)
 	}
 
-	d.logger.Debug("Attached to container",
-		slog.String("containerID", containerID),
-	)
-
+	d.logger.Debug("Attached to container", slog.String("containerID", containerID))
 	return &attachResp, nil
 }
 
 func (d *docker) WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error) {
-	statusCh, errCh := d.client.ContainerWait(ctx, containerID, container.WaitConditionNotRunning)
-	return statusCh, errCh
+	return d.client.ContainerWait(ctx, containerID, container.WaitConditionNotRunning)
 }
 
-func (d *docker) GetContainerID(testID string) (string, bool) {
-	id, found := d.testContainerMap[testID]
-	return id, found
+func (d *docker) GetContainerInfo(testID string) (entity.ContainerInfo, bool) {
+	info, ok := d.testContainerMap[testID]
+	return info, ok
 }

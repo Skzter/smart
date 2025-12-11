@@ -163,69 +163,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+                
   /api/v1/run:
-    post:
-      summary: Run automated Playwright test in container
-      description: Executes a Playwright test file in a containerized environment and returns the test output logs
-      tags:
-        - Autotester
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - userId
-                - testId
-                - sessionId
-              properties:
-                userId:
-                  type: string
-                  description: Unique identifier of the user
-                  example: "user123"
-                testId:
-                  type: string
-                  description: Unique identifier of the test to run
-                  example: "test456"
-                sessionId:
-                  type: string
-                  description: Unique identifier of the session
-                  example: "session789"
-      responses:
-        '200':
-          description: Test executed successfully
+      post:
+        summary: Run automated Playwright test in container
+        description: Executes a Playwright test file in a containerized environment and returns the test output logs
+        tags:
+          - Autotester
+        requestBody:
+          required: true
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - userId
+                  - testId
+                  - sessionId
                 properties:
-                  result:
+                  userId:
                     type: string
-                    description: Test execution output logs
-                    example: "Test passed: All assertions successful"
-        '400':
-          description: Bad request - Invalid input or missing required parameters
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
+                    description: Unique identifier of the user
+                    example: "user123"
+                  testId:
                     type: string
-                    description: Error message describing the issue
-                    example: "Missing required parameters"
-        '500':
-          description: Internal server error - Command execution or file reading failed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
+                    description: Unique identifier of the test to run
+                    example: "test456"
+                  sessionId:
                     type: string
-                    description: Error message describing the internal error
-                    example: "Command execution error: exit status 1"
+                    description: Unique identifier of the session
+                    example: "session789"
+        responses:
+          '200':
+            description: Test executed successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    result:
+                      type: string
+                      description: Test execution output logs
+                      example: "Test passed: All assertions successful"
+          '400':
+            description: Bad request - Invalid input or missing required parameters
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      description: Error message describing the issue
+                      example: "Missing required parameters"
+          '500':
+            description: Internal server error - Command execution or file reading failed
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      description: Error message describing the internal error
+                      example: "Command execution error: exit status 1"
+                      
   /api/v1/chats/{UserID}:
     get:
       summary: "Returns the chat history for a specific user"
@@ -275,6 +277,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/v1/tests:
+    get:
+      summary: Retrieve stored test cases with optional filters
+      description: >
+        Returns test cases belonging to the specified user. Additional optional
+        query parameters can be used to filter for specific test cases, conversations,
+        or by creation timestamps.
+      parameters:
+        - name: author
+          in: query
+          schema:
+            type: string
+          description:  >
+            Optional: Filters results by a specific user ID. 
+            Can be combined with other filters. 
+          example: "687385280dca20b77cfdcf74"
+
+        - name: testcaseId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: >
+            Optional: Filters results by a specific test case ID. 
+            Can be combined with other filters. 
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+
+        - name: createdAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly after the provided
+            ISO 8601 timestamp. Can be combined with `createdBefore` to define
+            a date range.
+          example: "2025-01-01T00:00:00Z"
+
+        - name: createdBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly before the provided
+            ISO 8601 timestamp. Can be combined with `createdAfter` to define
+            a date range.
+          example: "2025-12-31T23:59:59Z"
+
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 50
+          description: >
+            Optional: Limits the maximum number of returned test cases.
+            Default is 50.
+          example: 50
+
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: >
+            Optional: Number of results to skip before returning data.
+            Default is 0.
+          example: 0
+            
+      responses:
+        '200':
+          description: Successfully returned the filtered testcase metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                   $ref: '#/components/schemas/TestcaseMetadata'
+
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
 
 components:
   schemas:
@@ -457,3 +558,33 @@ components:
         messageCount:
           type: integer
           example: 14
+
+    TestcaseMetadata:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
+          example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
+        testcaseId:
+          type: string
+          format: uuid
+          description: "UUID of the testcase."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        author:
+          type: string
+          format: uuid
+          description: "UUID of the user who created the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        created:
+          type: string
+          description: "Creation timestamp as Unix time."
+          example: "1701456000"
+        updated:
+          type: string
+          description: "Last update timestamp as Unix time."
+          example: "1701460000"
+        name:
+          type: string
+          description: "Descriptive name of the test case."
+          example: "Login form test"

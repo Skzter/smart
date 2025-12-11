@@ -30,6 +30,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 	}
 
 	router.GET("/auth_config.json", func(c *gin.Context) {

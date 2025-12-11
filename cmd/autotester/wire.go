@@ -34,7 +34,6 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
 		FileSystemProvider,
-		LogFileSystemProvider,
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -53,6 +52,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		repository.NewChatStorageRepository,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
+		MetricsServiceProvider,
 	)
 
 	return nil, nil
@@ -107,11 +107,6 @@ func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
-// LogFileSystemProvider provides a filesystem for logs
-func LogFileSystemProvider(cfg *config.Config) (repository.LogFileSystem, error) {
-	return repository.NewLogFileSystem(cfg.LogDirAutopw)
-}
-
 func DockerClientProvider() (service.DockerClient, error) {
 	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
@@ -128,4 +123,8 @@ func TestCaseStorageRepositoryProvider(
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
+}
+
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("autotester", logger)
 }

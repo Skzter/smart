@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gin-gonic/gin"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 )
 
@@ -50,16 +51,17 @@ func safeSend(ch chan<- service.SSEvent, ev service.SSEvent) (err error) {
 }
 
 // HandleLogRequest handles the log streaming request for a specific test container.
+// nolint: funlen
 func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 	testID := c.Param("testId")
 
-	containerID, containerIDExists := a.dockerService.GetContainerID(testID)
+	containerInfo, containerIDExists := a.dockerService.GetContainerInfo(testID)
 	if !containerIDExists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Container not found - test may not be running"})
 		return
 	}
 
-	attachResp, err := a.dockerService.AttachToContainer(c, containerID)
+	attachResp, err := a.dockerService.AttachToContainer(c, containerInfo.ContainerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to attach to container"})
 		return
@@ -117,8 +119,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 		}
 	}()
 
-	// Container status channels
-	statusCh, errCh := a.dockerService.WaitContainer(c.Request.Context(), containerID)
+	statusCh, errCh := a.dockerService.WaitContainer(c.Request.Context(), containerInfo.ContainerID)
 
 	c.Stream(func(w io.Writer) bool {
 		select {
@@ -131,6 +132,26 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 
 		case status := <-statusCh:
 			c.SSEvent("status", status)
+
+			if status.StatusCode == 0 {
+				code, err := a.localTestcaseStorageService.Read(testID, containerInfo.UserID, containerInfo.SessionID)
+				if err != nil {
+					a.logger.Error("failed to read local test file: " + err.Error())
+				} else {
+					test := &entity.TestCase{
+						TestID: testID,
+						TestCode: entity.TestCode{
+							Code: code,
+						},
+						Status: entity.TestStatusPassed,
+					}
+
+					if _, err := a.remoteTestcaseStorageService.SaveTestcase(c, test, containerInfo.UserID); err != nil {
+						a.logger.Error("failed to save testcase remotely: " + err.Error())
+					}
+				}
+			}
+
 			c.SSEvent("finished", "container exited")
 			return false
 

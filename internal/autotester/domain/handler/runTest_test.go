@@ -8,9 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
@@ -18,11 +23,13 @@ import (
 func TestHandleRunContainer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type mockSetupFunc func(
-		mockLocalStorageServ *mocks.MockTestcaseLocalStorageService,
-		mockDockerServ *mocks.MockDocker,
+		local *mocks.MockTestcaseLocalStorageService,
+		docker *mocks.MockDocker,
 	)
 
 	tests := []struct {
@@ -44,8 +51,14 @@ func TestHandleRunContainer(t *testing.T) {
 			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
 				local.On("GetTestPath", "test456", "user123", "session789").
 					Return("/tmp/session789.ts", nil)
-				docker.On("RunTest", mock.Anything, "/tmp/session789.ts", "test456").
-					Return("container-id", nil)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/session789.ts",
+					"test456",
+					"user123",
+					"session789",
+				).Return("container-id", nil)
 			},
 		},
 		{
@@ -55,7 +68,7 @@ func TestHandleRunContainer(t *testing.T) {
 			ExpectedBody:   `{"message":"Bad Request"}`,
 		},
 		{
-			TestName: "Missing userId field",
+			TestName: "Missing required fields",
 			RequestBody: `{
 				"testId": "test456",
 				"sessionId": "session789"
@@ -89,47 +102,73 @@ func TestHandleRunContainer(t *testing.T) {
 			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
 				local.On("GetTestPath", "test456", "user123", "session789").
 					Return("/tmp/test.spec.ts", nil)
-				docker.On("RunTest", mock.Anything, "/tmp/test.spec.ts", "test456").
-					Return("", errors.New("running error"))
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/test.spec.ts",
+					"test456",
+					"user123",
+					"session789",
+				).Return("", errors.New("running error"))
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.TestName, func(t *testing.T) {
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 
 			if test.MockSetup != nil {
 				test.MockSetup(mockLocalStorageServ, mockDockerServ)
 			}
 
-			req, _ := http.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			// Controller korrekt initialisieren
-			controller := &AutotesterController{
-				logger:                      logger,
-				localTestcaseStorageService: mockLocalStorageServ,
-				dockerService:               mockDockerServ,
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				tracer,
+				mockMetricsServ,
+			)
+			if err != nil {
+				t.Fatalf("Controller build failed: %v", err)
 			}
 
-			// Handler aufrufen
 			controller.HandleRunContainer(ctx)
 
 			if rec.Code != test.ExpectedStatus {
-				t.Errorf("Expected status %d, got %d. Response: %s", test.ExpectedStatus, rec.Code, rec.Body.String())
+				t.Errorf("Expected status %d, got %d. Body: %s",
+					test.ExpectedStatus, rec.Code, rec.Body.String())
 			}
 
 			if rec.Body.String() != test.ExpectedBody {
-				t.Errorf("Expected body %s, got %s", test.ExpectedBody, rec.Body.String())
+				t.Errorf("Expected body %s, got %s",
+					test.ExpectedBody, rec.Body.String())
 			}
 
-			// Erwartungen der Mocks prüfen
 			mockLocalStorageServ.AssertExpectations(t)
 			mockDockerServ.AssertExpectations(t)
 		})
