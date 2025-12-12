@@ -109,22 +109,24 @@ func (_c *MockDocker_AttachToContainer_Call) RunAndReturn(run func(ctx context.C
 }
 
 // GetContainerInfo provides a mock function for the type MockDocker
-func (_mock *MockDocker) GetContainerInfo(testID string) (entity.ContainerInfo, bool) {
+func (_mock *MockDocker) GetContainerInfo(testID string) (*entity.ContainerInfo, bool) {
 	ret := _mock.Called(testID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetContainerInfo")
 	}
 
-	var r0 entity.ContainerInfo
+	var r0 *entity.ContainerInfo
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (entity.ContainerInfo, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*entity.ContainerInfo, bool)); ok {
 		return returnFunc(testID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) entity.ContainerInfo); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *entity.ContainerInfo); ok {
 		r0 = returnFunc(testID)
 	} else {
-		r0 = ret.Get(0).(entity.ContainerInfo)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.ContainerInfo)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
 		r1 = returnFunc(testID)
@@ -158,12 +160,12 @@ func (_c *MockDocker_GetContainerInfo_Call) Run(run func(testID string)) *MockDo
 	return _c
 }
 
-func (_c *MockDocker_GetContainerInfo_Call) Return(containerInfo entity.ContainerInfo, b bool) *MockDocker_GetContainerInfo_Call {
+func (_c *MockDocker_GetContainerInfo_Call) Return(containerInfo *entity.ContainerInfo, b bool) *MockDocker_GetContainerInfo_Call {
 	_c.Call.Return(containerInfo, b)
 	return _c
 }
 
-func (_c *MockDocker_GetContainerInfo_Call) RunAndReturn(run func(testID string) (entity.ContainerInfo, bool)) *MockDocker_GetContainerInfo_Call {
+func (_c *MockDocker_GetContainerInfo_Call) RunAndReturn(run func(testID string) (*entity.ContainerInfo, bool)) *MockDocker_GetContainerInfo_Call {
 	_c.Call.Return(run)
 	return _c
 }

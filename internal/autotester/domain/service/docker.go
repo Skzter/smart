@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -23,13 +24,7 @@ type Docker interface {
 	RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error)
 	AttachToContainer(ctx context.Context, containerID string) (*types.HijackedResponse, error)
 	WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error)
-	GetContainerInfo(testID string) (entity.ContainerInfo, bool)
-}
-
-// SSEvent for streaming logs
-type SSEvent struct {
-	Type    string
-	Message string
+	GetContainerInfo(testID string) (*entity.ContainerInfo, bool)
 }
 
 // DockerClient interacts with Docker
@@ -68,11 +63,12 @@ type docker struct {
 	logger           *slog.Logger
 	config           *config.Config
 	client           DockerClient
-	testContainerMap map[string]entity.ContainerInfo
+	testContainerMap map[string]*entity.ContainerInfo
+	tracer           trace.Tracer
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient) (Docker, error) {
+func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient, tracer trace.Tracer) (Docker, error) {
 	if err := assert.NotNil(logger, config); err != nil {
 		return nil, err
 	}
@@ -80,13 +76,17 @@ func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient) 
 		logger:           logger,
 		config:           config,
 		client:           client,
-		testContainerMap: make(map[string]entity.ContainerInfo),
+		testContainerMap: make(map[string]*entity.ContainerInfo),
+		tracer:           tracer,
 	}, nil
 }
 
 // RunTest creates and starts a container for running tests
 func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error) {
 	basefile := path.Base(filename)
+
+	ctx, span := d.tracer.Start(ctx, "docker.RunTest")
+	defer span.End()
 
 	containerConfig := &container.Config{
 		Image: "gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest",
@@ -98,9 +98,6 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 		},
 		AttachStdout: true,
 		AttachStderr: true,
-		AttachStdin:  false,
-		OpenStdin:    false,
-		Tty:          false,
 	}
 
 	hostConfig := &container.HostConfig{
@@ -120,10 +117,8 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 
-	d.testContainerMap[testID] = entity.ContainerInfo{
-		ContainerID: resp.ID,
-		UserID:      userID,
-		SessionID:   sessionID,
+	if resp.ID == "" {
+		return "", fmt.Errorf("container created without ID")
 	}
 
 	d.logger.Debug("Container created",
@@ -133,6 +128,12 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", fmt.Errorf("failed to start container: %w", err)
+	}
+
+	d.testContainerMap[testID] = &entity.ContainerInfo{
+		ContainerID: resp.ID,
+		UserID:      userID,
+		SessionID:   sessionID,
 	}
 
 	d.logger.Debug("Container started",
@@ -163,7 +164,7 @@ func (d *docker) WaitContainer(ctx context.Context, containerID string) (<-chan 
 	return d.client.ContainerWait(ctx, containerID, container.WaitConditionNotRunning)
 }
 
-func (d *docker) GetContainerInfo(testID string) (entity.ContainerInfo, bool) {
+func (d *docker) GetContainerInfo(testID string) (*entity.ContainerInfo, bool) {
 	info, ok := d.testContainerMap[testID]
 	return info, ok
 }

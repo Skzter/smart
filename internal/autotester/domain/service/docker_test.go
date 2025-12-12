@@ -10,6 +10,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -19,6 +20,7 @@ import (
 func TestNewDocker(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -45,7 +47,7 @@ func TestNewDocker(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			srv, err := NewDocker(tc.logger, tc.config, tc.client)
+			srv, err := NewDocker(tc.logger, tc.config, tc.client, tracer)
 
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -61,6 +63,7 @@ func TestNewDocker(t *testing.T) {
 func TestRunTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name       string
@@ -131,7 +134,8 @@ func TestRunTest(t *testing.T) {
 				logger:           logger,
 				config:           cfg,
 				client:           mockClient,
-				testContainerMap: make(map[string]entity.ContainerInfo),
+				testContainerMap: make(map[string]*entity.ContainerInfo),
+				tracer:           tracer,
 			}
 
 			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "sessionY")
@@ -168,7 +172,7 @@ func TestAttachToContainer(t *testing.T) {
 		logger:           logger,
 		config:           cfg,
 		client:           mockClient,
-		testContainerMap: make(map[string]entity.ContainerInfo),
+		testContainerMap: make(map[string]*entity.ContainerInfo),
 	}
 
 	resp, err := d.AttachToContainer(context.Background(), "123")
@@ -196,7 +200,7 @@ func TestWaitContainer(t *testing.T) {
 		logger:           logger,
 		config:           cfg,
 		client:           mockClient,
-		testContainerMap: make(map[string]entity.ContainerInfo),
+		testContainerMap: make(map[string]*entity.ContainerInfo),
 	}
 
 	s, e := d.WaitContainer(context.Background(), "123")
@@ -207,7 +211,7 @@ func TestWaitContainer(t *testing.T) {
 
 func TestGetContainerInfo(t *testing.T) {
 	d := &docker{
-		testContainerMap: map[string]entity.ContainerInfo{
+		testContainerMap: map[string]*entity.ContainerInfo{
 			"t1": {ContainerID: "cid1", UserID: "u1", SessionID: "s1"},
 		},
 	}

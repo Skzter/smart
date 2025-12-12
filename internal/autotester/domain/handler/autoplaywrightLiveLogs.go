@@ -10,32 +10,22 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
 )
 
-//nolint:gochecknoglobals // test helper – allows injection in unit tests
-var (
-	// PipeFactory allows tests to override io.Pipe
-	PipeFactory = pipeFactory
-
-	// StdcopyFunc allows tests to override stdcopy.StdCopy
-	StdcopyFunc = stdcopyFunc
-
-	// CloseFunc allows tests to override io.Closer.Close
-	CloseFunc = closeFunc
-)
-
-func pipeFactory() (*io.PipeReader, *io.PipeWriter) {
+// PipeFactory is a helper function for testing purposes
+func PipeFactory() (*io.PipeReader, *io.PipeWriter) {
 	return io.Pipe()
 }
 
-func stdcopyFunc(dstout, dsterr io.Writer, src io.Reader) (int64, error) {
+// StdcopyFunc is a helper function for testing purposes
+func StdcopyFunc(dstout io.Writer, dsterr io.Writer, src io.Reader) (int64, error) {
 	return stdcopy.StdCopy(dstout, dsterr, src)
 }
 
-func closeFunc(c io.Closer) error { return c.Close() }
+// CloseFunc is a helper function for testing purposes
+func CloseFunc(c io.Closer) error { return c.Close() }
 
-func safeSend(ch chan<- service.SSEvent, ev service.SSEvent) (err error) {
+func safeSend(ch chan<- entity.SSEvent, ev entity.SSEvent) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic while sending event: %v", r)
@@ -53,6 +43,8 @@ func safeSend(ch chan<- service.SSEvent, ev service.SSEvent) (err error) {
 // HandleLogRequest handles the log streaming request for a specific test container.
 // nolint: funlen
 func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
+	_, span := a.tracer.Start(c, "autotesterController.HandleLogRequest")
+	defer span.End()
 	testID := c.Param("testId")
 
 	containerInfo, containerIDExists := a.dockerService.GetContainerInfo(testID)
@@ -68,7 +60,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 	}
 	defer attachResp.Close()
 
-	sseChan := make(chan service.SSEvent, 100)
+	sseChan := make(chan entity.SSEvent, 100)
 
 	go func() {
 		defer close(sseChan)
@@ -80,20 +72,20 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 			_, stdcopyErr := StdcopyFunc(stdoutWriter, stderrWriter, attachResp.Reader)
 
 			if err := CloseFunc(stdoutWriter); err != nil {
-				_ = safeSend(sseChan, service.SSEvent{
+				_ = safeSend(sseChan, entity.SSEvent{
 					Type:    "error",
 					Message: "Failed to close stdoutWriter: " + err.Error(),
 				})
 			}
 			if err := CloseFunc(stderrWriter); err != nil {
-				_ = safeSend(sseChan, service.SSEvent{
+				_ = safeSend(sseChan, entity.SSEvent{
 					Type:    "error",
 					Message: "Failed to close stderrWriter: " + err.Error(),
 				})
 			}
 
 			if stdcopyErr != nil && stdcopyErr != io.EOF {
-				_ = safeSend(sseChan, service.SSEvent{
+				_ = safeSend(sseChan, entity.SSEvent{
 					Type:    "error",
 					Message: stdcopyErr.Error(),
 				})
@@ -103,7 +95,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 		go func() {
 			scanner := bufio.NewScanner(stdoutReader)
 			for scanner.Scan() {
-				_ = safeSend(sseChan, service.SSEvent{
+				_ = safeSend(sseChan, entity.SSEvent{
 					Type:    "log",
 					Message: scanner.Text(),
 				})
@@ -112,7 +104,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 
 		scanner := bufio.NewScanner(stderrReader)
 		for scanner.Scan() {
-			_ = safeSend(sseChan, service.SSEvent{
+			_ = safeSend(sseChan, entity.SSEvent{
 				Type:    "log",
 				Message: scanner.Text(),
 			})

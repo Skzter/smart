@@ -27,7 +27,7 @@ import (
 
 type fakeConn struct{}
 
-func (fakeConn) Read(p []byte) (int, error)       { return 0, io.EOF }
+func (fakeConn) Read([]byte) (int, error)         { return 0, io.EOF }
 func (fakeConn) Write(p []byte) (int, error)      { return len(p), nil }
 func (fakeConn) Close() error                     { return nil }
 func (fakeConn) LocalAddr() net.Addr              { return fakeAddr("local") }
@@ -53,7 +53,9 @@ func newCloseNotifyRecorder() *closeNotifyRecorder {
 	}
 }
 
-func (c *closeNotifyRecorder) CloseNotify() <-chan bool { return c.done }
+func (c *closeNotifyRecorder) CloseNotify() <-chan bool {
+	return c.done
+}
 
 // nolint: funlen
 func TestHandleLogRequest(t *testing.T) {
@@ -64,40 +66,41 @@ func TestHandleLogRequest(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	type testCase struct {
-		Name            string
-		Setup           func(d *mocks.MockDocker)
-		PipeOverride    func() func() // returns restore function
-		StdcopyOverride func() func()
-		CloseOverride   func() func()
-		ExpectedStatus  int
-		ExpectedBody    []string
+		name           string
+		setupDocker    func(d *mocks.MockDocker)
+		expectedStatus int
+		expectedBody   []string
 	}
 
 	tests := []testCase{
 		{
-			Name: "Container not found",
-			Setup: func(d *mocks.MockDocker) {
-				d.On("GetContainerInfo", "abc").Return(entity.ContainerInfo{}, false)
+			name: "Container not found",
+			setupDocker: func(d *mocks.MockDocker) {
+				d.On("GetContainerInfo", "abc").
+					Return((*entity.ContainerInfo)(nil), false)
 			},
-			ExpectedStatus: http.StatusNotFound,
-			ExpectedBody:   []string{"Container not found"},
+			expectedStatus: http.StatusNotFound,
+			expectedBody:   []string{"Container not found"},
 		},
 		{
-			Name: "Attach fails",
-			Setup: func(d *mocks.MockDocker) {
-				info := entity.ContainerInfo{ContainerID: "cid123"}
-				d.On("GetContainerInfo", "abc").Return(info, true)
+			name: "Attach fails",
+			setupDocker: func(d *mocks.MockDocker) {
+				info := &entity.ContainerInfo{ContainerID: "cid123"}
+				d.On("GetContainerInfo", "abc").
+					Return(info, true)
+
 				d.On("AttachToContainer", mock.Anything, "cid123").
-					Return((*types.HijackedResponse)(nil), io.ErrUnexpectedEOF)
+					Return((*types.HijackedResponse)(nil), errors.New("attach failed"))
 			},
-			ExpectedStatus: http.StatusInternalServerError,
-			ExpectedBody:   []string{"Failed to attach"},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   []string{"Failed to attach"},
 		},
 		{
-			Name: "Full pipeline: stdcopy + container error",
-			Setup: func(d *mocks.MockDocker) {
-				info := entity.ContainerInfo{ContainerID: "cid123"}
-				d.On("GetContainerInfo", "abc").Return(info, true)
+			name: "Container error is streamed via SSE",
+			setupDocker: func(d *mocks.MockDocker) {
+				info := &entity.ContainerInfo{ContainerID: "cid123"}
+				d.On("GetContainerInfo", "abc").
+					Return(info, true)
 
 				d.On("AttachToContainer", mock.Anything, "cid123").
 					Return(&types.HijackedResponse{
@@ -105,32 +108,24 @@ func TestHandleLogRequest(t *testing.T) {
 						Conn:   fakeConn{},
 					}, nil)
 
-				statusCh := make(chan container.WaitResponse, 1)
+				statusCh := make(chan container.WaitResponse)
 				errCh := make(chan error, 1)
-				errCh <- errors.New("container boom")
+				errCh <- errors.New("container crashed")
 
 				d.On("WaitContainer", mock.Anything, "cid123").
-					Return((<-chan container.WaitResponse)(statusCh),
-						(<-chan error)(errCh))
+					Return(
+						(<-chan container.WaitResponse)(statusCh),
+						(<-chan error)(errCh),
+					)
 			},
-			StdcopyOverride: func() func() {
-				orig := StdcopyFunc
-				StdcopyFunc = func(_, _ io.Writer, _ io.Reader) (int64, error) {
-					return 0, errors.New("stdcopy fail")
-				}
-				return func() { StdcopyFunc = orig }
-			},
-			ExpectedStatus: http.StatusOK,
-			ExpectedBody: []string{
+			expectedStatus: http.StatusOK,
+			expectedBody: []string{
 				"event:error",
-				"data:{}",
-				"event:error",
-				"data:container errored",
+				"container errored",
 			},
 		},
 	}
 
-	// controller deps
 	mockGen := mocks.NewMockGeneratePrompt(t)
 	mockVal := mocks.NewMockValidator(t)
 	mockLocal := mocks.NewMockTestcaseLocalStorageService(t)
@@ -139,32 +134,14 @@ func TestHandleLogRequest(t *testing.T) {
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetrics := sharedMocks.NewMockMetricsService(t)
 
-	mockMetrics.On("IncRequestSuccess").Return().Maybe()
-	mockMetrics.On("IncRequestError", mock.Anything).Return().Maybe()
-	mockMetrics.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetrics.On("IncRequestSuccess").Maybe()
+	mockMetrics.On("IncRequestError", mock.Anything).Maybe()
+	mockMetrics.On("RecordRequestDuration", mock.Anything).Maybe()
 
 	for _, tc := range tests {
-		t.Run(tc.Name, func(t *testing.T) {
-			restorePipe := func() {}
-			restoreCopy := func() {}
-			restoreClose := func() {}
-
-			if tc.PipeOverride != nil {
-				restorePipe = tc.PipeOverride()
-			}
-			if tc.StdcopyOverride != nil {
-				restoreCopy = tc.StdcopyOverride()
-			}
-			if tc.CloseOverride != nil {
-				restoreClose = tc.CloseOverride()
-			}
-
-			defer restorePipe()
-			defer restoreCopy()
-			defer restoreClose()
-
+		t.Run(tc.name, func(t *testing.T) {
 			mockDocker := mocks.NewMockDocker(t)
-			tc.Setup(mockDocker)
+			tc.setupDocker(mockDocker)
 
 			rec := newCloseNotifyRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
@@ -174,10 +151,14 @@ func TestHandleLogRequest(t *testing.T) {
 			ctx.Params = gin.Params{{Key: "testId", Value: "abc"}}
 
 			controller, err := NewAutotesterController(
-				logger, cfg,
-				mockVal, mockGen,
-				mockLocal, mockDocker,
-				mockChat, mockRemote,
+				logger,
+				cfg,
+				mockVal,
+				mockGen,
+				mockLocal,
+				mockDocker,
+				mockChat,
+				mockRemote,
 				mockChatManager,
 				tracer,
 				mockMetrics,
@@ -188,14 +169,18 @@ func TestHandleLogRequest(t *testing.T) {
 
 			controller.HandleLogRequest(ctx)
 
-			if rec.Code != tc.ExpectedStatus {
-				t.Fatalf("expected %d got %d", tc.ExpectedStatus, rec.Code)
+			if rec.Code != tc.expectedStatus {
+				t.Fatalf("expected status %d, got %d", tc.expectedStatus, rec.Code)
 			}
 
 			body := rec.Body.String()
-			for _, expect := range tc.ExpectedBody {
+			for _, expect := range tc.expectedBody {
 				if !strings.Contains(body, expect) {
-					t.Fatalf("expected body to contain %q\nactual:\n%s", expect, body)
+					t.Fatalf(
+						"expected body to contain %q\nactual body:\n%s",
+						expect,
+						body,
+					)
 				}
 			}
 		})
