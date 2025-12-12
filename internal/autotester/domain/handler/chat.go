@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,10 +11,11 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -48,7 +50,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 
 	chat, err := a.chatManager.LoadChat(c, userRequest)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: errors.ErrInternalServer.Error()})
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: sharedErrors.ErrInternalServer.Error()})
 		a.logger.Error("Loading Chat failed", "error", err)
 		return
 	}
@@ -131,18 +133,15 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
 }
 
-// HandleGetUserChats processes a request for all chats of a given user
-// Expects a valid uuid as url parameter
-// valid example: /chats/0bc024d1-5e82-435b-8b2e-dc88493a8a28
-// invalid example: /chats/1234 or /chats/hahahihi
+// HandleGetUserChats processes a request for all chats of a given user.
+// Expects an Auth0-style userId (e.g. auth0|687270280dca20b77cfdcf74) as URL parameter.
 func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	start := time.Now()
-	ctx := c.Request.Context()
-
-	_, span := a.tracer.Start(ctx, "autotesterController.HandleGetUserChats")
+	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
-	userID := c.Param("UserID")
+	userID := c.Param("userId")
+	a.logger.Info(userID)
 	// checking if style: auth0|id is there
 	if !isValid(userID) {
 		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
@@ -210,4 +209,55 @@ func isValid(userId string) bool {
 		return false
 	}
 	return true
+}
+
+// GetChatById returns a full chat including all messages for a given chatId and userId.
+func (a *AutotesterController) GetChatById(c *gin.Context) {
+	start := time.Now()
+	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
+	defer span.End()
+	chatID := c.Param("chatId")
+	userID := c.Param("userId")
+
+	if !isValid(userID) {
+		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
+		span.SetStatus(codes.Error, "invalid user id")
+		a.metricsService.IncRequestError("invalid_user_id")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		a.logger.Error("invalid userId format", "userId", userID)
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
+		return
+	}
+
+	if _, err := uuid.Parse(chatID); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		a.metricsService.IncRequestError("invalid_chat_id")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		a.logger.Error("invalid chatId format", "chatId", chatID, "error", err)
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid chatId format"})
+		return
+	}
+
+	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), userID, chatID)
+	if err != nil {
+		if errors.Is(err, sharedErrors.ErrChatNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to find user chat")
+			a.metricsService.IncRequestError("find_user_chat_failed")
+			a.metricsService.RecordRequestDuration(time.Since(start))
+			a.logger.Info("chat not found", "chatId", chatID, "userId", userID)
+			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
+			return
+		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to load user chat")
+		a.metricsService.IncRequestError("load_user_chat_failed")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
+		return
+	}
+
+	c.JSON(http.StatusOK, chat)
 }

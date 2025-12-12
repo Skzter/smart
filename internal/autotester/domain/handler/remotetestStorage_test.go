@@ -10,16 +10,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 )
 
 // nolint:funlen
 func TestHandleGetRemoteTestcase(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		TestName         string
@@ -233,6 +236,13 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+
+			// Setup metrics mock to accept any calls
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
 			controller, err := NewAutotesterController(
 				logger,
@@ -244,6 +254,8 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				tracer,
+				mockMetricsServ,
 			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
