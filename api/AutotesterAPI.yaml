@@ -227,6 +227,44 @@ paths:
                       type: string
                       description: Error message describing the internal error
                       example: "Command execution error: exit status 1"
+
+  /api/v1/test/{testId}/stream:
+    get:
+      summary: Stream test execution logs as JSON events
+      description: |
+        Streams live logs of a running Playwright test.
+        Each event contains a JSON payload.
+        Transport uses Server-Sent Events (SSE).
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the running test
+      responses:
+        '200':
+          description: JSON event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: log
+                data: {"type":"log","message":"Launching browser"}
+
+                event: error
+                data: {"type":"error","message":"Container crashed"}
+
+                event: done
+                data: {}
+        '404':
+          description: Test container not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/users/{userId}/chats:
     get:
       summary: "Returns the chat history for a specific user"
@@ -416,6 +454,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+                
 components:
   schemas:
     Message:
