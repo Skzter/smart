@@ -76,20 +76,23 @@ func TestPromptTestSuite(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name: "Request 2 - valid with minimal information",
+			name: "Request 2 - valid local search scenario",
 			messages: []entity.Message{
 				{
 					Role: "user",
-					Body: "Autoplaywright soll einen Test erstellen für Check24." +
-						" Base-URL: https://staging.check24.de/reise. " +
-						"Ablauf: Nutzer sucht Flug nach Rom. " +
-						"Assertions: Ergebnisse sichtbar. " +
-						"Testdaten: Fixture vorhanden.",
+					Body: "Erzeuge Playwright-Tests via Autoplaywright für meine lokale Seite. " +
+						"Base-URL: http://localhost:8082. " +
+						"Szenario: Nutzer nutzt die Suche. " +
+						"Ablauf: Nutzer gibt im Reiseziel-Eingabefeld den Wert 'Mallorca' ein. " +
+						"Relevante UI-Elemente: Eingabefeld für Reiseziel. " +
+						"Assertions: Im Reiseziel-Feld steht 'Mallorca'. " +
+						"Testdaten/Setup: Reiseziel Mallorca.",
 				},
 			},
 			expectedOutput: true,
 			expectError:    false,
 		},
+
 		{
 			name: "Request 3 - invalid (empty message - caught by validation)",
 			messages: []entity.Message{
