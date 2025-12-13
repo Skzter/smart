@@ -201,7 +201,7 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 		p.logger.Error("Data validation failed",
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrValidation
+		return nil, err
 	}
 
 	// Get the type of the struct for logging
@@ -401,7 +401,7 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(ctx context.Context, parquetData 
 		p.logger.Error("Data validation failed",
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrValidation
+		return nil, err
 	}
 
 	reader := bytes.NewReader(parquetData)
