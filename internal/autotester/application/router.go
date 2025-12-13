@@ -32,6 +32,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
+		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
 	}
 
 	router.GET("/auth_config.json", func(c *gin.Context) {
@@ -56,4 +57,14 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 
 	logger.Info("Router initialized")
 	return router, nil
+}
+
+func sseHeaderMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-cache")
+		c.Writer.Header().Set("Connection", "keep-alive")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Next()
+	}
 }
