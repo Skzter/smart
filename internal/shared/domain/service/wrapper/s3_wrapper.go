@@ -88,8 +88,7 @@ type S3Wrapper struct {
 // NewS3Wrapper creates a new S3Wrapper instance
 func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Tracer) (S3StorageWrapper, error) {
 	if err := assert.NotNil(logger); err != nil {
-		logger.Error(fmt.Sprintf("S3 Wrapper is nil, cannot be created: %s", ErrNilLogger))
-		return nil, sharedError.ErrInternalServer
+		return nil, ErrNilLogger
 	}
 
 	if config.Bucket == "" {
