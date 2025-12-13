@@ -2,14 +2,14 @@
     import Prompt from "./components/Prompt.svelte";
     import Box from "./components/Box.svelte";
     import { Spinner } from "flowbite-svelte";
-    import { getChatResponse } from "./lib/Api.ts";
+    import { getChatResponse, validatePrompt } from "./lib/Api.ts";
     import { onMount } from "svelte";
     import { auth } from "./lib/authService";
     import LoginButton from "./components/LoginButton.svelte";
     import LogoutButton from "./components/LogoutButton.svelte";
 
     let prompt = $state("");
-    let convo = $state<{ id: number; question: string; answer: string }[]>([]);
+    let convo = $state<{ id: number; role: string, content: string }[]>([]);
 
     // get ConversationId for api calls from cookies
     // Note: We should ideally get this from a backend state associated with the user
@@ -50,38 +50,81 @@
     const chatUrl = "/chat";
 
     let isLoading = $state(false);
+    
     async function onclick() {
         if (!userId) {
             console.error("User is not authenticated.");
             return;
         }
 
-        const userQuestion = prompt;
-        prompt = "";
-        convo.push({
-            question: userQuestion,
-            answer: "",
-        });
-        isLoading = true;
-        paramsChatRequest.prompt = userQuestion;
-        paramsChatRequest.userId = userId;
-        paramsChatRequest.conversationId = conversationId;
+        const userQuestion = prompt.trim();
+        if (!userQuestion) {
+            console.warn("Prompt is empty, skipping request.");
+            return;
+        }
 
+        prompt = "";
+
+        convo.push({
+            role: "user",
+            content: userQuestion,
+        });
+
+        isLoading = true;
         try {
-            const answer = await getChatResponse(paramsChatRequest, chatUrl);
-            convo[convo.length - 1].answer = answer.data.message.body;
-            conversationId = answer.data.conversationId ?? "";
-        } catch (err) {
-            if (err.isAxiosError) {
-                convo[convo.length - 1].answer = err.response.data.message;
-            } else {
-                convo[convo.length - 1].answer =
-                    "no axios error returned - something went horribly wrong";
+            // validate prompt
+            const validate = await validatePrompt({
+                userId,
+                conversationId,
+                prompt: userQuestion,
+            });
+
+            conversationId = validate.data.chatId ?? "";
+
+            if (validate.data.message?.body) {
+                convo.push({
+                    role: "system",
+                    content: validate.data.message.body,
+                });
             }
+
+            if (validate.data.message?.body !== "Prompt validated successfully!") {
+                isLoading = false;
+                return;
+            }
+
+            // get chat response
+            paramsChatRequest.prompt = userQuestion;
+            paramsChatRequest.userId = userId;
+            paramsChatRequest.conversationId = conversationId;
+
+            const answer = await getChatResponse(paramsChatRequest, chatUrl);
+
+            if (answer.data.message?.body) {
+                convo.push({
+                    role: "assistant",
+                    content: answer.data.message.body,
+                });
+            }
+
+            conversationId = answer.data.conversationId ?? "";
+
+        } catch (err) {
+            let errorMsg = "An unexpected error occurred.";
+            if (err.isAxiosError && err.response?.data?.message) {
+                errorMsg = err.response.data.message;
+            }
+            convo.push({
+                role: "system",
+                content: errorMsg,
+            });
         } finally {
             isLoading = false;
         }
     }
+
+
+
 
     let container: HTMLElement | undefined = $state();
     // Effect to trigger scrolling on relevant changes
@@ -108,15 +151,18 @@
             bind:this={container}
         >
             {#each convo as c}
-                <Box msg={c.question} name="User" {userId} {conversationId} />
-                {#if c.answer}
+                {#if c.role === "user"}
+                    <Box msg={c.content} name="User" {userId} {conversationId} />
+                {:else if c.role === "assistant"}
                     <Box
-                        msg={c.answer}
+                        msg={c.content}
                         name="Bot"
                         {userId}
                         {conversationId}
-                        isCode={c.answer.startsWith("import")}
+                        isCode={c.content.startsWith("import")}
                     />
+                {:else if c.role === "system"}
+                    <Box msg={c.content} name="System" {userId} {conversationId} />
                 {/if}
             {/each}
             {#if isLoading}

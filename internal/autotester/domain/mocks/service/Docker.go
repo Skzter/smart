@@ -7,7 +7,10 @@ package mocks
 import (
 	"context"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	mock "github.com/stretchr/testify/mock"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockDocker creates a new instance of MockDocker. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -37,96 +40,47 @@ func (_m *MockDocker) EXPECT() *MockDocker_Expecter {
 	return &MockDocker_Expecter{mock: &_m.Mock}
 }
 
-// ReadLog provides a mock function for the type MockDocker
-func (_mock *MockDocker) ReadLog(filename string) (string, error) {
-	ret := _mock.Called(filename)
+// AttachToContainer provides a mock function for the type MockDocker
+func (_mock *MockDocker) AttachToContainer(ctx context.Context, containerID string) (*types.HijackedResponse, error) {
+	ret := _mock.Called(ctx, containerID)
 
 	if len(ret) == 0 {
-		panic("no return value specified for ReadLog")
+		panic("no return value specified for AttachToContainer")
 	}
 
-	var r0 string
+	var r0 *types.HijackedResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return returnFunc(filename)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*types.HijackedResponse, error)); ok {
+		return returnFunc(ctx, containerID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(filename)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *types.HijackedResponse); ok {
+		r0 = returnFunc(ctx, containerID)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.HijackedResponse)
+		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(filename)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, containerID)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockDocker_ReadLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReadLog'
-type MockDocker_ReadLog_Call struct {
+// MockDocker_AttachToContainer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AttachToContainer'
+type MockDocker_AttachToContainer_Call struct {
 	*mock.Call
 }
 
-// ReadLog is a helper method to define mock.On call
-//   - filename string
-func (_e *MockDocker_Expecter) ReadLog(filename interface{}) *MockDocker_ReadLog_Call {
-	return &MockDocker_ReadLog_Call{Call: _e.mock.On("ReadLog", filename)}
-}
-
-func (_c *MockDocker_ReadLog_Call) Run(run func(filename string)) *MockDocker_ReadLog_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockDocker_ReadLog_Call) Return(s string, err error) *MockDocker_ReadLog_Call {
-	_c.Call.Return(s, err)
-	return _c
-}
-
-func (_c *MockDocker_ReadLog_Call) RunAndReturn(run func(filename string) (string, error)) *MockDocker_ReadLog_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// RunTest provides a mock function for the type MockDocker
-func (_mock *MockDocker) RunTest(ctx context.Context, filename string) error {
-	ret := _mock.Called(ctx, filename)
-
-	if len(ret) == 0 {
-		panic("no return value specified for RunTest")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = returnFunc(ctx, filename)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockDocker_RunTest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RunTest'
-type MockDocker_RunTest_Call struct {
-	*mock.Call
-}
-
-// RunTest is a helper method to define mock.On call
+// AttachToContainer is a helper method to define mock.On call
 //   - ctx context.Context
-//   - filename string
-func (_e *MockDocker_Expecter) RunTest(ctx interface{}, filename interface{}) *MockDocker_RunTest_Call {
-	return &MockDocker_RunTest_Call{Call: _e.mock.On("RunTest", ctx, filename)}
+//   - containerID string
+func (_e *MockDocker_Expecter) AttachToContainer(ctx interface{}, containerID interface{}) *MockDocker_AttachToContainer_Call {
+	return &MockDocker_AttachToContainer_Call{Call: _e.mock.On("AttachToContainer", ctx, containerID)}
 }
 
-func (_c *MockDocker_RunTest_Call) Run(run func(ctx context.Context, filename string)) *MockDocker_RunTest_Call {
+func (_c *MockDocker_AttachToContainer_Call) Run(run func(ctx context.Context, containerID string)) *MockDocker_AttachToContainer_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -144,12 +98,228 @@ func (_c *MockDocker_RunTest_Call) Run(run func(ctx context.Context, filename st
 	return _c
 }
 
-func (_c *MockDocker_RunTest_Call) Return(err error) *MockDocker_RunTest_Call {
-	_c.Call.Return(err)
+func (_c *MockDocker_AttachToContainer_Call) Return(hijackedResponse *types.HijackedResponse, err error) *MockDocker_AttachToContainer_Call {
+	_c.Call.Return(hijackedResponse, err)
 	return _c
 }
 
-func (_c *MockDocker_RunTest_Call) RunAndReturn(run func(ctx context.Context, filename string) error) *MockDocker_RunTest_Call {
+func (_c *MockDocker_AttachToContainer_Call) RunAndReturn(run func(ctx context.Context, containerID string) (*types.HijackedResponse, error)) *MockDocker_AttachToContainer_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetContainerInfo provides a mock function for the type MockDocker
+func (_mock *MockDocker) GetContainerInfo(testID string) (*entity.ContainerInfo, bool) {
+	ret := _mock.Called(testID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetContainerInfo")
+	}
+
+	var r0 *entity.ContainerInfo
+	var r1 bool
+	if returnFunc, ok := ret.Get(0).(func(string) (*entity.ContainerInfo, bool)); ok {
+		return returnFunc(testID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *entity.ContainerInfo); ok {
+		r0 = returnFunc(testID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.ContainerInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
+		r1 = returnFunc(testID)
+	} else {
+		r1 = ret.Get(1).(bool)
+	}
+	return r0, r1
+}
+
+// MockDocker_GetContainerInfo_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetContainerInfo'
+type MockDocker_GetContainerInfo_Call struct {
+	*mock.Call
+}
+
+// GetContainerInfo is a helper method to define mock.On call
+//   - testID string
+func (_e *MockDocker_Expecter) GetContainerInfo(testID interface{}) *MockDocker_GetContainerInfo_Call {
+	return &MockDocker_GetContainerInfo_Call{Call: _e.mock.On("GetContainerInfo", testID)}
+}
+
+func (_c *MockDocker_GetContainerInfo_Call) Run(run func(testID string)) *MockDocker_GetContainerInfo_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDocker_GetContainerInfo_Call) Return(containerInfo *entity.ContainerInfo, b bool) *MockDocker_GetContainerInfo_Call {
+	_c.Call.Return(containerInfo, b)
+	return _c
+}
+
+func (_c *MockDocker_GetContainerInfo_Call) RunAndReturn(run func(testID string) (*entity.ContainerInfo, bool)) *MockDocker_GetContainerInfo_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RunTest provides a mock function for the type MockDocker
+func (_mock *MockDocker) RunTest(ctx context.Context, filename string, testID string, userID string, sessionID string) (string, error) {
+	ret := _mock.Called(ctx, filename, testID, userID, sessionID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RunTest")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (string, error)); ok {
+		return returnFunc(ctx, filename, testID, userID, sessionID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) string); ok {
+		r0 = returnFunc(ctx, filename, testID, userID, sessionID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, filename, testID, userID, sessionID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockDocker_RunTest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RunTest'
+type MockDocker_RunTest_Call struct {
+	*mock.Call
+}
+
+// RunTest is a helper method to define mock.On call
+//   - ctx context.Context
+//   - filename string
+//   - testID string
+//   - userID string
+//   - sessionID string
+func (_e *MockDocker_Expecter) RunTest(ctx interface{}, filename interface{}, testID interface{}, userID interface{}, sessionID interface{}) *MockDocker_RunTest_Call {
+	return &MockDocker_RunTest_Call{Call: _e.mock.On("RunTest", ctx, filename, testID, userID, sessionID)}
+}
+
+func (_c *MockDocker_RunTest_Call) Run(run func(ctx context.Context, filename string, testID string, userID string, sessionID string)) *MockDocker_RunTest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDocker_RunTest_Call) Return(s string, err error) *MockDocker_RunTest_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockDocker_RunTest_Call) RunAndReturn(run func(ctx context.Context, filename string, testID string, userID string, sessionID string) (string, error)) *MockDocker_RunTest_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// WaitContainer provides a mock function for the type MockDocker
+func (_mock *MockDocker) WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error) {
+	ret := _mock.Called(ctx, containerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for WaitContainer")
+	}
+
+	var r0 <-chan container.WaitResponse
+	var r1 <-chan error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (<-chan container.WaitResponse, <-chan error)); ok {
+		return returnFunc(ctx, containerID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) <-chan container.WaitResponse); ok {
+		r0 = returnFunc(ctx, containerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(<-chan container.WaitResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) <-chan error); ok {
+		r1 = returnFunc(ctx, containerID)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(<-chan error)
+		}
+	}
+	return r0, r1
+}
+
+// MockDocker_WaitContainer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'WaitContainer'
+type MockDocker_WaitContainer_Call struct {
+	*mock.Call
+}
+
+// WaitContainer is a helper method to define mock.On call
+//   - ctx context.Context
+//   - containerID string
+func (_e *MockDocker_Expecter) WaitContainer(ctx interface{}, containerID interface{}) *MockDocker_WaitContainer_Call {
+	return &MockDocker_WaitContainer_Call{Call: _e.mock.On("WaitContainer", ctx, containerID)}
+}
+
+func (_c *MockDocker_WaitContainer_Call) Run(run func(ctx context.Context, containerID string)) *MockDocker_WaitContainer_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDocker_WaitContainer_Call) Return(waitResponseCh <-chan container.WaitResponse, errCh <-chan error) *MockDocker_WaitContainer_Call {
+	_c.Call.Return(waitResponseCh, errCh)
+	return _c
+}
+
+func (_c *MockDocker_WaitContainer_Call) RunAndReturn(run func(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error)) *MockDocker_WaitContainer_Call {
 	_c.Call.Return(run)
 	return _c
 }
