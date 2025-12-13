@@ -60,6 +60,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 	return nil, nil
 }
 
+// TaglistConfigProvider provides a new TaglistConfig.
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }
