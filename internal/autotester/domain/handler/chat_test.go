@@ -69,7 +69,6 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{}, nil}},
-				{Function: "ValidatePrompt", ExpectedResponse: []any{true, "", nil}},
 				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", nil}},
 				{Function: "SaveChat", ExpectedResponse: []any{nil}},
 			},
@@ -102,39 +101,6 @@ func TestHandleChatRequest(t *testing.T) {
 			},
 		},
 		{
-			TestName: "validate error",
-			RequestBody: `{
-				"message": {
-					"body":"prompt",
-					"role":"user"
-				},
-				"userId":"2",
-				"conversationId":"2"
-			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: []MockSetup{
-				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
-				{Function: "ValidatePrompt", ExpectedResponse: []any{false, "", errors.New("err")}},
-			},
-		},
-		{
-			TestName: "invalid message",
-			RequestBody: `{
-				"message": {
-					"body":"prompt",
-					"role":"user"
-				},
-				"userId":"2",
-				"conversationId":"2"
-			}`,
-			ExpectedStatus: http.StatusOK,
-			MockSetup: []MockSetup{
-				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
-				{Function: "ValidatePrompt", ExpectedResponse: []any{false, "invalid message", nil}},
-				{Function: "SaveChat", ExpectedResponse: []any{nil}},
-			},
-		},
-		{
 			TestName: "saveChat error",
 			RequestBody: `{
 				"message": {
@@ -147,7 +113,6 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
-				{Function: "ValidatePrompt", ExpectedResponse: []any{true, "", nil}},
 				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", nil}},
 				{Function: "SaveChat", ExpectedResponse: []any{errors.New("err")}},
 			},
@@ -165,7 +130,6 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
-				{Function: "ValidatePrompt", ExpectedResponse: []any{true, "", nil}},
 				{Function: "GeneratePrompt", ExpectedResponse: []any{"", errors.New("err")}},
 			},
 		},
@@ -193,10 +157,6 @@ func TestHandleChatRequest(t *testing.T) {
 
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
-				case "ValidatePrompt":
-					mockValServ.
-						On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).
-						Return(mc.ExpectedResponse...)
 				case "GeneratePrompt":
 					mockGenServ.
 						On("GeneratePrompt", mock.Anything, mock.Anything, mock.Anything).

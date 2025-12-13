@@ -47,7 +47,7 @@
         userId: userId,
         conversationId: conversationId,
     });
-    const chatUrl = "chat";
+    const chatUrl = "/chat";
 
     let isLoading = $state(false);
     

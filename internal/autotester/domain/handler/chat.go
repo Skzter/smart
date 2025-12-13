@@ -63,21 +63,8 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			}
 		}
 	}()
-
-	valid, _, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed prompt validation")
-		a.metricsService.IncRequestError("invalid_prompt")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
-		a.logger.Error("Validation failed", "error", err)
-		return
-	}
-
-	if !valid {
-		return
-	}
+	// add the user's prompt to the chat so generation has at least one user message
+	chat.AddMessage(sharedEntity.NewMessage(userRequest.Prompt, sharedEntity.RoleUser), entity.MessageTypeUser)
 
 	generatedCode, err := a.generationService.GeneratePrompt(c, chat, &userRequest)
 	if err != nil {
