@@ -34,7 +34,6 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
 		FileSystemProvider,
-		LogFileSystemProvider,
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -107,11 +106,6 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tra
 // FileSystemProvider provides a new filesystem.
 func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
-}
-
-// LogFileSystemProvider provides a filesystem for logs
-func LogFileSystemProvider(cfg *config.Config) (repository.LogFileSystem, error) {
-	return repository.NewLogFileSystem(cfg.LogDirAutopw)
 }
 
 func DockerClientProvider() (service.DockerClient, error) {
