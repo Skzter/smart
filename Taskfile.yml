@@ -153,7 +153,7 @@ tasks:
     dir: "deployments"
     cmds:
       - docker login gitlab.dit.htwk-leipzig.de:5050
-      - "PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d"
+      - PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d
 
   compose-local-down:
     desc: "Stop all the containers in local environment"
@@ -222,6 +222,66 @@ tasks:
     dir: "scripts"
     cmds:
       - ./sysprompt-test.sh
+
+  k6-suproxy:
+    desc: "Run a k6 load test against suproxy (dockerized)"
+    dir: test/k6/suproxy
+    cmds:
+      - |
+        docker run --rm \
+          --network ${K6_DOCKER_NETWORK:-deployments_default} \
+          -e SUPROXY_URL=${SUPROXY_URL:-http://suproxy:8080/api/v1/Offerlist} \
+          -e SUPROXY_DESTINATION=${SUPROXY_DESTINATION:-http://supplier-mock:8083/api/v1/offers} \
+          -e K6_VUS=${K6_VUS:-10} \
+          -e K6_DURATION=${K6_DURATION:-1m} \
+          -e K6_SLEEP=${K6_SLEEP:-1} \
+          -e K6_SUMMARY_EXPORT=${K6_SUMMARY_EXPORT:-/scripts/k6-summary.json} \
+          ${K6_OUT:+-e K6_OUT=$K6_OUT} \
+          ${K6_DATADOG_ADDR:+-e K6_DATADOG_ADDR=$K6_DATADOG_ADDR} \
+          ${K6_DATADOG_TAGS:+-e K6_DATADOG_TAGS=$K6_DATADOG_TAGS} \
+          ${K6_DATADOG_PUSH_INTERVAL:+-e K6_DATADOG_PUSH_INTERVAL=$K6_DATADOG_PUSH_INTERVAL} \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/loadtest.js
+
+  k6-suproxy-ramp:
+    desc: "Run a k6 ramp-up load test against suproxy (dockerized)"
+    dir: test/k6/suproxy
+    cmds:
+      - |
+        docker run --rm \
+          --network ${K6_DOCKER_NETWORK:-deployments_default} \
+          -e SUPROXY_URL=${SUPROXY_URL:-http://suproxy:8080/api/v1/Offerlist} \
+          -e SUPROXY_DESTINATION=${SUPROXY_DESTINATION:-http://supplier-mock:8083/api/v1/offers} \
+          -e K6_SLEEP=${K6_SLEEP:-1} \
+          -e K6_SUMMARY_EXPORT=${K6_SUMMARY_EXPORT:-/scripts/k6-summary-ramp.json} \
+          ${K6_OUT:+-e K6_OUT=$K6_OUT} \
+          ${K6_DATADOG_ADDR:+-e K6_DATADOG_ADDR=$K6_DATADOG_ADDR} \
+          ${K6_DATADOG_TAGS:+-e K6_DATADOG_TAGS=$K6_DATADOG_TAGS} \
+          ${K6_DATADOG_PUSH_INTERVAL:+-e K6_DATADOG_PUSH_INTERVAL=$K6_DATADOG_PUSH_INTERVAL} \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/ramp_up_loadtest.js
+
+  k6-plot-install:
+    desc: "Install plotting deps via uv (matplotlib)"
+    dir: scripts/k6
+    cmds:
+      - uv sync
+
+  k6-suproxy-report:
+    desc: "Run k6 load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/suproxy/k6-summary.json --output k6-suproxy-report.png
+    silent: true
+
+  k6-suproxy-ramp-report:
+    desc: "Run k6 ramp-up load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/suproxy/k6-summary-ramp.json --output k6-suproxy-ramp-report.png
+    silent: true
 
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
