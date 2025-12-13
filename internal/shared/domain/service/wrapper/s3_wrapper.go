@@ -212,7 +212,6 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		s.logger.Error(fmt.Sprintf("failed to upload parquet file: %s", err))
 		return sharedError.ErrInternalServer
 	}
 
@@ -266,9 +265,9 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		s.logger.Error(fmt.Sprintf("failed to download parquet file: %s", err))
-		return nil, nil, sharedError.ErrInternalServer
+		return nil, nil, fmt.Errorf("failed to download parquet file: %w", err)
 	}
+
 	defer func() {
 		if closeErr := result.Body.Close(); closeErr != nil {
 			s.logger.Error("Failed to close response body",
@@ -287,7 +286,6 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		s.logger.Error(fmt.Sprintf("failed to read downloaded file: %s", err))
 		return nil, nil, sharedError.ErrInternalServer
 	}
 
@@ -341,7 +339,6 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 				slog.String("bucket", s.config.Bucket),
 				slog.String("error", err.Error()),
 			)
-			s.logger.Error(fmt.Sprintf("failed to list objects: %s", err))
 			return nil, sharedError.ErrInternalServer
 		}
 
@@ -403,7 +400,6 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		s.logger.Error(fmt.Sprintf("failed to delete parquet file: %s", err))
 		return sharedError.ErrInternalServer
 	}
 
