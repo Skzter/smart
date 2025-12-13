@@ -63,27 +63,8 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			}
 		}
 	}()
-
-	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed prompt validation")
-		a.metricsService.IncRequestError("invalid_prompt")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
-		a.logger.Error("Validation failed", "error", err)
-		return
-	}
-
-	if !valid {
-		c.JSON(http.StatusOK,
-			&entity.ResponseForUser{
-				Message: sharedEntity.Message{Body: msg},
-				UserId:  chat.UserId,
-				ChatId:  chat.Id,
-			})
-		return
-	}
+	// add the user's prompt to the chat so generation has at least one user message
+	chat.AddMessage(sharedEntity.NewMessage(userRequest.Prompt, sharedEntity.RoleUser), entity.MessageTypeUser)
 
 	generatedCode, err := a.generationService.GeneratePrompt(c, chat, &userRequest)
 	if err != nil {
@@ -104,6 +85,59 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			Message: sharedEntity.Message{Body: generatedCode},
 			UserId:  chat.UserId,
 			ChatId:  chat.Id,
+		})
+}
+
+// HandleChatRequestValidity processes a chat request for prompt validity checking.
+// Expects a JSON with UserRequestDTO and returns whether the prompt is valid or not.
+func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
+	var userRequest entity.UserRequest
+
+	if err := c.BindJSON(&userRequest); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		a.logger.Error("JSON binding failed", "error", err)
+		return
+	}
+
+	if assert.StringNotEmpty(userRequest.UserId) != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		a.logger.Error("No UserID provided in Request")
+		return
+	}
+
+	chat, err := a.chatManager.LoadChat(c, userRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: sharedErrors.ErrInternalServer.Error()})
+		a.logger.Error("Loading Chat failed", "error", err)
+		return
+	}
+
+	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
+		a.logger.Error("Validation failed", "error", err)
+		return
+	}
+	if !valid {
+		c.JSON(http.StatusOK,
+			&entity.ResponseForUser{
+				Message: sharedEntity.Message{Body: msg},
+				UserId:  userRequest.UserId,
+				ChatId:  userRequest.ChatId,
+			})
+		return
+	}
+
+	c.JSON(http.StatusOK,
+		entity.ResponseForUser{
+			Message: sharedEntity.Message{
+				Id:        "",
+				Role:      "assistant",
+				Body:      "Prompt validated successfully!",
+				CreatedAt: time.Now().UTC(),
+			},
+			UserId: userRequest.UserId,
+			ChatId: userRequest.ChatId,
 		})
 }
 

@@ -24,6 +24,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController) (*
 	apiV1 := router.Group("/api/v1")
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
+		apiV1.POST("/validate", controller.HandleChatRequestValidity)
 		apiV1.GET("/users/:userId/chats", controller.HandleGetUserChats)
 		apiV1.GET("/users/:userId/chats/:chatId", controller.GetChatById)
 		apiV1.GET("/template", controller.HandleGetTemplate)

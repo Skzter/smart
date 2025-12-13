@@ -16,6 +16,22 @@ export async function getChatResponse(params: object, url: string) {
     return response;
 }
 
+/** Validates the prompt by sending it to the /validationRes endpoint
+ * @param body: object containing userId, conversationId, and prompt
+ */
+export async function validatePrompt(params: {
+  userId: string;
+  conversationId: string;
+  prompt: string;
+}) {
+  return axios({
+    method: "post",
+    url: "/validate",
+    baseURL: "/api/v1/",
+    data: params,
+  });
+}
+
 /**
  * Fetches data from the api and returns the data for the user
  * @param params: parameters for api

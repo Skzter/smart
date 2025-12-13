@@ -6,6 +6,7 @@ import {
     getTemplate,
     saveTestLocal,
     runContainer,
+    validatePrompt,
 } from "../../src/lib/Api.ts";
 
 // Mock axios
@@ -37,6 +38,21 @@ describe("API Functions", () => {
     const mockSaveLocalResponse = {
         testcaseId: "testid",
         action: "saved",
+    };
+
+    const mockValidateParams = {
+        userId: mockUserId,
+        conversationId: mockConversationId,
+        prompt: "Validate this prompt",
+    };
+
+    const mockValidateResponse = {
+        data: {
+            chatId: mockConversationId,
+            message: {
+                body: "Prompt validated successfully!",
+            },
+        },
     };
 
     beforeEach(() => {
@@ -112,6 +128,47 @@ describe("API Functions", () => {
             await expect(
                 getChatResponse(mockChatParams, "/chat"),
             ).rejects.toThrow("Chat service unavailable");
+        });
+    });
+
+    describe("validatePrompt", () => {
+        const mockedAxios = axios as vi.Mocked<typeof axios>;
+        mockedAxios.mockResolvedValue({ data: mockResponseData });
+
+        it("should make a POST request to /validate with proper params", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockValidateResponse);
+
+            await validatePrompt(mockValidateParams);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/validate",
+                baseURL: "/api/v1/",
+                data: mockValidateParams,
+            });
+        });
+
+        it("should return the API response data", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockValidateResponse);
+
+            const result = await validatePrompt(mockValidateParams);
+
+            expect(result.data).toEqual(mockValidateResponse.data);
+        });
+
+        it("should include all required parameters", async () => {
+            const mockedAxios = axios as vi.Mocked<typeof axios>;
+            mockedAxios.mockResolvedValue(mockValidateResponse);
+
+            await validatePrompt(mockValidateParams);
+
+            const callArgs = mockedAxios.mock.calls[0][0];
+
+            expect(callArgs.data).toHaveProperty("userId", mockValidateParams.userId);
+            expect(callArgs.data).toHaveProperty("conversationId", mockValidateParams.conversationId);
+            expect(callArgs.data).toHaveProperty("prompt", mockValidateParams.prompt);
         });
     });
 
