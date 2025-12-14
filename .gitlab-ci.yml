@@ -338,8 +338,9 @@ build_autotester_run_container:
         .
     - docker push $IMAGE_TAG
   rules:
-    - changes:
-        - build/auto-playwright/Dockerfile
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  allow_failure: true
 
 deploy_htwk:
   image:

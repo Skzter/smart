@@ -114,3 +114,12 @@ bucket: String = "smart-suproxy"
 entryPrefix: String = "supplierData/"
 
 taglistConfig: taglist = taglist
+
+class RedisConfig {
+    addr: String = "localhost:6379"
+    password: String = ""
+    db: Int = 0
+    protocol: Int = 2
+}
+
+redis: RedisConfig
