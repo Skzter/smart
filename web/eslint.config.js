@@ -10,7 +10,12 @@ export default ts.config(
     ...ts.configs.recommended,
     ...svelte.configs.recommended,
     {
-        ignores: ["dist/**", "coverage/**", "src/lib/components/ui/**", "tests/**/*.svelte"], // Ignoriere den dist/coverage-Ordner und test helper svelte files
+        ignores: [
+            "dist/**",
+            "coverage/**",
+            "src/lib/components/ui/**",
+            "tests/**/*.svelte",
+        ], // Ignoriere den dist/coverage-Ordner und test helper svelte files
     },
     {
         languageOptions: {

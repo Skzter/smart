@@ -3,7 +3,11 @@
     import RunWindow from "../../src/lib/components/RunWindow.svelte";
     import type { Runner } from "../../src/lib/runner.svelte";
 
-    let { code = $bindable(), activeTab = $bindable(), testRunner }: { code: string; activeTab: string; testRunner: Runner } = $props();
+    let {
+        code = $bindable(),
+        activeTab = $bindable(),
+        testRunner,
+    }: { code: string; activeTab: string; testRunner: Runner } = $props();
 </script>
 
 <Dialog.Root open={true}>

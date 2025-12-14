@@ -1,6 +1,6 @@
 import { render } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 // Mock Monaco Editor BEFORE importing components
 vi.mock("monaco-editor", () => ({
@@ -24,7 +24,7 @@ vi.mock("monaco-editor", () => ({
 
 // Mock clipboard BEFORE importing the component
 const mockWriteText = vi.fn().mockResolvedValue(undefined);
-Object.defineProperty(navigator, 'clipboard', {
+Object.defineProperty(navigator, "clipboard", {
     value: {
         writeText: mockWriteText,
     },
@@ -47,9 +47,11 @@ describe("BotMessage", () => {
             },
         });
 
-        const botIcon = container.querySelector('svg');
-        const messageContainer = container.querySelector('.bg-muted.rounded-2xl');
-        
+        const botIcon = container.querySelector("svg");
+        const messageContainer = container.querySelector(
+            ".bg-muted.rounded-2xl",
+        );
+
         expect(botIcon).toBeInTheDocument();
         expect(messageContainer).toBeInTheDocument();
     });
@@ -61,7 +63,7 @@ describe("BotMessage", () => {
             },
         });
 
-        const textDiv = container.querySelector('.px-4.py-2');
+        const textDiv = container.querySelector(".px-4.py-2");
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toBe("This is a regular message");
     });
@@ -75,7 +77,7 @@ describe("BotMessage", () => {
 
         // When message contains @playwright, MonacoEditor should be rendered
         // Check that regular text div is NOT present
-        const textDiv = container.querySelector('.px-4.py-2.wrap-break-word');
+        const textDiv = container.querySelector(".px-4.py-2.wrap-break-word");
         expect(textDiv).not.toBeInTheDocument();
     });
 
@@ -87,7 +89,7 @@ describe("BotMessage", () => {
         });
 
         // Regular text should be rendered in text div
-        const textDiv = container.querySelector('.px-4.py-2.wrap-break-word');
+        const textDiv = container.querySelector(".px-4.py-2.wrap-break-word");
         expect(textDiv).toBeInTheDocument();
     });
 
@@ -98,7 +100,7 @@ describe("BotMessage", () => {
             },
         });
 
-        const testButtons = container.querySelector('.border-b');
+        const testButtons = container.querySelector(".border-b");
         expect(testButtons).toBeInTheDocument();
     });
 
@@ -109,7 +111,7 @@ describe("BotMessage", () => {
             },
         });
 
-        const textDiv = container.querySelector('.px-4.py-2');
+        const textDiv = container.querySelector(".px-4.py-2");
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toBe("");
     });
@@ -121,7 +123,7 @@ describe("BotMessage", () => {
             },
         });
 
-        const textDiv = container.querySelector('.whitespace-pre-wrap');
+        const textDiv = container.querySelector(".whitespace-pre-wrap");
         expect(textDiv).toBeInTheDocument();
         expect(textDiv?.textContent).toContain("\n");
     });

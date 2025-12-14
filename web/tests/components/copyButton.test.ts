@@ -6,7 +6,7 @@ import "@testing-library/jest-dom/vitest";
 // Mock clipboard BEFORE importing the component
 const mockWriteText = vi.fn();
 
-Object.defineProperty(navigator, 'clipboard', {
+Object.defineProperty(navigator, "clipboard", {
     value: {
         writeText: mockWriteText,
     },
@@ -43,7 +43,7 @@ describe("CopyButton", () => {
             },
         });
 
-        const copyIcon = container.querySelector('svg.lucide-copy');
+        const copyIcon = container.querySelector("svg.lucide-copy");
         expect(copyIcon).toBeInTheDocument();
     });
 
@@ -59,7 +59,7 @@ describe("CopyButton", () => {
         const button = screen.getByRole("button");
         await user.click(button);
 
-        const checkIcon = container.querySelector('svg.lucide-check');
+        const checkIcon = container.querySelector("svg.lucide-check");
         expect(checkIcon).toBeInTheDocument();
     });
 
@@ -77,12 +77,12 @@ describe("CopyButton", () => {
         await user.click(button);
 
         // Check icon should be visible
-        expect(container.querySelector('svg.lucide-check')).toBeInTheDocument();
+        expect(container.querySelector("svg.lucide-check")).toBeInTheDocument();
 
         await vi.advanceTimersByTimeAsync(3000);
 
         // Copy icon should be back
-        expect(container.querySelector('svg.lucide-copy')).toBeInTheDocument();
+        expect(container.querySelector("svg.lucide-copy")).toBeInTheDocument();
     });
 
     it("does not revert to Copy icon before 3 seconds", async () => {
@@ -101,6 +101,6 @@ describe("CopyButton", () => {
         await vi.advanceTimersByTimeAsync(2000);
 
         // Check icon should still be visible
-        expect(container.querySelector('svg.lucide-check')).toBeInTheDocument();
+        expect(container.querySelector("svg.lucide-check")).toBeInTheDocument();
     });
 });

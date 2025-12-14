@@ -54,11 +54,11 @@
 
         let filteredItems = items.filter((item) => {
             const time = new Date(Date.parse(item.updatedAt));
-            
+
             if (!applyTimeFilter(time, timeFilter)) {
                 return false;
             }
-            
+
             return isWithinDateRange(time, dateRange);
         });
 
@@ -112,7 +112,11 @@
         if (timeFilter === "all") return true;
 
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+        );
         const chatDate = new Date(
             chatTime.getFullYear(),
             chatTime.getMonth(),

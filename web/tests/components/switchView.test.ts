@@ -5,7 +5,6 @@ import "@testing-library/jest-dom/vitest";
 import ViewSwitcher from "../../src/lib/components/SwitchView.svelte";
 
 describe("SwitchView", () => {
-
     it("renders 3 view buttons", () => {
         render(ViewSwitcher);
 

@@ -25,9 +25,18 @@ vi.mock("$lib/components/ui/dropdown-menu/index.js", () => ({
     Content: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
     Group: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
     Label: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
-    Separator: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
-    RadioGroup: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
-    RadioItem: vi.fn((props: Record<string, unknown>) => ({ $$: {}, ...props })),
+    Separator: vi.fn((props: Record<string, unknown>) => ({
+        $$: {},
+        ...props,
+    })),
+    RadioGroup: vi.fn((props: Record<string, unknown>) => ({
+        $$: {},
+        ...props,
+    })),
+    RadioItem: vi.fn((props: Record<string, unknown>) => ({
+        $$: {},
+        ...props,
+    })),
 }));
 
 describe("ChatFilter - Comprehensive Tests", () => {
@@ -89,11 +98,11 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("updates ChatFilter.sortBy to 'created' when state changes", async () => {
             render(ChatFilter);
             await tick();
-            
+
             // Manually update shared state to simulate filter change
             shared.ChatFilter.sortBy = "created";
             await tick();
-            
+
             // Effect should have run
             expect(shared.ChatFilter.sortBy).toBe("created");
         });
@@ -101,7 +110,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("handles sortBy type casting correctly", async () => {
             render(ChatFilter);
             await tick();
-            
+
             const sortByValue = shared.ChatFilter.sortBy;
             expect(["recent", "created"]).toContain(sortByValue);
         });
@@ -117,39 +126,41 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("handles timeFilter value 'today'", async () => {
             render(ChatFilter);
             await tick();
-            
+
             shared.ChatFilter.timeFilter = "today";
             await tick();
-            
+
             expect(shared.ChatFilter.timeFilter).toBe("today");
         });
 
         it("handles timeFilter value 'week'", async () => {
             render(ChatFilter);
             await tick();
-            
+
             shared.ChatFilter.timeFilter = "week";
             await tick();
-            
+
             expect(shared.ChatFilter.timeFilter).toBe("week");
         });
 
         it("handles timeFilter value 'month'", async () => {
             render(ChatFilter);
             await tick();
-            
+
             shared.ChatFilter.timeFilter = "month";
             await tick();
-            
+
             expect(shared.ChatFilter.timeFilter).toBe("month");
         });
 
         it("handles all timeFilter type casting correctly", async () => {
             render(ChatFilter);
             await tick();
-            
+
             const timeFilterValue = shared.ChatFilter.timeFilter;
-            expect(["all", "today", "week", "month"]).toContain(timeFilterValue);
+            expect(["all", "today", "week", "month"]).toContain(
+                timeFilterValue,
+            );
         });
     });
 
@@ -307,21 +318,23 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("updates shared state when local state changes", async () => {
             render(ChatFilter);
             await tick();
-            
+
             const initialSortBy = shared.ChatFilter.sortBy;
             expect(initialSortBy).toBe("recent");
-            
+
             shared.ChatFilter.sortBy = "created";
             await tick();
-            
+
             expect(shared.ChatFilter.sortBy).toBe("created");
         });
 
         it("maintains separate sortBy and timeFilter states", async () => {
             render(ChatFilter);
             await tick();
-            
-            expect(shared.ChatFilter.sortBy).not.toBe(shared.ChatFilter.timeFilter);
+
+            expect(shared.ChatFilter.sortBy).not.toBe(
+                shared.ChatFilter.timeFilter,
+            );
         });
     });
 
@@ -376,7 +389,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("handles sortBy type assertion to union type", async () => {
             render(ChatFilter);
             await tick();
-            
+
             const sortBy = shared.ChatFilter.sortBy;
             expect(typeof sortBy).toBe("string");
         });
@@ -384,7 +397,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("handles timeFilter type assertion to union type", async () => {
             render(ChatFilter);
             await tick();
-            
+
             const timeFilter = shared.ChatFilter.timeFilter;
             expect(typeof timeFilter).toBe("string");
         });
@@ -398,7 +411,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("handles state changes without errors", async () => {
             render(ChatFilter);
             await tick();
-            
+
             expect(() => {
                 shared.ChatFilter.sortBy = "created";
             }).not.toThrow();
@@ -407,10 +420,10 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("maintains component stability across state changes", async () => {
             const { container } = render(ChatFilter);
             await tick();
-            
+
             shared.ChatFilter.timeFilter = "week";
             await tick();
-            
+
             expect(container).toBeInTheDocument();
         });
     });
@@ -442,12 +455,12 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("maintains state after multiple renders", async () => {
             const { rerender } = render(ChatFilter);
             await tick();
-            
+
             const sortBy1 = shared.ChatFilter.sortBy;
-            
+
             rerender({});
             await tick();
-            
+
             const sortBy2 = shared.ChatFilter.sortBy;
             expect(sortBy1).toBe(sortBy2);
         });
@@ -501,7 +514,7 @@ describe("ChatFilter - Comprehensive Tests", () => {
         it("both effects execute independently", async () => {
             render(ChatFilter);
             await tick();
-            
+
             expect(shared.ChatFilter.sortBy).toBe("recent");
             expect(shared.ChatFilter.timeFilter).toBe("all");
         });

@@ -1,6 +1,6 @@
 import { render } from "@testing-library/svelte";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import '@testing-library/jest-dom/vitest';
+import "@testing-library/jest-dom/vitest";
 
 // Mock shared state
 vi.mock("../../src/lib/shared.svelte", () => ({
@@ -8,7 +8,7 @@ vi.mock("../../src/lib/shared.svelte", () => ({
     chat: {
         id: "",
         isLoading: false,
-    }
+    },
 }));
 
 import Chat from "../../src/lib/components/Chat.svelte";
@@ -24,52 +24,60 @@ describe("Chat", () => {
     it("displays empty state when no messages", () => {
         const { container } = render(Chat);
 
-        const emptyMessage = container.querySelector('.flex.items-center.justify-center.flex-1');
+        const emptyMessage = container.querySelector(
+            ".flex.items-center.justify-center.flex-1",
+        );
         expect(emptyMessage?.textContent).toBe("Start a conversation...");
     });
 
     it("renders chat container with correct styling", () => {
         const { container } = render(Chat);
 
-        const chatContainer = container.querySelector('.bg-muted\\/50.rounded-xl');
+        const chatContainer = container.querySelector(
+            ".bg-muted\\/50.rounded-xl",
+        );
         expect(chatContainer).toBeInTheDocument();
     });
 
     it("renders messages when they exist", () => {
         messages.push({
             question: "Test question",
-            answer: "Test answer"
+            answer: "Test answer",
         });
 
         const { container } = render(Chat);
 
-        const messageContainer = container.querySelector('.flex.flex-col.gap-4');
+        const messageContainer = container.querySelector(
+            ".flex.flex-col.gap-4",
+        );
         expect(messageContainer).toBeInTheDocument();
     });
 
     it("shows loading indicator when chat is loading", () => {
         messages.push({
             question: "Test question",
-            answer: ""
+            answer: "",
         });
         chat.isLoading = true;
 
         const { container } = render(Chat);
 
         // Dots component should be rendered (looking for the animated dots)
-        const dotsContainer = container.querySelector('.flex.gap-1');
+        const dotsContainer = container.querySelector(".flex.gap-1");
         expect(dotsContainer).toBeInTheDocument();
     });
 
     it("does not show empty state when messages exist", () => {
         messages.push({
             question: "Test",
-            answer: "Answer"
+            answer: "Answer",
         });
 
         const { container } = render(Chat);
 
-        const emptyMessage = container.querySelector('.flex.items-center.justify-center.flex-1');
+        const emptyMessage = container.querySelector(
+            ".flex.items-center.justify-center.flex-1",
+        );
         expect(emptyMessage).not.toBeInTheDocument();
     });
 });
