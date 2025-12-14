@@ -9,8 +9,13 @@ lerna-debug.log*
 
 node_modules
 coverage
-dist/
-!dist/.gitkeep
+dist/*.html
+dist/*.png
+dist/assets/*.css
+dist/assets/*.js
+dist/assets/*.png
+dist/assets/*.ttf
+
 *.local
 
 # Editor directories and files
