@@ -73,7 +73,6 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 
 	resp, err := s.openAIservice.Request(ctx, req)
 	if err != nil {
-		s.logger.Debug(err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation

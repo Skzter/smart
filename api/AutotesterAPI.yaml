@@ -519,14 +519,17 @@ components:
     ChatResponse:
       type: object
       properties:
-        message:
-          $ref: '#/components/schemas/Message'
-        userId:
-          type: string
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
-          type: string
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        content:
+          type: object
+          properties:
+            message:
+              $ref: '#/components/schemas/Message'
+            userId:
+              type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+            conversationId:
+              type: string
+              example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
           type: array
           items:
