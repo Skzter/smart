@@ -71,10 +71,12 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/mcp/domain/config
       - internal/shared/domain/config
       - internal/build/configs
       - cmd/autotester/wire_gen.go
       - cmd/suproxy/wire_gen.go
+      - cmd/mcp/wire_gen.go
 
 replace_api_paths:
   # is needed to run the application on the HTWK Server -> reverse proxy routes / to /api
@@ -300,6 +302,19 @@ build_autotester_go_container:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester:latest
   script:
     - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
+    - docker push $IMAGE_TAG
+
+build_mcp_go_container:
+  stage: build
+  extends: .docker_build
+  interruptible: true
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester-mcp:latest
+  script:
+    - docker build -f deployments/mpc/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
     - docker push $IMAGE_TAG
 
 build_autotester_run_container:
