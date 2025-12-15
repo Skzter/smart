@@ -35,9 +35,10 @@
                 <div class="flex-1"></div>
                 <div class="flex flex-col gap-4">
                     {#each messages as message}
-                        <UserMessage message={message.question} />
-                        {#if message.answer}
-                            <BotMessage msg={message.answer} />
+                        {#if message.t == "user"}
+                            <UserMessage message={message.Message} />
+                        {:else}
+                            <BotMessage msg={message} />
                         {/if}
                     {/each}
                     <!-- Loading indicator, auch eigener component und vllt auf vorgefertigte component zurück greifen -->

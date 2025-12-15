@@ -72,11 +72,11 @@ func TestAddMessage(t *testing.T) {
 
 func TestFilter(t *testing.T) {
 	base := []*Message{
-		{Message: entity.Message{Id: "m0"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m0"}, Type: MessageTypeAny},
 		{Message: entity.Message{Id: "m1"}, Type: MessageTypeValidation},
 		{Message: entity.Message{Id: "m2"}, Type: MessageTypeGeneration},
 		{Message: entity.Message{Id: "m3"}, Type: MessageTypeValidation},
-		{Message: entity.Message{Id: "m4"}, Type: MessageTypeUser},
+		{Message: entity.Message{Id: "m4"}, Type: MessageTypeAny},
 		{Message: entity.Message{Id: "m5"}, Type: MessageTypeValidation},
 		{Message: entity.Message{Id: "m6"}, Type: MessageTypeGeneration},
 	}

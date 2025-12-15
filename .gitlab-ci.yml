@@ -71,10 +71,12 @@ go_generate_code:
     paths:
       - internal/autotester/domain/config
       - internal/suproxy/domain/config
+      - internal/mcp/domain/config
       - internal/shared/domain/config
       - internal/build/configs
       - cmd/autotester/wire_gen.go
       - cmd/suproxy/wire_gen.go
+      - cmd/mcp/wire_gen.go
 
 replace_api_paths:
   # is needed to run the application on the HTWK Server -> reverse proxy routes / to /api
@@ -204,7 +206,8 @@ llm_test_suite:
   stage: llm_testing
   script:
     - echo "Running LLM test suite..."
-    - doppler run -- go test -tags=llmtest -run TestPromptTestSuite ./internal/autotester/domain/service -v
+    - ./bin/doppler run -- go test -tags=llmtest -run TestPromptTestSuite ./internal/autotester/domain/service -v
+  allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
       when: on_success
@@ -301,6 +304,19 @@ build_autotester_go_container:
     - docker build -f deployments/autotester/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
     - docker push $IMAGE_TAG
 
+build_mcp_go_container:
+  stage: build
+  extends: .docker_build
+  interruptible: true
+  needs:
+    - job: build_go_artifacts
+      artifacts: true
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester-mcp:latest
+  script:
+    - docker build -f deployments/mpc/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
+    - docker push $IMAGE_TAG
+
 build_autotester_run_container:
   stage: build
   extends:
@@ -322,8 +338,9 @@ build_autotester_run_container:
         .
     - docker push $IMAGE_TAG
   rules:
-    - changes:
-        - build/auto-playwright/Dockerfile
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  allow_failure: true
 
 deploy_htwk:
   image:

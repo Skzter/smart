@@ -18,7 +18,7 @@ const baseURL = "http://localhost:8081/api/v1/";
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChatResponse(
+export async function generatePrompt(
     request: ApiChatRequest,
 ): Promise<ApiChatResponse> {
     try {
@@ -30,7 +30,30 @@ export async function getChatResponse(
         });
         return {
             message: response.data.message as ApiMessage,
-            conversationId: response.data.conversationId,
+            chatId: response.data.chatId,
+            userId: response.data.userId,
+        };
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+/** Validates the prompt by sending it to the /validationRes endpoint
+ * @param body: object containing userId, conversationId, and prompt
+ */
+export async function validatePrompt(
+    request: ApiChatRequest,
+): Promise<ApiChatResponse> {
+    try {
+        const response = await axios({
+            method: "post",
+            url: "/validate",
+            baseURL: "/api/v1/",
+            data: request,
+        });
+        return {
+            message: response.data.message as ApiMessage,
+            chatId: response.data.chatId,
             userId: response.data.userId,
         };
     } catch (error) {

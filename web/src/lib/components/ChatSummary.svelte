@@ -2,10 +2,9 @@
     import type { ApiChatSummary, ApiMessage } from "$types/api";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { LucideMessageSquare, Pencil } from "@lucide/svelte";
-    import type { Message } from "$types/message";
     import { getChatById } from "$lib/api";
     import { toast } from "svelte-sonner";
-    import { chat, messages, user } from "$lib/shared.svelte";
+    import { type Message, chat, messages, user } from "$lib/shared.svelte";
 
     let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
     let edit = $state(false);
@@ -37,63 +36,28 @@
     ): Message[] {
         const messages: Message[] = [];
 
-        for (let i = 0; i < apiMessages.length; i++) {
-            const userMessage = apiMessages[i];
-
-            // Skip if not a user message
-            if (userMessage?.role !== "user") {
-                continue;
+        apiMessages.forEach((element) => {
+            if (element.role === "user") {
+                messages.push({ t: "user", Message: element.body });
+                return;
             }
 
-            let answerMessage = null;
-
-            // Check next messages for assistant responses
-            for (let j = i + 1; j < apiMessages.length; j++) {
-                const currentMsg = apiMessages[j];
-
-                // Stop if we hit another user message
-                if (currentMsg.role === "user") {
-                    break;
-                }
-
-                // If it's an assistant message
-                if (currentMsg.role === "assistant") {
-                    // Try to parse as JSON to check if it's a validation message
-                    try {
-                        const parsed = JSON.parse(currentMsg.body);
-                        if (
-                            Object.prototype.hasOwnProperty.call(
-                                parsed,
-                                "valid",
-                            )
-                        ) {
-                            // If validation failed, use the message as answer
-                            if (!parsed.valid && parsed.message) {
-                                answerMessage = parsed.message;
-                                break;
-                            }
-                            // If valid is true, continue looking for actual answer
-                        } else {
-                            // Not a validation message, use as answer
-                            answerMessage = currentMsg.body;
-                            break;
-                        }
-                    } catch {
-                        // Not JSON, use as regular answer
-                        answerMessage = currentMsg.body;
-                        break;
-                    }
-                }
-            }
-
-            // Only add if we found an answer
-            if (answerMessage) {
+            if (element.type === "Validation") {
+                let msg: { valid: boolean; message: string } = JSON.parse(
+                    element.body,
+                );
                 messages.push({
-                    question: userMessage.body,
-                    answer: answerMessage,
+                    t: "validation",
+                    Message: msg.valid ? "Prompt ist Valide" : msg.message,
                 });
+                return;
             }
-        }
+
+            if (element.type === "Generation") {
+                messages.push({ t: "generation", Message: element.body });
+                return;
+            }
+        });
 
         return messages;
     }

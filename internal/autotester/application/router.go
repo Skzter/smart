@@ -24,6 +24,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	apiV1 := router.Group("/api/v1")
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
+		apiV1.POST("/validate", controller.HandleChatRequestValidity)
 		apiV1.GET("/users/:userId/chats", controller.HandleGetUserChats)
 		apiV1.GET("/users/:userId/chats/:chatId", controller.GetChatById)
 		apiV1.GET("/template", controller.HandleGetTemplate)
@@ -31,6 +32,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
+		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
 	}
 
 	if !isHeadless {
@@ -57,4 +59,14 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 
 	logger.Info("Router initialized", "isHeadless", isHeadless)
 	return router, nil
+}
+
+func sseHeaderMiddleWare() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-cache")
+		c.Writer.Header().Set("Connection", "keep-alive")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Next()
+	}
 }

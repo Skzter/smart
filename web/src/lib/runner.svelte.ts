@@ -56,7 +56,7 @@ export class Runner {
         try {
             const test = await saveTestLocal({
                 userId: sanitizedUserId,
-                conversationId: this.chatId,
+                chatId: this.chatId,
                 code: testcode,
             });
 

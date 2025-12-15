@@ -233,9 +233,9 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
-			mockChatManager := mocks.NewMockChatManager(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 
 			// Setup metrics mock to accept any calls
@@ -260,7 +260,6 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}
-
 			test.SetupMock(mockRemoteStorageServ)
 
 			url := "/api/v1/tests"

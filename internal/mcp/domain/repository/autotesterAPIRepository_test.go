@@ -1,0 +1,577 @@
+package repository
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
+)
+
+func TestNewAutotesterAPIRepository(t *testing.T) {
+	tests := []struct {
+		name      string
+		logger    *slog.Logger
+		client    *http.Client
+		baseURL   string
+		expectErr bool
+	}{
+		{
+			name:      "success",
+			logger:    slog.Default(),
+			client:    &http.Client{},
+			baseURL:   "http://example.com",
+			expectErr: false,
+		},
+		{
+			name:      "nil-logger",
+			logger:    nil,
+			client:    &http.Client{},
+			baseURL:   "http://example.com",
+			expectErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo, err := NewAutotesterAPIRepository(test.logger, test.client, test.baseURL)
+			if test.expectErr {
+				require.Error(t, err)
+				require.Nil(t, repo)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, repo)
+		})
+	}
+}
+
+func TestGetTemplate(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name            string
+		statusCode      int
+		responseBody    string
+		expectErr       bool
+		expectedContent string
+	}{
+		{
+			name:            "success",
+			statusCode:      http.StatusOK,
+			responseBody:    `{"template":"template text"}`,
+			expectErr:       false,
+			expectedContent: "template text",
+		},
+		{
+			name:            "non-200",
+			statusCode:      http.StatusInternalServerError,
+			responseBody:    `error`,
+			expectErr:       true,
+			expectedContent: "",
+		},
+		{
+			name:            "invalid-json",
+			statusCode:      http.StatusOK,
+			responseBody:    `{"template":`,
+			expectErr:       true,
+			expectedContent: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/template" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			res, err := repo.GetTemplate(context.Background())
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, test.expectedContent, res.Content)
+		})
+	}
+}
+
+func TestGenerateTest(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name         string
+		statusCode   int
+		responseBody string
+		expectErr    bool
+		expectedTest string
+	}{
+		{
+			name:         "success",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","conversationId":"conv-456"}`,
+			expectErr:    false,
+			expectedTest: "generated test code",
+		},
+		{
+			name:         "non-200",
+			statusCode:   http.StatusBadRequest,
+			responseBody: `error`,
+			expectErr:    true,
+			expectedTest: "",
+		},
+		{
+			name:         "invalid-json",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":`,
+			expectErr:    true,
+			expectedTest: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/chat" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			req := &entity.GenerateTestRequest{
+				Prompt:         "test prompt",
+				UserId:         "user-123",
+				ConversationId: "conv-456",
+			}
+
+			res, err := repo.GenerateTest(context.Background(), req)
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, test.expectedTest, res.Result.Body)
+		})
+	}
+}
+
+func TestSaveTest(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name         string
+		statusCode   int
+		responseBody string
+		expectErr    bool
+		expectUUID   bool
+	}{
+		{
+			name:         "success",
+			statusCode:   http.StatusOK,
+			responseBody: `{"testcaseId":"550e8400-e29b-41d4-a716-446655440000","action":"saved"}`,
+			expectErr:    false,
+			expectUUID:   true,
+		},
+		{
+			name:         "non-200",
+			statusCode:   http.StatusInternalServerError,
+			responseBody: `error`,
+			expectErr:    true,
+			expectUUID:   false,
+		},
+		{
+			name:         "invalid-json",
+			statusCode:   http.StatusOK,
+			responseBody: `{"testcaseId":`,
+			expectErr:    true,
+			expectUUID:   false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/saveLocal" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			req := &entity.SaveTestRequest{
+				Code:           "test code",
+				UserId:         "user-123",
+				ConversationId: "conv-456",
+			}
+
+			res, err := repo.SaveTest(context.Background(), req)
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			if test.expectUUID {
+				require.NotEmpty(t, res.TestId)
+				require.Len(t, res.TestId, 36)
+			}
+		})
+	}
+}
+
+func TestRunTest(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name           string
+		statusCode     int
+		responseBody   string
+		expectErr      bool
+		expectedStatus string
+	}{
+		{
+			name:           "success",
+			statusCode:     http.StatusOK,
+			responseBody:   `{"result":"passed"}`,
+			expectErr:      false,
+			expectedStatus: "passed",
+		},
+		{
+			name:           "non-200",
+			statusCode:     http.StatusInternalServerError,
+			responseBody:   `error`,
+			expectErr:      true,
+			expectedStatus: "",
+		},
+		{
+			name:           "invalid-json",
+			statusCode:     http.StatusOK,
+			responseBody:   `{"result":`,
+			expectErr:      true,
+			expectedStatus: "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/run" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			req := &entity.RunTestRequest{
+				TestId:         "test code",
+				UserId:         "user-123",
+				ConversationId: "conv-456",
+			}
+
+			res, err := repo.RunTest(context.Background(), req)
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, test.expectedStatus, res.Result)
+		})
+	}
+}
+
+func TestNewJSONRequest(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name              string
+		method            string
+		url               string
+		body              interface{}
+		expectErr         bool
+		expectContentType bool
+	}{
+		{
+			name:              "get-without-body",
+			method:            http.MethodGet,
+			url:               "http://example.com/api",
+			body:              nil,
+			expectErr:         false,
+			expectContentType: false,
+		},
+		{
+			name:              "post-with-body",
+			method:            http.MethodPost,
+			url:               "http://example.com/api",
+			body:              map[string]string{"key": "value"},
+			expectErr:         false,
+			expectContentType: true,
+		},
+		{
+			name:              "invalid-url",
+			method:            http.MethodGet,
+			url:               ":",
+			body:              nil,
+			expectErr:         true,
+			expectContentType: false,
+		},
+		{
+			name:              "unmarshalable-body",
+			method:            http.MethodPost,
+			url:               "http://example.com/api",
+			body:              make(chan int),
+			expectErr:         true,
+			expectContentType: false,
+		},
+		{
+			name:              "put-with-complex-body",
+			method:            http.MethodPut,
+			url:               "http://example.com/api",
+			body:              &entity.GenerateTestRequest{Prompt: "test", UserId: "u1", ConversationId: "c1"},
+			expectErr:         false,
+			expectContentType: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := &http.Client{}
+			repo, err := NewAutotesterAPIRepository(logger, client, "http://example.com")
+			require.NoError(t, err)
+
+			concreteRepo := repo.(*autotesterAPIRepository)
+			req, err := concreteRepo.newJSONRequest(context.Background(), test.method, test.url, test.body)
+
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, req)
+			require.Equal(t, test.method, req.Method)
+			require.Equal(t, test.url, req.URL.String())
+			if test.expectContentType {
+				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			} else {
+				require.Empty(t, req.Header.Get("Content-Type"))
+			}
+		})
+	}
+}
+
+// nolint:funlen
+func TestDoAndDecode(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name         string
+		statusCode   int
+		responseBody string
+		expectErr    bool
+		expectedData string
+		useNilResult bool
+		nilClient    bool
+		nilLogger    bool
+		nilReq       bool
+	}{
+		{
+			name:         "success-with-data",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":"test value"}`,
+			expectErr:    false,
+			expectedData: "test value",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "non-200-status",
+			statusCode:   http.StatusBadRequest,
+			responseBody: `error message`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "invalid-json",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "empty-response",
+			statusCode:   http.StatusOK,
+			responseBody: `{}`,
+			expectErr:    false,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "nil-result-success",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":"ignored"}`,
+			expectErr:    false,
+			expectedData: "",
+			useNilResult: true,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "status-404",
+			statusCode:   http.StatusNotFound,
+			responseBody: `not found`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "status-500",
+			statusCode:   http.StatusInternalServerError,
+			responseBody: `server error`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "nil-client",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":"ignored"}`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    true,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
+			name:         "nil-logger",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":"ignored"}`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    true,
+			nilReq:       false,
+		},
+		{
+			name:         "nil-req",
+			statusCode:   http.StatusOK,
+			responseBody: `{"data":"ignored"}`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			var client *http.Client
+			var testLogger *slog.Logger
+			var req *http.Request
+			var err error
+
+			if test.nilClient {
+				client = nil
+			} else {
+				client = srv.Client()
+			}
+
+			if test.nilLogger {
+				testLogger = nil
+			} else {
+				testLogger = logger
+			}
+
+			if test.nilReq {
+				req = nil
+			} else {
+				req, err = http.NewRequest(http.MethodGet, srv.URL, nil)
+				require.NoError(t, err)
+			}
+
+			type testResponse struct {
+				Data string `json:"data"`
+			}
+
+			if test.useNilResult {
+				err = doAndDecode[testResponse](client, testLogger, req, nil)
+			} else {
+				var result testResponse
+				err = doAndDecode(client, testLogger, req, &result)
+				if !test.expectErr && err == nil {
+					require.Equal(t, test.expectedData, result.Data)
+				}
+			}
+
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}

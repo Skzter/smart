@@ -1,8 +1,9 @@
 export type ApiMessage = {
     id: string;
     body: string;
-    role: string;
+    role: "user" | "assistant";
     createdAt: string;
+    type: "Validation" | "Generation" | "Any";
 };
 
 export type ApiChatSummary = {
@@ -16,18 +17,18 @@ export type ApiChatSummary = {
 export type ApiChatRequest = {
     prompt: string;
     userId: string;
-    conversationId: string;
+    chatId: string;
 };
 
 export type ApiChatResponse = {
     message: ApiMessage;
     userId: string;
-    conversationId: string;
+    chatId: string;
 };
 
 export type ApiSaveTestLocal = {
     userId: string;
-    conversationId: string;
+    chatId: string;
     code: string;
 };
 
