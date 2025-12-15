@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
-import LoginButton from "../../src/components/LoginButton.svelte";
+import LoginButton from "../../src/lib/components/LoginButton.svelte";
 import { auth } from "../../src/lib/authService";
 
 vi.mock("../../src/lib/authService", () => {

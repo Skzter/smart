@@ -27,7 +27,7 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
 	wire.Build(
 		shared.SharedProviderSet,
 		LoggerProvider,
@@ -41,7 +41,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		service.NewValidatorService,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
-		application.NewRouter,
+		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
 		TaglistConfigProvider,
@@ -59,7 +59,10 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 	return nil, nil
 }
 
-// TaglistConfigProvider provides a new TaglistConfig.
+func RouterProvider(logger *slog.Logger, controller *handler.AutotesterController, isHeadless bool) (*gin.Engine, error) {
+	return application.NewRouter(logger, controller, isHeadless)
+}
+
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }

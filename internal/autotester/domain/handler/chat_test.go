@@ -25,14 +25,6 @@ import (
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
-type MockSetup struct {
-	Function         string
-	UserPrompt       string
-	ExpectedResponse string
-	ExpectedBool     bool
-	ResponseError    error
-}
-
 // nolint:funlen
 func TestHandleChatRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
@@ -201,23 +193,23 @@ func TestHandleChatRequest(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestHandleChatRequestValidity(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
-	validPrompt := "this is a valid prompt"
-	invalidPrompt := "this is a invalid prompt"
 	tracer := otel.Tracer("test")
 	tests := []struct {
-		TestName       string
-		RequestBody    string
-		ExpectedStatus int
-		MockSetup      []MockSetup
+		TestName             string
+		RequestBody          string
+		ExpectedStatus       int
+		MockResponseValidate []any
+		MockResponseLoad     []any
+		MockResponseSave     []any
 	}{
 		{
 			TestName:       "Invalid JSON",
 			RequestBody:    `{"invalid":it ad json}`,
 			ExpectedStatus: http.StatusBadRequest,
-			MockSetup:      nil,
 		},
 		{
 			TestName: "valid request, valid prompt",
@@ -229,10 +221,10 @@ func TestHandleChatRequestValidity(t *testing.T) {
 				"userId":"2",
 				"conversationId":"2"
 			}`,
-			ExpectedStatus: http.StatusOK,
-			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: validPrompt, ExpectedBool: true},
-			},
+			ExpectedStatus:       http.StatusOK,
+			MockResponseLoad:     []any{&entity.Chat{}, nil},
+			MockResponseValidate: []any{true, "", nil},
+			MockResponseSave:     []any{nil},
 		},
 		{
 			TestName: "valid request, invalid prompt",
@@ -244,10 +236,10 @@ func TestHandleChatRequestValidity(t *testing.T) {
 				"userId":"2",
 				"conversationId":"2"
 			}`,
-			ExpectedStatus: http.StatusOK,
-			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: invalidPrompt, ExpectedBool: false, ExpectedResponse: "Invalid prompt because..."},
-			},
+			ExpectedStatus:       http.StatusOK,
+			MockResponseLoad:     []any{&entity.Chat{}, nil},
+			MockResponseValidate: []any{false, "Invalid prompt because...", nil},
+			MockResponseSave:     []any{nil},
 		},
 		{
 			TestName: "valid request, errors when validating",
@@ -259,10 +251,49 @@ func TestHandleChatRequestValidity(t *testing.T) {
 				"userId":"2",
 				"conversationId":"2"
 			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: []MockSetup{
-				{Function: "ValidatePrompt", UserPrompt: "validating err", ResponseError: errors.New("err")},
-			},
+			ExpectedStatus:       http.StatusInternalServerError,
+			MockResponseLoad:     []any{&entity.Chat{}, nil},
+			MockResponseValidate: []any{true, "", errors.New("err")},
+		},
+		{
+			TestName: "assert fails",
+			RequestBody: `{
+				"message": {
+					"body": "this is a valid prompt",
+					"role":"user"
+				},
+				"userId":"",
+				"conversationId":"2"
+			}`,
+			ExpectedStatus: http.StatusBadRequest,
+		},
+		{
+			TestName: "loadChat error",
+			RequestBody: `{
+				"message": {
+					"body": "this is a valid prompt",
+					"role":"user"
+				},
+				"userId":"2",
+				"conversationId":"2"
+			}`,
+			ExpectedStatus:   http.StatusInternalServerError,
+			MockResponseLoad: []any{nil, errors.New("err")},
+		},
+		{
+			TestName: "SaveChat error",
+			RequestBody: `{
+				"message": {
+					"body": "this is a valid prompt",
+					"role":"user"
+				},
+				"userId":"2",
+				"conversationId":"2"
+			}`,
+			ExpectedStatus:       http.StatusOK,
+			MockResponseLoad:     []any{&entity.Chat{}, nil},
+			MockResponseValidate: []any{true, "", nil},
+			MockResponseSave:     []any{errors.New("err")},
 		},
 	}
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
@@ -278,13 +309,17 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
-			for _, mc := range test.MockSetup {
-				mockValServ.On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).
-					Return(mc.ExpectedBool, mc.ExpectedResponse, mc.ResponseError)
+
+			if test.MockResponseLoad != nil {
+				mockChatManager.On("LoadChat", mock.Anything, mock.Anything).Return(test.MockResponseLoad...)
 			}
-			if test.ExpectedStatus != http.StatusBadRequest {
-				mockChatManager.On("LoadChat", mock.Anything, mock.Anything).Return(&entity.Chat{}, nil)
+			if test.MockResponseSave != nil {
+				mockChatManager.On("SaveChat", mock.Anything, mock.Anything).Return(test.MockResponseSave...)
 			}
+			if test.MockResponseValidate != nil {
+				mockValServ.On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseValidate...)
+			}
+
 			req, _ := http.NewRequest(http.MethodPost, "/api/v1/chat/validity", bytes.NewBufferString(test.RequestBody))
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
