@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 pre_cmd = ["go tool task generate"]
 cmd = "go build -o ./tmp/app -ldflags \"-X ${VERSION_VAR}=${VERSION} -X ${OPENAI_KEY_VAR}=${OPENAI_KEY}\" ${APP_CMD:-./cmd/suproxy}"
 bin = "tmp/app"
-full_bin = "./tmp/app"
+full_bin = "./tmp/app ${FLAGS:-}"
 include_ext = ["go","pkl"]
 exclude_dir = ["assets", "tmp", "vendor", ".git", "node_modules", "web", "cmd/benchmark"]
 exclude_file = []

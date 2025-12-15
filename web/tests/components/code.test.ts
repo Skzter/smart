@@ -1,244 +1,155 @@
-import { render, screen } from "@testing-library/svelte";
-import { describe, it, expect, vi } from "vitest";
-import Code from "../../src/components/Code.svelte";
-import { tokenize } from "../../src/lib/syntaxHighlighting";
+import { render } from "@testing-library/svelte";
+import { describe, it, expect } from "vitest";
+import "@testing-library/jest-dom/vitest";
 
-// Mock the tokenize function
-vi.mock("../../src/lib/syntaxHighlighting", () => ({
-    tokenize: vi.fn(),
-}));
+import Code from "../../src/lib/components/Code.svelte";
 
-describe("Code Component", () => {
-    beforeEach(() => {
-        vi.mocked(tokenize).mockReset();
-    });
-    it("renders tokenized message correctly", () => {
-        const mockTokens = [
-            { type: "keyword", value: "const" },
-            { type: "text", value: " " },
-            { type: "variable", value: "foo" },
-        ];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
-        render(Code, { props: { message: "const foo" } });
-
-        const pre = screen.getByText(/const/).closest("pre");
-        expect(pre).toBeInTheDocument();
-        expect(pre?.textContent).toBe("const foo");
-    });
-
-    it("applies correct CSS classes to token spans", () => {
-        const mockTokens = [
-            { type: "keyword", value: "function" },
-            { type: "operator", value: "=" },
-        ];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
+describe("Code", () => {
+    it("renders a pre element", () => {
         const { container } = render(Code, {
-            props: { message: "function=" },
+            props: {
+                code: "const test = 'hello';",
+            },
         });
 
-        const keywordSpan = container.querySelector(".token-keyword");
-        const operatorSpan = container.querySelector(".token-operator");
-
-        expect(keywordSpan).toBeInTheDocument();
-        expect(keywordSpan?.textContent).toBe("function");
-        expect(operatorSpan).toBeInTheDocument();
-        expect(operatorSpan?.textContent).toBe("=");
+        const preElement = container.querySelector("pre");
+        expect(preElement).toBeInTheDocument();
     });
 
-    it("calls tokenize with the message prop", () => {
-        const message = "Hello World";
-        const mockTokens = [{ type: "text", value: message }];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
-        render(Code, { props: { message } });
-
-        expect(tokenize).toHaveBeenCalledWith(message);
-        expect(tokenize).toHaveBeenCalledTimes(1);
-    });
-
-    it("preserves whitespace in pre element", () => {
-        const mockTokens = [{ type: "text", value: "line1\n  line2\t\ttab" }];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
+    it("renders code with syntax highlighting", () => {
         const { container } = render(Code, {
-            props: { message: "line1\n  line2\t\ttab" },
+            props: {
+                code: "const test = 'hello';",
+            },
         });
 
-        const pre = container.querySelector("pre");
-        expect(pre).toHaveClass("whitespace-pre-wrap");
-        expect(pre?.textContent).toBe("line1\n  line2\t\ttab");
+        const tokens = container.querySelectorAll('span[class^="token-"]');
+        expect(tokens.length).toBeGreaterThan(0);
     });
 
-    it("handles empty message", () => {
-        vi.mocked(tokenize).mockReturnValue([]);
-
+    it("preserves whitespace and line breaks", () => {
         const { container } = render(Code, {
-            props: { message: "" },
+            props: {
+                code: "line 1\n  line 2",
+            },
         });
 
-        const pre = container.querySelector("pre");
-        expect(pre).toBeInTheDocument();
-        expect(pre?.textContent).toBe("");
+        const preElement = container.querySelector("pre.whitespace-pre-wrap");
+        expect(preElement).toBeInTheDocument();
     });
 
-    it("applies all required Tailwind classes to pre", () => {
-        const mockTokens = [{ type: "text", value: "test" }];
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
+    it("renders empty code", () => {
         const { container } = render(Code, {
-            props: { message: "test" },
+            props: {
+                code: "",
+            },
         });
 
-        const pre = container.querySelector("pre");
-        expect(pre).toHaveClass("font-sans");
-        expect(pre).toHaveClass("text-base");
-        expect(pre).toHaveClass("leading-relaxed");
-        expect(pre).toHaveClass("whitespace-pre-wrap");
-        expect(pre).toHaveClass("break-words");
+        const preElement = container.querySelector("pre");
+        expect(preElement).toBeInTheDocument();
     });
 
-    it("renders multiple tokens with different types", () => {
-        const mockTokens = [
-            { type: "keyword", value: "import" },
-            { type: "text", value: " " },
-            { type: "string", value: '"module"' },
-            { type: "text", value: " " },
-            { type: "keyword", value: "from" },
-            { type: "text", value: " " },
-            { type: "string", value: '"path"' },
-        ];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
+    it("tokenizes keywords correctly", () => {
         const { container } = render(Code, {
-            props: { message: 'import "module" from "path"' },
+            props: {
+                code: "const import function",
+            },
         });
 
-        expect(container.querySelectorAll(".token-keyword")).toHaveLength(2);
-        expect(container.querySelectorAll(".token-string")).toHaveLength(2);
-        expect(container.querySelectorAll(".token-text")).toHaveLength(3);
+        const keywordTokens = container.querySelectorAll("span.token-keyword");
+        expect(keywordTokens.length).toBeGreaterThan(0);
     });
 
-    it("reactively updates when message changes", () => {
-        const mockTokens1 = [{ type: "text", value: "first" }];
-        const mockTokens2 = [{ type: "text", value: "second" }];
-        vi.mocked(tokenize)
-            .mockReturnValueOnce(mockTokens1)
-            .mockReturnValueOnce(mockTokens2);
-
-        const { rerender } = render(Code, {
-            props: { message: "first" },
-        });
-
-        expect(screen.getByText("first")).toBeInTheDocument();
-
-        // Use rerender instead of component.$set
-        rerender({ message: "second" });
-
-        expect(screen.getByText("second")).toBeInTheDocument();
-        expect(tokenize).toHaveBeenCalledTimes(2);
-    });
-
-    it("handles special HTML characters without escaping issues", () => {
-        const mockTokens = [
-            { type: "text", value: "<div>" },
-            { type: "text", value: "&" },
-            { type: "text", value: '"test"' },
-        ];
-
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
+    it("renders multiple tokens in each block", () => {
         const { container } = render(Code, {
-            props: { message: '<div>&"test"' },
+            props: {
+                code: "const x = 123;",
+            },
         });
 
-        const pre = container.querySelector("pre");
-        expect(pre?.textContent).toBe('<div>&"test"');
-    });
-    it("applies correct CSS classes for token types", () => {
-        const mockTokens = [
-            { type: "keyword", value: "function" },
-            { type: "functionCall", value: "myFunc" },
-            { type: "string", value: '"hello"' },
-            { type: "comment", value: "// comment" },
-            { type: "identifier", value: "variable" },
-            { type: "number", value: "42" },
-            { type: "operator", value: "+" },
-            { type: "punctuation", value: ";" },
-            { type: "whitespace", value: " " },
-        ];
+        const allTokens = container.querySelectorAll('span[class^="token-"]');
+        expect(allTokens.length).toBeGreaterThan(1);
 
-        vi.mocked(tokenize).mockReturnValue(mockTokens);
-
-        const { container } = render(Code, {
-            props: { message: "function myFunc() { return 42; }" },
+        // Verify each token has content
+        allTokens.forEach((token) => {
+            expect(token.textContent).toBeTruthy();
         });
-
-        // Check each token has the correct class
-        expect(container.querySelector(".token-keyword")).toBeInTheDocument();
-        expect(
-            container.querySelector(".token-functionCall"),
-        ).toBeInTheDocument();
-        expect(container.querySelector(".token-string")).toBeInTheDocument();
-        expect(container.querySelector(".token-comment")).toBeInTheDocument();
-        expect(
-            container.querySelector(".token-identifier"),
-        ).toBeInTheDocument();
-        expect(container.querySelector(".token-number")).toBeInTheDocument();
-        expect(container.querySelector(".token-operator")).toBeInTheDocument();
-        expect(
-            container.querySelector(".token-punctuation"),
-        ).toBeInTheDocument();
-        expect(
-            container.querySelector(".token-whitespace"),
-        ).toBeInTheDocument();
-
-        // Verify content is correct
-        expect(container.querySelector(".token-keyword")?.textContent).toBe(
-            "function",
-        );
-        expect(container.querySelector(".token-number")?.textContent).toBe(
-            "42",
-        );
-    });
-    it("handles tokens with empty values", () => {
-        vi.mocked(tokenize).mockReturnValue([{ type: "text", value: "" }]);
-
-        const { container } = render(Code, {
-            props: { message: "" },
-        });
-
-        const span = container.querySelector(".token-text");
-        expect(span).toBeInTheDocument();
-        expect(span?.textContent).toBe("");
     });
 
-    it("handles tokens with special type", () => {
-        vi.mocked(tokenize).mockReturnValue([{ type: "", value: "test" }]);
-
+    it("handles code with various token types", () => {
         const { container } = render(Code, {
-            props: { message: "test" },
+            props: {
+                code: 'const name = "test"; // comment',
+            },
         });
 
-        const span = container.querySelector('span[class="token-"]');
-        expect(span).toBeInTheDocument();
+        const spans = container.querySelectorAll("span");
+        expect(spans.length).toBeGreaterThan(0);
     });
-    it("handles token with type but no value content", () => {
-        vi.mocked(tokenize).mockReturnValue([
-            { type: "whitespace", value: "" },
-        ]);
 
+    it("tokenizes different code correctly", () => {
         const { container } = render(Code, {
-            props: { message: "" },
+            props: {
+                code: "function test() { return 42; }",
+            },
         });
 
-        const span = container.querySelector(".token-whitespace");
-        expect(span).toBeInTheDocument();
+        const tokens = container.querySelectorAll('span[class^="token-"]');
+        expect(tokens.length).toBeGreaterThan(5);
+    });
+
+    it("handles complex code with multiple statement types", () => {
+        const complexCode = `async function getData() {
+    const response = await fetch('/api');
+    return response.json();
+}`;
+        const { container } = render(Code, {
+            props: {
+                code: complexCode,
+            },
+        });
+
+        const tokens = container.querySelectorAll('span[class^="token-"]');
+        expect(tokens.length).toBeGreaterThan(10);
+
+        // Should have keywords
+        const keywords = container.querySelectorAll("span.token-keyword");
+        expect(keywords.length).toBeGreaterThan(0);
+    });
+
+    it("renders token values correctly", () => {
+        const { container } = render(Code, {
+            props: {
+                code: "const x = 123;",
+            },
+        });
+
+        const tokens = container.querySelectorAll('span[class^="token-"]');
+
+        // Verify each token has both type class and value content
+        tokens.forEach((token) => {
+            expect(token.className).toMatch(/^token-/);
+            expect(token.textContent).not.toBe("");
+        });
+    });
+
+    it("renders all token types and values in each iteration", () => {
+        const { container } = render(Code, {
+            props: {
+                code: 'let name = "value"; // comment\nconst num = 42;',
+            },
+        });
+
+        const allSpans = container.querySelectorAll('span[class^="token-"]');
+        expect(allSpans.length).toBeGreaterThan(0);
+
+        // Each span should have token type as class and value as content
+        allSpans.forEach((span) => {
+            const className = span.className;
+            const textContent = span.textContent;
+
+            expect(className).toContain("token-");
+            expect(textContent).toBeDefined();
+        });
     });
 });

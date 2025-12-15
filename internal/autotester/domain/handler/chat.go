@@ -63,8 +63,6 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			}
 		}
 	}()
-	// add the user's prompt to the chat so generation has at least one user message
-	chat.AddMessage(sharedEntity.NewMessage(userRequest.Prompt, sharedEntity.RoleUser), entity.MessageTypeUser)
 
 	generatedCode, err := a.generationService.GeneratePrompt(c, chat, &userRequest)
 	if err != nil {
@@ -112,32 +110,37 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 		return
 	}
 
+	defer func() {
+		// only update chat when no errors
+		if c.Writer.Status() == http.StatusOK {
+			if err := a.chatManager.SaveChat(c, chat); err != nil {
+				a.logger.Error("Updating stored chat failed", "err", err.Error())
+			}
+		}
+	}()
+
 	valid, msg, err := a.validationService.ValidatePrompt(c, chat, &userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		a.logger.Error("Validation failed", "error", err)
 		return
 	}
+
 	if !valid {
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
 				Message: sharedEntity.Message{Body: msg},
-				UserId:  userRequest.UserId,
-				ChatId:  userRequest.ChatId,
+				UserId:  chat.UserId,
+				ChatId:  chat.Id,
 			})
 		return
 	}
 
 	c.JSON(http.StatusOK,
 		entity.ResponseForUser{
-			Message: sharedEntity.Message{
-				Id:        "",
-				Role:      "assistant",
-				Body:      "Prompt validated successfully!",
-				CreatedAt: time.Now().UTC(),
-			},
-			UserId: userRequest.UserId,
-			ChatId: userRequest.ChatId,
+			Message: sharedEntity.Message{},
+			UserId:  chat.UserId,
+			ChatId:  chat.Id,
 		})
 }
 
@@ -175,7 +178,7 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	defer span.End()
 
 	userID := c.Param("userId")
-	a.logger.Info(userID)
+
 	// checking if style: auth0|id is there
 	if !isValid(userID) {
 		span.RecordError(fmt.Errorf("invalid user id: %s", userID))

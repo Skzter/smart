@@ -88,14 +88,14 @@ replace_api_paths:
     - sed -i 's|"/api/v1"|"/v1"|g' internal/autotester/application/router.go
     - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/application/router.go
     # Frontend API file - replace baseURL from "/api/v1/chat" to "/v1/chat"
-    - sed -i 's|/api/v1|/v1|g' web/src/lib/Api.ts
+    - sed -i 's|/api/v1|/v1|g' web/src/lib/api.ts
     # Test files - replace all /api/v1/* routes with /v1/*
     - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/chat_test.go
     - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/template_test.go
     - sed -i 's|/api/v1/saveLocal|/v1/saveLocal|g' internal/autotester/domain/handler/localStorage_test.go
     - sed -i 's|/api/v1/deleteLocal|/v1/deleteLocal|g' internal/autotester/domain/handler/localStorage_test.go
     - sed -i 's|/api/v1/run|/v1/run|g' internal/autotester/domain/handler/runTest_test.go
-    - sed -i 's|/api/v1/|/v1/|g' web/tests/unit/api.test.ts
+    # - sed -i 's|/api/v1/|/v1/|g' web/tests/unit/api.test.ts
     - sed -i 's|/api/v1/Offerlist|/v1/Offerlist|g' internal/suproxy/domain/handler/handler_test.go
     - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/domain/handler/handler_test.go
   artifacts:
