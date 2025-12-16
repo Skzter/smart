@@ -1,4 +1,6 @@
 {
-    "domain": "jokresner.eu.auth0.com",
-    "clientId": "hWxkFufP46LyYSZD4apALF8qmhmxZYln"
+  "authority": "https://auth.urlaub.check24.de/application/o/htwk-smart/",
+  "client_id": "GifhKsrHc7Oa2kjmFsHmz0wnZtjJP8QRULNEX54U",
+  "response_type": "code",
+  "scope": "openid profile email"
 }

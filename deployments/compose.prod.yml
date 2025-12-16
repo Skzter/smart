@@ -23,7 +23,11 @@ services:
     restart: "no"
 
   autotester:
-    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: deployments/autotester/Dockerfile.prod
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:check24
     restart: always
     depends_on:
       - autotester-migrate
