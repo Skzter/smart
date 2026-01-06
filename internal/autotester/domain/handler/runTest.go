@@ -13,7 +13,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
-// HandleRunContainer startet den Testcontainer und liefert Logs via SSE (über separaten Endpoint)
+// HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run.
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	start := time.Now()
 	ctx := c.Request.Context()
@@ -42,7 +42,6 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	// Testdatei ermitteln
 	testfile, err := a.localTestcaseStorageService.GetTestPath(params.TestId, params.UserID, params.SessionID)
 	if err != nil {
 		span.RecordError(err)
