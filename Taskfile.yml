@@ -191,6 +191,30 @@ tasks:
       # TEST_FILE wird bei runtime hinzugefügt
       - ./run-container.sh {{.TEST_FILE}}
 
+  postgres-up:
+    desc: Starts postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml up -d postgres
+
+  postgres-down:
+    desc: Stops postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml down
+
+  goose-up:
+    desc: Migrates postgres database up
+    dir: "internal/autotester/infrastructure/database/sql/schema"
+    cmds:
+      - go tool goose postgres "postgres://postgres:postgres-pass@localhost:5432/smart" up
+
+  goose-down:
+    desc: Migrates postgres database down
+    dir: "internal/autotester/infrastructure/database/sql/schema"
+    cmds:
+      - go tool goose postgres "postgres://postgres:postgres-pass@localhost:5432/smart" down
+
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
