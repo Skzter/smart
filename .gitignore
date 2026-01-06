@@ -7,8 +7,6 @@
 *.dll
 *.so
 *.dylib
-suproxy
-autotester
 mcp
 !suproxy/
 !autotester/
@@ -16,6 +14,8 @@ mcp
 !task.exe
 !doppler.exe
 !pkl.exe
+!build/auto-playwright/
+build/
 
 # Test binary, built with `go test -c`
 *.test

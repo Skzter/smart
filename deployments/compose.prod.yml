@@ -1,6 +1,10 @@
 services:
   suproxy:
-    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:latest
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: deployments/suproxy/Dockerfile.prod
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/suproxy:check24
     restart: always
     ports:
       - "8080:8080"
