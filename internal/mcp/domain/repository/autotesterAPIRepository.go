@@ -18,6 +18,9 @@ type AutotesterAPIRepository interface {
 	// GetTemplate fetches the test generation template from the API.
 	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
 
+	// ValidatePrompt validates a prompt against the API.
+	ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)
+
 	// GenerateTest sends a test generation request to the API.
 	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)
 
@@ -62,6 +65,23 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 	}
 
 	a.logger.Info("Successfully fetched template", "templateLength", len(result.Content))
+	return &result, nil
+}
+
+func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error) {
+	url := fmt.Sprintf("%s/api/v1/validate", a.baseURL)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	if err != nil {
+		a.logger.Error("Failed to validate prompt", "error", err)
+		return nil, err
+	}
+
+	var result entity.ValidatePromptResponse
+	if err := doAndDecode(a.httpClient, a.logger, req, &result); err != nil {
+		return nil, err
+	}
+
+	a.logger.Info("Successfully validated prompt")
 	return &result, nil
 }
 

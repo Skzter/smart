@@ -111,6 +111,82 @@ func TestGetTemplate(t *testing.T) {
 	}
 }
 
+func TestValidatePrompt(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name         string
+		statusCode   int
+		responseBody string
+		expectErr    bool
+		expectedMsg  string
+	}{
+		{
+			name:         "success - valid prompt",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":{"body":""},"userId":"user-123","chatId":"conv-456"}`,
+			expectErr:    false,
+			expectedMsg:  "",
+		},
+		{
+			name:         "success - invalid prompt with feedback",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":{"body":"Please provide more context"},"userId":"user-123","chatId":"conv-456"}`,
+			expectErr:    false,
+			expectedMsg:  "Please provide more context",
+		},
+		{
+			name:         "non-200 feedback",
+			statusCode:   http.StatusBadRequest,
+			responseBody: `error`,
+			expectErr:    true,
+			expectedMsg:  "",
+		},
+		{
+			name:         "invalid-json",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":`,
+			expectErr:    true,
+			expectedMsg:  "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/validate" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			req := &entity.GenerateTestRequest{
+				Prompt:         "test prompt",
+				UserId:         "user-123",
+				ConversationId: "conv-456",
+			}
+
+			res, err := repo.ValidatePrompt(context.Background(), req)
+			if test.expectErr {
+				require.Error(t, err)
+				require.Nil(t, res)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, test.expectedMsg, res.Result.Body)
+			require.Equal(t, "user-123", res.UserId)
+			require.Equal(t, "conv-456", res.ConversationId)
+		})
+	}
+}
 func TestGenerateTest(t *testing.T) {
 	logger := slog.Default()
 
