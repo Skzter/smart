@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import * as Sidebar from "$lib/components/ui/sidebar/sidebar.svelte";
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
