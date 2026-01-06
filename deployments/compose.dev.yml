@@ -101,10 +101,9 @@ services:
       - default
     ports:
       - "5432:5432"
-    env_file: .env.dev
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+      - POSTGRES_PASSWORD=postgres-pass
       - POSTGRES_DB=smart
 
   datadog:
