@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -110,72 +109,146 @@ func TestGetTemplate(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestGenerateTest(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
-		name         string
-		request      *entity.GenerateTestRequest
-		setupMock    func(*mocks.MockAutotesterAPIRepository)
-		expectErr    bool
-		expectedBody string
+		name                string
+		request             *entity.GenerateTestRequest
+		setupMock           func(*mocks.MockAutotesterAPIRepository)
+		expectErr           bool
+		expectedValidateMsg *entity.ValidateMessage
+		expectedGenerateMsg *entity.GenerateMessage
 	}{
 		{
-			name: "success",
+			name: "success - validation passes, test generated",
 			request: &entity.GenerateTestRequest{
-				Prompt:         "test prompt",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "conv-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
+					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(&entity.ValidatePromptResponse{
+					Result: entity.ValidateMessage{
+						Body: "",
+					},
+					UserId: "user-123",
+					ChatId: "conv-456",
+				}, nil).Once()
+				m.EXPECT().
 					GenerateTest(context.Background(), &entity.GenerateTestRequest{
-						Prompt:         "test prompt",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
-					}).
-					Return(&entity.GenerateTestResponse{
-						Result: entity.GenerateMessage{
-							Id:        "msg-1",
-							Role:      "assistant",
-							Body:      "generated test code",
-							CreatedAt: time.Now(),
-						},
-						UserId:         "user-123",
-						ConversationId: "conv-456",
-					}, nil).
-					Once()
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(&entity.GenerateTestResponse{
+					Result: entity.GenerateMessage{
+						Id:   "msg-1",
+						Role: "assistant",
+						Body: "generated test code",
+					},
+					UserId: "user-123",
+					ChatId: "conv-456",
+				}, nil).Once()
 			},
-			expectErr:    false,
-			expectedBody: "generated test code",
+			expectErr:           false,
+			expectedValidateMsg: nil,
+			expectedGenerateMsg: &entity.GenerateMessage{
+				Id:   "msg-1",
+				Role: "assistant",
+				Body: "generated test code",
+			},
+		},
+		{
+			name: "validation fails - returns validation message",
+			request: &entity.GenerateTestRequest{
+				Prompt: "bad prompt",
+				UserId: "user-123",
+				ChatId: "conv-456",
+			},
+			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+				m.EXPECT().
+					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+						Prompt: "bad prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(&entity.ValidatePromptResponse{
+					Result: entity.ValidateMessage{
+						Body: "Please provide more details in your prompt",
+					},
+					UserId: "user-123",
+					ChatId: "conv-456",
+				}, nil).Once()
+			},
+			expectErr: false,
+			expectedValidateMsg: &entity.ValidateMessage{
+				Body: "Please provide more details in your prompt",
+			},
+			expectedGenerateMsg: nil,
 		},
 		{
 			name:    "nil-request",
 			request: nil,
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 			},
-			expectErr:    true,
-			expectedBody: "",
+			expectErr:           true,
+			expectedValidateMsg: nil,
+			expectedGenerateMsg: nil,
 		},
 		{
-			name: "repository-error",
+			name: "validation-error",
 			request: &entity.GenerateTestRequest{
-				Prompt:         "test prompt",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "conv-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
-					GenerateTest(context.Background(), &entity.GenerateTestRequest{
-						Prompt:         "test prompt",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
-					}).
-					Return(nil, errors.New("repo error")).
-					Once()
+					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(nil, errors.New("validation error")).Once()
 			},
-			expectErr:    true,
-			expectedBody: "",
+			expectErr:           true,
+			expectedValidateMsg: nil,
+			expectedGenerateMsg: nil,
+		},
+		{
+			name: "generate-error",
+			request: &entity.GenerateTestRequest{
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "conv-456",
+			},
+			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+				m.EXPECT().
+					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(&entity.ValidatePromptResponse{
+					Result: entity.ValidateMessage{
+						Body: "",
+					},
+					UserId: "user-123",
+					ChatId: "conv-456",
+				}, nil).Once()
+				m.EXPECT().
+					GenerateTest(context.Background(), &entity.GenerateTestRequest{
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "conv-456",
+					}).Return(nil, errors.New("generate error")).Once()
+			},
+			expectErr:           true,
+			expectedValidateMsg: nil,
+			expectedGenerateMsg: nil,
 		},
 	}
 
@@ -190,11 +263,13 @@ func TestGenerateTest(t *testing.T) {
 			res, err := svc.GenerateTest(context.Background(), test.request)
 			if test.expectErr {
 				require.Error(t, err)
+				require.Nil(t, res)
 				return
 			}
 			require.NoError(t, err)
 			require.NotNil(t, res)
-			require.Equal(t, test.expectedBody, res.Result.Body)
+			require.Equal(t, test.expectedValidateMsg, res.ValidateMsg)
+			require.Equal(t, test.expectedGenerateMsg, res.GenerateMsg)
 		})
 	}
 }
@@ -213,16 +288,16 @@ func TestExecuteTest(t *testing.T) {
 		{
 			name: "success",
 			request: &entity.ExecuteTestRequest{
-				Test:           "test code",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Test:   "test code",
+				UserId: "user-123",
+				ChatId: "conv-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
-						Code:           "test code",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
+						Code:   "test code",
+						UserId: "user-123",
+						ChatId: "conv-456",
 					}).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
@@ -232,9 +307,9 @@ func TestExecuteTest(t *testing.T) {
 
 				m.EXPECT().
 					RunTest(context.Background(), &entity.RunTestRequest{
-						TestId:         "550e8400-e29b-41d4-a716-446655440000",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
+						TestId: "550e8400-e29b-41d4-a716-446655440000",
+						UserId: "user-123",
+						ChatId: "conv-456",
 					}).
 					Return(&entity.RunTestResponse{
 						Result: "passed",
@@ -255,16 +330,16 @@ func TestExecuteTest(t *testing.T) {
 		{
 			name: "save-error",
 			request: &entity.ExecuteTestRequest{
-				Test:           "test code",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Test:   "test code",
+				UserId: "user-123",
+				ChatId: "conv-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
-						Code:           "test code",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
+						Code:   "test code",
+						UserId: "user-123",
+						ChatId: "conv-456",
 					}).
 					Return(nil, errors.New("save error")).
 					Once()
@@ -275,16 +350,16 @@ func TestExecuteTest(t *testing.T) {
 		{
 			name: "run-error",
 			request: &entity.ExecuteTestRequest{
-				Test:           "test code",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Test:   "test code",
+				UserId: "user-123",
+				ChatId: "conv-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
-						Code:           "test code",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
+						Code:   "test code",
+						UserId: "user-123",
+						ChatId: "conv-456",
 					}).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
@@ -294,9 +369,9 @@ func TestExecuteTest(t *testing.T) {
 
 				m.EXPECT().
 					RunTest(context.Background(), &entity.RunTestRequest{
-						TestId:         "550e8400-e29b-41d4-a716-446655440000",
-						UserId:         "user-123",
-						ConversationId: "conv-456",
+						TestId: "550e8400-e29b-41d4-a716-446655440000",
+						UserId: "user-123",
+						ChatId: "conv-456",
 					}).
 					Return(nil, errors.New("run error")).
 					Once()

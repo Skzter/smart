@@ -28,18 +28,17 @@ func NewGenerateTestTool(logger *slog.Logger, autotesterAPIService service.Autot
 	}, nil
 }
 
-// GenerateTest generates Test
+// GenerateTest generates Test with validation
 func (tt *GenerateTestTool) GenerateTest(ctx context.Context,
 	request *mcp.CallToolRequest,
-	input entity.GenerateTestRequest) (result *mcp.CallToolResult, output entity.GenerateTestResponse, _ error) {
-	tt.logger.Info("Generate Test")
+	input entity.GenerateTestRequest) (result *mcp.CallToolResult, output entity.GenerateTestToolResponse, _ error) {
+	tt.logger.Info("Generate Test with validation")
 
-	test, err := tt.autotesterAPIService.GenerateTest(ctx, &input)
+	resp, err := tt.autotesterAPIService.GenerateTest(ctx, &input)
 	if err != nil {
 		tt.logger.Error("Generate test failed")
-		return nil, entity.GenerateTestResponse{}, err
+		return nil, entity.GenerateTestToolResponse{}, err
 	}
 
-	tt.logger.Info("Test successfully generated", "length", len(test.Result.Body))
-	return nil, *test, nil
+	return nil, *resp, nil
 }
