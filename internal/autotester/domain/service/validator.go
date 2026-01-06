@@ -87,7 +87,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	}
 
 	if llmResponse.Valid {
-		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeUser
+		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeAny
 	}
 
 	chat.AddMessage(resp, entity.MessageTypeValidation)

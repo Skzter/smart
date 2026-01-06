@@ -55,11 +55,17 @@ tasks:
       - echo "building autotester with version {{.VERSION}}"
       - cmd: go build -o build/autotester -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [linux, darwin]
+      - echo "building mcp with version {{.VERSION}}"
+      - cmd: go build -o build/mcp -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
+        platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
       - cmd: go build -o build/suproxy.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/suproxy/
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
       - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
+        platforms: [windows/amd64]
+      - echo "building mcp.exe with version {{.VERSION}}"
+      - cmd: go build -o build/mcp.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
         platforms: [windows/amd64]
     silent: true
 
@@ -116,6 +122,8 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
       - echo "building autotester with version {{.VERSION}}"
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
+      - echo "building mcp with version {{.VERSION}}"
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/mcp -ldflags "{{.PROD_LDFLAGS}}" ./cmd/mcp/
     silent: true
 
   # --------------------------------------------------------------------------------
@@ -125,6 +133,7 @@ tasks:
     internal: true
     env:
       APP_CMD: "./cmd/{{.APP_NAME}}"
+      FLAGS: "{{.FLAGS}}"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
       DD_AGENT_HOST: localhost
@@ -148,6 +157,14 @@ tasks:
         vars:
           APP_NAME: autotester
 
+  run-autotester-headless:
+    desc: "Run the autotester service in headless mode"
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: autotester
+          FLAGS: "--headless"
+          
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
     dir: "deployments"
@@ -191,7 +208,8 @@ tasks:
     desc: "Run the tests with coverage"
     cmds:
       - echo "Running unit tests with coverage"
-      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
+      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out 
+        -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
       - go tool cover -func=coverage.out
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"
@@ -207,7 +225,7 @@ tasks:
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
     cmds:
-      - go tool gotestsum -- -tags=integration -- -coverprofile=coverage.out ./...
+      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
 
   test-frontend:
@@ -343,6 +361,7 @@ tasks:
     cmds:
       - task: lint
       - task: test
+      - task: lint-frontend
 
   # --------------------------------------------------------------------------------
   # Code Generation
@@ -352,8 +371,10 @@ tasks:
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-config-mcp
       - task: generate-config-embedded
       - task: di-generate-autotester
+      - task: di-generate-mcp
       - task: di-generate-suproxy
 
   generate-config-autotester:
@@ -363,6 +384,13 @@ tasks:
     sources:
       - configs/autotester.pkl
       - configs/shared/*
+
+  generate-config-mcp:
+    desc: "generate code for reading mcp config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/mcp.pkl
+    sources:
+      - configs/mcp.pkl
 
   generate-config-suproxy:
     desc: "generate code for reading suproxy config"
@@ -384,6 +412,7 @@ tasks:
     sources:
       - configs/suproxy.pkl
       - configs/autotester.pkl
+      - configs/mcp.pkl
 
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
@@ -392,6 +421,13 @@ tasks:
     sources:
       - cmd/autotester/wire.go
       - internal/shared/wire.go
+
+  di-generate-mcp:
+    desc: "generate dependency injection code for mcp"
+    cmds:
+      - go tool wire ./cmd/mcp
+    sources:
+      - cmd/mcp/wire.go
 
   di-generate-suproxy:
     desc: "generate dependency injection code for suproxy"

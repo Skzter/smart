@@ -15,18 +15,18 @@ const (
 	MessageTypeValidation MessageType = iota
 	// MessageTypeGeneration is a MessageType of type Generation.
 	MessageTypeGeneration
-	// MessageTypeUser is a MessageType of type User.
-	MessageTypeUser
+	// MessageTypeAny is a MessageType of type Any.
+	MessageTypeAny
 )
 
 var ErrInvalidMessageType = errors.New("not a valid MessageType")
 
-const _MessageTypeName = "ValidationGenerationUser"
+const _MessageTypeName = "ValidationGenerationAny"
 
 var _MessageTypeMap = map[MessageType]string{
 	MessageTypeValidation: _MessageTypeName[0:10],
 	MessageTypeGeneration: _MessageTypeName[10:20],
-	MessageTypeUser:       _MessageTypeName[20:24],
+	MessageTypeAny:        _MessageTypeName[20:23],
 }
 
 // String implements the Stringer interface.
@@ -47,7 +47,7 @@ func (x MessageType) IsValid() bool {
 var _MessageTypeValue = map[string]MessageType{
 	_MessageTypeName[0:10]:  MessageTypeValidation,
 	_MessageTypeName[10:20]: MessageTypeGeneration,
-	_MessageTypeName[20:24]: MessageTypeUser,
+	_MessageTypeName[20:23]: MessageTypeAny,
 }
 
 // ParseMessageType attempts to convert a string to a MessageType.
