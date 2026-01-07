@@ -12,7 +12,7 @@
             copied = true;
             setTimeout(() => {
                 copied = false;
-            }, 1000);
+            }, 3000);
         } catch (err) {
             console.error("Failed to copy:", err);
         }
