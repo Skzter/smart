@@ -1,4 +1,6 @@
 <script lang="ts">
+    // Da Button nicht genutzt wird, sind die Importe auskommentiert
+    /*
     import { Send } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
     import { chat, messages, user } from "$lib/shared.svelte";
@@ -7,13 +9,15 @@
 
     let {
         input = $bindable(),
-        onclick,
+        //onclick,
     }: {
         input: string;
         onclick: () => void;
     } = $props();
+*/
 </script>
 
+<!--
 <Button
     variant="default"
     size="icon"
@@ -23,3 +27,4 @@
 >
     <Send />
 </Button>
+-->

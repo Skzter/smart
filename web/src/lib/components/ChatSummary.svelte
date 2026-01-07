@@ -1,7 +1,10 @@
 <script lang="ts">
-    import type { ApiChatSummary } from "$types/api";
+    import type { ApiChatSummary, ApiMessage } from "$types/api";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import { LucideMessageSquare, Pencil } from "@lucide/svelte";
+    import { getChatById } from "$lib/api";
+    import { toast } from "svelte-sonner";
+    import { type Message, chat, messages, user } from "$lib/shared.svelte";
 
     let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
     let edit = $state(false);
@@ -21,7 +24,62 @@
     }
 
     function focusAction(el: HTMLInputElement) {
-        summary.title === "" ? el.select() : el.focus();
+        if (summary.title === "") {
+            el.select();
+        } else {
+            el.focus();
+        }
+    }
+
+    function convertApiMessagesToMessages(
+        apiMessages: ApiMessage[],
+    ): Message[] {
+        const messages: Message[] = [];
+
+        apiMessages.forEach((element) => {
+            if (element.role === "user") {
+                messages.push({ t: "user", Message: element.body });
+                return;
+            }
+
+            if (element.type === "Validation") {
+                let msg: { valid: boolean; message: string } = JSON.parse(
+                    element.body,
+                );
+                messages.push({
+                    t: "validation",
+                    Message: msg.valid ? "Prompt ist Valide" : msg.message,
+                });
+                return;
+            }
+
+            if (element.type === "Generation") {
+                messages.push({ t: "generation", Message: element.body });
+                return;
+            }
+        });
+
+        return messages;
+    }
+
+    async function invokeSwitchChat() {
+        try {
+            user.id = summary.userId;
+            chat.id = summary.chatId;
+            chat.isLoading = false;
+            const response = await getChatById();
+            messages.length = 0;
+            messages.push(...convertApiMessagesToMessages(response.messages));
+        } catch (error) {
+            let errorMsg = "Unbekannter Fehler";
+            if (error instanceof Error) {
+                errorMsg = error.message;
+            }
+
+            toast.error("Speichern fehlgeschlagen", {
+                description: errorMsg,
+            });
+        }
     }
 </script>
 
@@ -30,7 +88,7 @@
         class="h-12 py-1 mb-1 flex"
         role="button"
         tabindex={0}
-        onclick={() => openChat(summary.userId, summary.chatId)}
+        onclick={invokeSwitchChat}
     >
         <LucideMessageSquare class="mr-1" />
         <div class="flex flex-col justify-between min-w-0 mr-2">

@@ -22,7 +22,6 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 
 	router.Use(gin.Recovery())
 	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
-	router.Use(corsMiddleware())
 
 	apiV1 := router.Group("/api/v1")
 	{
@@ -73,19 +72,12 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	return router, nil
 }
 
-// corsMiddleware handles CORS headers
-func corsMiddleware() gin.HandlerFunc {
+func sseHeaderMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-cache")
+		c.Writer.Header().Set("Connection", "keep-alive")
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-
 		c.Next()
 	}
 }

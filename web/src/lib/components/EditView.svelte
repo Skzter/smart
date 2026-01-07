@@ -1,9 +1,11 @@
 <script lang="ts">
     import type { Runner } from "$lib/runner.svelte";
     import MonacoEditor from "./MonacoEditor.svelte";
-    import { Play, Save } from "@lucide/svelte";
-    import { runContainer } from "$lib/api";
-    import { chat, user } from "$lib/shared.svelte";
+    import RunButton from "./RunButton.svelte";
+    import SaveButton from "./SaveButton.svelte";
+    //import { Play, Save } from "@lucide/svelte";
+    //import { runContainer } from "$lib/api";
+    //import { chat, user } from "$lib/shared.svelte";
 
     let {
         code = $bindable(),
