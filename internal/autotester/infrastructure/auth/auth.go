@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -18,8 +16,7 @@ import (
 // Auth is an Interface which holds all methods which an AuthService implements
 type Auth interface {
 	MakeJWT(userId string) (string, error)
-	ValidateJWT(token string) error
-	MakeRefreshToken() (string, error)
+	ValidateJWT(tokenString string) (string, error)
 	GetBearerToken(headers http.Header) (string, error)
 }
 
@@ -40,15 +37,18 @@ func NewAuthService(logger *slog.Logger, config *config.Config) (Auth, error) {
 	}, nil
 }
 
+// nolint: gochecknoglobals
+var tokenSecret = []byte("hier wird mal ein toller secret key sein")
+
 // MakeJWT takes userid and returns jwt on success
 func (ts *authService) MakeJWT(userId string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "autotester",
+		Issuer:    ts.config.JwtTokenIssuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(ts.config.JwtExpirationTimeInHours) * time.Hour)),
 		Subject:   userId,
 	})
-	signedString, err := token.SignedString([]byte("hier wird mal ein toller secret key sein"))
+	signedString, err := token.SignedString(tokenSecret)
 	if err != nil {
 		return "", nil
 	}
@@ -56,19 +56,28 @@ func (ts *authService) MakeJWT(userId string) (string, error) {
 }
 
 // ValidateJWT takes existing token and validates expiration time, issuer and format
-func (ts *authService) ValidateJWT(token string) error {
-	return nil
-}
-
-// MakeRefreshToken returns a new random refresh token
-func (ts *authService) MakeRefreshToken() (string, error) {
-	key := make([]byte, 32)
-	_, err := rand.Read(key)
+func (ts *authService) ValidateJWT(tokenString string) (string, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
+		return tokenSecret, nil
+	})
 	if err != nil {
 		return "", err
 	}
-	encodedString := hex.EncodeToString(key)
-	return encodedString, nil
+
+	userId, err := token.Claims.GetSubject()
+	if err != nil {
+		return "", err
+	}
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return "", err
+	}
+
+	if issuer != ts.config.JwtTokenIssuer {
+		return "", errors.New("invalid user")
+	}
+
+	return userId, nil
 }
 
 // GetBearerToken returns the bearer token in the Authorization Header of an http request
