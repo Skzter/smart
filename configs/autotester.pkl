@@ -262,3 +262,5 @@ defaultLimitChats: String = "10"
 defaultLimitTests: Int = 50
 
 taglistConfig: taglist = taglist
+
+jwtExpirationTimeInHours: Int = 1
