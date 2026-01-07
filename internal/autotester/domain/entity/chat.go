@@ -37,6 +37,7 @@ func NewChat(userId string, messages []*Message) *Chat {
 		UserId:    userId,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Title:     "Neuer Chat",
 		Messages:  messages,
 	}
 }

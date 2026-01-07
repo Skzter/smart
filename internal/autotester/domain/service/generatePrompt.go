@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -84,6 +86,8 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		return "", errors.ErrInternalServer
 	}
 	chat.AddMessage(resp, entity.MessageTypeGeneration)
+	// Update title based on all messages
+	chat.Title = GenerateTitleFromRequest(resp.Body)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		span.RecordError(err)
@@ -110,4 +114,30 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	}
 
 	return tagList.Format()
+}
+
+// GenerateTitleFromRequest extracts a chat title from the generated TypeScript test code.
+// If no valid title is found, returns a fallback "Neuer Chat".
+func GenerateTitleFromRequest(respBody string) string {
+	autoTitle := "Neuer Chat"
+	if strings.TrimSpace(respBody) == "" {
+		return autoTitle
+	}
+
+	// Regex to capture the first argument of test("...")
+	re := regexp.MustCompile(`test\s*\(\s*["']([^"']+)["']`)
+	matches := re.FindStringSubmatch(respBody)
+	if len(matches) > 1 {
+		title := strings.TrimSpace(matches[1])
+		if len(title) == 0 {
+			return autoTitle
+		}
+		// Optional: limit length to 60 characters
+		if len(title) > 60 {
+			title = title[:60]
+		}
+		return title
+	}
+
+	return autoTitle
 }

@@ -298,3 +298,66 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, chat)
 }
+
+// HandleUpdateChatTitle allows a user to update the title of an existing chat.
+func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
+	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
+	defer span.End()
+
+	chatID := c.Param("chatId")
+	userID := c.Param("userId")
+
+	if !isValid(userID) {
+		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
+		span.SetStatus(codes.Error, "invalid user id")
+		a.metricsService.IncRequestError("invalid_user_id")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
+		return
+	}
+
+	if _, err := uuid.Parse(chatID); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid chat id")
+		a.metricsService.IncRequestError("invalid_chat_id")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid chatId format"})
+		return
+	}
+
+	var req struct {
+		Title string `json:"title"`
+	}
+
+	if err := c.BindJSON(&req); err != nil {
+		a.logger.Error("JSON binding failed", "error", err)
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), userID, chatID)
+	if err != nil {
+		a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
+		return
+	}
+
+	title := strings.TrimSpace(req.Title)
+	if len(title) == 0 || len(title) > 60 {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Title must be 1–60 characters"})
+		return
+	}
+	chat.Title = title
+
+	if chat.UserId != userID {
+		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
+		return
+	}
+
+	if err := a.chatManager.SaveChat(c.Request.Context(), chat); err != nil {
+		a.logger.Error("Saving updated chat failed", "error", err)
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not save chat"})
+		return
+	}
+
+	a.metricsService.IncRequestSuccess()
+	c.JSON(http.StatusOK, chat)
+}
