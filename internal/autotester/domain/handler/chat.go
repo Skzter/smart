@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -177,11 +176,17 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
-	userID := c.Param("userId")
-
+	var parameters entity.UserChatSummaryParameters
+	if err := c.ShouldBindUri(&parameters); err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
+			Error: "Bad Request",
+		})
+		return
+	}
 	// checking if style: auth0|id is there
-	if !isValid(userID) {
-		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
+	if !isValid(parameters.UserID) {
+		span.RecordError(fmt.Errorf("invalid user id: %s", parameters.UserID))
 		span.SetStatus(codes.Error, "invalid user id")
 		a.metricsService.IncRequestError("invalid_user_id")
 		a.metricsService.RecordRequestDuration(time.Since(start))
@@ -190,32 +195,16 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		return
 	}
 
-	limitStr := c.Query("limit")
-	if limitStr == "" {
-		limitStr = "0"
-	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed string to int conversion for limit")
-		a.metricsService.IncRequestError("invalid_limit")
-		a.metricsService.RecordRequestDuration(time.Since(start))
+	var queryParameters entity.UserChatSummaryQueryParameters
+	if err := c.ShouldBindQuery(&queryParameters); err != nil {
 		a.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "limit has to be a number"})
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
+			Error: "Bad Request",
+		})
 		return
 	}
 
-	if limit < 0 {
-		span.RecordError(fmt.Errorf("invalid limit: %d", limit))
-		span.SetStatus(codes.Error, "invalid limit")
-		a.metricsService.IncRequestError("invalid_limit")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error(fmt.Sprintf("%d, limit has to be greater than zero", limit))
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: fmt.Sprintf("%d, limit has to be greater than zero", limit)})
-		return
-	}
-
-	chats, err := a.chatStorageService.LoadUserChats(c, userID)
+	chats, err := a.chatStorageService.LoadUserChats(c, parameters.UserID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to load user chats")
@@ -226,11 +215,11 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		return
 	}
 
-	if limit > len(chats) || limit == 0 {
-		limit = len(chats)
+	if queryParameters.Limit > len(chats) || queryParameters.Limit == 0 {
+		queryParameters.Limit = len(chats)
 	}
 
-	chats = chats[:limit]
+	chats = chats[:queryParameters.Limit]
 
 	span.SetStatus(codes.Ok, "")
 	a.metricsService.IncRequestSuccess()
@@ -253,37 +242,44 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 	start := time.Now()
 	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
-	chatID := c.Param("chatId")
-	userID := c.Param("userId")
+	var parameters entity.UserChatsParameter
 
-	if !isValid(userID) {
-		span.RecordError(fmt.Errorf("invalid user id: %s", userID))
+	if err := c.ShouldBindUri(&parameters); err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
+			Error: "invalid parameters",
+		})
+		return
+	}
+
+	if !isValid(parameters.UserID) {
+		span.RecordError(fmt.Errorf("invalid user id: %s", parameters.UserID))
 		span.SetStatus(codes.Error, "invalid user id")
 		a.metricsService.IncRequestError("invalid_user_id")
 		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("invalid userId format", "userId", userID)
+		a.logger.Error("invalid userId format", "userId", parameters.UserID)
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
 		return
 	}
 
-	if _, err := uuid.Parse(chatID); err != nil {
+	if _, err := uuid.Parse(parameters.ChatID); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		a.metricsService.IncRequestError("invalid_chat_id")
 		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("invalid chatId format", "chatId", chatID, "error", err)
+		a.logger.Error("invalid chatId format", "chatId", parameters.ChatID, "error", err)
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid chatId format"})
 		return
 	}
 
-	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), userID, chatID)
+	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), parameters.UserID, parameters.ChatID)
 	if err != nil {
 		if errors.Is(err, sharedErrors.ErrChatNotFound) {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to find user chat")
 			a.metricsService.IncRequestError("find_user_chat_failed")
 			a.metricsService.RecordRequestDuration(time.Since(start))
-			a.logger.Info("chat not found", "chatId", chatID, "userId", userID)
+			a.logger.Info("chat not found", "chatId", parameters.ChatID, "userId", parameters.UserID)
 			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
 			return
 		}
@@ -291,7 +287,7 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 		span.SetStatus(codes.Error, "failed to load user chat")
 		a.metricsService.IncRequestError("load_user_chat_failed")
 		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+		a.logger.Error("LoadChat failed", "error", err, "chatId", parameters.ChatID, "userId", parameters.UserID)
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
 		return
 	}
