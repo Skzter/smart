@@ -1,0 +1,4 @@
+{
+  "prompt": "Autoplaywright soll einen Test generieren für Check24. \nBase-URL: https://staging.check24.de/reise. \nSzenario: Flugsuche München nach Barcelona im August. \nAblauf: Auf der Startseite wählt der Nutzer 'Flug suchen', gibt Abflugort 'München' ein, Zielort 'Barcelona', wählt Datum über Kalender-Widget (August) und klickt 'Suchen'. \nAssertions: URL enthält '/reise/flug', Liste der Flüge ist sichtbar und enthält mindestens einen Eintrag. \nTestdaten/Setup: Beispiel-Flugdaten aus Fixture-Datei; Teardown: Browser schließen.",
+  "userId": "9177b856-46a0-11f0-9fe2-0242ac120002"
+}

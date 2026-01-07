@@ -7,6 +7,7 @@ package mocks
 import (
 	"context"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/opencontainers/image-spec/specs-go/v1"
@@ -38,6 +39,78 @@ type MockDockerClient_Expecter struct {
 
 func (_m *MockDockerClient) EXPECT() *MockDockerClient_Expecter {
 	return &MockDockerClient_Expecter{mock: &_m.Mock}
+}
+
+// ContainerAttach provides a mock function for the type MockDockerClient
+func (_mock *MockDockerClient) ContainerAttach(ctx context.Context, containerID string, options container.AttachOptions) (types.HijackedResponse, error) {
+	ret := _mock.Called(ctx, containerID, options)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ContainerAttach")
+	}
+
+	var r0 types.HijackedResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, container.AttachOptions) (types.HijackedResponse, error)); ok {
+		return returnFunc(ctx, containerID, options)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, container.AttachOptions) types.HijackedResponse); ok {
+		r0 = returnFunc(ctx, containerID, options)
+	} else {
+		r0 = ret.Get(0).(types.HijackedResponse)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, container.AttachOptions) error); ok {
+		r1 = returnFunc(ctx, containerID, options)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockDockerClient_ContainerAttach_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ContainerAttach'
+type MockDockerClient_ContainerAttach_Call struct {
+	*mock.Call
+}
+
+// ContainerAttach is a helper method to define mock.On call
+//   - ctx context.Context
+//   - containerID string
+//   - options container.AttachOptions
+func (_e *MockDockerClient_Expecter) ContainerAttach(ctx interface{}, containerID interface{}, options interface{}) *MockDockerClient_ContainerAttach_Call {
+	return &MockDockerClient_ContainerAttach_Call{Call: _e.mock.On("ContainerAttach", ctx, containerID, options)}
+}
+
+func (_c *MockDockerClient_ContainerAttach_Call) Run(run func(ctx context.Context, containerID string, options container.AttachOptions)) *MockDockerClient_ContainerAttach_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 container.AttachOptions
+		if args[2] != nil {
+			arg2 = args[2].(container.AttachOptions)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerAttach_Call) Return(hijackedResponse types.HijackedResponse, err error) *MockDockerClient_ContainerAttach_Call {
+	_c.Call.Return(hijackedResponse, err)
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerAttach_Call) RunAndReturn(run func(ctx context.Context, containerID string, options container.AttachOptions) (types.HijackedResponse, error)) *MockDockerClient_ContainerAttach_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // ContainerCreate provides a mock function for the type MockDockerClient
@@ -189,6 +262,69 @@ func (_c *MockDockerClient_ContainerStart_Call) Return(err error) *MockDockerCli
 }
 
 func (_c *MockDockerClient_ContainerStart_Call) RunAndReturn(run func(ctx context.Context, containerID string, options container.StartOptions) error) *MockDockerClient_ContainerStart_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ContainerStop provides a mock function for the type MockDockerClient
+func (_mock *MockDockerClient) ContainerStop(context1 context.Context, s string, stopOptions container.StopOptions) error {
+	ret := _mock.Called(context1, s, stopOptions)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ContainerStop")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, container.StopOptions) error); ok {
+		r0 = returnFunc(context1, s, stopOptions)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockDockerClient_ContainerStop_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ContainerStop'
+type MockDockerClient_ContainerStop_Call struct {
+	*mock.Call
+}
+
+// ContainerStop is a helper method to define mock.On call
+//   - context1 context.Context
+//   - s string
+//   - stopOptions container.StopOptions
+func (_e *MockDockerClient_Expecter) ContainerStop(context1 interface{}, s interface{}, stopOptions interface{}) *MockDockerClient_ContainerStop_Call {
+	return &MockDockerClient_ContainerStop_Call{Call: _e.mock.On("ContainerStop", context1, s, stopOptions)}
+}
+
+func (_c *MockDockerClient_ContainerStop_Call) Run(run func(context1 context.Context, s string, stopOptions container.StopOptions)) *MockDockerClient_ContainerStop_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 container.StopOptions
+		if args[2] != nil {
+			arg2 = args[2].(container.StopOptions)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerStop_Call) Return(err error) *MockDockerClient_ContainerStop_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerStop_Call) RunAndReturn(run func(context1 context.Context, s string, stopOptions container.StopOptions) error) *MockDockerClient_ContainerStop_Call {
 	_c.Call.Return(run)
 	return _c
 }

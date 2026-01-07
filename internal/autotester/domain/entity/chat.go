@@ -9,7 +9,7 @@ import (
 )
 
 // MessageType represents a Type of Message stored in Chat entity
-// ENUM(Validation, Generation, User)
+// ENUM(Validation, Generation, Any)
 type MessageType uint
 
 //go:generate go tool go-enum -f=$GOFILE --marshal
@@ -43,7 +43,7 @@ func NewChat(userId string, messages []*Message) *Chat {
 
 // AddMessage adds a Message of the given type to the chats Messages
 func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
-	t := MessageTypeUser
+	t := MessageTypeAny
 	if len(ts) > 0 {
 		t = ts[0]
 	}
@@ -59,7 +59,7 @@ func (m *Chat) buildIndex() {
 	m.index = make(map[MessageType][]int)
 
 	for i, msg := range m.Messages {
-		if msg.Type == MessageTypeUser {
+		if msg.Type == MessageTypeAny {
 			for t := range _MessageTypeMap {
 				m.index[t] = append(m.index[t], i)
 			}

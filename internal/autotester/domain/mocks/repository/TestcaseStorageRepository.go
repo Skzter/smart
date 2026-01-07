@@ -235,6 +235,68 @@ func (_c *MockTestcaseStorageRepository_Read_Call) RunAndReturn(run func(ctx con
 	return _c
 }
 
+// ReadAllMetadata provides a mock function for the type MockTestcaseStorageRepository
+func (_mock *MockTestcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReadAllMetadata")
+	}
+
+	var r0 []*entity.TestcaseMetadata
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*entity.TestcaseMetadata, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []*entity.TestcaseMetadata); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.TestcaseMetadata)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTestcaseStorageRepository_ReadAllMetadata_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReadAllMetadata'
+type MockTestcaseStorageRepository_ReadAllMetadata_Call struct {
+	*mock.Call
+}
+
+// ReadAllMetadata is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockTestcaseStorageRepository_Expecter) ReadAllMetadata(ctx interface{}) *MockTestcaseStorageRepository_ReadAllMetadata_Call {
+	return &MockTestcaseStorageRepository_ReadAllMetadata_Call{Call: _e.mock.On("ReadAllMetadata", ctx)}
+}
+
+func (_c *MockTestcaseStorageRepository_ReadAllMetadata_Call) Run(run func(ctx context.Context)) *MockTestcaseStorageRepository_ReadAllMetadata_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTestcaseStorageRepository_ReadAllMetadata_Call) Return(testcaseMetadatas []*entity.TestcaseMetadata, err error) *MockTestcaseStorageRepository_ReadAllMetadata_Call {
+	_c.Call.Return(testcaseMetadatas, err)
+	return _c
+}
+
+func (_c *MockTestcaseStorageRepository_ReadAllMetadata_Call) RunAndReturn(run func(ctx context.Context) ([]*entity.TestcaseMetadata, error)) *MockTestcaseStorageRepository_ReadAllMetadata_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockTestcaseStorageRepository
 func (_mock *MockTestcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
 	ret := _mock.Called(ctx, obj, key)

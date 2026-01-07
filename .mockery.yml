@@ -71,3 +71,15 @@ packages:
       ChatManager:
       ChatStorageService: 
       TestcaseStorageService:
+
+  #MCP
+  gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository:
+    config:
+      dir: './internal/mcp/domain/mocks/repository'
+    interfaces:
+      AutotesterAPIRepository:
+  gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service:
+    config:
+      dir: './internal/mcp/domain/mocks/service'
+    interfaces:
+      AutotesterAPIService:

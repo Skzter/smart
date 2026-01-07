@@ -27,14 +27,13 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
 	wire.Build(
 		shared.SharedProviderSet,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
 		FileSystemProvider,
-		LogFileSystemProvider,
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -42,7 +41,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		service.NewValidatorService,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
-		application.NewRouter,
+		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
 		TaglistConfigProvider,
@@ -51,14 +50,19 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		service.NewChatManager,
 		service.NewChatStorageService,
 		repository.NewChatStorageRepository,
+		ChatParquetConfigProvider,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
+		MetricsServiceProvider,
 	)
 
 	return nil, nil
 }
 
-// TaglistConfigProvider provides a new TaglistConfig.
+func RouterProvider(logger *slog.Logger, controller *handler.AutotesterController, isHeadless bool) (*gin.Engine, error) {
+	return application.NewRouter(logger, controller, isHeadless)
+}
+
 func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }
@@ -79,18 +83,18 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 }
 
 // ChatParquetWrapperProvider provides a new session summary parquet wrapper.
-func ChatParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
-	return wrapperService.NewParquetWrapper[entity.Chat](logger, wrapperService.DefaultParquetConfig(), tracer)
+func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
+	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg, tracer)
 }
 
 // ChatSummaryParquetWrapperProvider provides a new ChatSummary parquet wrapper.
-func ChatSummaryParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
-	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, wrapperService.DefaultParquetConfig(), tracer)
+func ChatSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.ChatSummary], error) {
+	return wrapperService.NewParquetWrapper[entity.ChatSummary](logger, cfg, tracer)
 }
 
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper with default parquet config.
-func TestCaseParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
-	return wrapperService.NewParquetWrapper[entity.TestCase](logger, wrapperService.DefaultParquetConfig(), tracer)
+func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
+	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
@@ -106,11 +110,6 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tra
 // FileSystemProvider provides a new filesystem.
 func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
-}
-
-// LogFileSystemProvider provides a filesystem for logs
-func LogFileSystemProvider(cfg *config.Config) (repository.LogFileSystem, error) {
-	return repository.NewLogFileSystem(cfg.LogDirAutopw)
 }
 
 func DockerClientProvider() (service.DockerClient, error) {
@@ -129,4 +128,13 @@ func TestCaseStorageRepositoryProvider(
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
+}
+
+// ChatParquetConfigProvider provides a ParquetConfig for chat parquet files.
+func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
+	return wrapperService.DefaultParquetConfig()
+}
+
+func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
+	return sharedService.NewMetricsService("autotester", logger)
 }
