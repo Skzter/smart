@@ -20,10 +20,10 @@ type ChatStorageService interface {
 	// Returns an error if the operation fails.
 	SaveChat(ctx context.Context, summary *entity.Chat) error
 	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
-	LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
+	LoadChat(ctx context.Context, chatId string) (*entity.Chat, error)
 	// FindByUserId retrieves an all ChatSummarys associated with the given userId
 	// The resulting slice is ordered by updatedAt in descending order
-	LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error)
+	LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error)
 }
 
 // chatStorageService implements the ChatStorageService interface
@@ -71,26 +71,21 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	return nil
 }
 
-// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
-func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+// LoadChat retrieves a Chat object from storage by a key generated from the provided chatId.
+func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*entity.Chat, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
 	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadChat")
 	defer span.End()
 
-	if err := assert.StringNotEmpty(userId); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "missing userId")
-		return nil, fmt.Errorf("userId must not be empty")
-	}
 	if err := assert.StringNotEmpty(chatId); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing chatId")
 		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
-	chat, err := s.repo.Read(ctx, userId, chatId)
+	chat, err := s.repo.Read(ctx, chatId)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while reading chat")
@@ -107,25 +102,33 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 	return chat, nil
 }
 
-// FindByUserId retrieves an all ChatSummarys associated with the given userId
+// LoadSummaries retrieves an all ChatSummarys associated with any of the given groupIds
 // The resulting slice is ordered by updatedAt in descending order
-func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
+func (s *chatStorageService) LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
-	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadUserChats")
+	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadSummaries")
 	defer span.End()
 
-	if err := assert.StringNotEmpty(userId); err != nil {
+	if err := assert.StringsNotEmpty(groupIds...); err != nil {
 		span.RecordError(err)
-		span.SetStatus(codes.Error, "missing userId")
-		return nil, fmt.Errorf("userId must not be empty")
+		span.SetStatus(codes.Error, "invalid groupId")
+		return nil, fmt.Errorf("groupId must not be empty string")
 	}
-	summaries, err := s.repo.FindByUserID(ctx, userId)
+	summaries, err := s.repo.ListAll(ctx)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while retrieving chatSummaries")
 		return nil, err
+	}
+
+	if len(groupIds) > 0 {
+		summaries = slices.DeleteFunc(summaries, func(s *entity.ChatSummary) bool {
+			return !slices.ContainsFunc(s.Groups, func(group string) bool {
+				return slices.Contains(groupIds, group)
+			})
+		})
 	}
 
 	// sort in descending order by UpdatedAt

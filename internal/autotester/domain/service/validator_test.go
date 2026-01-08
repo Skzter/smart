@@ -303,7 +303,8 @@ func TestValidateChat(t *testing.T) {
 			name: "valid Chat",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -322,7 +323,8 @@ func TestValidateChat(t *testing.T) {
 		{
 			name: "empty id",
 			chat: &entity.Chat{
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -333,7 +335,7 @@ func TestValidateChat(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty userId",
+			name: "empty Author",
 			chat: &entity.Chat{
 				Id:                       "chat123",
 				CreatedAt:                time.Now(),
@@ -349,7 +351,8 @@ func TestValidateChat(t *testing.T) {
 			name: "empty Messages",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -363,7 +366,8 @@ func TestValidateChat(t *testing.T) {
 			name: "invalid message",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -377,7 +381,8 @@ func TestValidateChat(t *testing.T) {
 			name: "updatedAt zero",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Time{},
 				LastTest:                 "test123",
@@ -391,7 +396,8 @@ func TestValidateChat(t *testing.T) {
 			name: "createdAt zero",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Time{},
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",

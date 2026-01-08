@@ -108,7 +108,8 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 
 	if err := assert.StringsNotEmpty(
 		chat.Id,
-		chat.UserId,
+		chat.Author,
+		chat.LastModifiedBy,
 	); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing fields")

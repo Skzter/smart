@@ -104,7 +104,7 @@ func TestHandleChatRequest(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
-				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
+				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", Author: "2", LastModifiedBy: "2"}, nil}},
 				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", nil}},
 				{Function: "SaveChat", ExpectedResponse: []any{errors.New("err")}},
 			},
@@ -121,7 +121,7 @@ func TestHandleChatRequest(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
-				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", UserId: "2"}, nil}},
+				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", Author: "2", LastModifiedBy: "2"}, nil}},
 				{Function: "GeneratePrompt", ExpectedResponse: []any{"", errors.New("err")}},
 			},
 		},
@@ -159,7 +159,7 @@ func TestHandleChatRequest(t *testing.T) {
 						Return(mc.ExpectedResponse...)
 				case "SaveChat":
 					mockChatManager.
-						On("SaveChat", mock.Anything, mock.Anything).
+						On("SaveChat", mock.Anything, mock.Anything, mock.Anything).
 						Return(mc.ExpectedResponse...)
 				}
 			}
@@ -314,7 +314,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 				mockChatManager.On("LoadChat", mock.Anything, mock.Anything).Return(test.MockResponseLoad...)
 			}
 			if test.MockResponseSave != nil {
-				mockChatManager.On("SaveChat", mock.Anything, mock.Anything).Return(test.MockResponseSave...)
+				mockChatManager.On("SaveChat", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseSave...)
 			}
 			if test.MockResponseValidate != nil {
 				mockValServ.On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseValidate...)
@@ -433,51 +433,35 @@ func TestGetUserChats(t *testing.T) {
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
-		requestID        string
 		limit            string
 		mockResponseLoad []any
 		expectedStatus   int
 	}{
 		{
-			name:           "error - No ID",
-			requestID:      "",
-			expectedStatus: http.StatusNotFound,
-		},
-		{
-			name:           "error - invalid ID format",
-			requestID:      "132",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
 			name:           "error - limit is not a number",
-			requestID:      "auth0|123",
 			limit:          "hallo",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "error - limit is a negative number",
-			requestID:      "auth0|123",
 			limit:          "-131",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:             "error - no chat history for given user found",
-			requestID:        "auth0|123",
 			limit:            "123",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "error - empty limit but no history found",
-			requestID:        "auth0|123",
 			limit:            "",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:      "success",
-			requestID: "auth0|123",
-			limit:     "5",
+			name:  "success",
+			limit: "5",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
 				{
 					ChatId:    "1",
@@ -510,7 +494,7 @@ func TestGetUserChats(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			if tc.mockResponseLoad != nil {
-				mockChatStorageServ.On("LoadUserChats", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
@@ -528,9 +512,9 @@ func TestGetUserChats(t *testing.T) {
 				tracer,
 				mockMetricsServ,
 			)
-			router.GET("/api/v1/chats/:userId", controller.HandleGetUserChats)
+			router.GET("/api/v1/chats/", controller.HandleGetChats)
 
-			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
+			endpoint := "/api/v1/chats/?limit=" + tc.limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
@@ -675,7 +659,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 
-	controller.GetChatById(ctx)
+	controller.GetChatsById(ctx)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
@@ -703,7 +687,7 @@ func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 		{Key: "chatId", Value: validChatID},
 	}
 
-	controller.GetChatById(ctx)
+	controller.GetChatsById(ctx)
 
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, rec.Code)
@@ -717,8 +701,9 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 	validChatID := "550e8400-e29b-41d4-a716-446655440000"
 
 	expectedChat := &entity.Chat{
-		Id:     validChatID,
-		UserId: validUserID,
+		Id:             validChatID,
+		Author:         validUserID,
+		LastModifiedBy: validChatID,
 	}
 
 	controller := newTestControllerWithChatMock(t, expectedChat, nil)
@@ -736,7 +721,7 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 		{Key: "chatId", Value: validChatID},
 	}
 
-	controller.GetChatById(ctx)
+	controller.GetChatsById(ctx)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
@@ -747,7 +732,7 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp.Id != expectedChat.Id || resp.UserId != expectedChat.UserId {
+	if resp.Id != expectedChat.Id || resp.Author != expectedChat.Author || resp.LastModifiedBy != expectedChat.LastModifiedBy {
 		t.Fatalf("unexpected chat in response: %+v", resp)
 	}
 }
