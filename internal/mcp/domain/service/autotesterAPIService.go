@@ -41,7 +41,7 @@ func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIR
 }
 
 func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
-	s.logger.Info("Fetching test template from API")
+	s.logger.Debug("Fetching test template from API")
 
 	template, err := s.repo.GetTemplate(ctx)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.Templat
 }
 
 func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestToolResponse, error) {
-	s.logger.Info("Generating test via API")
+	s.logger.Debug("Generating test via API")
 
 	if err := assert.NotNil(request); err != nil {
 		s.logger.Error("Invalid generate test request", "error", err)
@@ -77,7 +77,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 			ChatId:      valid.ChatId,
 		}, nil
 	}
-	s.logger.Info("Prompt validation successful")
+	s.logger.Debug("Prompt validation successful")
 
 	request.ChatId = valid.ChatId
 
@@ -96,7 +96,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 }
 
 func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.ExecuteTestRequest) (*entity.ExecuteTestResponse, error) {
-	s.logger.Info("Executing test via API")
+	s.logger.Debug("Executing test via API")
 
 	if err := assert.NotNil(request); err != nil {
 		s.logger.Error("Invalid execute test request", "error", err)

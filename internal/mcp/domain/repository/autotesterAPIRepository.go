@@ -64,7 +64,7 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 		return nil, err
 	}
 
-	a.logger.Info("Successfully fetched template", "templateLength", len(result.Content))
+	a.logger.Debug("Successfully fetched template", "templateLength", len(result.Content))
 	return &result, nil
 }
 
@@ -81,7 +81,7 @@ func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *e
 		return nil, err
 	}
 
-	a.logger.Info("Successfully validated prompt")
+	a.logger.Debug("Successfully validated prompt")
 	return &result, nil
 }
 
@@ -98,7 +98,7 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 		return nil, err
 	}
 
-	a.logger.Info("Successfully generated test")
+	a.logger.Debug("Successfully generated test")
 	return &result, nil
 }
 
@@ -115,7 +115,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 		return nil, err
 	}
 
-	a.logger.Info("Successfully saved test locally")
+	a.logger.Debug("Successfully saved test locally")
 	return &result, nil
 }
 
@@ -132,7 +132,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 		return nil, err
 	}
 
-	a.logger.Info("Successfully completed test run")
+	a.logger.Debug("Successfullywie d test run")
 	return &result, nil
 }
 

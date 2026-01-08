@@ -32,7 +32,7 @@ func NewGenerateTestTool(logger *slog.Logger, autotesterAPIService service.Autot
 func (tt *GenerateTestTool) GenerateTest(ctx context.Context,
 	request *mcp.CallToolRequest,
 	input entity.GenerateTestRequest) (result *mcp.CallToolResult, output entity.GenerateTestToolResponse, _ error) {
-	tt.logger.Info("Generate Test with validation")
+	tt.logger.Debug("Generate Test with validation")
 
 	resp, err := tt.autotesterAPIService.GenerateTest(ctx, &input)
 	if err != nil {
