@@ -33,6 +33,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+		apiV1.POST("/auth/generate", controller.HandleGenerateToken)
 	}
 
 	if !isHeadless {
