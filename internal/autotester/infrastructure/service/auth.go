@@ -20,7 +20,7 @@ type Auth interface {
 	GetBearerToken(headers http.Header) (string, error)
 }
 
-type authService struct {
+type auth struct {
 	logger *slog.Logger
 	config *config.Config
 }
@@ -31,7 +31,7 @@ func NewAuthService(logger *slog.Logger, config *config.Config) (Auth, error) {
 		return nil, err
 	}
 
-	return &authService{
+	return &auth{
 		logger: logger,
 		config: config,
 	}, nil
@@ -41,7 +41,7 @@ func NewAuthService(logger *slog.Logger, config *config.Config) (Auth, error) {
 var tokenSecret = []byte("hier wird mal ein toller secret key sein")
 
 // MakeJWT takes userid and returns jwt on success
-func (ts *authService) MakeJWT(userId string) (string, error) {
+func (ts *auth) MakeJWT(userId string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    ts.config.JwtTokenIssuer,
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
@@ -56,7 +56,7 @@ func (ts *authService) MakeJWT(userId string) (string, error) {
 }
 
 // ValidateJWT takes existing token and validates expiration time, issuer and format
-func (ts *authService) ValidateJWT(tokenString string) (string, error) {
+func (ts *auth) ValidateJWT(tokenString string) (string, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (any, error) {
 		return tokenSecret, nil
 	})
@@ -81,7 +81,7 @@ func (ts *authService) ValidateJWT(tokenString string) (string, error) {
 }
 
 // GetBearerToken returns the bearer token in the Authorization Header of an http request
-func (ts *authService) GetBearerToken(headers http.Header) (string, error) {
+func (ts *auth) GetBearerToken(headers http.Header) (string, error) {
 	header := headers.Get("Authorization")
 	if header == "" {
 		return "", errors.New("no header detected")
