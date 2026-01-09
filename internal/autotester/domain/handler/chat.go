@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
@@ -259,16 +258,6 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 		a.metricsService.RecordRequestDuration(time.Since(start))
 		a.logger.Error("invalid userId format", "userId", parameters.UserID)
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
-		return
-	}
-
-	if _, err := uuid.Parse(parameters.ChatID); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		a.metricsService.IncRequestError("invalid_chat_id")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("invalid chatId format", "chatId", parameters.ChatID, "error", err)
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid chatId format"})
 		return
 	}
 
