@@ -263,6 +263,4 @@ defaultLimitTests: Int = 50
 
 taglistConfig: taglist = taglist
 
-jwtExpirationTimeInHours: Int = 1
-
-jwtTokenIssuer: String = "autotester"
+tokenExpirationTimeHours: Int = 1

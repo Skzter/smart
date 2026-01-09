@@ -55,7 +55,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (string, error)
 		err := a.db.CreateToken(ctx, database.CreateTokenParams{
 			UserID:    userId,
 			Token:     token,
-			ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.JwtExpirationTimeInHours)),
+			ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours)),
 		})
 		if err != nil {
 			return "", err
@@ -67,7 +67,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (string, error)
 			err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
 				UserID:    userId,
 				Token:     token,
-				ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.JwtExpirationTimeInHours)),
+				ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours)),
 				RevokedAt: sql.NullTime{},
 			})
 			if err != nil {
