@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
     generatePrompt,
-    getUserChats,
+    getChats,
     getTemplate,
     saveTestLocal,
     runContainer,
@@ -140,7 +140,7 @@ describe("API Functions", () => {
                 data: { chatSummarys: mockChatSummaries },
             });
 
-            const result = await getUserChats();
+            const result = await getChats();
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
@@ -162,7 +162,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(getUserChats()).rejects.toThrow(
+            await expect(getChats()).rejects.toThrow(
                 "Failed to fetch user chats",
             );
         });

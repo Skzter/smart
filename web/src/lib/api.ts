@@ -66,11 +66,11 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getUserChats(): Promise<ApiChatSummary[]> {
+export async function getChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `/users/${user.id}/chats`,
+            url: `/chats`,
             baseURL: baseURL,
         });
         return response.data.chatSummarys;
@@ -138,7 +138,7 @@ export async function getChatById(): Promise<ApiGetChatByIdResponse> {
     try {
         const response = await axios({
             method: "get",
-            url: `/users/${user.id}/chats/${chat.id}`,
+            url: `/chats/${chat.id}`,
             baseURL: baseURL,
         });
         return response.data;
