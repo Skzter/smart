@@ -3,11 +3,16 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/application"
@@ -16,6 +21,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/infrastructure/database"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
@@ -54,6 +60,8 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
 		MetricsServiceProvider,
+		DatabaseRepositoryProvider,
+		service.NewAuthService,
 	)
 
 	return nil, nil
@@ -137,4 +145,17 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
+}
+
+func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
+	godotenv.Load(".env.dev")
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		return nil, fmt.Errorf("no db_url set in .env.dev")
+	}
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("Error opening database: %s", err)
+	}
+	return database.New(dbConn), nil
 }

@@ -19,8 +19,15 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 		})
 		return
 	}
-	// check db for valid token
-	// if not valid make new one and store in db
-	// if valid return token
-	c.JSON(http.StatusOK, user)
+	token, err := a.authService.GenerateToken(c.Request.Context(), user.UserId)
+	if err != nil {
+		a.logger.Error(err.Error())
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{
+			Error: "Internal Server Error",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }

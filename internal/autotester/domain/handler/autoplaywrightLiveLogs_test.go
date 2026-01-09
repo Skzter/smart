@@ -133,6 +133,7 @@ func TestHandleLogRequest(t *testing.T) {
 	mockRemote := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetrics := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 
 	mockMetrics.On("IncRequestSuccess").Maybe()
 	mockMetrics.On("IncRequestError", mock.Anything).Maybe()
@@ -162,6 +163,7 @@ func TestHandleLogRequest(t *testing.T) {
 				mockChatManager,
 				tracer,
 				mockMetrics,
+				mockAuth,
 			)
 			if err != nil {
 				t.Fatalf("controller init failed: %v", err)
