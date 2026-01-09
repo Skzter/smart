@@ -7,28 +7,11 @@ package database
 
 import (
 	"context"
-
-	"github.com/google/uuid"
+	"database/sql"
+	"time"
 )
 
-const getTokenByUserID = `-- name: GetTokenByUserID :one
-select token
-from refresh_tokens
-where
-user_id = $1 and 
-expires_at > now() and
-revoked_at is null and 
-token is not null
-`
-
-func (q *Queries) GetTokenByUserID(ctx context.Context, userID uuid.UUID) (string, error) {
-	row := q.db.QueryRowContext(ctx, getTokenByUserID, userID)
-	var token string
-	err := row.Scan(&token)
-	return token, err
-}
-
-const insertTokenByUserID = `-- name: InsertTokenByUserID :exec
+const createToken = `-- name: CreateToken :exec
 insert into refresh_tokens(
 user_id,
 token,
@@ -42,38 +25,69 @@ values (
     $2,
     now(),
     now(),
-    now() + interval '24 hours',
+    $3,
     null
 )
 `
 
-type InsertTokenByUserIDParams struct {
-	UserID uuid.UUID
-	Token  string
+type CreateTokenParams struct {
+	UserID    string
+	Token     string
+	ExpiresAt time.Time
 }
 
-func (q *Queries) InsertTokenByUserID(ctx context.Context, arg InsertTokenByUserIDParams) error {
-	_, err := q.db.ExecContext(ctx, insertTokenByUserID, arg.UserID, arg.Token)
+func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) error {
+	_, err := q.db.ExecContext(ctx, createToken, arg.UserID, arg.Token, arg.ExpiresAt)
 	return err
 }
 
-const updateTokenByUserID = `-- name: UpdateTokenByUserID :exec
+const readToken = `-- name: ReadToken :one
+select id, user_id, token, created_at, updated_at, expires_at, revoked_at
+from refresh_tokens
+where
+user_id = $1
+`
+
+func (q *Queries) ReadToken(ctx context.Context, userID string) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, readToken, userID)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+const updateToken = `-- name: UpdateToken :exec
 update refresh_tokens
 set
 token = $2,
-updated_at = now()
+created_at = now(),
+updated_at = now(),
+expires_at = $3,
+revoked_at = $4
 where
-user_id = $1 and
-expires_at > now() and
-revoked_at is null
+user_id = $1
 `
 
-type UpdateTokenByUserIDParams struct {
-	UserID uuid.UUID
-	Token  string
+type UpdateTokenParams struct {
+	UserID    string
+	Token     string
+	ExpiresAt time.Time
+	RevokedAt sql.NullTime
 }
 
-func (q *Queries) UpdateTokenByUserID(ctx context.Context, arg UpdateTokenByUserIDParams) error {
-	_, err := q.db.ExecContext(ctx, updateTokenByUserID, arg.UserID, arg.Token)
+func (q *Queries) UpdateToken(ctx context.Context, arg UpdateTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateToken,
+		arg.UserID,
+		arg.Token,
+		arg.ExpiresAt,
+		arg.RevokedAt,
+	)
 	return err
 }

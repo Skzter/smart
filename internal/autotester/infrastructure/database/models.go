@@ -7,13 +7,11 @@ package database
 import (
 	"database/sql"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type RefreshToken struct {
 	ID        int32
-	UserID    uuid.UUID
+	UserID    string
 	Token     string
 	CreatedAt time.Time
 	UpdatedAt time.Time

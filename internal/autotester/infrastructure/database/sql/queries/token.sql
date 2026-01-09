@@ -1,13 +1,10 @@
--- name: GetTokenByUserID :one
-select token
+-- name: ReadToken :one
+select *
 from refresh_tokens
 where
-user_id = $1 and 
-expires_at > now() and
-revoked_at is null and 
-token is not null;
+user_id = $1;
 
--- name: InsertTokenByUserID :exec
+-- name: CreateToken :exec
 insert into refresh_tokens(
 user_id,
 token,
@@ -21,16 +18,18 @@ values (
     $2,
     now(),
     now(),
-    now() + interval '24 hours',
+    $3,
     null
 );
 
--- name: UpdateTokenByUserID :exec
+-- name: UpdateToken :exec
 update refresh_tokens
 set
 token = $2,
-updated_at = now()
+created_at = now(),
+updated_at = now(),
+expires_at = $3,
+revoked_at = $4
 where
-user_id = $1 and
-expires_at > now() and
-revoked_at is null;
+user_id = $1;
+
