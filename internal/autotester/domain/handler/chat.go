@@ -227,8 +227,8 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	})
 }
 
-// GetChatsById returns a full chat including all messages for a given chatId and userId.
-func (a *AutotesterController) GetChatsById(c *gin.Context) {
+// GetChatById returns a full chat including all messages for a given chatId and userId.
+func (a *AutotesterController) GetChatById(c *gin.Context) {
 	start := time.Now()
 	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()

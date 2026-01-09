@@ -618,7 +618,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 
-	controller.GetChatsById(ctx)
+	controller.GetChatById(ctx)
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d", http.StatusBadRequest, rec.Code)
@@ -646,7 +646,7 @@ func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 		{Key: "chatId", Value: validChatID},
 	}
 
-	controller.GetChatsById(ctx)
+	controller.GetChatById(ctx)
 
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("expected status %d, got %d", http.StatusNotFound, rec.Code)
@@ -680,7 +680,7 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 		{Key: "chatId", Value: validChatID},
 	}
 
-	controller.GetChatsById(ctx)
+	controller.GetChatById(ctx)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
