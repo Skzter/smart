@@ -151,11 +151,11 @@ func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
 	godotenv.Load()
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
-		return nil, fmt.Errorf("no db_url set in .env.dev")
+		return nil, fmt.Errorf("no DB_URL set in .env")
 	}
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		return nil, fmt.Errorf("Error opening database: %s", err)
+		return nil, fmt.Errorf("error opening database: %s", err)
 	}
 	return database.New(dbConn), nil
 }

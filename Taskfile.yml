@@ -7,6 +7,8 @@ env:
   GOPRIVATE: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
   LPATH: "{{.BIN_PATH}}:{{.PATH}}"
 
+dotenv: [".env"]
+
 vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
   MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
@@ -207,13 +209,13 @@ tasks:
     desc: Migrates postgres database up
     dir: "internal/autotester/infrastructure/database/sql/schema"
     cmds:
-      - go tool goose postgres "postgres://postgres:postgres-pass@localhost:5432/smart" up
+      - go tool goose postgres {{.DB_URL}} up
 
   goose-down:
     desc: Migrates postgres database down
     dir: "internal/autotester/infrastructure/database/sql/schema"
     cmds:
-      - go tool goose postgres "postgres://postgres:postgres-pass@localhost:5432/smart" down
+      - go tool goose postgres {{.DB_URL}} down
 
   # --------------------------------------------------------------------------------
   # Testing
