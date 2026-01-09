@@ -18,27 +18,27 @@ import (
 
 const prefixGroup = "group"
 
-// groupStorageRepository implements the GroupStorageRepository interface
+// groupStorage implements the GroupStorage interface
 // and encapsulates logic for S3 and Parquet operations.
-type groupStorageRepository struct {
+type groupStorage struct {
 	s3Wrapper           service.S3StorageWrapper
 	groupParquetWrapper service.ParquetFileWrapper[entity.Group]
 	logger              *slog.Logger
 	tracer              trace.Tracer
 }
 
-// NewGroupStorageRepository creates a new repository for Group entities.
+// NewGroupStorage creates a new repository for Group entities.
 // Returns the repository or an error.
-func NewGroupStorageRepository(
+func NewGroupStorage(
 	logger *slog.Logger,
 	s3Wrapper service.S3StorageWrapper,
 	groupParquetWrapper service.ParquetFileWrapper[entity.Group],
 	tracer trace.Tracer,
-) (domainRepo.GroupStorageRepository, error) {
+) (domainRepo.GroupStorage, error) {
 	if err := assert.NotNil(logger, s3Wrapper, groupParquetWrapper, tracer); err != nil {
 		return nil, err
 	}
-	return &groupStorageRepository{
+	return &groupStorage{
 		s3Wrapper:           s3Wrapper,
 		groupParquetWrapper: groupParquetWrapper,
 		logger:              logger,
@@ -49,7 +49,7 @@ func NewGroupStorageRepository(
 // Create stores the provided Group object in the underlying storage system.
 // The storage key is generated from the group's Id, so duplicate entities will be overwritten.
 // Returns an error if unsuccessful, or nil otherwise.
-func (r *groupStorageRepository) Create(ctx context.Context, obj *entity.Group) error {
+func (r *groupStorage) Create(ctx context.Context, obj *entity.Group) error {
 	if err := assert.NotNil(ctx, obj); err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (r *groupStorageRepository) Create(ctx context.Context, obj *entity.Group) 
 
 // Read retrieves a Group object from storage by its groupId.
 // Returns a pointer to the Group or an error if not found or read fails.
-func (r *groupStorageRepository) Read(ctx context.Context, groupId string) (*entity.Group, error) {
+func (r *groupStorage) Read(ctx context.Context, groupId string) (*entity.Group, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (r *groupStorageRepository) Read(ctx context.Context, groupId string) (*ent
 // Update updates an existing Group object in storage.
 // This is essentially the same as Create since we overwrite by key.
 // Returns an error if unsuccessful, or nil otherwise.
-func (r *groupStorageRepository) Update(ctx context.Context, obj *entity.Group) error {
+func (r *groupStorage) Update(ctx context.Context, obj *entity.Group) error {
 	if err := assert.NotNil(ctx, obj); err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (r *groupStorageRepository) Update(ctx context.Context, obj *entity.Group) 
 
 // Delete removes a Group object from storage by its groupId.
 // Returns an error if unsuccessful, or nil otherwise.
-func (r *groupStorageRepository) Delete(ctx context.Context, groupId string) error {
+func (r *groupStorage) Delete(ctx context.Context, groupId string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (r *groupStorageRepository) Delete(ctx context.Context, groupId string) err
 
 // ListAll retrieves all Groups from storage.
 // Returns a slice of Group objects or an error.
-func (r *groupStorageRepository) ListAll(ctx context.Context) ([]*entity.Group, error) {
+func (r *groupStorage) ListAll(ctx context.Context) ([]*entity.Group, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}

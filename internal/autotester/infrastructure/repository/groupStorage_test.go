@@ -33,7 +33,7 @@ func TestCreateGroupStorage(t *testing.T) {
 				mockS3.On("UploadParquetFile", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(test.uploadRet...)
 			}
 
-			repo, _ := NewGroupStorageRepository(logger, mockS3, mockParquet, tracer)
+			repo, _ := NewGroupStorage(logger, mockS3, mockParquet, tracer)
 
 			err := repo.Create(test.ctx, test.obj)
 			if test.expectError {
@@ -134,7 +134,7 @@ func TestReadGroupStorage(t *testing.T) {
 				}
 			}
 
-			repo, _ := NewGroupStorageRepository(logger, mockS3, mockParquet, tracer)
+			repo, _ := NewGroupStorage(logger, mockS3, mockParquet, tracer)
 
 			result, err := repo.Read(test.ctx, test.groupId)
 			if test.expectError {
@@ -255,7 +255,7 @@ func TestUpdateGroupStorage(t *testing.T) {
 				}
 			}
 
-			repo, _ := NewGroupStorageRepository(logger, mockS3, mockParquet, tracer)
+			repo, _ := NewGroupStorage(logger, mockS3, mockParquet, tracer)
 
 			err := repo.Update(test.ctx, test.obj)
 			if test.expectError {
@@ -404,7 +404,7 @@ func TestDeleteGroupStorage(t *testing.T) {
 				}
 			}
 
-			repo, _ := NewGroupStorageRepository(logger, mockS3, mockParquet, tracer)
+			repo, _ := NewGroupStorage(logger, mockS3, mockParquet, tracer)
 
 			err := repo.Delete(test.ctx, test.groupId)
 			if test.expectError {
@@ -431,7 +431,7 @@ func TestListAllGroupStorage(t *testing.T) {
 
 			test.setupMocks(mockS3, mockParquet)
 
-			repo, _ := NewGroupStorageRepository(logger, mockS3, mockParquet, tracer)
+			repo, _ := NewGroupStorage(logger, mockS3, mockParquet, tracer)
 
 			result, err := repo.ListAll(test.ctx)
 			if test.wantErr {
@@ -627,7 +627,7 @@ func TestNewGroupStorageRepository(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewGroupStorageRepository(test.logger, test.s3Wrapper, test.parquetWrapper, test.tracer)
+			repo, err := NewGroupStorage(test.logger, test.s3Wrapper, test.parquetWrapper, test.tracer)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, repo)
