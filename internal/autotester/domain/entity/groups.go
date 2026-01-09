@@ -10,5 +10,5 @@ type Group struct {
 	Description string    `json:"descriprion"`
 	CreatedAt   time.Time `json:"createdAt"`
 	CreatedBy   string    `json:"createdBy"`
-	Chats       []string  `json:"Chats"`
+	Chats       []string  `json:"chats"`
 }

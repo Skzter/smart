@@ -192,22 +192,31 @@ func TestChatStorageLoadChat(t *testing.T) {
 	}
 }
 
-func TestLoadUserChats(t *testing.T) {
+func TestLoadSummaries(t *testing.T) {
 	logger := slog.Default()
 	tracer := otel.Tracer("test")
-	orderedResult := []*entity.ChatSummary{{UpdatedAt: time.Unix(200, 0)}, {UpdatedAt: time.Unix(100, 0)}}
+	orderedResult := []*entity.ChatSummary{{UpdatedAt: time.Unix(200, 0), Groups: []string{"1", "2"}}, {UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}}}
 
 	tests := []struct {
 		name        string
+		groups      []string
 		listReturns []any
 		wantErr     bool
 		ctx         context.Context
 	}{
 		{
-			name:        "success",
+			name:        "success, no groups",
 			listReturns: []any{orderedResult, nil},
 			wantErr:     false,
 			ctx:         context.Background(),
+			groups:      []string{},
+		},
+		{
+			name:        "success, filtered by Group groups",
+			listReturns: []any{append(orderedResult, &entity.ChatSummary{UpdatedAt: time.Unix(1, 0), Groups: []string{"0"}}), nil},
+			wantErr:     false,
+			ctx:         context.Background(),
+			groups:      []string{"1"},
 		},
 		{
 			name:    "nil assert error",
@@ -215,16 +224,24 @@ func TestLoadUserChats(t *testing.T) {
 			ctx:     nil,
 		},
 		{
+			name:    "group assert error",
+			wantErr: true,
+			ctx:     context.Background(),
+			groups:  []string{""},
+		},
+		{
 			name:        "inverse order",
-			listReturns: []any{[]*entity.ChatSummary{{UpdatedAt: time.Unix(100, 0)}, {UpdatedAt: time.Unix(200, 0)}}, nil},
+			listReturns: []any{[]*entity.ChatSummary{{UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}}, {UpdatedAt: time.Unix(200, 0), Groups: []string{"1", "2"}}}, nil},
 			wantErr:     false,
 			ctx:         context.Background(),
+			groups:      []string{},
 		},
 		{
 			name:        "repo returns error",
 			listReturns: []any{nil, errors.New("repo error")},
 			wantErr:     true,
 			ctx:         context.Background(),
+			groups:      []string{},
 		},
 	}
 
@@ -241,7 +258,7 @@ func TestLoadUserChats(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
-			res, err := svc.LoadSummaries(test.ctx)
+			res, err := svc.LoadSummaries(test.ctx, test.groups...)
 			if test.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, res)

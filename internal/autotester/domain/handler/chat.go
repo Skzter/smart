@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/codes"
@@ -226,14 +225,6 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ChatSummarys{
 		ChatSummarys: chats,
 	})
-}
-
-func isValid(userId string) bool {
-	tokens := strings.Split(userId, "|")
-	if len(tokens) != 2 || tokens[0] != "auth0" || tokens[1] == "" {
-		return false
-	}
-	return true
 }
 
 // GetChatsById returns a full chat including all messages for a given chatId and userId.

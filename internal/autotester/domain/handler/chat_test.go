@@ -16,7 +16,6 @@ import (
 	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -522,46 +521,6 @@ func TestGetUserChats(t *testing.T) {
 
 			if rec.Code != tc.expectedStatus {
 				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
-			}
-		})
-	}
-}
-
-func TestIsValid(t *testing.T) {
-	tests := []struct {
-		name      string
-		id        string
-		expectErr bool
-	}{
-		{
-			name:      "error - id doesnt have separator",
-			id:        "auth01234",
-			expectErr: true,
-		},
-		{
-			name:      "error - first token isnt 'auth0'",
-			id:        "hallo|123",
-			expectErr: true,
-		},
-		{
-			name:      "error - second token is empty string",
-			id:        "hallo|123",
-			expectErr: true,
-		},
-		{
-			name:      "success",
-			id:        "auth0|123",
-			expectErr: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			valid := isValid(tc.id)
-			if tc.expectErr {
-				assert.False(t, valid)
-			} else {
-				assert.True(t, valid)
 			}
 		})
 	}
