@@ -407,6 +407,22 @@ func TestValidateChat(t *testing.T) {
 			ctx:     context.Background(),
 			wantErr: true,
 		},
+		{
+			name: "groups with empty string",
+			chat: &entity.Chat{
+				Id:                       "chat123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
+				CreatedAt:                time.Now(),
+				UpdatedAt:                time.Now(),
+				LastTest:                 "test123",
+				LastAutoPlaywrightPrompt: "apw prompt",
+				Messages:                 []*entity.Message{{Message: sharedEntity.Message{Id: id, Role: "role", Body: "body", CreatedAt: time.Now()}, Type: entity.MessageTypeValidation}},
+				Groups:                   []string{""},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -480,6 +496,119 @@ func TestValidateMessages(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			err := svc.ValidateMessage(test.ctx, test.message)
+
+			if test.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+// nolint:funlen
+func TestValidateGroup(t *testing.T) {
+	serviceMock := mocks.NewMockOpenAI(t)
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+	svc, err := NewValidatorService(serviceMock, &config.Config{}, logger, tracer)
+	if err != nil {
+		t.Fatalf("failed to create validator service: %v", err)
+	}
+	now := time.Now()
+
+	tests := []struct {
+		name    string
+		group   *entity.Group
+		ctx     context.Context
+		wantErr bool
+	}{
+		{
+			name: "valid Group",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+				Chats:       []string{},
+			},
+			ctx:     context.Background(),
+			wantErr: false,
+		},
+		{
+			name:    "nil assert failed",
+			group:   nil,
+			ctx:     nil,
+			wantErr: true,
+		},
+		{
+			name: "empty Id",
+			group: &entity.Group{
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+				Chats:       []string{},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "empty Name",
+			group: &entity.Group{
+				Id:          "group123",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+				Chats:       []string{},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "empty CreatedBy",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				Chats:       []string{},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "createdAt zero",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   time.Time{},
+				CreatedBy:   "user123",
+				Chats:       []string{},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "nil Chats",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+				Chats:       nil,
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := svc.ValidateGroup(test.ctx, test.group)
 
 			if test.wantErr {
 				assert.Error(t, err)

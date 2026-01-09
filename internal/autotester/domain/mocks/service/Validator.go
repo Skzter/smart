@@ -96,6 +96,63 @@ func (_c *MockValidator_ValidateChat_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// ValidateGroup provides a mock function for the type MockValidator
+func (_mock *MockValidator) ValidateGroup(ctx context.Context, group *entity.Group) error {
+	ret := _mock.Called(ctx, group)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidateGroup")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Group) error); ok {
+		r0 = returnFunc(ctx, group)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockValidator_ValidateGroup_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidateGroup'
+type MockValidator_ValidateGroup_Call struct {
+	*mock.Call
+}
+
+// ValidateGroup is a helper method to define mock.On call
+//   - ctx context.Context
+//   - group *entity.Group
+func (_e *MockValidator_Expecter) ValidateGroup(ctx interface{}, group interface{}) *MockValidator_ValidateGroup_Call {
+	return &MockValidator_ValidateGroup_Call{Call: _e.mock.On("ValidateGroup", ctx, group)}
+}
+
+func (_c *MockValidator_ValidateGroup_Call) Run(run func(ctx context.Context, group *entity.Group)) *MockValidator_ValidateGroup_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *entity.Group
+		if args[1] != nil {
+			arg1 = args[1].(*entity.Group)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockValidator_ValidateGroup_Call) Return(err error) *MockValidator_ValidateGroup_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockValidator_ValidateGroup_Call) RunAndReturn(run func(ctx context.Context, group *entity.Group) error) *MockValidator_ValidateGroup_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ValidateMessage provides a mock function for the type MockValidator
 func (_mock *MockValidator) ValidateMessage(ctx context.Context, msg *entity0.Message) error {
 	ret := _mock.Called(ctx, msg)
