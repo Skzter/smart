@@ -12,13 +12,21 @@ import (
 // If there isn't a valid token, it will generate one and return it.
 func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 	var user entity.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.BindJSON(&user); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "Bad Request",
 		})
 		return
 	}
+	if user.UserId == "" {
+		a.logger.Error("UserId is empty")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
+			Error: "Bad Request",
+		})
+		return
+	}
+
 	token, err := a.authService.GenerateToken(c.Request.Context(), user.UserId)
 	if err != nil {
 		a.logger.Error(err.Error())
