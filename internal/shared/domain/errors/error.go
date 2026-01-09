@@ -21,4 +21,5 @@ var (
 	ErrEmptyResponseArray = errors.New("response contains no messages to choose from")
 	ErrEmptyResponse      = errors.New("chosen response message is empty")
 	ErrChatNotFound       = errors.New("chat not found")
+	ErrGroupNotFound      = errors.New("group not found")
 )
