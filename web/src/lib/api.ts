@@ -112,26 +112,13 @@ export async function saveTestLocal(
 }
 
 // must block exectution until test is done
-export async function runContainer(
-    request: ApiRunContainer,
-    handler: {
-        onStepEnd?: (message: string) => void;
-        onError?: (error: Error) => void;
-        onStepBegin?: (message: string) => void;
-    },
-): Promise<void> {
-    try {
-        handler.onStepBegin?.("Getting Results...");
-        const response = await axios({
-            method: "post",
-            url: "run",
-            baseURL: baseURL,
-            data: request,
-        });
-        handler.onStepEnd?.(response.data.result);
-    } catch (error) {
-        handler.onError?.(getErrorMessage(error));
-    }
+export async function runContainer(request: ApiRunContainer): Promise<void> {
+    await axios({
+        method: "post",
+        url: "run",
+        baseURL,
+        data: request,
+    });
 }
 
 export async function getChatById(): Promise<ApiGetChatByIdResponse> {

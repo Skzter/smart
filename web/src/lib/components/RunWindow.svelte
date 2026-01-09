@@ -30,13 +30,15 @@
 </script>
 
 <Dialog.Content
-    class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px] h-[85vh] flex flex-col p-0 overflow-hidden"
+    class="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1170px]
+           h-[85vh] flex flex-col p-0 overflow-hidden"
     showCloseButton={false}
 >
-    <div class="flex flex-row items-center justify-between border-b px-4 py-4">
-        <Dialog.Title class="text-lg font-semibold"
-            >Button Click Test</Dialog.Title
-        >
+    <div class="flex items-center justify-between border-b px-4 py-4">
+        <Dialog.Title class="text-lg font-semibold">
+            Button Click Test
+        </Dialog.Title>
+
         <div class="flex items-center gap-2">
             {#if activeTab === "edit"}
                 <CloseButton onCloseClick={handleCloseClick} />
@@ -57,14 +59,15 @@
         </div>
     {:else if activeTab === "run"}
         <div
-            class="flex-1 {view === 'split'
-                ? 'grid grid-cols-2'
-                : 'grid grid-cols-1'} gap-0 overflow-hidden"
+            class="flex-1
+                   {view === 'split' ? 'grid grid-cols-2' : 'grid grid-cols-1'}
+                   overflow-hidden"
         >
-            {#if view == "split" || view == "code"}
+            {#if view === "split" || view === "code"}
                 <OutputView {testRunner} />
             {/if}
-            {#if view == "split" || view == "browser"}
+
+            {#if view === "split" || view === "browser"}
                 <BrowserView />
             {/if}
         </div>
