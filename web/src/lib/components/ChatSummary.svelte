@@ -8,7 +8,13 @@
     import { updateChatTitle as updateChatTitleApi } from "$lib/api";
     import { updateChatTitle as updateChatTitleState } from "$lib/shared.svelte";
 
-    let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
+    let {
+        summary = $bindable(),
+        updateChatTitleStance,
+    }: {
+        summary: ApiChatSummary;
+        updateChatTitleStance?: (chatId: string, title: string) => void;
+    } = $props();
     let edit = $state(false);
 
     function formatToCET(iso?: string) {
@@ -123,15 +129,26 @@
                 <input
                     use:focusAction
                     value={summary.title || "Neuer Chat"}
-                    onblur={(e) => saveTitle((e.target as HTMLInputElement).value)}
+                        onblur={(e) => {
+                            const newTitle = (e.target as HTMLInputElement).value.trim();
+                            if (newTitle && newTitle !== summary.title) {
+                                updateChatTitleStance?.(summary.chatId, newTitle);
+                            }
+                            edit = false;
+                        }}
                     onkeydown={(e) => {
                         if (e.key === "Enter") {
-                            saveTitle((e.target as HTMLInputElement).value);
+                        const newTitle = (e.target as HTMLInputElement).value.trim();
+                        if (newTitle && newTitle !== summary.title) {
+                            updateChatTitleStance?.(summary.chatId, newTitle);
+                            saveTitle(newTitle);
+                            edit = false;
                         }
                         if (e.key === "Escape") {
                             edit = false;
                     }
                     }}
+                    }
                 />
             {:else}
                 <p class="truncate">
