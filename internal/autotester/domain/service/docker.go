@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -88,6 +90,16 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 	ctx, span := d.tracer.Start(ctx, "docker.RunTest")
 	defer span.End()
 
+	// Create media directory for test artifacts (screenshots, videos)
+	mediaDir := filepath.Join(d.config.MediaDirAutopw, testID)
+	if err := os.MkdirAll(mediaDir, 0o755); err != nil {
+		d.logger.Error("Failed to create media directory",
+			slog.String("mediaDir", mediaDir),
+			slog.String("error", err.Error()),
+		)
+		return "", fmt.Errorf("failed to create media directory: %w", err)
+	}
+
 	containerConfig := &container.Config{
 		Image: "gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest",
 		Env:   []string{fmt.Sprintf("OPENAI_API_KEY=%s", build.OpenAIKey)},
@@ -108,6 +120,11 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 				Type:   mount.TypeBind,
 				Source: filename,
 				Target: fmt.Sprintf("/apw/%s", basefile),
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: mediaDir,
+				Target: "/apw/test-results",
 			},
 		},
 	}
