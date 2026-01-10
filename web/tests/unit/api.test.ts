@@ -501,7 +501,7 @@ describe("API Functions", () => {
         const mockUserId = "user123";
         const mockChatId = "chat456";
 
-        it("should make a PATCH request to /users/:userId/chats/:chatId with correct data", async () => {
+        it("should make a PATCH request to users/${userId}/chats/${chatId}/title with correct data", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: {
@@ -519,7 +519,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "patch",
-                url: `/users/${mockUserId}/chats/${mockChatId}`,
+                url: `/users/${mockUserId}/chats/${mockChatId}/title`,
                 baseURL: "http://localhost:8081/api/v1/",
                 data: {
                     title: newTitle,
@@ -548,7 +548,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "patch",
-                url: `/users/user999/chats/${mockChatId}`,
+                url: `/users/user999/chats/${mockChatId}/title`,
                 baseURL: "http://localhost:8081/api/v1/",
                 data: {
                     title: newTitle,
