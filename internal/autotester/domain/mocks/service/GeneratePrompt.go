@@ -109,3 +109,52 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx cont
 	_c.Call.Return(run)
 	return _c
 }
+
+// GenerateTitleFromRequest provides a mock function for the type MockGeneratePrompt
+func (_mock *MockGeneratePrompt) GenerateTitleFromRequest(respBody string) string {
+	ret := _mock.Called(respBody)
+
+	if len(ret) == 0 {
+		return ""
+	}
+
+	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
+		return returnFunc(respBody)
+	}
+
+	return ret.Get(0).(string)
+}
+
+// MockGeneratePrompt_GenerateTitleFromRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GenerateTitleFromRequest'
+type MockGeneratePrompt_GenerateTitleFromRequest_Call struct {
+	*mock.Call
+}
+
+// GenerateTitleFromRequest is a helper method to define mock.On call
+//   - respBody string
+func (_e *MockGeneratePrompt_Expecter) GenerateTitleFromRequest(respBody interface{}) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
+	return &MockGeneratePrompt_GenerateTitleFromRequest_Call{Call: _e.mock.On("GenerateTitleFromRequest", respBody)}
+}
+
+func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) Run(run func(respBody string)) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) Return(s string) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
+	_c.Call.Return(s)
+	return _c
+}
+
+func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) RunAndReturn(run func(respBody string) string) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
+	_c.Call.Return(run)
+	return _c
+}

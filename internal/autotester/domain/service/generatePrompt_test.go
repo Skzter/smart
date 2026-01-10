@@ -198,3 +198,63 @@ func TestGeneratePrompt(t *testing.T) {
 		})
 	}
 }
+
+func Test_parseTitleFromRequest(t *testing.T) {
+	s := &generatePrompt{}
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "Neuer Chat",
+		},
+		{
+			name:     "whitespace only",
+			input:    "   ",
+			expected: "Neuer Chat",
+		},
+		{
+			name:     "simple test title",
+			input:    `test("My First Test")`,
+			expected: "My First Test",
+		},
+		{
+			name:     "title with leading/trailing spaces",
+			input:    `test("   Trim This Title   ")`,
+			expected: "Trim This Title",
+		},
+		{
+			name:     "long title truncated",
+			input:    `test("This title is definitely longer than thirty characters")`,
+			expected: "This title is definitely longe",
+		},
+		{
+			name:     "no test call in string",
+			input:    `console.log("Nothing here")`,
+			expected: "Neuer Chat",
+		},
+		{
+			name:     "empty title in test",
+			input:    `test("")`,
+			expected: "Neuer Chat",
+		},
+		{
+			name:     "multiple test calls, take first",
+			input:    `test("First Title"); test("Second Title")`,
+			expected: "First Title",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := s.parseTitleFromRequest(tt.input)
+			if got != tt.expected {
+				t.Errorf("ParseTitleFromRequest(%q) = %q; want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}

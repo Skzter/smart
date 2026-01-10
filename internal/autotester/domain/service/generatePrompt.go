@@ -46,6 +46,7 @@ func NewGeneratePromptService(
 	if err := assert.NotNil(openaiService, taglistService, config, logger, validator, tracer); err != nil {
 		return nil, err
 	}
+
 	return &generatePrompt{openaiService, taglistService, config, logger, validator, tracer}, nil
 }
 
@@ -86,8 +87,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		return "", errors.ErrInternalServer
 	}
 	chat.AddMessage(resp, entity.MessageTypeGeneration)
-	// Update title based on all messages
-	chat.Title = GenerateTitleFromRequest(resp.Body)
+	chat.Title = s.parseTitleFromRequest(resp.Body)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
 		span.RecordError(err)
@@ -116,9 +116,9 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	return tagList.Format()
 }
 
-// GenerateTitleFromRequest extracts a chat title from the generated TypeScript test code.
+// parseTitleFromRequest extracts a chat title from the generated TypeScript test code.
 // If no valid title is found, returns a fallback "Neuer Chat".
-func GenerateTitleFromRequest(respBody string) string {
+func (s *generatePrompt) parseTitleFromRequest(respBody string) string {
 	autoTitle := "Neuer Chat"
 	if strings.TrimSpace(respBody) == "" {
 		return autoTitle
@@ -132,9 +132,9 @@ func GenerateTitleFromRequest(respBody string) string {
 		if len(title) == 0 {
 			return autoTitle
 		}
-		// Optional: limit length to 60 characters
-		if len(title) > 60 {
-			title = title[:60]
+
+		if len(title) > 30 {
+			title = title[:30]
 		}
 		return title
 	}

@@ -9,6 +9,7 @@ import {
     getChatById,
     deleteLocalTest,
     validatePrompt,
+    updateChatTitle,
 } from "../../src/lib/api";
 import * as shared from "../../src/lib/shared.svelte";
 
@@ -492,4 +493,84 @@ describe("API Functions", () => {
             );
         });
     });
+});
+
+    describe("updateChatTitle", () => {
+        const newTitle = "Updated Chat Title";
+        const updatedAt = "2024-02-01T00:00:00Z";
+        const mockUserId = "user123";
+        const mockChatId = "chat456";
+
+        it("should make a PATCH request to /users/:userId/chats/:chatId with correct data", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                data: {
+                    chatId: mockChatId,
+                    title: newTitle,
+                    updatedAt,
+                },
+            });
+
+            const result = await updateChatTitle(
+                mockChatId,
+                newTitle,
+                updatedAt,
+            );
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "patch",
+                url: `/users/${mockUserId}/chats/${mockChatId}`,
+                baseURL: "http://localhost:8081/api/v1/",
+                data: {
+                    title: newTitle,
+                },
+            });
+            expect(result).toEqual({
+                chatId: mockChatId,
+                title: newTitle,
+                updatedAt,
+            });
+        });
+
+        it("should use the current user id from shared state", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                data: {
+                    chatId: mockChatId,
+                    title: newTitle,
+                    updatedAt,
+                },
+            });
+
+            shared.user.id = "user999";
+
+            await updateChatTitle(mockChatId, newTitle, updatedAt);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "patch",
+                url: `/users/user999/chats/${mockChatId}`,
+                baseURL: "http://localhost:8081/api/v1/",
+                data: {
+                    title: newTitle,
+                },
+            });
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            const err = new AxiosError("Failed to update chat title");
+            err.response = {
+                data: { message: "Failed to update chat title" },
+                status: 500,
+                statusText: "Internal Server Error",
+                headers: {},
+                config: {} as InternalAxiosRequestConfig,
+            };
+            mockedAxios.mockRejectedValue(err);
+
+            await expect(
+                updateChatTitle(mockChatId, newTitle, updatedAt),
+            ).rejects.toThrow("Failed to update chat title");
+        }  
+    );
 });

@@ -25,6 +25,9 @@ import (
 	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
+const validUserId = "auth0|user-42"
+const validChatId = "550e8400-e29b-41d4-a716-446655440000"
+
 // nolint:funlen
 func TestHandleChatRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
@@ -49,7 +52,7 @@ func TestHandleChatRequest(t *testing.T) {
 			MockSetup:      nil,
 		},
 		{
-			TestName: "valid request",
+			TestName: "Valid request",
 			RequestBody: `{
 				"message": {
 					"body":"prompt",
@@ -194,7 +197,7 @@ func TestHandleChatRequest(t *testing.T) {
 }
 
 // nolint:funlen
-func TestHandleChatRequestValidity(t *testing.T) {
+func TestHandleChatRequestValIdity(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
@@ -262,8 +265,8 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"body": "this is a valid prompt",
 					"role":"user"
 				},
-				"userId":"",
-				"conversationId":"2"
+				"userid":"",
+				"conversationid":"2"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 		},
@@ -274,8 +277,8 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"body": "this is a valid prompt",
 					"role":"user"
 				},
-				"userId":"2",
-				"conversationId":"2"
+				"userid":"2",
+				"conversationid":"2"
 			}`,
 			ExpectedStatus:   http.StatusInternalServerError,
 			MockResponseLoad: []any{nil, errors.New("err")},
@@ -287,8 +290,8 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"body": "this is a valid prompt",
 					"role":"user"
 				},
-				"userId":"2",
-				"conversationId":"2"
+				"userid":"2",
+				"conversationid":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -297,6 +300,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 		},
 	}
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
 	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
@@ -320,7 +324,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 				mockValServ.On("ValidatePrompt", mock.Anything, mock.Anything, mock.Anything).Return(test.MockResponseValidate...)
 			}
 
-			req, _ := http.NewRequest(http.MethodPost, "/api/v1/chat/validity", bytes.NewBufferString(test.RequestBody))
+			req, _ := http.NewRequest(http.MethodPost, "/api/v1/chat/validate", bytes.NewBufferString(test.RequestBody))
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
@@ -349,10 +353,10 @@ func TestHandleUserInfoRequest(t *testing.T) {
 		{
 			TestName: "Valid UserRequestBody",
 			UserRequestBody: `{
-				"userId": "9177b856-46a0-11f0-9fe2-0242ac120002",
+				"userid": "9177b856-46a0-11f0-9fe2-0242ac120002",
 				"allConversations": [
 				  {
-					"ConversationId": "string",
+					"Conversationid": "string",
 					"Messages": [
 					  {
 						"data": "string",
@@ -365,7 +369,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			Context:        context.Background(),
 			ExpectedStatus: http.StatusOK,
 		}, {
-			TestName:        "Invalid UserRequestBody",
+			TestName:        "InvalId UserRequestBody",
 			UserRequestBody: ``,
 			Context:         context.Background(),
 			ExpectedStatus:  http.StatusBadRequest,
@@ -433,50 +437,50 @@ func TestGetUserChats(t *testing.T) {
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
-		requestID        string
+		requestId        string
 		limit            string
 		mockResponseLoad []any
 		expectedStatus   int
 	}{
 		{
-			name:           "error - No ID",
-			requestID:      "",
+			name:           "error - No Id",
+			requestId:      "",
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "error - invalid ID format",
-			requestID:      "132",
+			name:           "error - invalId Id format",
+			requestId:      "132",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "error - limit is not a number",
-			requestID:      "auth0|123",
+			requestId:      "auth0|123",
 			limit:          "hallo",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "error - limit is a negative number",
-			requestID:      "auth0|123",
+			requestId:      "auth0|123",
 			limit:          "-131",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:             "error - no chat history for given user found",
-			requestID:        "auth0|123",
+			requestId:        "auth0|123",
 			limit:            "123",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "error - empty limit but no history found",
-			requestID:        "auth0|123",
+			requestId:        "auth0|123",
 			limit:            "",
 			mockResponseLoad: []any{nil, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:      "success",
-			requestID: "auth0|123",
+			requestId: "auth0|123",
 			limit:     "5",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
 				{
@@ -530,7 +534,7 @@ func TestGetUserChats(t *testing.T) {
 			)
 			router.GET("/api/v1/chats/:userId", controller.HandleGetUserChats)
 
-			endpoint := "/api/v1/chats/" + tc.requestID + "?limit=" + tc.limit
+			endpoint := "/api/v1/chats/" + tc.requestId + "?limit=" + tc.limit
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
@@ -543,37 +547,37 @@ func TestGetUserChats(t *testing.T) {
 	}
 }
 
-func TestIsValid(t *testing.T) {
+func TestIsValId(t *testing.T) {
 	tests := []struct {
 		name      string
-		id        string
+		Id        string
 		expectErr bool
 	}{
 		{
-			name:      "error - id doesnt have separator",
-			id:        "auth01234",
+			name:      "error - Id doesnt have separator",
+			Id:        "auth01234",
 			expectErr: true,
 		},
 		{
 			name:      "error - first token isnt 'auth0'",
-			id:        "hallo|123",
+			Id:        "hallo|123",
 			expectErr: true,
 		},
 		{
 			name:      "error - second token is empty string",
-			id:        "hallo|123",
+			Id:        "hallo|123",
 			expectErr: true,
 		},
 		{
 			name:      "success",
-			id:        "auth0|123",
+			Id:        "auth0|123",
 			expectErr: false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			valid := isValid(tc.id)
+			valid := isValid(tc.Id)
 			if tc.expectErr {
 				assert.False(t, valid)
 			} else {
@@ -685,22 +689,19 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	validUserID := "auth0|user-42"
-	validChatID := "550e8400-e29b-41d4-a716-446655440000"
-
 	controller := newTestControllerWithChatMock(t, nil, sharedErrors.ErrChatNotFound)
 
 	req, _ := http.NewRequest(
 		http.MethodGet,
-		"/api/v1/users/"+validUserID+"/chats/"+validChatID,
+		"/api/v1/users/"+validUserId+"/chats/"+validChatId,
 		nil,
 	)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
-		{Key: "userId", Value: validUserID},
-		{Key: "chatId", Value: validChatID},
+		{Key: "userId", Value: validUserId},
+		{Key: "chatId", Value: validChatId},
 	}
 
 	controller.GetChatById(ctx)
@@ -713,27 +714,24 @@ func TestGetChatById_ChatNotFound_ReturnsNotFound(t *testing.T) {
 func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	validUserID := "auth0|user-42"
-	validChatID := "550e8400-e29b-41d4-a716-446655440000"
-
 	expectedChat := &entity.Chat{
-		Id:     validChatID,
-		UserId: validUserID,
+		Id:     validChatId,
+		UserId: validUserId,
 	}
 
 	controller := newTestControllerWithChatMock(t, expectedChat, nil)
 
 	req, _ := http.NewRequest(
 		http.MethodGet,
-		"/api/v1/users/"+validUserID+"/chats/"+validChatID,
+		"/api/v1/users/"+validUserId+"/chats/"+validChatId,
 		nil,
 	)
 	rec := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(rec)
 	ctx.Request = req
 	ctx.Params = gin.Params{
-		{Key: "userId", Value: validUserID},
-		{Key: "chatId", Value: validChatID},
+		{Key: "userId", Value: validUserId},
+		{Key: "chatId", Value: validChatId},
 	}
 
 	controller.GetChatById(ctx)
@@ -749,5 +747,165 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 
 	if resp.Id != expectedChat.Id || resp.UserId != expectedChat.UserId {
 		t.Fatalf("unexpected chat in response: %+v", resp)
+	}
+}
+
+func TestHandleUpdateChatTitle(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+	tests := []struct {
+		TestName          string
+		UserId            string
+		ChatId            string
+		RequestBody       string
+		MockResponseLoad  []*entity.Chat
+		MockErrorLoad     []error
+		MockErrorSave     []error
+		ExpectedStatus    int
+		ExpectedErrorText string
+	}{
+		{
+			TestName:    "Successful update",
+			UserId:      validUserId,
+			ChatId:      validChatId,
+			RequestBody: `{"title":"New Chat Title"}`,
+			MockResponseLoad: []*entity.Chat{
+				{Id: validChatId, UserId: validUserId, Title: "Old Title"},
+			},
+			MockErrorLoad:  []error{nil},
+			MockErrorSave:  []error{nil},
+			ExpectedStatus: http.StatusOK,
+		},
+		{
+			TestName:          "Invalid user Id",
+			UserId:            "!!invalid!!",
+			ChatId:            validChatId,
+			RequestBody:       `{"title":"New Chat Title"}`,
+			ExpectedStatus:    http.StatusBadRequest,
+			ExpectedErrorText: "invalid userId format",
+		},
+		{
+			TestName:    "LoadChat fails",
+			UserId:      validUserId,
+			ChatId:      validChatId,
+			RequestBody: `{"title":"New Chat Title"}`,
+			MockResponseLoad: []*entity.Chat{
+				{},
+			},
+			MockErrorLoad:     []error{errors.New("db error")},
+			ExpectedStatus:    http.StatusInternalServerError,
+			ExpectedErrorText: "could not load chat",
+		},
+	}
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+
+	for _, test := range tests {
+		t.Run(test.TestName, func(t *testing.T) {
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockChatManager := mocks.NewMockChatManager(t)
+
+			if test.MockResponseLoad != nil {
+				mockChatStorageServ.On("LoadChat", mock.Anything, test.UserId, test.ChatId).Return(test.MockResponseLoad[0], test.MockErrorLoad[0])
+			}
+			if test.MockErrorSave != nil {
+				mockChatManager.On("SaveChat", mock.Anything, mock.Anything).Return(test.MockErrorSave[0]).Maybe()
+			}
+
+			req, _ := http.NewRequest(http.MethodPut, "/users/"+test.UserId+"/chats/"+test.ChatId, bytes.NewBufferString(test.RequestBody))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
+			ctx.Params = []gin.Param{
+				{Key: "userId", Value: test.UserId},
+				{Key: "chatId", Value: test.ChatId},
+			}
+
+			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
+				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, tracer, mockMetricsServ)
+			controller.HandleUpdateChatTitle(ctx)
+
+			if rec.Code != test.ExpectedStatus {
+				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
+			}
+			if test.ExpectedErrorText != "" {
+				var resp entity.ErrorMessage
+				_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+				if resp.Error != test.ExpectedErrorText {
+					t.Errorf("Expected error '%s', got '%s'", test.ExpectedErrorText, resp.Error)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleUpdateChatTitle_TitleTooLong(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+
+	validUserId := "auth0|user-42"
+	validChatId := uuid.NewString()
+
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+
+	mockGenServ := mocks.NewMockGeneratePrompt(t)
+	mockValServ := mocks.NewMockValidator(t)
+	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+	mockDockerServ := mocks.NewMockDocker(t)
+	mockChatStorageServ := mocks.NewMockChatStorageService(t)
+	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockChatManager := mocks.NewMockChatManager(t)
+
+	mockChatStorageServ.On("LoadChat", mock.Anything, validUserId, validChatId).
+		Return(&entity.Chat{
+			Id:     validChatId,
+			UserId: validUserId,
+			Title:  "Old Title",
+		}, nil)
+
+	mockChatManager.On("SaveChat", mock.Anything, mock.Anything).Return(nil).Maybe()
+
+	requestBody := `{"title":"This title is way too long to be accepted by the system"}`
+	req, _ := http.NewRequest(http.MethodPut, "/users/"+validUserId+"/chats/"+validChatId, bytes.NewBufferString(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(rec)
+	ctx.Request = req
+	ctx.Params = []gin.Param{
+		{Key: "userId", Value: validUserId},
+		{Key: "chatId", Value: validChatId},
+	}
+
+	controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ,
+		mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager, tracer, mockMetricsServ)
+
+	controller.HandleUpdateChatTitle(ctx)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, rec.Code)
+	}
+
+	var resp entity.ErrorMessage
+	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+	expectedError := "Title must be 1–30 characters"
+	if resp.Error != expectedError {
+		t.Errorf("Expected error '%s', got '%s'", expectedError, resp.Error)
 	}
 }
