@@ -2,6 +2,8 @@ package tools
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,34 +11,67 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// SetupIntegrationEnvironment starts a Testcontainers container from an Autotester image for integration tests.
-// TODO: It currently integrates against a real S3 backend (not ideal). Also, the production image rewrites API paths,
-// which is not reflected in the MCP server, making local testing hard.
-func SetupIntegrationEnvironment(t *testing.T) string {
+// SetupAutotesterAPIMock uses Testcontainers to spin up a Prism mock server.
+// Testcontainers manages the Docker lifecycle
+//
+// Parameters:
+//   - t: used for logging and to register t.Cleanup() so the container is killed automatically.
+//   - apiSpecPath: the path to the OpenAPI specification
+//
+// Returns the base URL where the tests can reach the mocked API.
+func SetupAutotesterAPIMock(t *testing.T, apiSpecPath string) string {
+	t.Helper()
+
 	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")
 	}
 
+	// Port 4010 is the hardcoded internal default port for Prism.
+	const prismPort = "4010/tcp"
 	ctx := context.Background()
 
-	autotesterContainer := setupAutotesterContainer(t)
+	absApiSpecPath, err := filepath.Abs(apiSpecPath)
+	require.NoError(t, err, "failed to resolve absolute path for API spec")
 
-	host, _ := autotesterContainer.Host(ctx)
-	port, _ := autotesterContainer.MappedPort(ctx, "8081")
-	return "http://" + host + ":" + port.Port()
-}
+	autotesterContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: "stoplight/prism:4.14.1",
+			// Arguments for the prism binary inside the container:
+			// - mock: Starts the mock server mode.
+			// - -h: Host flag to specify the binding address.
+			// - 0.0.0.0: Binds to all network interfaces inside the container.
+			// - --errors: Returns 400/500 errors if requests don't match the spec.
+			// - /api/AutotesterAPI.yaml: The spec file Prism uses to generate the mock.
+			Cmd: []string{
+				"mock",
+				"-h",
+				"0.0.0.0",
+				"--errors",
+				"/api/AutotesterAPI.yaml",
+			},
+			ExposedPorts: []string{prismPort},
+			Files: []testcontainers.ContainerFile{
+				{
+					HostFilePath:      absApiSpecPath,
+					ContainerFilePath: "/api/AutotesterAPI.yaml",
+				},
+			},
+			// Wait until Prism logs that it is ready.
+			WaitingFor: wait.ForLog("Prism is listening"),
+		},
+		Started: true,
+	})
+	require.NoError(t, err, "failed to start Prism container")
 
-func setupAutotesterContainer(t *testing.T) testcontainers.Container {
-	ctx := context.Background()
-
-	autotesterContainer, err := testcontainers.Run(
-		ctx,
-		"gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest",
-		testcontainers.WithExposedPorts("8081/tcp"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("8081/tcp")),
-	)
-	require.NoError(t, err, "Failed to start Autotester container")
+	// Ensures the container is terminated automatically after the test and its subtests.
 	testcontainers.CleanupContainer(t, autotesterContainer)
 
-	return autotesterContainer
+	host, err := autotesterContainer.Host(ctx)
+	require.NoError(t, err)
+
+	// Map the internal port 4010 to the dynamically assigned host port.
+	port, err := autotesterContainer.MappedPort(ctx, prismPort)
+	require.NoError(t, err)
+
+	return fmt.Sprintf("http://%s:%s", host, port.Port())
 }
