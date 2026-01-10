@@ -303,3 +303,71 @@ func (_c *MockAutotesterAPIRepository_SaveTest_Call) RunAndReturn(run func(ctx c
 	_c.Call.Return(run)
 	return _c
 }
+
+// ValidatePrompt provides a mock function for the type MockAutotesterAPIRepository
+func (_mock *MockAutotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error) {
+	ret := _mock.Called(ctx, request)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ValidatePrompt")
+	}
+
+	var r0 *entity.ValidatePromptResponse
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)); ok {
+		return returnFunc(ctx, request)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) *entity.ValidatePromptResponse); ok {
+		r0 = returnFunc(ctx, request)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.ValidatePromptResponse)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest) error); ok {
+		r1 = returnFunc(ctx, request)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAutotesterAPIRepository_ValidatePrompt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ValidatePrompt'
+type MockAutotesterAPIRepository_ValidatePrompt_Call struct {
+	*mock.Call
+}
+
+// ValidatePrompt is a helper method to define mock.On call
+//   - ctx context.Context
+//   - request *entity.GenerateTestRequest
+func (_e *MockAutotesterAPIRepository_Expecter) ValidatePrompt(ctx interface{}, request interface{}) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+	return &MockAutotesterAPIRepository_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, request)}
+}
+
+func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Run(run func(ctx context.Context, request *entity.GenerateTestRequest)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *entity.GenerateTestRequest
+		if args[1] != nil {
+			arg1 = args[1].(*entity.GenerateTestRequest)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Return(validatePromptResponse *entity.ValidatePromptResponse, err error) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+	_c.Call.Return(validatePromptResponse, err)
+	return _c
+}
+
+func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+	_c.Call.Return(run)
+	return _c
+}
