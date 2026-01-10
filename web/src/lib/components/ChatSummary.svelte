@@ -94,7 +94,7 @@
 
     try {
         const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
-        updateChatTitleState(updated.chatId, updated.title);
+        updateChatTitleState(updated.chatId, updated.title, updated.updatedAt);
 
     } catch (error) {
         toast.error("Umbenennen fehlgeschlagen", {
