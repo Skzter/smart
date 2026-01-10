@@ -5,6 +5,8 @@
     import { getChatById } from "$lib/api";
     import { toast } from "svelte-sonner";
     import { type Message, chat, messages, user } from "$lib/shared.svelte";
+    import { updateChatTitle as updateChatTitleApi } from "$lib/api";
+    import { updateChatTitle as updateChatTitleState } from "$lib/shared.svelte";
 
     let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
     let edit = $state(false);
@@ -81,6 +83,29 @@
             });
         }
     }
+
+    async function saveTitle(newTitle: string) {
+    const trimmed = newTitle.trim();
+    edit = false;
+
+    if (!trimmed || trimmed === summary.title) {
+        return;
+    }
+
+    try {
+        const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
+        updateChatTitleState(updated.chatId, updated.title);
+
+    } catch (error) {
+        toast.error("Umbenennen fehlgeschlagen", {
+            description:
+                error instanceof Error
+                    ? error.message
+                    : "Unbekannter Fehler",
+        });
+    }
+}
+
 </script>
 
 <Sidebar.MenuItem>
@@ -88,30 +113,24 @@
         class="h-12 py-1 mb-1 flex"
         role="button"
         tabindex={0}
-        onclick={invokeSwitchChat}
+        onclick={() => {
+            if (!edit) invokeSwitchChat();
+}}
     >
         <LucideMessageSquare class="mr-1" />
         <div class="flex flex-col justify-between min-w-0 mr-2">
             {#if edit}
                 <input
                     use:focusAction
-                    id={`title${summary.chatId}`}
-                    value={summary.title === "" ? "Neuer Chat" : summary.title}
-                    onfocusout={(e) => {
-                        summary.title = (e.target as HTMLInputElement).value;
-                        edit = false;
-                    }}
+                    value={summary.title || "Neuer Chat"}
+                    onblur={(e) => saveTitle((e.target as HTMLInputElement).value)}
                     onkeydown={(e) => {
-                        if (e.key == "Enter") {
-                            summary.title = (
-                                e.target as HTMLInputElement
-                            ).value;
-                            edit = false;
-                            edit = false;
+                        if (e.key === "Enter") {
+                            saveTitle((e.target as HTMLInputElement).value);
                         }
-                        if (e.key == "Escape") {
+                        if (e.key === "Escape") {
                             edit = false;
-                        }
+                    }
                     }}
                 />
             {:else}

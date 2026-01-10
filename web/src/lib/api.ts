@@ -165,6 +165,25 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
     }
 }
 
+export async function updateChatTitle(
+    chatId: string,
+    title: string,
+    userId: string,
+): Promise<ApiChatSummary> {
+    try {
+        const response = await axios({
+            method: "patch",
+            url: `users/${userId}/chats/${chatId}/title`,
+            baseURL,
+            data: { title },
+        });
+
+        return response.data;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
 function getErrorMessage(error: unknown): Error {
     if (error instanceof AxiosError) {
         return new Error(error.response?.data.message ?? error.message);

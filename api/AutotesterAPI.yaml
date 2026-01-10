@@ -32,7 +32,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-                
+
+  /api/v1/users/{userId}/chats/{chatId}/title:
+    patch:
+      summary: "Updates the title of a chat"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  example: "Updated Chat Title"
+      responses:
+      '200':
+        description: Successful update of the chat title
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chatId:
+                  type: string
+                title:
+                  type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                          
   /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"

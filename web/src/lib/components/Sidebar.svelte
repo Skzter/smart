@@ -10,6 +10,7 @@
     import { toast } from "svelte-sonner";
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
+    
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[] | undefined>(undefined);
@@ -178,6 +179,7 @@
 
         return "früher";
     }
+
 </script>
 
 <Sidebar.Root>

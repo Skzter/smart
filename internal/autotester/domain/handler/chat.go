@@ -340,17 +340,18 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 		return
 	}
 
+	if chat.UserId != userID {
+		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
+		return
+	}
+
 	title := strings.TrimSpace(req.Title)
 	if len(title) == 0 || len(title) > 60 {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Title must be 1–60 characters"})
 		return
 	}
-	chat.Title = title
 
-	if chat.UserId != userID {
-		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
-		return
-	}
+	chat.Title = title
 
 	if err := a.chatManager.SaveChat(c.Request.Context(), chat); err != nil {
 		a.logger.Error("Saving updated chat failed", "error", err)
@@ -359,5 +360,7 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 	}
 
 	a.metricsService.IncRequestSuccess()
+	span.SetStatus(codes.Ok, "")
+
 	c.JSON(http.StatusOK, chat)
 }
