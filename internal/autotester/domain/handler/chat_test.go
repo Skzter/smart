@@ -857,7 +857,7 @@ func TestHandleUpdateChatTitle_TitleTooLong(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	validUserId := "auth0|user-42"
-	validChatId := uuid.NewString()
+	validChatId := "550e8400-e29b-41d4-a716-446655440000"
 
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
