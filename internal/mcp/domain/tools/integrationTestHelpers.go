@@ -35,7 +35,7 @@ func SetupAutotesterAPIMock(t *testing.T, apiSpecPath string) string {
 
 	autotesterContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image: "stoplight/prism:4.14.1",
+			Image: "stoplight/prism:5.14.2",
 			// Arguments for the prism binary inside the container:
 			// - mock: Starts the mock server mode.
 			// - -h: Host flag to specify the binding address.
