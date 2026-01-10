@@ -173,7 +173,7 @@ export async function updateChatTitle(
     try {
         const response = await axios({
             method: "patch",
-            url: `users/${userId}/chats/${chatId}/title`,
+            url: `/users/${userId}/chats/${chatId}/title`,
             baseURL,
             data: { title },
         });
