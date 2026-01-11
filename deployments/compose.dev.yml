@@ -95,8 +95,8 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    depends_on:
-      - autotester
+    #depends_on:
+    #  - autotester
     networks:
       - default
     ports:

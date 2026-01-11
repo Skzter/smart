@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	mock "github.com/stretchr/testify/mock"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockAuth creates a new instance of MockAuth. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,22 +40,24 @@ func (_m *MockAuth) EXPECT() *MockAuth_Expecter {
 }
 
 // GenerateToken provides a mock function for the type MockAuth
-func (_mock *MockAuth) GenerateToken(ctx context.Context, userId string) (string, error) {
+func (_mock *MockAuth) GenerateToken(ctx context.Context, userId string) (*entity.Token, error) {
 	ret := _mock.Called(ctx, userId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateToken")
 	}
 
-	var r0 string
+	var r0 *entity.Token
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*entity.Token, error)); ok {
 		return returnFunc(ctx, userId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *entity.Token); ok {
 		r0 = returnFunc(ctx, userId)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*entity.Token)
+		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(ctx, userId)
@@ -94,12 +97,12 @@ func (_c *MockAuth_GenerateToken_Call) Run(run func(ctx context.Context, userId 
 	return _c
 }
 
-func (_c *MockAuth_GenerateToken_Call) Return(s string, err error) *MockAuth_GenerateToken_Call {
-	_c.Call.Return(s, err)
+func (_c *MockAuth_GenerateToken_Call) Return(token *entity.Token, err error) *MockAuth_GenerateToken_Call {
+	_c.Call.Return(token, err)
 	return _c
 }
 
-func (_c *MockAuth_GenerateToken_Call) RunAndReturn(run func(ctx context.Context, userId string) (string, error)) *MockAuth_GenerateToken_Call {
+func (_c *MockAuth_GenerateToken_Call) RunAndReturn(run func(ctx context.Context, userId string) (*entity.Token, error)) *MockAuth_GenerateToken_Call {
 	_c.Call.Return(run)
 	return _c
 }

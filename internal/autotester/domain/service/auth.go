@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/infrastructure/database"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -18,7 +19,7 @@ import (
 
 // Auth is an Interface which holds all methods which an AuthService implements
 type Auth interface {
-	GenerateToken(ctx context.Context, userId string) (string, error)
+	GenerateToken(ctx context.Context, userId string) (*entity.Token, error)
 	GetBearerToken(headers http.Header) (string, error)
 }
 
@@ -41,43 +42,57 @@ func NewAuthService(logger *slog.Logger, config *config.Config, db repository.To
 	}, nil
 }
 
-func (a *auth) GenerateToken(ctx context.Context, userId string) (string, error) {
+func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", err
+		return nil, err
 	}
 	if err := assert.StringNotEmpty(userId); err != nil {
-		return "", err
+		return nil, err
 	}
-	token, err := a.db.ReadToken(ctx, userId)
+	dbToken, err := a.db.ReadToken(ctx, userId)
 	switch err {
 	case sql.ErrNoRows:
 		token := rand.Text()
+		expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
 		err := a.db.CreateToken(ctx, database.CreateTokenParams{
 			UserID:    userId,
 			Token:     token,
-			ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours)),
+			ExpiresAt: expiresAt,
 		})
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return token, nil
+		return &entity.Token{
+			UserID:    userId,
+			Token:     token,
+			ExpiresAt: expiresAt,
+		}, nil
 	case nil:
-		if token.ExpiresAt.Before(time.Now()) || token.RevokedAt.Valid {
+		if dbToken.ExpiresAt.Before(time.Now()) || dbToken.RevokedAt.Valid {
 			token := rand.Text()
+			expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
 			err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
-				UserID:    userId,
+				UserID:    dbToken.UserID,
 				Token:     token,
-				ExpiresAt: time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours)),
+				ExpiresAt: expiresAt,
 				RevokedAt: sql.NullTime{},
 			})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			return token, nil
+			return &entity.Token{
+				UserID:    dbToken.UserID,
+				Token:     token,
+				ExpiresAt: expiresAt,
+			}, nil
 		}
-		return token.Token, nil
+		return &entity.Token{
+			UserID:    dbToken.UserID,
+			Token:     dbToken.Token,
+			ExpiresAt: dbToken.ExpiresAt,
+		}, nil
 	default:
-		return "", err
+		return nil, err
 	}
 }
 
