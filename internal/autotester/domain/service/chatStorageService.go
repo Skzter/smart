@@ -125,8 +125,8 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, groupIds ...stri
 
 	if len(groupIds) > 0 {
 		summaries = slices.DeleteFunc(summaries, func(s *entity.ChatSummary) bool {
-			return !slices.ContainsFunc(s.Groups, func(group string) bool {
-				return slices.Contains(groupIds, group)
+			return !slices.ContainsFunc(s.Groups, func(id string) bool {
+				return slices.Contains(groupIds, id)
 			})
 		})
 	}
