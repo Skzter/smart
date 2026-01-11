@@ -237,6 +237,7 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockGroups := mocks.NewMockGroupStorage(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -254,6 +255,7 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroups,
 				tracer,
 				mockMetricsServ,
 			)
