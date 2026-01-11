@@ -54,43 +54,10 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 		return nil, err
 	}
 	dbToken, err := a.db.ReadToken(ctx, userId)
-	switch err {
-	case sql.ErrNoRows:
-		token := rand.Text()
-		expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
-		dbToken, err := a.db.CreateToken(ctx, database.CreateTokenParams{
-			UserID:    userId,
-			Token:     token,
-			ExpiresAt: expiresAt,
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		return &entity.Token{
-			UserID:    dbToken.UserID,
-			Token:     dbToken.Token,
-			CreatedAt: dbToken.CreatedAt,
-			UpdatedAt: dbToken.UpdatedAt,
-			ExpiresAt: dbToken.ExpiresAt,
-			RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
-		}, nil
-	case nil:
-		if dbToken.ExpiresAt.Before(time.Now().UTC()) || dbToken.RevokedAt.Valid {
-			token := rand.Text()
-			expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
-			dbToken, err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
-				UserID:    dbToken.UserID,
-				Token:     token,
-				ExpiresAt: expiresAt,
-				RevokedAt: sql.NullTime{
-					Valid: false,
-				},
-			})
-			if err != nil {
-				return nil, err
-			}
+	if err == nil {
+		isExpired := dbToken.ExpiresAt.Before(time.Now().UTC())
+		isRevoked := dbToken.RevokedAt.Valid
+		if !isExpired && !isRevoked {
 			return &entity.Token{
 				UserID:    dbToken.UserID,
 				Token:     dbToken.Token,
@@ -100,17 +67,32 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 				RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
 			}, nil
 		}
-		return &entity.Token{
-			UserID:    dbToken.UserID,
-			Token:     dbToken.Token,
-			CreatedAt: dbToken.CreatedAt,
-			UpdatedAt: dbToken.UpdatedAt,
-			ExpiresAt: dbToken.ExpiresAt,
-			RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
-		}, nil
-	default:
+	} else if err != sql.ErrNoRows {
 		return nil, err
 	}
+	token := rand.Text()
+	expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
+	dbToken, err = a.db.UpsertToken(ctx, database.UpsertTokenParams{
+		UserID:    userId,
+		Token:     token,
+		ExpiresAt: expiresAt,
+		RevokedAt: sql.NullTime{
+			Valid: false,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &entity.Token{
+		UserID:    dbToken.UserID,
+		Token:     dbToken.Token,
+		CreatedAt: dbToken.CreatedAt,
+		UpdatedAt: dbToken.UpdatedAt,
+		ExpiresAt: dbToken.ExpiresAt,
+		RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
+	}, nil
 }
 
 // GetBearerToken returns the bearer token in the Authorization Header of an http request

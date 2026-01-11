@@ -11,47 +11,6 @@ import (
 	"time"
 )
 
-const createToken = `-- name: CreateToken :one
-insert into refresh_tokens(
-user_id,
-token,
-created_at,
-updated_at,
-expires_at,
-revoked_at
-)
-values (
-    $1,
-    $2,
-    now(),
-    now(),
-    $3,
-    null
-)
-returning id, user_id, token, created_at, updated_at, expires_at, revoked_at
-`
-
-type CreateTokenParams struct {
-	UserID    string
-	Token     string
-	ExpiresAt time.Time
-}
-
-func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRowContext(ctx, createToken, arg.UserID, arg.Token, arg.ExpiresAt)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ExpiresAt,
-		&i.RevokedAt,
-	)
-	return i, err
-}
-
 const readToken = `-- name: ReadToken :one
 select id, user_id, token, created_at, updated_at, expires_at, revoked_at
 from refresh_tokens
@@ -74,28 +33,41 @@ func (q *Queries) ReadToken(ctx context.Context, userID string) (RefreshToken, e
 	return i, err
 }
 
-const updateToken = `-- name: UpdateToken :one
-update refresh_tokens
-set
-token = $2,
-created_at = now(),
-updated_at = now(),
-expires_at = $3,
-revoked_at = $4
-where
-user_id = $1
+const upsertToken = `-- name: UpsertToken :one
+insert into refresh_tokens (
+    user_id,
+    token,
+    created_at,
+    updated_at,
+    expires_at,
+    revoked_at
+) values (
+    $1,
+    $2,
+    now(),
+    now(),
+    $3,
+    $4
+)
+on conflict (user_id) 
+do update set
+    token = excluded.token,
+    created_at = now(),
+    updated_at = now(),
+    expires_at = excluded.expires_at,
+    revoked_at = excluded.revoked_at
 returning id, user_id, token, created_at, updated_at, expires_at, revoked_at
 `
 
-type UpdateTokenParams struct {
+type UpsertTokenParams struct {
 	UserID    string
 	Token     string
 	ExpiresAt time.Time
 	RevokedAt sql.NullTime
 }
 
-func (q *Queries) UpdateToken(ctx context.Context, arg UpdateTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRowContext(ctx, updateToken,
+func (q *Queries) UpsertToken(ctx context.Context, arg UpsertTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, upsertToken,
 		arg.UserID,
 		arg.Token,
 		arg.ExpiresAt,

@@ -8,7 +8,6 @@ import (
 
 // TokenDatabase is for CRUD methods on db
 type TokenDatabase interface {
-	CreateToken(ctx context.Context, arg database.CreateTokenParams) (database.RefreshToken, error)
 	ReadToken(ctx context.Context, userID string) (database.RefreshToken, error)
-	UpdateToken(ctx context.Context, arg database.UpdateTokenParams) (database.RefreshToken, error)
+	UpsertToken(ctx context.Context, arg database.UpsertTokenParams) (database.RefreshToken, error)
 }
