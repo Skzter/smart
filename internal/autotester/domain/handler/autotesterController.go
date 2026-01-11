@@ -26,6 +26,7 @@ type AutotesterController struct {
 	chatManager                  service.ChatManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
+	jwtValidator                 service.JWTValidator
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -42,6 +43,7 @@ func NewAutotesterController(
 	chatManager service.ChatManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
+	jwtValidator service.JWTValidator,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -55,6 +57,7 @@ func NewAutotesterController(
 		chatManager,
 		tracer,
 		metricsService,
+		jwtValidator,
 	); err != nil {
 		return nil, err
 	}
@@ -71,5 +74,6 @@ func NewAutotesterController(
 		chatManager:                  chatManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
+		jwtValidator:                 jwtValidator,
 	}, nil
 }

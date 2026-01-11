@@ -73,6 +73,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockJWT := mocks.NewMockJWTValidator(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -104,6 +105,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
+				mockJWT,
 			)
 			if err != nil {
 				t.Errorf("build failed")
@@ -174,6 +176,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockJWT := mocks.NewMockJWTValidator(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -217,6 +220,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
+				mockJWT,
 			)
 			if err != nil {
 				t.Errorf("build failed")

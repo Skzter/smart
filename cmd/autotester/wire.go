@@ -54,6 +54,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
 		MetricsServiceProvider,
+		service.NewJWTValidator,
 	)
 
 	return nil, nil

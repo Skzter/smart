@@ -124,6 +124,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockJWT := mocks.NewMockJWTValidator(t)
 
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
@@ -152,6 +153,7 @@ func TestHandleRunContainer(t *testing.T) {
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
+				mockJWT,
 			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
