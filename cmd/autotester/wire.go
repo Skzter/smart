@@ -148,7 +148,10 @@ func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, 
 }
 
 func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		return nil, fmt.Errorf("no DB_URL set in .env")

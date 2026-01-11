@@ -20,7 +20,7 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 		return
 	}
 	if user.UserId == "" {
-		a.logger.Error("UserId is empty")
+		a.logger.Error("HandleGenerateToken Params", "error", "UserId is empty")
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "Bad Request",
 		})
@@ -29,7 +29,7 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 
 	token, err := a.authService.GenerateToken(c.Request.Context(), user.UserId)
 	if err != nil {
-		a.logger.Error(err.Error())
+		a.logger.Error("GenerateToken()", "error", err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{
 			Error: "Internal Server Error",
 		})

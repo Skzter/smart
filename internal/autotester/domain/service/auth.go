@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
-	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -68,7 +68,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 			ExpiresAt: expiresAt,
 		}, nil
 	case nil:
-		if dbToken.ExpiresAt.Before(time.Now()) || dbToken.RevokedAt.Valid {
+		if dbToken.ExpiresAt.Before(time.Now().UTC()) || dbToken.RevokedAt.Valid {
 			token := rand.Text()
 			expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
 			err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
@@ -100,11 +100,11 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 func (ts *auth) GetBearerToken(headers http.Header) (string, error) {
 	header := headers.Get("Authorization")
 	if header == "" {
-		return "", errors.New("no header detected")
+		return "", fmt.Errorf("authorization header missing")
 	}
 	splitHeader := strings.Split(header, " ")
 	if len(splitHeader) < 2 || splitHeader[0] != "Bearer" {
-		return "", errors.New("malformed authorization header")
+		return "", fmt.Errorf("malformed authorization header")
 	}
 	return splitHeader[1], nil
 }
