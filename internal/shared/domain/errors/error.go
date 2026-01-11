@@ -13,6 +13,8 @@ var (
 	ErrValidation = errors.New("Validation Error - bitte nochmal versuchen")
 	//lint:ignore ST1005 deutsche sprache
 	ErrGeneration = errors.New("Generate Error - bitte nochmal versuchen")
+	//lint:ignore ST1005 deutsche sprache
+	ErrChatAlreadyInGroup = errors.New("Chat ist bereits in Gruppe")
 
 	ErrNilUserPrompt      = errors.New("request without user prompt")
 	ErrNilSystemPrompt    = errors.New("request without system prompt")
@@ -22,4 +24,5 @@ var (
 	ErrEmptyResponse      = errors.New("chosen response message is empty")
 	ErrChatNotFound       = errors.New("chat not found")
 	ErrGroupNotFound      = errors.New("group not found")
+	ErrChatNotInGroup     = errors.New("chat not in group")
 )

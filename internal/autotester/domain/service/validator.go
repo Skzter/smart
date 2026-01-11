@@ -271,13 +271,6 @@ func (s *validator) ValidateGroup(ctx context.Context, group *entity.Group) erro
 		return err
 	}
 
-	if group.Chats == nil {
-		err := fmt.Errorf("chats is nil")
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "chats nil")
-		return err
-	}
-
 	span.SetStatus(codes.Ok, "")
 	return nil
 }
