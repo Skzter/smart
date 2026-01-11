@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
@@ -27,11 +30,12 @@ type auth struct {
 	logger *slog.Logger
 	config *config.Config
 	db     repository.TokenDatabase
+	tracer trace.Tracer
 }
 
 // NewAuthService return the AuthService or error
-func NewAuthService(logger *slog.Logger, config *config.Config, db repository.TokenDatabase) (Auth, error) {
-	if err := assert.NotNil(logger, config, db); err != nil {
+func NewAuthService(logger *slog.Logger, config *config.Config, db repository.TokenDatabase, tracer trace.Tracer) (Auth, error) {
+	if err := assert.NotNil(logger, config, db, tracer); err != nil {
 		return nil, err
 	}
 
@@ -39,6 +43,7 @@ func NewAuthService(logger *slog.Logger, config *config.Config, db repository.To
 		logger: logger,
 		config: config,
 		db:     db,
+		tracer: tracer,
 	}, nil
 }
 
@@ -50,7 +55,12 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
+
+	ctx, span := a.tracer.Start(ctx, "autotesterController.GenerateToken")
+	defer span.End()
 	if err := assert.StringNotEmpty(userId); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing parameter")
 		return nil, err
 	}
 	dbToken, err := a.db.ReadToken(ctx, userId)
@@ -68,6 +78,8 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 			}, nil
 		}
 	} else if err != sql.ErrNoRows {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "read database error")
 		return nil, err
 	}
 	token := rand.Text()
@@ -82,6 +94,8 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 	})
 
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "write database error")
 		return nil, err
 	}
 
@@ -96,7 +110,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 }
 
 // GetBearerToken returns the bearer token in the Authorization Header of an http request
-func (ts *auth) GetBearerToken(headers http.Header) (string, error) {
+func (a *auth) GetBearerToken(headers http.Header) (string, error) {
 	header := headers.Get("Authorization")
 	if header == "" {
 		return "", fmt.Errorf("authorization header missing")

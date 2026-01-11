@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -27,6 +29,7 @@ func TestNewAuthService(t *testing.T) {
 		logger  *slog.Logger
 		config  *config.Config
 		db      *mockRepo.MockTokenDatabase
+		tracer  trace.Tracer
 		wantErr bool
 	}{
 		{
@@ -34,6 +37,7 @@ func TestNewAuthService(t *testing.T) {
 			logger:  logger,
 			config:  cfg,
 			db:      mockRepo.NewMockTokenDatabase(t),
+			tracer:  otel.Tracer("test"),
 			wantErr: false,
 		},
 		{
@@ -47,7 +51,7 @@ func TestNewAuthService(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			srv, err := NewAuthService(tc.logger, tc.config, tc.db)
+			srv, err := NewAuthService(tc.logger, tc.config, tc.db, tc.tracer)
 
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -271,6 +275,7 @@ func TestGenerateToken(t *testing.T) {
 				logger: logger,
 				config: cfg,
 				db:     mockDB,
+				tracer: otel.Tracer("test"),
 			}
 
 			token, err := authSrv.GenerateToken(ctx, tc.userID)
@@ -295,6 +300,7 @@ func TestGetBearerToken(t *testing.T) {
 		logger: logger,
 		config: cfg,
 		db:     mockDB,
+		tracer: otel.Tracer("test"),
 	}
 
 	tests := []struct {

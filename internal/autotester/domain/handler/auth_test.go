@@ -90,6 +90,11 @@ func TestHandleGenerateToken(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			// Setup metrics mock to accept any calls
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 			mockAuth := mocks.NewMockAuth(t)
 
 			if test.MockSetup != nil {
