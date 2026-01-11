@@ -58,6 +58,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		service.NewGroupStorage,
 		infra.NewGroupStorage,
 		GroupParquetWrapperProvider,
+		service.NewGroupManager,
 	)
 
 	return nil, nil

@@ -42,7 +42,7 @@ type GroupManager interface {
 // NewGroupManager creates a new instance of GroupManager with the provided dependencies.
 // It requires a chat storage service, group storage, logger, and tracer.
 // Returns an error if any of the required dependencies are nil.
-func NewGroupManager(chatStorage ChatStorageService, groupStorage GroupStorage, logger slog.Logger, tracer trace.Tracer) (GroupManager, error) {
+func NewGroupManager(chatStorage ChatStorageService, groupStorage GroupStorage, logger *slog.Logger, tracer trace.Tracer) (GroupManager, error) {
 	if err := assert.NotNil(chatStorage, groupStorage, logger, tracer); err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func NewGroupManager(chatStorage ChatStorageService, groupStorage GroupStorage, 
 type groupManager struct {
 	chatStorage  ChatStorageService
 	groupStorage GroupStorage
-	logger       slog.Logger
+	logger       *slog.Logger
 	tracer       trace.Tracer
 }
 

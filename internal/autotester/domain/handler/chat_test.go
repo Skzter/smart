@@ -145,7 +145,7 @@ func TestHandleChatRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
-			mockGroups := mocks.NewMockGroupStorage(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			for _, mc := range test.MockSetup {
 				switch mc.Function {
@@ -180,7 +180,7 @@ func TestHandleChatRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
-				mockGroups,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 			)
@@ -310,7 +310,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
-			mockGroups := mocks.NewMockGroupStorage(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockResponseLoad != nil {
 				mockChatManager.On("LoadChat", mock.Anything, mock.Anything).Return(test.MockResponseLoad...)
@@ -328,7 +328,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
-				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroups, tracer, mockMetricsServ)
+				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroupManager, tracer, mockMetricsServ)
 			controller.HandleChatRequestValidity(ctx)
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
@@ -382,7 +382,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-	mockGroups := mocks.NewMockGroupStorage(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
 	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -413,7 +413,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
-				mockGroups,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 			)
@@ -487,7 +487,7 @@ func TestGetUserChats(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-	mockGroups := mocks.NewMockGroupStorage(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
 	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -514,7 +514,7 @@ func TestGetUserChats(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
-				mockGroups,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 			)
@@ -547,7 +547,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-	mockGroups := mocks.NewMockGroupStorage(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
 	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -571,7 +571,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		mockChatStorageServ,
 		mockRemoteStorageServ,
 		mockChatManager,
-		mockGroups,
+		mockGroupManager,
 		tracer,
 		mockMetricsServ,
 	)
@@ -596,7 +596,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-	mockGroups := mocks.NewMockGroupStorage(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
 	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -616,7 +616,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 		mockChatStorageServ,
 		mockRemoteStorageServ,
 		mockChatManager,
-		mockGroups,
+		mockGroupManager,
 		tracer,
 		mockMetricsServ,
 	)
