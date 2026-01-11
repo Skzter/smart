@@ -6,8 +6,8 @@ import "time"
 type Token struct {
 	UserID    string     `json:"userId"`
 	Token     string     `json:"token"`
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
 	ExpiresAt time.Time  `json:"expiresAt"`
-	RevokedAt *time.Time `json:"revokedAt,omitempty"`
+	RevokedAt *time.Time `json:"revokedAt"`
 }

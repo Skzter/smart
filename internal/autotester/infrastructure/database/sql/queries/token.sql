@@ -4,7 +4,7 @@ from refresh_tokens
 where
 user_id = $1;
 
--- name: CreateToken :exec
+-- name: CreateToken :one
 insert into refresh_tokens(
 user_id,
 token,
@@ -20,9 +20,10 @@ values (
     now(),
     $3,
     null
-);
+)
+returning *;
 
--- name: UpdateToken :exec
+-- name: UpdateToken :one
 update refresh_tokens
 set
 token = $2,
@@ -31,5 +32,5 @@ updated_at = now(),
 expires_at = $3,
 revoked_at = $4
 where
-user_id = $1;
-
+user_id = $1
+returning *;

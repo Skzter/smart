@@ -42,6 +42,10 @@ func NewAuthService(logger *slog.Logger, config *config.Config, db repository.To
 	}, nil
 }
 
+// GenerateToken generates a Token with a given userId
+// if the user has a valid token in the db, it returns that token
+// else it will generate a new one (if expired oder revoked)
+// returns token, error
 func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
@@ -54,42 +58,55 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 	case sql.ErrNoRows:
 		token := rand.Text()
 		expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
-		err := a.db.CreateToken(ctx, database.CreateTokenParams{
+		dbToken, err := a.db.CreateToken(ctx, database.CreateTokenParams{
 			UserID:    userId,
 			Token:     token,
 			ExpiresAt: expiresAt,
 		})
+
 		if err != nil {
 			return nil, err
 		}
+
 		return &entity.Token{
-			UserID:    userId,
-			Token:     token,
-			ExpiresAt: expiresAt,
+			UserID:    dbToken.UserID,
+			Token:     dbToken.Token,
+			CreatedAt: dbToken.CreatedAt,
+			UpdatedAt: dbToken.UpdatedAt,
+			ExpiresAt: dbToken.ExpiresAt,
+			RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
 		}, nil
 	case nil:
 		if dbToken.ExpiresAt.Before(time.Now().UTC()) || dbToken.RevokedAt.Valid {
 			token := rand.Text()
 			expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
-			err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
+			dbToken, err := a.db.UpdateToken(ctx, database.UpdateTokenParams{
 				UserID:    dbToken.UserID,
 				Token:     token,
 				ExpiresAt: expiresAt,
-				RevokedAt: sql.NullTime{},
+				RevokedAt: sql.NullTime{
+					Valid: false,
+				},
 			})
 			if err != nil {
 				return nil, err
 			}
 			return &entity.Token{
 				UserID:    dbToken.UserID,
-				Token:     token,
-				ExpiresAt: expiresAt,
+				Token:     dbToken.Token,
+				CreatedAt: dbToken.CreatedAt,
+				UpdatedAt: dbToken.UpdatedAt,
+				ExpiresAt: dbToken.ExpiresAt,
+				RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
 			}, nil
 		}
 		return &entity.Token{
 			UserID:    dbToken.UserID,
 			Token:     dbToken.Token,
+			CreatedAt: dbToken.CreatedAt,
+			UpdatedAt: dbToken.UpdatedAt,
 			ExpiresAt: dbToken.ExpiresAt,
+			RevokedAt: convSqlNullTimeIntoTime(dbToken.RevokedAt),
 		}, nil
 	default:
 		return nil, err
@@ -107,4 +124,14 @@ func (ts *auth) GetBearerToken(headers http.Header) (string, error) {
 		return "", fmt.Errorf("malformed authorization header")
 	}
 	return splitHeader[1], nil
+}
+
+// convSqlNullTimeIntoTime converts database null time into go time
+// returns nil if nil and time if not nil
+func convSqlNullTimeIntoTime(sqltime sql.NullTime) *time.Time {
+	if !sqltime.Valid {
+		return nil
+	} else {
+		return &sqltime.Time
+	}
 }

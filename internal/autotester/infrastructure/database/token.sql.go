@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const createToken = `-- name: CreateToken :exec
+const createToken = `-- name: CreateToken :one
 insert into refresh_tokens(
 user_id,
 token,
@@ -28,6 +28,7 @@ values (
     $3,
     null
 )
+returning id, user_id, token, created_at, updated_at, expires_at, revoked_at
 `
 
 type CreateTokenParams struct {
@@ -36,9 +37,19 @@ type CreateTokenParams struct {
 	ExpiresAt time.Time
 }
 
-func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) error {
-	_, err := q.db.ExecContext(ctx, createToken, arg.UserID, arg.Token, arg.ExpiresAt)
-	return err
+func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, createToken, arg.UserID, arg.Token, arg.ExpiresAt)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
 }
 
 const readToken = `-- name: ReadToken :one
@@ -63,7 +74,7 @@ func (q *Queries) ReadToken(ctx context.Context, userID string) (RefreshToken, e
 	return i, err
 }
 
-const updateToken = `-- name: UpdateToken :exec
+const updateToken = `-- name: UpdateToken :one
 update refresh_tokens
 set
 token = $2,
@@ -73,6 +84,7 @@ expires_at = $3,
 revoked_at = $4
 where
 user_id = $1
+returning id, user_id, token, created_at, updated_at, expires_at, revoked_at
 `
 
 type UpdateTokenParams struct {
@@ -82,12 +94,22 @@ type UpdateTokenParams struct {
 	RevokedAt sql.NullTime
 }
 
-func (q *Queries) UpdateToken(ctx context.Context, arg UpdateTokenParams) error {
-	_, err := q.db.ExecContext(ctx, updateToken,
+func (q *Queries) UpdateToken(ctx context.Context, arg UpdateTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, updateToken,
 		arg.UserID,
 		arg.Token,
 		arg.ExpiresAt,
 		arg.RevokedAt,
 	)
-	return err
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
 }

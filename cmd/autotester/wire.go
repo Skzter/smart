@@ -160,5 +160,8 @@ func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error opening database: %s", err)
 	}
+	if err := dbConn.Ping(); err != nil {
+		return nil, err
+	}
 	return database.New(dbConn), nil
 }
