@@ -21,10 +21,9 @@ import (
 //nolint:funlen
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	start := time.Now()
-	ctx := c.Request.Context()
 	var userRequest entity.UserRequest
 
-	_, span := a.tracer.Start(ctx, "autotesterController.HandleChatRequest")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleChatRequest")
 	defer span.End()
 
 	if err := c.BindJSON(&userRequest); err != nil {
@@ -44,7 +43,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	chat, err := a.chatManager.LoadChat(c, userRequest)
+	chat, err := a.chatManager.LoadChat(ctx, userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: sharedErrors.ErrInternalServer.Error()})
 		a.logger.Error("Loading Chat failed", "error", err)
@@ -54,13 +53,13 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	defer func() {
 		// only update chat when no errors
 		if c.Writer.Status() == http.StatusOK {
-			if err := a.chatManager.SaveChat(c, chat, userRequest.UserId); err != nil {
+			if err := a.chatManager.SaveChat(ctx, chat, userRequest.UserId); err != nil {
 				a.logger.Error("Updating stored chat failed", "err", err.Error())
 			}
 		}
 	}()
 
-	generatedCode, err := a.generationService.GeneratePrompt(c, chat, &userRequest)
+	generatedCode, err := a.generationService.GeneratePrompt(ctx, chat, &userRequest)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to generate prompt")
@@ -144,11 +143,10 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 // Expects a JSON with UserRequestDTO and returns a ResponseForUser.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	start := time.Now()
-	ctx := c.Request.Context()
 	var body entity.UserRequest
 	var resp entity.ResponseForUser
 
-	_, span := a.tracer.Start(ctx, "autotesterController.HandleUserInfoRequest")
+	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUserInfoRequest")
 	defer span.End()
 
 	if err := c.BindJSON(&body); err != nil {
@@ -169,11 +167,11 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 // HandleGetChats processes a request for all chats, optionally filtered by groups.
 func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	start := time.Now()
-	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
 	var queryParameters entity.UserChatSummaryQueryParameters
-	if err := c.ShouldBindQuery(&queryParameters); err != nil {
+	if err := c.BindQuery(&queryParameters); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "Bad Request",
@@ -181,7 +179,7 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 		return
 	}
 
-	chats, err := a.chatStorageService.LoadSummaries(c.Request.Context(), queryParameters.Groups...)
+	chats, err := a.chatStorageService.LoadSummaries(ctx, queryParameters.Groups...)
 
 	if err != nil {
 		span.RecordError(err)
@@ -210,12 +208,12 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 // GetChatById returns a full chat including all messages for a given chatId and userId.
 func (a *AutotesterController) GetChatById(c *gin.Context) {
 	start := time.Now()
-	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
 	var parameters entity.UserChatsParameter
 
-	if err := c.ShouldBindUri(&parameters); err != nil {
+	if err := c.BindUri(&parameters); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "invalid parameters",
@@ -223,7 +221,7 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 		return
 	}
 
-	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), parameters.ChatID)
+	chat, err := a.chatStorageService.LoadChat(ctx, parameters.ChatID)
 	if err != nil {
 		if errors.Is(err, sharedErrors.ErrChatNotFound) {
 			span.RecordError(err)
