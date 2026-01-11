@@ -150,6 +150,8 @@ func TestHandleLogRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Params = gin.Params{{Key: "testId", Value: "abc"}}
 
+			mockMedia := mocks.NewMockMediaStorageService(t)
+
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -159,6 +161,7 @@ func TestHandleLogRequest(t *testing.T) {
 				mockDocker,
 				mockChat,
 				mockRemote,
+				mockMedia,
 				mockChatManager,
 				tracer,
 				mockMetrics,

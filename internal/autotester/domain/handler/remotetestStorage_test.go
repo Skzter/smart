@@ -244,6 +244,7 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -253,6 +254,7 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,

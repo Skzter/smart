@@ -170,6 +170,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, _ := NewAutotesterController(
 				logger,
 				cfg,
@@ -179,6 +180,7 @@ func TestHandleChatRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
@@ -325,8 +327,9 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
-				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, tracer, mockMetricsServ)
+				mockChatStorageServ, mockRemoteStorageServ, mockMediaServ, mockChatManager, tracer, mockMetricsServ)
 			controller.HandleChatRequestValidity(ctx)
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
@@ -400,6 +403,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			ctx.Request = req
 			ctx.Errors.Errors()
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -409,6 +413,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
@@ -515,6 +520,7 @@ func TestGetUserChats(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, _ := NewAutotesterController(
 				logger,
 				cfg,
@@ -524,6 +530,7 @@ func TestGetUserChats(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
@@ -610,6 +617,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		On("LoadChat", mock.Anything, mock.Anything, mock.Anything).
 		Return(chat, err)
 
+	mockMediaServ := mocks.NewMockMediaStorageService(t)
 	controller, buildErr := NewAutotesterController(
 		logger,
 		cfg,
@@ -619,6 +627,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		mockDockerServ,
 		mockChatStorageServ,
 		mockRemoteStorageServ,
+		mockMediaServ,
 		mockChatManager,
 		tracer,
 		mockMetricsServ,
@@ -653,6 +662,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 
 	tracer := otel.Tracer("test")
 
+	mockMediaServ := mocks.NewMockMediaStorageService(t)
 	controller, err := NewAutotesterController(
 		logger,
 		cfg,
@@ -662,6 +672,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 		mockDockerServ,
 		mockChatStorageServ,
 		mockRemoteStorageServ,
+		mockMediaServ,
 		mockChatManager,
 		tracer,
 		mockMetricsServ,

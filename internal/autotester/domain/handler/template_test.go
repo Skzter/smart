@@ -71,6 +71,7 @@ func TestHandleTemplate(t *testing.T) {
 			ctx.Errors.Errors()
 
 			cfg.Template = test.template
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -80,6 +81,7 @@ func TestHandleTemplate(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,

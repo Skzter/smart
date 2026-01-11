@@ -42,6 +42,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+	mockMediaServ := mocks.NewMockMediaStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 
@@ -56,6 +57,7 @@ func TestNewAutoTesterController(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				tracer,
 				mockMetricsServ,
