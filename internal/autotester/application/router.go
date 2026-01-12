@@ -36,6 +36,8 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 
 		apiV1.GET("/groups", controller.HandleGetGroups)
 		apiV1.POST("/groups", controller.HandleCreateGroup)
+		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
+		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
 	}
 
 	if !isHeadless {

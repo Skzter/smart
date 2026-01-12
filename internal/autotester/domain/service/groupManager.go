@@ -119,10 +119,11 @@ func (g *groupManager) Create(ctx context.Context, name string, description stri
 // It first loads the chat to verify it exists, then checks if the chat is already
 // associated with the group to prevent duplicates. If the association doesn't exist,
 // it adds the group ID to the chat's groups list and saves the updated chat.
-// Returns ErrChatAlreadyInGroup if the chat is already in the group.
+// This function logs errors, the one returned can be used for display in frontend
 func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatId string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		return err
+		g.logger.Error("assertion failed", "err", err)
+		return errors.ErrInternalServer
 	}
 
 	ctx, span := g.tracer.Start(ctx, "groupManager.AddChatToGroup")
@@ -131,12 +132,14 @@ func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatI
 	chat, err := g.chatStorage.LoadChat(ctx, chatId)
 	if err != nil {
 		span.RecordError(err)
+		g.logger.Error("error while loading chat", "err", err)
 		span.SetStatus(codes.Error, "error while loading chat")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	if slices.Contains(chat.Groups, groupId) {
 		span.SetStatus(codes.Error, "chat is already in group")
+		g.logger.Error("chat is already in group")
 		return errors.ErrChatAlreadyInGroup
 	}
 
@@ -144,8 +147,9 @@ func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatI
 
 	if err := g.chatStorage.SaveChat(ctx, chat); err != nil {
 		span.RecordError(err)
+		g.logger.Error("error while loading storing", "err", err)
 		span.SetStatus(codes.Error, "error while storing modified chat")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -156,8 +160,10 @@ func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatI
 // It loads the chat, finds the group ID in the chat's groups list, removes it,
 // and saves the updated chat back to storage.
 // Returns ErrChatNotInGroup if the chat is not currently associated with the group.
+// This function logs errors, the one returned can be used for display in frontend
 func (g *groupManager) RemoveChatFromGroup(ctx context.Context, groupId string, chatId string) error {
 	if err := assert.NotNil(ctx); err != nil {
+		g.logger.Error("assertion failed", "err", err)
 		return err
 	}
 
@@ -167,6 +173,7 @@ func (g *groupManager) RemoveChatFromGroup(ctx context.Context, groupId string, 
 	chat, err := g.chatStorage.LoadChat(ctx, chatId)
 	if err != nil {
 		span.RecordError(err)
+		g.logger.Error("error while loading chat", "err", err)
 		span.SetStatus(codes.Error, "error while loading chat")
 		return err
 	}
