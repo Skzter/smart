@@ -27,8 +27,8 @@ type GroupManager interface {
 	List(ctx context.Context) ([]*entity.Group, error)
 
 	// Create creates a new group with the specified name, description, and creator.
-	// The group ID is automatically generated using UUID.
-	Create(ctx context.Context, name string, description string, creator string) error
+	// The group ID is automatically generated using UUID and returned.
+	Create(ctx context.Context, name string, description string, creator string) (string, error)
 
 	// AddChatToGroup associates a chat with a group.
 	// Returns ErrChatAlreadyInGroup if the chat is already associated with the group.
@@ -89,9 +89,9 @@ func (g *groupManager) List(ctx context.Context) ([]*entity.Group, error) {
 // Create creates a new group with the provided details.
 // It generates a new UUID for the group ID and sets the creation timestamp to the current UTC time.
 // The group is immediately persisted to storage. Returns an error if storage operation fails.
-func (g *groupManager) Create(ctx context.Context, name string, description string, creator string) error {
+func (g *groupManager) Create(ctx context.Context, name string, description string, creator string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return err
+		return "", err
 	}
 
 	ctx, span := g.tracer.Start(ctx, "groupManager.Create")
@@ -108,11 +108,11 @@ func (g *groupManager) Create(ctx context.Context, name string, description stri
 	if err := g.groupStorage.New(ctx, &group); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing group")
-		return err
+		return "", err
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return nil
+	return group.Id, nil
 }
 
 // AddChatToGroup associates a chat with a specific group.

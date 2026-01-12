@@ -35,6 +35,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
 
 		apiV1.GET("/groups", controller.HandleGetGroups)
+		apiV1.POST("/groups", controller.HandleCreateGroup)
 	}
 
 	if !isHeadless {

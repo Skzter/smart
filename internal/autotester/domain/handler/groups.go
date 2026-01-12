@@ -25,7 +25,7 @@ func (a *AutotesterController) HandleGetGroups(c *gin.Context) {
 		a.metricsService.IncRequestError("load_group_err")
 		a.metricsService.RecordRequestDuration(time.Since(start))
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: errors.ErrInternalServer.Error()})
-		a.logger.Error("error loading chats", "err", err)
+		a.logger.Error("error loading groups", "err", err)
 		return
 	}
 
@@ -38,9 +38,37 @@ func (a *AutotesterController) HandleGetGroups(c *gin.Context) {
 // HandleCreateGroup creates a new group.
 // POST /groups - Create a new group
 func (a *AutotesterController) HandleCreateGroup(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status": []gin.H{},
-	})
+	start := time.Now()
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleCreateGroups")
+	defer span.End()
+
+	var request entity.CreateGroupRequest
+
+	if err := c.BindJSON(&request); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to bind JSON")
+		a.metricsService.IncRequestError("invalid_json")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		a.logger.Error("error binding request", "err", err)
+		return
+	}
+
+	groupId, err := a.groupManager.Create(ctx, request.GroupName, request.Description, request.UserId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to create Group")
+		a.metricsService.IncRequestError("create_group_err")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: errors.ErrInternalServer.Error()})
+		a.logger.Error("error creating group", "err", err)
+		return
+	}
+
+	span.SetStatus(codes.Ok, "")
+	a.metricsService.IncRequestSuccess()
+	a.metricsService.RecordRequestDuration(time.Since(start))
+	c.JSON(http.StatusOK, entity.CreateGroupResponse{GroupId: groupId})
 }
 
 // HandleGetGroupChats returns all chats of a group.
