@@ -178,7 +178,7 @@ func (g *groupManager) RemoveChatFromGroup(ctx context.Context, groupId string, 
 		return errors.ErrChatNotInGroup
 	}
 
-	chat.Groups = slices.Delete(chat.Groups, index, index)
+	chat.Groups = slices.Delete(chat.Groups, index, index+1)
 
 	if err := g.chatStorage.SaveChat(ctx, chat); err != nil {
 		span.RecordError(err)
