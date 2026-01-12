@@ -304,6 +304,130 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/test/{testId}/screenshot:
+    get:
+      summary: Get screenshot from a failed test
+      description: |
+        Returns the screenshot captured during a failed Playwright test run.
+        Screenshots are only available for tests that failed and had screenshot capture enabled.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '200':
+          description: Screenshot image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No screenshot found for this test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/test/{testId}/video:
+    get:
+      summary: Get video from a failed test
+      description: |
+        Returns the video recording captured during a failed Playwright test run.
+        Videos are only available for tests that failed and had video capture enabled.
+        Supports HTTP Range requests for video streaming.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '200':
+          description: Video file
+          content:
+            video/webm:
+              schema:
+                type: string
+                format: binary
+        '206':
+          description: Partial content (range request)
+          content:
+            video/webm:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No video found for this test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/test/{testId}/media:
+    get:
+      summary: Check media availability for a test
+      description: |
+        Returns information about available media files (screenshot, video) for a test.
+        Useful for checking if debugging artifacts exist before attempting to fetch them.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '200':
+          description: Media availability information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaInfo'
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/users/{userId}/chats:
     get:
       summary: "Returns the chat history for a specific user"
@@ -750,3 +874,24 @@ components:
           type: string
           description: "Descriptive name of the test case."
           example: "Login form test"
+
+    MediaInfo:
+      type: object
+      description: "Information about available media files for a test"
+      properties:
+        testId:
+          type: string
+          description: "Unique identifier of the test"
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        hasScreenshot:
+          type: boolean
+          description: "Whether a screenshot is available for this test"
+          example: true
+        hasVideo:
+          type: boolean
+          description: "Whether a video recording is available for this test"
+          example: true
+      required:
+        - testId
+        - hasScreenshot
+        - hasVideo

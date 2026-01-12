@@ -34,6 +34,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
 		FileSystemProvider,
+		MediaFileSystemProvider,
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -41,6 +42,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		service.NewValidatorService,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
+		MediaStorageServiceProvider,
 		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
@@ -137,4 +139,14 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
+}
+
+// MediaFileSystemProvider provides a new media filesystem.
+func MediaFileSystemProvider(cfg *config.Config) (repository.MediaFileSystem, error) {
+	return repository.NewMediaFileSystem(cfg.MediaDirAutopw)
+}
+
+// MediaStorageServiceProvider provides a new media storage service.
+func MediaStorageServiceProvider(logger *slog.Logger, repo repository.MediaFileSystem) (service.MediaStorageService, error) {
+	return service.NewMediaStorageService(logger, repo)
 }

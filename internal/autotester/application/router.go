@@ -33,6 +33,11 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+
+		// Media endpoints for test screenshots and videos
+		apiV1.GET("/test/:testId/screenshot", controller.HandleGetScreenshot)
+		apiV1.GET("/test/:testId/video", controller.HandleGetVideo)
+		apiV1.GET("/test/:testId/media", controller.HandleGetMediaInfo)
 	}
 
 	if !isHeadless {
