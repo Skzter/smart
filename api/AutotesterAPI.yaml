@@ -487,6 +487,128 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /groups:
+    get:
+      summary: List all groups
+      operationId: getGroups
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      summary: Create a new group
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupName:
+                  type: string
+                description:
+                  type: string
+                userId:
+                  type: string
+              required:
+                - groupName
+                - userId
+      responses:
+        "200":
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groupId:
+                    type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /chats/{chatId}/groups:
+    post:
+      summary: Assign chat to groups
+      operationId: assignChatToGroups
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupId:
+                  type: string
+              required:
+                - groupId
+      responses:
+        "200":
+          description: Chat assigned to group successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /chats/{chatId}/groups/{groupId}:
+    delete:
+      summary: Remove chat from group
+      operationId: removeChatFromGroup
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chat removed from group successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
 components:
   schemas:
@@ -728,3 +850,22 @@ components:
           type: string
           description: "Descriptive name of the test case."
           example: "Login form test"
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the group
+        name:
+          type: string
+          description: Name of the group
+        descriprion:
+          type: string
+          description: Description of the group
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the group was created
+        createdBy:
+          type: string
+          description: ID of the user who created the group
