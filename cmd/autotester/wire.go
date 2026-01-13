@@ -16,6 +16,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
+	infra "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/infrastructure/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
@@ -54,6 +55,10 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
 		MetricsServiceProvider,
+		service.NewGroupStorage,
+		infra.NewGroupStorage,
+		GroupParquetWrapperProvider,
+		service.NewGroupManager,
 	)
 
 	return nil, nil
@@ -95,6 +100,11 @@ func ChatSummaryParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Pa
 // TestCaseParquetWrapperProvider provides a new test case parquet wrapper with default parquet config.
 func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.TestCase], error) {
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
+}
+
+// GroupParquetWrapperProvider provides a new Group parquet wrapper with default parquet config.
+func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Group], error) {
+	return wrapperService.NewParquetWrapper[entity.Group](logger, cfg, tracer)
 }
 
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
