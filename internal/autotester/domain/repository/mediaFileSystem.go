@@ -67,14 +67,13 @@ func NewMediaFileSystem(root string) (MediaFileSystem, error) {
 	}, nil
 }
 
-func (fs *mediaFileSystem) GetScreenshotPath(testId string) (string, error) {
+func (fs *mediaFileSystem) getMediaPath(testId, extension, mediaType string) (string, error) {
 	if err := assert.StringNotEmpty(testId); err != nil {
 		return "", fmt.Errorf("testId must not be empty")
 	}
 
-	// Look for any PNG file in the test-results directory
 	mediaDir := filepath.Join(fs.Root, testId)
-	pattern := filepath.Join(mediaDir, "**", "*.png")
+	pattern := filepath.Join(mediaDir, "**", "*."+extension)
 
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
@@ -83,7 +82,7 @@ func (fs *mediaFileSystem) GetScreenshotPath(testId string) (string, error) {
 
 	// Try a simpler pattern if no matches
 	if len(matches) == 0 {
-		pattern = filepath.Join(mediaDir, "*.png")
+		pattern = filepath.Join(mediaDir, "*."+extension)
 		matches, err = filepath.Glob(pattern)
 		if err != nil {
 			return "", fmt.Errorf("glob pattern error: %w", err)
@@ -92,7 +91,7 @@ func (fs *mediaFileSystem) GetScreenshotPath(testId string) (string, error) {
 
 	// Also check in test-results subdirectory
 	if len(matches) == 0 {
-		pattern = filepath.Join(mediaDir, "test-results", "*.png")
+		pattern = filepath.Join(mediaDir, "test-results", "*."+extension)
 		matches, err = filepath.Glob(pattern)
 		if err != nil {
 			return "", fmt.Errorf("glob pattern error: %w", err)
@@ -100,49 +99,18 @@ func (fs *mediaFileSystem) GetScreenshotPath(testId string) (string, error) {
 	}
 
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no screenshot found for testId: %s", testId)
+		return "", fmt.Errorf("no %s found for testId: %s", mediaType, testId)
 	}
 
 	return matches[0], nil
 }
 
+func (fs *mediaFileSystem) GetScreenshotPath(testId string) (string, error) {
+	return fs.getMediaPath(testId, "png", "screenshot")
+}
+
 func (fs *mediaFileSystem) GetVideoPath(testId string) (string, error) {
-	if err := assert.StringNotEmpty(testId); err != nil {
-		return "", fmt.Errorf("testId must not be empty")
-	}
-
-	// Look for any WebM file in the test-results directory
-	mediaDir := filepath.Join(fs.Root, testId)
-	pattern := filepath.Join(mediaDir, "**", "*.webm")
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return "", fmt.Errorf("glob pattern error: %w", err)
-	}
-
-	// Try a simpler pattern if no matches
-	if len(matches) == 0 {
-		pattern = filepath.Join(mediaDir, "*.webm")
-		matches, err = filepath.Glob(pattern)
-		if err != nil {
-			return "", fmt.Errorf("glob pattern error: %w", err)
-		}
-	}
-
-	// Also check in test-results subdirectory
-	if len(matches) == 0 {
-		pattern = filepath.Join(mediaDir, "test-results", "*.webm")
-		matches, err = filepath.Glob(pattern)
-		if err != nil {
-			return "", fmt.Errorf("glob pattern error: %w", err)
-		}
-	}
-
-	if len(matches) == 0 {
-		return "", fmt.Errorf("no video found for testId: %s", testId)
-	}
-
-	return matches[0], nil
+	return fs.getMediaPath(testId, "webm", "video")
 }
 
 func (fs *mediaFileSystem) GetScreenshot(testId string) ([]byte, error) {
