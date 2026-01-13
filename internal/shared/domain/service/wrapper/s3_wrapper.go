@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -493,4 +494,125 @@ func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) 
 	span.SetStatus(codes.Ok, "")
 
 	return aws.ToInt64(result.ContentLength), nil
+}
+
+// UploadMediaFile uploads a media file to S3 (key with extension)
+func (s *S3Wrapper) UploadMediaFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return ErrNilContext
+	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.UploadMediaFile")
+	defer span.End()
+
+	if key == "" {
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return err
+	}
+
+	if len(data) == 0 {
+		err := ErrEmptyData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return err
+	}
+
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	metadata["Content-Type"] = "application/octet-stream"
+	metadata["File-Type"] = "media"
+	metadata["Upload-Time"] = time.Now().UTC().Format(time.RFC3339)
+
+	s.logger.Debug("Uploading media file to S3",
+		slog.String("bucket", s.config.Bucket),
+		slog.String("key", key),
+		slog.Int("size_bytes", len(data)),
+	)
+
+	input := &s3.PutObjectInput{
+		Bucket:      aws.String(s.config.Bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(data),
+		ContentType: aws.String("application/octet-stream"),
+		Metadata:    metadata,
+	}
+
+	_, err := s.client.PutObject(ctx, input)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 upload failed")
+		return fmt.Errorf("failed to upload media file: %w", err)
+	}
+
+	span.AddEvent("Media file uploaded", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	return nil
+}
+
+// GetMediaUrl returns the URL of a media file in S3 (key with extension)
+func (s *S3Wrapper) GetMediaUrl(ctx context.Context, key string) (string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return "", ErrNilContext
+	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.GetMediaUrl")
+	defer span.End()
+
+	if key == "" {
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return "", err
+	}
+
+	// Check if file exists
+	input := &s3.HeadObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(key),
+	}
+
+	_, err := s.client.HeadObject(ctx, input)
+	if err != nil {
+		var notFound *types.NotFound
+		errMsg := err.Error()
+		isNotFound := errors.As(err, &notFound) ||
+			strings.Contains(strings.ToLower(errMsg), "not found") ||
+			strings.Contains(strings.ToLower(errMsg), "nosuchkey") ||
+			strings.Contains(strings.ToLower(errMsg), "no such key")
+
+		if isNotFound {
+			err := fmt.Errorf("failed to get media url: file does not exist")
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "file does not exist")
+			s.logger.Error("Failed to get media url: file does not exist",
+				slog.String("bucket", s.config.Bucket),
+				slog.String("key", key),
+			)
+			return "", err
+		}
+		err := fmt.Errorf("failed to get media url: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 head object failed")
+		s.logger.Error("Failed to get media url",
+			slog.String("bucket", s.config.Bucket),
+			slog.String("key", key),
+			slog.String("error", err.Error()),
+		)
+		return "", err
+	}
+
+	span.AddEvent("Media URL generated", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.config.Bucket, key), nil
 }
