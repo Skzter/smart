@@ -56,7 +56,7 @@ var (
 	ErrFailedToGetFileMetadata = errors.New("failed to get file metadata")
 )
 
-// S3StorageWrapper defines an interface for storing, retrieving and managing Parquet files in an S3-compatible storage service.
+// S3StorageWrapper defines an interface for storing, retrieving and managing files in an S3-compatible storage service.
 type S3StorageWrapper interface {
 	// UploadParquetFile uploads a Parquet file to the given key with optional metadata.
 	UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
@@ -75,6 +75,12 @@ type S3StorageWrapper interface {
 
 	// GetFileSize returns the size of the file in bytes for the given key.
 	GetFileSize(ctx context.Context, key string) (int64, error)
+
+	// UploadMediaFile uploads a media file to the given key with optional metadata.
+	UploadMediaFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
+
+	// GetMediaUrl returns the URL of a media file in S3.
+	GetMediaUrl(ctx context.Context, key string) (string, error)
 }
 
 // S3Wrapper provides methods to interact with AWS S3 for parquet files
