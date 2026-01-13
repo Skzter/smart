@@ -75,7 +75,7 @@ func (g *groupManager) List(ctx context.Context) ([]*entity.Group, error) {
 	ctx, span := g.tracer.Start(ctx, "groupManager.List")
 	defer span.End()
 
-	groups, err := g.groupStorage.LoadAll(ctx)
+	groups, err := g.groupStorage.ListAll(ctx)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while loading groups")
@@ -105,7 +105,7 @@ func (g *groupManager) Create(ctx context.Context, name string, description stri
 		CreatedBy:   creator,
 	}
 
-	if err := g.groupStorage.New(ctx, &group); err != nil {
+	if err := g.groupStorage.Create(ctx, &group); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing group")
 		return "", err
@@ -180,9 +180,10 @@ func (g *groupManager) RemoveChatFromGroup(ctx context.Context, groupId string, 
 
 	index := slices.Index(chat.Groups, groupId)
 	if index == -1 {
+		err := errors.ErrChatNotInGroup
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "deleting non-existant group from chat")
-		return errors.ErrChatNotInGroup
+		return err
 	}
 
 	chat.Groups = slices.Delete(chat.Groups, index, index+1)

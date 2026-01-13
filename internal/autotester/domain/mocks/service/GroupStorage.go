@@ -38,6 +38,125 @@ func (_m *MockGroupStorage) EXPECT() *MockGroupStorage_Expecter {
 	return &MockGroupStorage_Expecter{mock: &_m.Mock}
 }
 
+// Create provides a mock function for the type MockGroupStorage
+func (_mock *MockGroupStorage) Create(ctx context.Context, group *entity.Group) error {
+	ret := _mock.Called(ctx, group)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Group) error); ok {
+		r0 = returnFunc(ctx, group)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockGroupStorage_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
+type MockGroupStorage_Create_Call struct {
+	*mock.Call
+}
+
+// Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - group *entity.Group
+func (_e *MockGroupStorage_Expecter) Create(ctx interface{}, group interface{}) *MockGroupStorage_Create_Call {
+	return &MockGroupStorage_Create_Call{Call: _e.mock.On("Create", ctx, group)}
+}
+
+func (_c *MockGroupStorage_Create_Call) Run(run func(ctx context.Context, group *entity.Group)) *MockGroupStorage_Create_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *entity.Group
+		if args[1] != nil {
+			arg1 = args[1].(*entity.Group)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockGroupStorage_Create_Call) Return(err error) *MockGroupStorage_Create_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockGroupStorage_Create_Call) RunAndReturn(run func(ctx context.Context, group *entity.Group) error) *MockGroupStorage_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAll provides a mock function for the type MockGroupStorage
+func (_mock *MockGroupStorage) ListAll(ctx context.Context) ([]*entity.Group, error) {
+	ret := _mock.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAll")
+	}
+
+	var r0 []*entity.Group
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*entity.Group, error)); ok {
+		return returnFunc(ctx)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []*entity.Group); ok {
+		r0 = returnFunc(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*entity.Group)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockGroupStorage_ListAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAll'
+type MockGroupStorage_ListAll_Call struct {
+	*mock.Call
+}
+
+// ListAll is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockGroupStorage_Expecter) ListAll(ctx interface{}) *MockGroupStorage_ListAll_Call {
+	return &MockGroupStorage_ListAll_Call{Call: _e.mock.On("ListAll", ctx)}
+}
+
+func (_c *MockGroupStorage_ListAll_Call) Run(run func(ctx context.Context)) *MockGroupStorage_ListAll_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockGroupStorage_ListAll_Call) Return(groups []*entity.Group, err error) *MockGroupStorage_ListAll_Call {
+	_c.Call.Return(groups, err)
+	return _c
+}
+
+func (_c *MockGroupStorage_ListAll_Call) RunAndReturn(run func(ctx context.Context) ([]*entity.Group, error)) *MockGroupStorage_ListAll_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Load provides a mock function for the type MockGroupStorage
 func (_mock *MockGroupStorage) Load(ctx context.Context, id string) (*entity.Group, error) {
 	ret := _mock.Called(ctx, id)
@@ -102,125 +221,6 @@ func (_c *MockGroupStorage_Load_Call) Return(group *entity.Group, err error) *Mo
 }
 
 func (_c *MockGroupStorage_Load_Call) RunAndReturn(run func(ctx context.Context, id string) (*entity.Group, error)) *MockGroupStorage_Load_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// LoadAll provides a mock function for the type MockGroupStorage
-func (_mock *MockGroupStorage) LoadAll(ctx context.Context) ([]*entity.Group, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for LoadAll")
-	}
-
-	var r0 []*entity.Group
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*entity.Group, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []*entity.Group); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*entity.Group)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockGroupStorage_LoadAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadAll'
-type MockGroupStorage_LoadAll_Call struct {
-	*mock.Call
-}
-
-// LoadAll is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockGroupStorage_Expecter) LoadAll(ctx interface{}) *MockGroupStorage_LoadAll_Call {
-	return &MockGroupStorage_LoadAll_Call{Call: _e.mock.On("LoadAll", ctx)}
-}
-
-func (_c *MockGroupStorage_LoadAll_Call) Run(run func(ctx context.Context)) *MockGroupStorage_LoadAll_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockGroupStorage_LoadAll_Call) Return(groups []*entity.Group, err error) *MockGroupStorage_LoadAll_Call {
-	_c.Call.Return(groups, err)
-	return _c
-}
-
-func (_c *MockGroupStorage_LoadAll_Call) RunAndReturn(run func(ctx context.Context) ([]*entity.Group, error)) *MockGroupStorage_LoadAll_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// New provides a mock function for the type MockGroupStorage
-func (_mock *MockGroupStorage) New(ctx context.Context, group *entity.Group) error {
-	ret := _mock.Called(ctx, group)
-
-	if len(ret) == 0 {
-		panic("no return value specified for New")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Group) error); ok {
-		r0 = returnFunc(ctx, group)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockGroupStorage_New_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'New'
-type MockGroupStorage_New_Call struct {
-	*mock.Call
-}
-
-// New is a helper method to define mock.On call
-//   - ctx context.Context
-//   - group *entity.Group
-func (_e *MockGroupStorage_Expecter) New(ctx interface{}, group interface{}) *MockGroupStorage_New_Call {
-	return &MockGroupStorage_New_Call{Call: _e.mock.On("New", ctx, group)}
-}
-
-func (_c *MockGroupStorage_New_Call) Run(run func(ctx context.Context, group *entity.Group)) *MockGroupStorage_New_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 *entity.Group
-		if args[1] != nil {
-			arg1 = args[1].(*entity.Group)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *MockGroupStorage_New_Call) Return(err error) *MockGroupStorage_New_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockGroupStorage_New_Call) RunAndReturn(run func(ctx context.Context, group *entity.Group) error) *MockGroupStorage_New_Call {
 	_c.Call.Return(run)
 	return _c
 }

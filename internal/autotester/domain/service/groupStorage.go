@@ -14,15 +14,15 @@ import (
 
 // GroupStorage provides an interface to persist Group entities.
 type GroupStorage interface {
-	// New persists a new Group entity into the storage.
+	// Create persists a new Group entity into the storage.
 	// Returns an error if the operation fails.
-	New(ctx context.Context, group *entity.Group) error
+	Create(ctx context.Context, group *entity.Group) error
 	// Update updates an existing Group entity in the storage.
 	// Returns an error if the operation fails.
 	Update(ctx context.Context, group *entity.Group) error
-	// LoadAll retrieves all Group entities from storage.
+	// ListAll retrieves all Group entities from storage.
 	// Returns a slice of groups or an error if the operation fails.
-	LoadAll(ctx context.Context) ([]*entity.Group, error)
+	ListAll(ctx context.Context) ([]*entity.Group, error)
 	// Load retrieves a Group entity from storage by its id.
 	// Returns the group or an error if the operation fails.
 	Load(ctx context.Context, id string) (*entity.Group, error)
@@ -55,12 +55,12 @@ func NewGroupStorage(logger *slog.Logger, repo repository.GroupStorage, validato
 	}, nil
 }
 
-// New persists a new Group entity into the storage.
-func (s *groupStorage) New(ctx context.Context, group *entity.Group) error {
+// Create persists a new Group entity into the storage.
+func (s *groupStorage) Create(ctx context.Context, group *entity.Group) error {
 	if err := assert.NotNil(ctx, group); err != nil {
 		return err
 	}
-	ctx, span := s.tracer.Start(ctx, "groupStorage.New")
+	ctx, span := s.tracer.Start(ctx, "groupStorage.Create")
 	defer span.End()
 
 	if err := s.validator.ValidateGroup(ctx, group); err != nil {
@@ -109,12 +109,12 @@ func (s *groupStorage) Update(ctx context.Context, group *entity.Group) error {
 	return nil
 }
 
-// LoadAll retrieves all Group entities from storage.
-func (s *groupStorage) LoadAll(ctx context.Context) ([]*entity.Group, error) {
+// ListAll retrieves all Group entities from storage.
+func (s *groupStorage) ListAll(ctx context.Context) ([]*entity.Group, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
-	ctx, span := s.tracer.Start(ctx, "groupStorage.LoadAll")
+	ctx, span := s.tracer.Start(ctx, "groupStorage.ListAll")
 	defer span.End()
 
 	groups, err := s.repo.ListAll(ctx)

@@ -859,7 +859,7 @@ components:
         name:
           type: string
           description: Name of the group
-        descriprion:
+        description:
           type: string
           description: Description of the group
         createdAt:

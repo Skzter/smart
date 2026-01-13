@@ -167,7 +167,7 @@ func TestGroupStorageNew(t *testing.T) {
 			svc, err := NewGroupStorage(logger, mockRepo, mockVal, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
-			err = svc.New(test.ctx, test.group)
+			err = svc.Create(test.ctx, test.group)
 
 			if test.wantErr {
 				assert.Error(t, err, "expected an error")
@@ -324,7 +324,7 @@ func TestGroupStorageLoadAll(t *testing.T) {
 			svc, err := NewGroupStorage(logger, mockRepo, mockVal, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
-			groups, err := svc.LoadAll(test.ctx)
+			groups, err := svc.ListAll(test.ctx)
 
 			if test.wantErr {
 				assert.Error(t, err, "expected an error")

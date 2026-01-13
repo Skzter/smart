@@ -105,7 +105,7 @@ func TestGroupManager_List(t *testing.T) {
 					{Id: "1", Name: "Group 1", Description: "First group", CreatedBy: "user1"},
 					{Id: "2", Name: "Group 2", Description: "Second group", CreatedBy: "user2"},
 				}
-				groupStorage.On("LoadAll", mock.Anything).Return(groups, nil).Once()
+				groupStorage.On("ListAll", mock.Anything).Return(groups, nil).Once()
 			},
 			ctx:          context.Background(),
 			expectErr:    false,
@@ -114,7 +114,7 @@ func TestGroupManager_List(t *testing.T) {
 		{
 			name: "empty group list",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
-				groupStorage.On("LoadAll", mock.Anything).Return([]*entity.Group{}, nil).Once()
+				groupStorage.On("ListAll", mock.Anything).Return([]*entity.Group{}, nil).Once()
 			},
 			ctx:          context.Background(),
 			expectErr:    false,
@@ -123,7 +123,7 @@ func TestGroupManager_List(t *testing.T) {
 		{
 			name: "storage error",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
-				groupStorage.On("LoadAll", mock.Anything).Return(nil, errors.New("storage error")).Once()
+				groupStorage.On("ListAll", mock.Anything).Return(nil, errors.New("storage error")).Once()
 			},
 			ctx:       context.Background(),
 			expectErr: true,
@@ -177,7 +177,7 @@ func TestGroupManager_Create(t *testing.T) {
 		{
 			name: "successfully create group",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
-				groupStorage.On("New", mock.Anything, mock.MatchedBy(func(g *entity.Group) bool {
+				groupStorage.On("Create", mock.Anything, mock.MatchedBy(func(g *entity.Group) bool {
 					return g.Name == "Test Group" &&
 						g.Description == "Test Description" &&
 						g.CreatedBy == "testuser" &&
@@ -194,7 +194,7 @@ func TestGroupManager_Create(t *testing.T) {
 		{
 			name: "storage error during create",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
-				groupStorage.On("New", mock.Anything, mock.Anything).Return(errors.New("storage error")).Once()
+				groupStorage.On("Create", mock.Anything, mock.Anything).Return(errors.New("storage error")).Once()
 			},
 			ctx:         context.Background(),
 			groupName:   "Test Group",
@@ -216,7 +216,7 @@ func TestGroupManager_Create(t *testing.T) {
 		{
 			name: "empty name still creates group",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
-				groupStorage.On("New", mock.Anything, mock.MatchedBy(func(g *entity.Group) bool {
+				groupStorage.On("Create", mock.Anything, mock.MatchedBy(func(g *entity.Group) bool {
 					return g.Name == "" &&
 						g.Description == "Description" &&
 						g.CreatedBy == "user"
