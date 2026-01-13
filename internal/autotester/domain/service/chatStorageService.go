@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 
@@ -10,7 +11,6 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -59,16 +59,14 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	defer span.End()
 
 	if err := s.validator.ValidateChat(ctx, chat); err != nil {
-		s.logger.Error("chat validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error during validation")
-		return errors.ErrValidation
+		return err
 	}
 	if err := s.repo.Create(ctx, chat); err != nil {
-		s.logger.Error("error while storing chat", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
-		return errors.ErrInternalServer
+		return err
 	}
 	return nil
 }
@@ -82,31 +80,27 @@ func (s *chatStorageService) LoadChat(ctx context.Context, userId string, chatId
 	defer span.End()
 
 	if err := assert.StringNotEmpty(userId); err != nil {
-		s.logger.Error("missing userId", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing userId")
-		return nil, errors.ErrValidation
+		return nil, fmt.Errorf("userId must not be empty")
 	}
 	if err := assert.StringNotEmpty(chatId); err != nil {
-		s.logger.Error("missing chatId", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing chatId")
-		return nil, errors.ErrValidation
+		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
 	chat, err := s.repo.Read(ctx, userId, chatId)
 	if err != nil {
-		s.logger.Error("error while reading chat", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while reading chat")
-		return nil, errors.ErrInternalServer
+		return nil, err
 	}
 
 	if err := s.validator.ValidateChat(ctx, chat); err != nil {
-		s.logger.Error("retrieved invalid chat from storage", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "retrieved invalid chat")
-		return nil, errors.ErrValidation
+		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -123,17 +117,15 @@ func (s *chatStorageService) LoadUserChats(ctx context.Context, userId string) (
 	defer span.End()
 
 	if err := assert.StringNotEmpty(userId); err != nil {
-		s.logger.Error("missing userId", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing userId")
-		return nil, errors.ErrValidation
+		return nil, fmt.Errorf("userId must not be empty")
 	}
 	summaries, err := s.repo.FindByUserID(ctx, userId)
 	if err != nil {
-		s.logger.Error("error while retrieving chatSummaries", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while retrieving chatSummaries")
-		return nil, errors.ErrInternalServer
+		return nil, err
 	}
 
 	// sort in descending order by UpdatedAt

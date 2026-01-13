@@ -16,7 +16,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -115,18 +114,11 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 
 	resp, err := d.client.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
-		d.logger.Error("failed to create container",
-			slog.String("testID", testID),
-			slog.Any("error", err),
-		)
-		return "", errors.ErrInternalServer
+		return "", fmt.Errorf("failed to create container: %w", err)
 	}
 
 	if resp.ID == "" {
-		d.logger.Error("container created without ID",
-			slog.String("testID", testID),
-		)
-		return "", errors.ErrInternalServer
+		return "", fmt.Errorf("container created without ID")
 	}
 
 	d.logger.Debug("Container created",
@@ -135,11 +127,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 	)
 
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		d.logger.Error("failed to start container",
-			slog.String("containerID", resp.ID),
-			slog.Any("error", err),
-		)
-		return "", errors.ErrInternalServer
+		return "", fmt.Errorf("failed to start container: %w", err)
 	}
 
 	d.testContainerMap[testID] = &entity.ContainerInfo{

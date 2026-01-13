@@ -1,12 +1,12 @@
 package service
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -94,7 +94,7 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("save to repository failed: %w", err)
 	}
 
 	s.logger.Debug("testcase saved successfully",
@@ -120,7 +120,7 @@ func (s *testcaseLocalStorageService) Read(testId, userId, sessionId string) (st
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return "", errors.ErrInternalServer
+		return "", fmt.Errorf("read testcase file content failed: %w", err)
 	}
 
 	s.logger.Debug("testcase file read successfully",
@@ -147,7 +147,7 @@ func (s *testcaseLocalStorageService) GetTestPath(testId, userId, sessionId stri
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return "", errors.ErrInternalServer
+		return "", fmt.Errorf("get path from repository failed: %w", err)
 	}
 
 	s.logger.Debug("testcase path retrieved successfully",
@@ -172,7 +172,7 @@ func (s *testcaseLocalStorageService) GetTestPathsBySession(userId, sessionId st
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return nil, errors.ErrInternalServer
+		return nil, fmt.Errorf("get paths from repository failed: %w", err)
 	}
 
 	s.logger.Debug("testcase paths retrieved successfully",
@@ -194,7 +194,7 @@ func (s *testcaseLocalStorageService) GetTestPathsByUser(userId string) (map[str
 			slog.String("userId", userId),
 			slog.String("error", err.Error()),
 		)
-		return nil, errors.ErrInternalServer
+		return nil, fmt.Errorf("get paths from repository failed: %w", err)
 	}
 
 	totalCount := 0
@@ -218,7 +218,7 @@ func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) e
 			slog.String("sessionId", sessionId),
 			slog.String("error", err.Error()),
 		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("delete from repository failed: %w", err)
 	}
 
 	s.logger.Debug("testcase deleted successfully",
@@ -242,7 +242,7 @@ func (s *testcaseLocalStorageService) CleanupOldTests() error {
 			slog.Duration("maxAge", maxAge),
 			slog.String("error", err.Error()),
 		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("cleanup old tests failed: %w", err)
 	}
 
 	s.logger.Debug("cleanup of old tests completed successfully",

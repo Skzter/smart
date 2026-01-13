@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -125,9 +124,6 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T)
 		err := ErrEmptyData
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "data validation failed")
-		p.logger.Error("Data validation failed",
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 
@@ -155,26 +151,24 @@ func (p *ParquetWrapper[T]) WriteStructsToParquet(ctx context.Context, data []T)
 	// Write the data
 	_, err := writer.Write(data)
 	if err != nil {
-		err := ErrFailedToWriteData
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to write data to parquet")
 		p.logger.Error("Failed to write data to parquet",
 			slog.String("type", structType.Name()),
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, ErrFailedToWriteData
 	}
 
 	// Close the writer to finalize the file
 	err = writer.Close()
 	if err != nil {
-		err := ErrFailedToCloseWriter
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to close parquet writer")
 		p.logger.Error("Failed to close parquet writer",
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, ErrFailedToCloseWriter
 	}
 
 	parquetData := buf.Bytes()
@@ -198,9 +192,6 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 		err := ErrEmptyParquetData
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "data validation failed")
-		p.logger.Error("Data validation failed",
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 
@@ -228,14 +219,13 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 		rows := make([]T, 100) // Read in smaller batches
 		n, err := parquetReader.Read(rows)
 		if err != nil && err != io.EOF {
-			err := ErrFailedToReadData
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to read parquet data")
 			p.logger.Error("Failed to read parquet data",
 				slog.String("type", structType.Name()),
 				slog.String("error", err.Error()),
 			)
-			return nil, sharedErrors.ErrInternalServer
+			return nil, ErrFailedToReadData
 		}
 
 		if n > 0 {
@@ -250,13 +240,12 @@ func (p *ParquetWrapper[T]) ReadStructsFromParquet(ctx context.Context, parquetD
 	// Close the reader
 	err := parquetReader.Close()
 	if err != nil {
-		err := ErrFailedToCloseReader
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to close parquet reader")
 		p.logger.Error("Failed to close parquet reader",
 			slog.String("error", err.Error()),
 		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, ErrFailedToCloseReader
 	}
 
 	span.AddEvent("Structs read from parquet", trace.WithAttributes(
@@ -285,10 +274,7 @@ func (p *ParquetWrapper[T]) WriteStructToParquet(ctx context.Context, data T) ([
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to write struct to parquet")
-		p.logger.Error("Failed to write struct to parquet",
-			slog.String("error", err.Error()),
-		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, err
 	}
 
 	span.AddEvent("Struct written to parquet", trace.WithAttributes(
@@ -317,13 +303,9 @@ func (p *ParquetWrapper[T]) GetParquetSchema(ctx context.Context) (*parquet.Sche
 	schema := writer.Schema()
 	err := writer.Close()
 	if err != nil {
-		err := ErrFailedToCloseWriter
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to close parquet writer")
-		p.logger.Error("Failed to close parquet writer",
-			slog.String("error", err.Error()),
-		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, ErrFailedToCloseWriter
 	}
 
 	span.AddEvent("Parquet schema generated", trace.WithAttributes(
@@ -354,8 +336,7 @@ func (p *ParquetWrapper[T]) ValidateStruct(ctx context.Context, data T) error {
 		err := fmt.Errorf(ErrInvalidStructType.Error(), structType.Kind())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid struct type")
-		p.logger.Error(err.Error())
-		return sharedErrors.ErrValidation
+		return err
 	}
 
 	p.logger.Debug("Validating struct for parquet compatibility",
@@ -377,8 +358,7 @@ func (p *ParquetWrapper[T]) ValidateStruct(ctx context.Context, data T) error {
 		err := fmt.Errorf(ErrInvalidStructType.Error(), structType.Kind())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "struct has no exported fields")
-		p.logger.Error(err.Error())
-		return sharedErrors.ErrValidation
+		return err
 	}
 
 	span.AddEvent("Struct validated", trace.WithAttributes(
@@ -398,9 +378,6 @@ func (p *ParquetWrapper[T]) GetParquetFileInfo(ctx context.Context, parquetData 
 		err := ErrEmptyParquetData
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "data validation failed")
-		p.logger.Error("Data validation failed",
-			slog.String("error", err.Error()),
-		)
 		return nil, err
 	}
 

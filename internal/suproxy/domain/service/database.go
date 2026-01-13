@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
@@ -44,18 +43,16 @@ func NewDatabaseService(logger *slog.Logger, repo repository.DatabaseRepository,
 // SaveDbEntry saves a database entry by calling the repository's CreateRequest method.
 func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.DatabaseEntry) error {
 	if err := assert.NotNil(ctx); err != nil {
-		d.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return errors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	ctx, span := d.tracer.Start(ctx, "databaseService.SaveDbEntry")
 	defer span.End()
 
 	if err := d.repo.CreateRequest(ctx, request); err != nil {
-		d.logger.Error("failed to save request", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to save request")
-		return errors.ErrInternalServer
+		return fmt.Errorf("failed to save request: %w", err)
 	}
 	d.logger.Debug("Request saved successfully", "request", request)
 	span.SetStatus(codes.Ok, "")
@@ -65,8 +62,7 @@ func (d *databaseService) SaveDbEntry(ctx context.Context, request entity.Databa
 // GetAllKeys retrieves all keys from the database.
 func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		d.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return nil, errors.ErrInternalServer
+		return nil, fmt.Errorf("context cannot be nil")
 	}
 
 	ctx, span := d.tracer.Start(ctx, "databaseService.GetAllKeys")
@@ -74,10 +70,9 @@ func (d *databaseService) GetAllKeys(ctx context.Context) ([]string, error) {
 
 	keys, err := d.repo.ListAllKeys(ctx)
 	if err != nil {
-		d.logger.Error("failed to get all keys", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get all keys")
-		return nil, errors.ErrInternalServer
+		return nil, fmt.Errorf("failed to get all keys: %w", err)
 	}
 	span.SetStatus(codes.Ok, "")
 	return keys, nil
