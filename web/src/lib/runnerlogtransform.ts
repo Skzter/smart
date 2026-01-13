@@ -8,7 +8,7 @@ export type StepNode = {
 };
 
 export type RunSummary = {
-    status: "running" | "passed" | "failed";
+    status: "idle" | "running" | "passed" | "failed";
     durationMs?: number;
 };
 
@@ -160,13 +160,18 @@ export function buildStepTree(rawLogs: { begin: string }[]): {
         }
     }
 
-    const summary: RunSummary =
-        runStart && runEnd
-            ? {
-                  status: runEnd.status,
-                  durationMs: runEnd.time - runStart,
-              }
-            : { status: "running" };
+    let summary: RunSummary;
+
+    if (runStart === null) {
+        summary = { status: "idle" };
+    } else if (runEnd === null) {
+        summary = { status: "running" };
+    } else {
+        summary = {
+            status: runEnd.status,
+            durationMs: runEnd.time - runStart,
+        };
+    }
 
     return { steps: roots, summary };
 }

@@ -117,7 +117,6 @@ export class Runner {
                 if (this.retryCount < this.MAX_RETRIES) {
                     this.retryCount++;
                     const delay = 1000 * this.retryCount;
-
                     setTimeout(connect, delay);
                 } else {
                     this.logStatus = "error";
@@ -143,8 +142,12 @@ export class Runner {
         this.result = [];
 
         if (!this.userId || !this.chatId || !this.storedTest) {
-            toast.error("Test konnte nicht gestartet werden", {
-                description: "Benutzer-, Konversations- oder Test-ID fehlt.",
+            console.error(
+                `Missing IDs - ChatID: ${this.chatId}, UserID: ${this.userId}, TestID: ${this.storedTest}`,
+            );
+
+            toast.error("Speichern fehlgeschlagen", {
+                description: "Benutzer-, -Konversations oder Test-ID fehlt.",
             });
             return;
         }

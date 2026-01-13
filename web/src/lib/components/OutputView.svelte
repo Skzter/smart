@@ -4,7 +4,41 @@
 
     let { testRunner }: { testRunner: Runner } = $props();
 
-    let model = $derived.by(() => buildStepTree(testRunner.result));
+    type Summary = {
+        status: "idle" | "running" | "passed" | "failed";
+        durationMs?: number;
+    };
+
+    type Step = {
+        kind?: "group" | "step";
+        label: string;
+        status?: "running" | "done" | "failed";
+        children?: Step[];
+    };
+
+    type Model = {
+        summary: Summary;
+        steps: Step[];
+    };
+
+    type RunnerResult = Model | { begin: string }[] | null | undefined;
+
+    let model = $derived.by<Model>(() => {
+        const r = testRunner?.result as RunnerResult;
+
+        if (r && typeof r === "object" && "summary" in r && "steps" in r) {
+            return r as Model;
+        }
+
+        if (Array.isArray(r)) {
+            return buildStepTree(r);
+        }
+
+        return {
+            summary: { status: "idle" },
+            steps: [],
+        };
+    });
 </script>
 
 <div class="flex flex-col h-full overflow-hidden bg-[#0b1220]">
@@ -37,10 +71,10 @@
                         <span class="w-5"></span>
                     {/if}
 
-                    <span>{parent.label}...</span>
+                    <span>{parent.label}</span>
                 </div>
 
-                {#if parent.children.length}
+                {#if parent.children?.length}
                     <div class="ml-8 mt-1">
                         {#each parent.children as child}
                             <div
@@ -62,7 +96,7 @@
                                     {/if}
                                 </span>
 
-                                <span>{child.label}...</span>
+                                <span>{child.label}</span>
                             </div>
                         {/each}
                     </div>
@@ -71,12 +105,15 @@
         {/each}
     </div>
 
+    <!-- FOOTER -->
     <div
         class="shrink-0 border-t border-white/10 px-4 py-2 text-sm
         flex items-center justify-between bg-[#0b1220]"
     >
         <div class="flex items-center gap-3">
-            {#if model.summary.status === "running"}
+            {#if model.summary.status === "idle"}
+                <span class="text-gray-400">inaktiv</span>
+            {:else if model.summary.status === "running"}
                 <span
                     class="w-4 h-4 border-2 border-blue-400
                     border-t-transparent rounded-full animate-spin"
@@ -84,14 +121,14 @@
                 <span class="text-blue-300">Test läuft…</span>
             {:else if model.summary.status === "passed"}
                 <span class="text-green-400">✓</span>
+                <span class="text-green-300">Test erfolgreich ·</span>
                 <span class="text-green-300">
-                    Test erfolgreich ·
                     {(model.summary.durationMs! / 1000).toFixed(1)} s
                 </span>
             {:else}
                 <span class="text-red-400">✗</span>
+                <span class="text-red-300">Test fehlgeschlagen ·</span>
                 <span class="text-red-300">
-                    Test fehlgeschlagen ·
                     {(model.summary.durationMs! / 1000).toFixed(1)} s
                 </span>
             {/if}
