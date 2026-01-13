@@ -73,7 +73,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		s.logger.Error("Request validation failed", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
-		return "", errors.ErrValidation
+		return "", err
 	}
 
 	resp, err := s.openAIService.Request(ctx, req)

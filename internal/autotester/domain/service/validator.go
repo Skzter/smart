@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -72,7 +73,6 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 
 	resp, err := s.openAIservice.Request(ctx, req)
 	if err != nil {
-		s.logger.Error("request validation failed")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "openai request failed")
 		return false, "", errors.ErrValidation
@@ -110,41 +110,35 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 		chat.Id,
 		chat.UserId,
 	); err != nil {
-		s.logger.Error("missing fields in chat", "error", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing fields")
-		return errors.ErrValidation
+		return fmt.Errorf("missing fields %w", err)
 	}
 
 	if chat.UpdatedAt.IsZero() {
-		s.logger.Error("updatedAt is zero")
-		span.RecordError(errors.ErrValidation)
+		err := fmt.Errorf("updatedAt is zero")
+		span.RecordError(err)
 		span.SetStatus(codes.Error, "updatedAt zero")
-		return errors.ErrValidation
+		return err
 	}
 	if chat.CreatedAt.IsZero() {
-		s.logger.Error("createdAt is Zero")
-		span.RecordError(errors.ErrValidation)
+		err := fmt.Errorf("createdAt is Zero")
+		span.RecordError(err)
 		span.SetStatus(codes.Error, "createdAt zero")
-		return errors.ErrValidation
+		return err
 	}
 
 	if err := assert.ArrayLengthGreaterThan(chat.Messages, 0); err != nil {
-		s.logger.Error(err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing messages")
-		return errors.ErrValidation
+		return err
 	}
 
 	for _, msg := range chat.Messages {
 		if err := s.ValidateMessage(ctx, &msg.Message); err != nil {
-			s.logger.Error("invalid message",
-				slog.String("error", err.Error()),
-				slog.String("content", msg.Body),
-			)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "message validation failed")
-			return errors.ErrValidation
+			return fmt.Errorf("invalid message: %w", err)
 		}
 	}
 
@@ -167,23 +161,20 @@ func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Reques
 	)
 
 	if req.Model == "" {
-		err := errors.ErrValidation
-		s.logger.Error("empty model field in request")
+		err := fmt.Errorf("model is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing model")
 		return err
 	}
 	if req.SystemPrompt == "" {
-		err := errors.ErrGeneration
-		s.logger.Error("systemprompt is empty")
+		err := fmt.Errorf("systemPrompt is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing system prompt")
 		return err
 	}
 
 	if len(req.Messages) == 0 {
-		err := errors.ErrGeneration
-		s.logger.Error("message is empty")
+		err := fmt.Errorf("messages is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing messages")
 		return err
@@ -191,13 +182,9 @@ func (s *validator) ValidateRequest(ctx context.Context, req sharedEntity.Reques
 
 	for _, msg := range req.Messages {
 		if err := s.ValidateMessage(ctx, msg); err != nil {
-			s.logger.Error("invalid message",
-				slog.String("message", msg.Id),
-				slog.String("error", err.Error()),
-			)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "message validation failed")
-			return errors.ErrValidation
+			return fmt.Errorf("invalid message: %w", err)
 		}
 	}
 
@@ -216,34 +203,28 @@ func (s *validator) ValidateMessage(ctx context.Context, msg *sharedEntity.Messa
 	defer span.End()
 
 	if msg.Body == "" {
-		err := errors.ErrInternalServer
-		s.logger.Error("body is empty")
+		err := fmt.Errorf("body is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing body")
 		return err
 	}
 
 	if msg.Role == "" {
-		err := errors.ErrInternalServer
-		s.logger.Error("role is empty")
+		err := fmt.Errorf("role is empty")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing role")
 		return err
 	}
 
 	if err := uuid.Validate(msg.Id); err != nil {
-		s.logger.Error("invalid uuid",
-			slog.String("id", msg.Id),
-			slog.String("error", err.Error()),
-		)
+		err := fmt.Errorf("invalid Id: %w", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid id")
-		return errors.ErrValidation
+		return err
 	}
 
 	if msg.CreatedAt.IsZero() {
-		err := errors.ErrInternalServer
-		s.logger.Error("createdAt is Zero")
+		err := fmt.Errorf("createdAt is Zero")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "createdAt zero")
 		return err
