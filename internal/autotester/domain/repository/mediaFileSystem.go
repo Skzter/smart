@@ -118,7 +118,7 @@ func (fs *mediaFileSystem) GetScreenshot(testId string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.ReadFile(path)
+	return os.ReadFile(path) //nolint:gosec // G304: path is validated by getMediaPath within fs.Root
 }
 
 func (fs *mediaFileSystem) GetVideo(testId string) ([]byte, error) {
@@ -126,7 +126,7 @@ func (fs *mediaFileSystem) GetVideo(testId string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return os.ReadFile(path)
+	return os.ReadFile(path) //nolint:gosec // G304: path is validated by getMediaPath within fs.Root
 }
 
 func (fs *mediaFileSystem) HasScreenshot(testId string) bool {

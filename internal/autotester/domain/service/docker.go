@@ -92,7 +92,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 
 	// Create media directory for test artifacts (screenshots, videos)
 	mediaDir := filepath.Join(d.config.MediaDirAutopw, testID)
-	if err := os.MkdirAll(mediaDir, 0o755); err != nil {
+	if err := os.MkdirAll(mediaDir, 0o750); err != nil {
 		d.logger.Error("Failed to create media directory",
 			slog.String("mediaDir", mediaDir),
 			slog.String("error", err.Error()),
