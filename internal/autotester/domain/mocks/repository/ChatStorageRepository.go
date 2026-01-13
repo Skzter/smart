@@ -96,16 +96,16 @@ func (_c *MockChatStorageRepository_Create_Call) RunAndReturn(run func(ctx conte
 }
 
 // Delete provides a mock function for the type MockChatStorageRepository
-func (_mock *MockChatStorageRepository) Delete(ctx context.Context, userId string, chatId string) error {
-	ret := _mock.Called(ctx, userId, chatId)
+func (_mock *MockChatStorageRepository) Delete(ctx context.Context, chatId string) error {
+	ret := _mock.Called(ctx, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, chatId)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -119,13 +119,12 @@ type MockChatStorageRepository_Delete_Call struct {
 
 // Delete is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userId string
 //   - chatId string
-func (_e *MockChatStorageRepository_Expecter) Delete(ctx interface{}, userId interface{}, chatId interface{}) *MockChatStorageRepository_Delete_Call {
-	return &MockChatStorageRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, userId, chatId)}
+func (_e *MockChatStorageRepository_Expecter) Delete(ctx interface{}, chatId interface{}) *MockChatStorageRepository_Delete_Call {
+	return &MockChatStorageRepository_Delete_Call{Call: _e.mock.On("Delete", ctx, chatId)}
 }
 
-func (_c *MockChatStorageRepository_Delete_Call) Run(run func(ctx context.Context, userId string, chatId string)) *MockChatStorageRepository_Delete_Call {
+func (_c *MockChatStorageRepository_Delete_Call) Run(run func(ctx context.Context, chatId string)) *MockChatStorageRepository_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -135,14 +134,9 @@ func (_c *MockChatStorageRepository_Delete_Call) Run(run func(ctx context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -153,82 +147,76 @@ func (_c *MockChatStorageRepository_Delete_Call) Return(err error) *MockChatStor
 	return _c
 }
 
-func (_c *MockChatStorageRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, userId string, chatId string) error) *MockChatStorageRepository_Delete_Call {
+func (_c *MockChatStorageRepository_Delete_Call) RunAndReturn(run func(ctx context.Context, chatId string) error) *MockChatStorageRepository_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// FindByUserID provides a mock function for the type MockChatStorageRepository
-func (_mock *MockChatStorageRepository) FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
-	ret := _mock.Called(ctx, userId)
+// ListAll provides a mock function for the type MockChatStorageRepository
+func (_mock *MockChatStorageRepository) ListAll(ctx context.Context) ([]*entity.ChatSummary, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
-		panic("no return value specified for FindByUserID")
+		panic("no return value specified for ListAll")
 	}
 
 	var r0 []*entity.ChatSummary
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]*entity.ChatSummary, error)); ok {
-		return returnFunc(ctx, userId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]*entity.ChatSummary, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []*entity.ChatSummary); ok {
-		r0 = returnFunc(ctx, userId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) []*entity.ChatSummary); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*entity.ChatSummary)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, userId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockChatStorageRepository_FindByUserID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByUserID'
-type MockChatStorageRepository_FindByUserID_Call struct {
+// MockChatStorageRepository_ListAll_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAll'
+type MockChatStorageRepository_ListAll_Call struct {
 	*mock.Call
 }
 
-// FindByUserID is a helper method to define mock.On call
+// ListAll is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userId string
-func (_e *MockChatStorageRepository_Expecter) FindByUserID(ctx interface{}, userId interface{}) *MockChatStorageRepository_FindByUserID_Call {
-	return &MockChatStorageRepository_FindByUserID_Call{Call: _e.mock.On("FindByUserID", ctx, userId)}
+func (_e *MockChatStorageRepository_Expecter) ListAll(ctx interface{}) *MockChatStorageRepository_ListAll_Call {
+	return &MockChatStorageRepository_ListAll_Call{Call: _e.mock.On("ListAll", ctx)}
 }
 
-func (_c *MockChatStorageRepository_FindByUserID_Call) Run(run func(ctx context.Context, userId string)) *MockChatStorageRepository_FindByUserID_Call {
+func (_c *MockChatStorageRepository_ListAll_Call) Run(run func(ctx context.Context)) *MockChatStorageRepository_ListAll_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
 		run(
 			arg0,
-			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockChatStorageRepository_FindByUserID_Call) Return(chatSummarys []*entity.ChatSummary, err error) *MockChatStorageRepository_FindByUserID_Call {
+func (_c *MockChatStorageRepository_ListAll_Call) Return(chatSummarys []*entity.ChatSummary, err error) *MockChatStorageRepository_ListAll_Call {
 	_c.Call.Return(chatSummarys, err)
 	return _c
 }
 
-func (_c *MockChatStorageRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userId string) ([]*entity.ChatSummary, error)) *MockChatStorageRepository_FindByUserID_Call {
+func (_c *MockChatStorageRepository_ListAll_Call) RunAndReturn(run func(ctx context.Context) ([]*entity.ChatSummary, error)) *MockChatStorageRepository_ListAll_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Read provides a mock function for the type MockChatStorageRepository
-func (_mock *MockChatStorageRepository) Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
-	ret := _mock.Called(ctx, userId, chatId)
+func (_mock *MockChatStorageRepository) Read(ctx context.Context, chatId string) (*entity.Chat, error) {
+	ret := _mock.Called(ctx, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Read")
@@ -236,18 +224,18 @@ func (_mock *MockChatStorageRepository) Read(ctx context.Context, userId string,
 
 	var r0 *entity.Chat
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*entity.Chat, error)); ok {
-		return returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*entity.Chat, error)); ok {
+		return returnFunc(ctx, chatId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *entity.Chat); ok {
-		r0 = returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *entity.Chat); ok {
+		r0 = returnFunc(ctx, chatId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.Chat)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, chatId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -261,13 +249,12 @@ type MockChatStorageRepository_Read_Call struct {
 
 // Read is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userId string
 //   - chatId string
-func (_e *MockChatStorageRepository_Expecter) Read(ctx interface{}, userId interface{}, chatId interface{}) *MockChatStorageRepository_Read_Call {
-	return &MockChatStorageRepository_Read_Call{Call: _e.mock.On("Read", ctx, userId, chatId)}
+func (_e *MockChatStorageRepository_Expecter) Read(ctx interface{}, chatId interface{}) *MockChatStorageRepository_Read_Call {
+	return &MockChatStorageRepository_Read_Call{Call: _e.mock.On("Read", ctx, chatId)}
 }
 
-func (_c *MockChatStorageRepository_Read_Call) Run(run func(ctx context.Context, userId string, chatId string)) *MockChatStorageRepository_Read_Call {
+func (_c *MockChatStorageRepository_Read_Call) Run(run func(ctx context.Context, chatId string)) *MockChatStorageRepository_Read_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -277,14 +264,9 @@ func (_c *MockChatStorageRepository_Read_Call) Run(run func(ctx context.Context,
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -295,7 +277,7 @@ func (_c *MockChatStorageRepository_Read_Call) Return(chat *entity.Chat, err err
 	return _c
 }
 
-func (_c *MockChatStorageRepository_Read_Call) RunAndReturn(run func(ctx context.Context, userId string, chatId string) (*entity.Chat, error)) *MockChatStorageRepository_Read_Call {
+func (_c *MockChatStorageRepository_Read_Call) RunAndReturn(run func(ctx context.Context, chatId string) (*entity.Chat, error)) *MockChatStorageRepository_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }
