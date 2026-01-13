@@ -99,6 +99,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 		return nil, err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &entity.Token{
 		UserID:    dbToken.UserID,
 		Token:     dbToken.Token,
