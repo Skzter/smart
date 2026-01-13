@@ -23,7 +23,7 @@ func newTestLogger() *slog.Logger {
 func newTestCacheService(mockRepo *sharedRepoMocks.MockCache) *cacheService {
 	return &cacheService{
 		log:  newTestLogger(),
-		cfg:  &config.Config{},
+		cfg:  &config.Suproxy{},
 		repo: mockRepo,
 		ttls: entity.CacheTTLPolicy{
 			SupplierOK:   10 * time.Minute,

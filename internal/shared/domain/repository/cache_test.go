@@ -38,7 +38,7 @@ func TestNewRedisCache(t *testing.T) {
 	tests := []struct {
 		name     string
 		logger   *slog.Logger
-		cfg      *config.Config
+		cfg      *config.Suproxy
 		wantErr  bool
 		wantAddr string
 	}{
@@ -51,20 +51,20 @@ func TestNewRedisCache(t *testing.T) {
 		{
 			name:     "nil cfg.Redis → default options",
 			logger:   newCacheTestLogger(),
-			cfg:      &config.Config{Redis: nil},
+			cfg:      &config.Suproxy{Redis: nil},
 			wantErr:  false,
 			wantAddr: "localhost:6379",
 		},
 		{
 			name:    "nil logger → error",
 			logger:  nil,
-			cfg:     &config.Config{},
+			cfg:     &config.Suproxy{},
 			wantErr: true,
 		},
 		{
 			name:   "full valid redis config",
 			logger: newCacheTestLogger(),
-			cfg: &config.Config{
+			cfg: &config.Suproxy{
 				Redis: &config.RedisConfig{
 					Addr:     "localhost:9999",
 					Password: "pw",

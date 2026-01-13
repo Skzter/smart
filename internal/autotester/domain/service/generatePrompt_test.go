@@ -24,7 +24,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 	openai := mocks.NewMockOpenAI(t)
 	taglist := mocks.NewMockTaglistStorage(t)
 	logger := slog.Default()
-	cfg := config.Config{}
+	cfg := config.Autotester{}
 	validator := autotesterMocks.NewMockValidator(t)
 	tracer := otel.Tracer("test")
 
@@ -32,7 +32,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 		name      string
 		openai    srv.OpenAI
 		taglist   srv.TaglistStorage
-		config    *config.Config
+		config    *config.Autotester
 		logger    *slog.Logger
 		validator Validator
 		wantErr   bool
@@ -100,7 +100,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 
 func TestGeneratePrompt(t *testing.T) {
 	logger := slog.Default()
-	cfg := &config.Config{
+	cfg := &config.Autotester{
 		Prompts: &config.Prompts{
 			AutoPlaywrightPromptT: "system prompt %s",
 		},

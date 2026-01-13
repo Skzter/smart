@@ -23,13 +23,13 @@ import (
 func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
 	logger := slog.Default()
-	cfg := config.Config{}
+	cfg := config.Autotester{}
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
 		service srv.OpenAI
-		config  *config.Config
+		config  *config.Autotester
 		logger  *slog.Logger
 		wantErr bool
 	}{
@@ -80,7 +80,7 @@ func TestNewValidatorService(t *testing.T) {
 func TestValidatePrompt(t *testing.T) {
 	// Setup
 	serviceMock := mocks.NewMockOpenAI(t)
-	cfg := &config.Config{
+	cfg := &config.Autotester{
 		Model: "gpt-4",
 		Prompts: &config.Prompts{
 			ValidationPrompt: "You are a helpful assistant.",
@@ -187,7 +187,7 @@ func TestValidatePrompt(t *testing.T) {
 
 func TestValidateRequest(t *testing.T) {
 	serviceMock := mocks.NewMockOpenAI(t)
-	cfg := &config.Config{}
+	cfg := &config.Autotester{}
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	svc, _ := NewValidatorService(serviceMock, cfg, logger, tracer)
@@ -287,7 +287,7 @@ func TestValidateChat(t *testing.T) {
 	serviceMock := mocks.NewMockOpenAI(t)
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
-	svc, err := NewValidatorService(serviceMock, &config.Config{}, logger, tracer)
+	svc, err := NewValidatorService(serviceMock, &config.Autotester{}, logger, tracer)
 	if err != nil {
 		t.Fatalf("failed to create validator service: %v", err)
 	}
@@ -420,7 +420,7 @@ func TestValidateMessages(t *testing.T) {
 	serviceMock := mocks.NewMockOpenAI(t)
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
-	svc, err := NewValidatorService(serviceMock, &config.Config{}, logger, tracer)
+	svc, err := NewValidatorService(serviceMock, &config.Autotester{}, logger, tracer)
 	if err != nil {
 		t.Fatalf("failed to create validator service: %v", err)
 	}

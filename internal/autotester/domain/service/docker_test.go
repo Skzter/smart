@@ -25,7 +25,7 @@ func TestNewDocker(t *testing.T) {
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		config  *config.Config
+		config  *config.Autotester
 		client  DockerClient
 		wantErr bool
 	}{

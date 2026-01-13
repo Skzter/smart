@@ -28,13 +28,13 @@ type CacheService interface {
 // cacheService struct implements CacheService and contains the main cache logic
 type cacheService struct {
 	log  *slog.Logger
-	cfg  *config.Config
+	cfg  *config.Suproxy
 	repo sharedRepository.Cache
 	ttls entity.CacheTTLPolicy
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Config, repo sharedRepository.Cache) (CacheService, error) {
+func NewCacheService(log *slog.Logger, cfg *config.Suproxy, repo sharedRepository.Cache) (CacheService, error) {
 	if err := assert.NotNil(log, cfg, repo); err != nil {
 		return nil, err
 	}

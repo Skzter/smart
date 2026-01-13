@@ -42,7 +42,7 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 
 	// Create Redis config pointing to the test container
 	logger := newIntegrationLogger()
-	cfg := &config.Config{
+	cfg := &config.Suproxy{
 		Redis: &config.RedisConfig{
 			Addr:     addr,
 			Password: "",

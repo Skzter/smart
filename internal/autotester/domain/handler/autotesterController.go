@@ -15,7 +15,7 @@ import (
 // AutotesterController is the controller for autotesting requests.
 // It encapsulates logging and access to the OpenAI service.
 type AutotesterController struct {
-	config                       *config.Config
+	config                       *config.Autotester
 	logger                       *slog.Logger
 	validationService            service.Validator
 	generationService            service.GeneratePrompt
@@ -32,7 +32,7 @@ type AutotesterController struct {
 // Returns an initialized controller or an error.
 func NewAutotesterController(
 	logger *slog.Logger,
-	config *config.Config,
+	config *config.Autotester,
 	validationService service.Validator,
 	generationService service.GeneratePrompt,
 	localTestcaseStorageService service.TestcaseLocalStorageService,

@@ -35,7 +35,7 @@ type redisCache struct {
 }
 
 // NewRedisCache initializes a new Redis-based cache implementation.
-func NewRedisCache(logger *slog.Logger, cfg *config.Config) (Cache, error) {
+func NewRedisCache(logger *slog.Logger, cfg *config.Suproxy) (Cache, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, fmt.Errorf("logger cannot be nil, %w", err)
 	}

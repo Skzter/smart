@@ -27,7 +27,7 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
 	wire.Build(
 		shared.SharedProviderSet,
 		LoggerProvider,
@@ -63,17 +63,17 @@ func RouterProvider(logger *slog.Logger, controller *handler.AutotesterControlle
 	return application.NewRouter(logger, controller, isHeadless)
 }
 
-func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
+func TaglistConfigProvider(cfg *config.Autotester) *sharedConfig.Taglist {
 	return cfg.TaglistConfig
 }
 
 // LoggerProvider provides a new logger.
-func LoggerProvider(cfg *config.Config) *slog.Logger {
+func LoggerProvider(cfg *config.Autotester) *slog.Logger {
 	return logger.NewLogger(cfg.LogLevel)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
+func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Autotester, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
@@ -97,7 +97,7 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
 }
 
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
@@ -108,7 +108,7 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tra
 }
 
 // FileSystemProvider provides a new filesystem.
-func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
+func FileSystemProvider(cfg *config.Autotester) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
@@ -116,7 +116,7 @@ func DockerClientProvider() (service.DockerClient, error) {
 	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
 
-func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
+func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Autotester, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
 
@@ -124,7 +124,7 @@ func TestCaseStorageRepositoryProvider(
 	logger *slog.Logger,
 	s3Wrapper wrapperService.S3StorageWrapper,
 	parquetWrapper wrapperService.ParquetFileWrapper[entity.TestCase],
-	cfg *config.Config,
+	cfg *config.Autotester,
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
