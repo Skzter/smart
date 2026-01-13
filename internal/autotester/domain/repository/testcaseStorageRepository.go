@@ -75,7 +75,10 @@ func NewTestcaseStorageRepository(
 // nolint:dupl
 func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return "", fmt.Errorf("context must not be nil: %w", err)
+		r.logger.Error("context must not be nil",
+			slog.Any("error", err),
+		)
+		return "", sharedErrors.ErrInternalServer
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Create")
@@ -133,7 +136,10 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("context must not be nil: %w", err)
+		r.logger.Error("context must not be nil",
+			slog.Any("error", err),
+		)
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Read")
@@ -182,7 +188,10 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 // Returns a slice of TestcaseMetadata containing key, author, timestamps, and name for each test case.
 func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("context must not be nil: %w", err)
+		r.logger.Error("context must not be nil",
+			slog.Any("error", err),
+		)
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
@@ -190,9 +199,10 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 
 	fileKeys, err := r.s3Wrapper.ListParquetFiles(ctx, r.s3Prefix)
 	if err != nil {
+		r.logger.Error("failed to list all parquet files", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to list all parquet files")
-		return nil, fmt.Errorf("failed to list all parquet files: %w", err)
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	allMetadata := make([]*entity.TestcaseMetadata, 0, len(fileKeys))
@@ -232,7 +242,10 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 // nolint:dupl
 func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context must not be nil: %w", err)
+		r.logger.Error("context must not be nil",
+			slog.Any("error", err),
+		)
+		return sharedErrors.ErrInternalServer
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Update")
@@ -257,7 +270,7 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 		r.logger.Error("failed to check if key exists", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to read old metadata")
-		return fmt.Errorf("failed to read old metadata: %w", err)
+		return sharedErrors.ErrInternalServer
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(ctx, *obj)
@@ -298,7 +311,10 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context must not be nil: %w", err)
+		r.logger.Error("context must not be nil",
+			slog.Any("error", err),
+		)
+		return sharedErrors.ErrInternalServer
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Delete")
