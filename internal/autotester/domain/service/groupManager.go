@@ -143,6 +143,14 @@ func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatI
 		return errors.ErrChatAlreadyInGroup
 	}
 
+	_, err = g.groupStorage.Load(ctx, groupId)
+	if err != nil {
+		span.RecordError(err)
+		g.logger.Error("error while checking groups existance", "err", err)
+		span.SetStatus(codes.Error, "error while checking group")
+		return errors.ErrAddingToInvalidGroup
+	}
+
 	chat.Groups = append(chat.Groups, groupId)
 
 	if err := g.chatStorage.SaveChat(ctx, chat); err != nil {

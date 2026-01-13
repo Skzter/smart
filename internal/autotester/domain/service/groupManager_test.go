@@ -279,6 +279,7 @@ func TestGroupManager_AddChatToGroup(t *testing.T) {
 					Groups: []string{}, // Empty groups
 				}
 				chatStorage.On("LoadChat", mock.Anything, chatId).Return(chat, nil).Once()
+				groupStorage.On("Load", mock.Anything, groupId).Return(&entity.Group{Id: groupId}, nil).Once()
 				chatStorage.On("SaveChat", mock.Anything, mock.MatchedBy(func(c *entity.Chat) bool {
 					return c.Id == chatId && len(c.Groups) == 1 && c.Groups[0] == groupId
 				})).Return(nil).Once()
@@ -297,6 +298,7 @@ func TestGroupManager_AddChatToGroup(t *testing.T) {
 					Groups: []string{"group2", "group3"}, // Already has other groups
 				}
 				chatStorage.On("LoadChat", mock.Anything, chatId).Return(chat, nil).Once()
+				groupStorage.On("Load", mock.Anything, groupId).Return(&entity.Group{Id: groupId}, nil).Once()
 				chatStorage.On("SaveChat", mock.Anything, mock.MatchedBy(func(c *entity.Chat) bool {
 					return c.Id == chatId && len(c.Groups) == 3 &&
 						c.Groups[0] == "group2" && c.Groups[1] == "group3" && c.Groups[2] == groupId
@@ -336,6 +338,24 @@ func TestGroupManager_AddChatToGroup(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name: "error loading group",
+			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
+				chat := &entity.Chat{
+					Id:     chatId,
+					Author: userId,
+					Groups: []string{},
+				}
+				chatStorage.On("LoadChat", mock.Anything, chatId).Return(chat, nil).Once()
+				groupStorage.On("Load", mock.Anything, groupId).Return(nil, errors.New("group not found")).Once()
+				// No SaveChat call expected
+			},
+			ctx:       context.Background(),
+			groupId:   groupId,
+			chatId:    chatId,
+			expectErr: true,
+			errType:   sharedErrors.ErrAddingToInvalidGroup,
+		},
+		{
 			name: "error saving chat",
 			setupMock: func(chatStorage *mocks.MockChatStorageService, groupStorage *mocks.MockGroupStorage) {
 				chat := &entity.Chat{
@@ -344,6 +364,7 @@ func TestGroupManager_AddChatToGroup(t *testing.T) {
 					Groups: []string{},
 				}
 				chatStorage.On("LoadChat", mock.Anything, chatId).Return(chat, nil).Once()
+				groupStorage.On("Load", mock.Anything, groupId).Return(&entity.Group{Id: groupId}, nil).Once()
 				chatStorage.On("SaveChat", mock.Anything, mock.Anything).Return(errors.New("save error")).Once()
 			},
 			ctx:       context.Background(),

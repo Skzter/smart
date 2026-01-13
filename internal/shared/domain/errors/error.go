@@ -14,7 +14,9 @@ var (
 	//lint:ignore ST1005 deutsche sprache
 	ErrGeneration = errors.New("Generate Error - bitte nochmal versuchen")
 	//lint:ignore ST1005 deutsche sprache
-	ErrChatAlreadyInGroup = errors.New("Chat ist bereits in Gruppe")
+	ErrChatAlreadyInGroup = errors.New("Fehler - Chat ist bereits in Gruppe")
+	//lint:ignore ST1005 deutsche sprache
+	ErrAddingToInvalidGroup = errors.New("Fehler - Chat konnte Gruppe nicht hinzugefügt werde: Gruppe existiert nicht")
 
 	ErrNilUserPrompt      = errors.New("request without user prompt")
 	ErrNilSystemPrompt    = errors.New("request without system prompt")
