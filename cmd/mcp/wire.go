@@ -59,10 +59,11 @@ func ProvideBaseURL(cfg *config.Config) string {
 
 // ProvideMcpServer creates the underlying mcp.Server from config
 func ProvideMcpServer(cfg *config.Config) *mcp.Server {
+	serverOpts := mcp.ServerOptions{HasResources: true}
 	impl := &mcp.Implementation{
 		Name:    cfg.McpServerImplementation.Name,
 		Version: cfg.McpServerImplementation.Version,
 	}
 
-	return mcp.NewServer(impl, nil)
+	return mcp.NewServer(impl, &serverOpts)
 }

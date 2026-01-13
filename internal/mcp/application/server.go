@@ -6,6 +6,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/resource"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/tools"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -59,6 +60,11 @@ func (m *McpServer) registerTools() error {
 		return err
 	}
 
+	testLogStreamResource, err := resource.NewTestLogStreamResource(m.logger, m.autotesterService)
+	if err != nil {
+		return err
+	}
+
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "get_template",
 		Description: "Retrieves the test generation template from the autotester backend",
@@ -80,6 +86,14 @@ func (m *McpServer) registerTools() error {
 
 	m.logger.Info("Registered tool: run_test")
 
+	m.server.AddResourceTemplate(&mcp.ResourceTemplate{
+		Name:        "testlog_stream",
+		Description: "Provides access to test execution logs",
+		URITemplate: "mcp://tests/{testId}/logs",
+		MIMEType:    "text/plain",
+	}, testLogStreamResource.ReadTestLogStream)
+
+	m.logger.Info("Registered resource template: mcp://tests/123/logs")
 	return nil
 }
 
