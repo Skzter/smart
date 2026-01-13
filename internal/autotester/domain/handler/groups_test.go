@@ -255,9 +255,20 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 		MockSetup      []MockSetup
 	}{
 		{
-			TestName: "Successfully assign chat to group",
+			TestName: "Successfully assign chat to single group",
 			RequestBody: `{
-				"groupId": "550e8400-e29b-41d4-a716-446655440000"
+				"groupIds": ["550e8400-e29b-41d4-a716-446655440000"]
+			}`,
+			ChatId:         "550e8400-e29b-41d4-a716-446655440001",
+			ExpectedStatus: http.StatusOK,
+			MockSetup: []MockSetup{
+				{Function: "AddChatToGroup", ExpectedResponse: []any{nil}},
+			},
+		},
+		{
+			TestName: "Successfully assign chat to multiple groups",
+			RequestBody: `{
+				"groupIds": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440002"]
 			}`,
 			ChatId:         "550e8400-e29b-41d4-a716-446655440001",
 			ExpectedStatus: http.StatusOK,
@@ -275,7 +286,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 		{
 			TestName: "Invalid UUID in URI",
 			RequestBody: `{
-				"groupId": "550e8400-e29b-41d4-a716-446655440000"
+				"groupIds": ["550e8400-e29b-41d4-a716-446655440000"]
 			}`,
 			ChatId:         "invalid-chat-id",
 			ExpectedStatus: http.StatusBadRequest,
@@ -284,7 +295,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 		{
 			TestName: "Invalid UUID in JSON",
 			RequestBody: `{
-				"groupId": "invalid-group-id"
+				"groupIds": ["invalid-group-id"]
 			}`,
 			ChatId:         "550e8400-e29b-41d4-a716-446655440001",
 			ExpectedStatus: http.StatusBadRequest,
@@ -293,7 +304,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 		{
 			TestName: "Group manager error",
 			RequestBody: `{
-				"groupId": "550e8400-e29b-41d4-a716-446655440000"
+				"groupIds": ["550e8400-e29b-41d4-a716-446655440000"]
 			}`,
 			ChatId:         "550e8400-e29b-41d4-a716-446655440001",
 			ExpectedStatus: http.StatusBadRequest,
@@ -325,11 +336,13 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 				if mc.Function == "AddChatToGroup" {
 					mockGroupManager.
 						On("AddChatToGroup", mock.Anything, mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-						Return(mc.ExpectedResponse...)
+						Return(mc.ExpectedResponse...).
+						Maybe()
 				}
 			}
 
 			req, _ := http.NewRequest(http.MethodPost, "/api/v1/chats/"+test.ChatId+"/groups", bytes.NewBufferString(test.RequestBody))
+
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)

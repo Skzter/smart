@@ -101,13 +101,15 @@ func (a *AutotesterController) HandleAssignChatToGroups(c *gin.Context) {
 		return
 	}
 
-	if err := a.groupManager.AddChatToGroup(ctx, body.GroupId, uri.ChatId); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to assign chat to group")
-		a.metricsService.IncRequestError("assign_chat_to_group_err")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
-		return
+	for _, groupId := range body.GroupIds {
+		if err := a.groupManager.AddChatToGroup(ctx, groupId, uri.ChatId); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to assign chat to group")
+			a.metricsService.IncRequestError("assign_chat_to_group_err")
+			a.metricsService.RecordRequestDuration(time.Since(start))
+			c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: err.Error()})
+			return
+		}
 	}
 
 	span.SetStatus(codes.Ok, "")
