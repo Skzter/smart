@@ -5,6 +5,8 @@
 package mocks
 
 import (
+	"context"
+
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -35,108 +37,52 @@ func (_m *MockMediaStorageService) EXPECT() *MockMediaStorageService_Expecter {
 	return &MockMediaStorageService_Expecter{mock: &_m.Mock}
 }
 
-// GetScreenshot provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) GetScreenshot(testId string) ([]byte, error) {
-	ret := _mock.Called(testId)
+// GetScreenshotUrl provides a mock function for the type MockMediaStorageService
+func (_mock *MockMediaStorageService) GetScreenshotUrl(ctx context.Context, testId string) (string, error) {
+	ret := _mock.Called(ctx, testId)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetScreenshot")
-	}
-
-	var r0 []byte
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) ([]byte, error)); ok {
-		return returnFunc(testId)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) []byte); ok {
-		r0 = returnFunc(testId)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(testId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// GetVideo provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) GetVideo(testId string) ([]byte, error) {
-	ret := _mock.Called(testId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetVideo")
-	}
-
-	var r0 []byte
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) ([]byte, error)); ok {
-		return returnFunc(testId)
-	}
-	if returnFunc, ok := ret.Get(0).(func(string) []byte); ok {
-		r0 = returnFunc(testId)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(testId)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// GetScreenshotPath provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) GetScreenshotPath(testId string) (string, error) {
-	ret := _mock.Called(testId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetScreenshotPath")
+		panic("no return value specified for GetScreenshotUrl")
 	}
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, testId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, testId)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, testId)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// GetVideoPath provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) GetVideoPath(testId string) (string, error) {
-	ret := _mock.Called(testId)
+// GetVideoUrl provides a mock function for the type MockMediaStorageService
+func (_mock *MockMediaStorageService) GetVideoUrl(ctx context.Context, testId string) (string, error) {
+	ret := _mock.Called(ctx, testId)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetVideoPath")
+		panic("no return value specified for GetVideoUrl")
 	}
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, testId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, testId)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, testId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -144,8 +90,8 @@ func (_mock *MockMediaStorageService) GetVideoPath(testId string) (string, error
 }
 
 // HasMedia provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) HasMedia(testId string) (bool, bool) {
-	ret := _mock.Called(testId)
+func (_mock *MockMediaStorageService) HasMedia(ctx context.Context, testId string) (bool, bool) {
+	ret := _mock.Called(ctx, testId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for HasMedia")
@@ -153,61 +99,44 @@ func (_mock *MockMediaStorageService) HasMedia(testId string) (bool, bool) {
 
 	var r0 bool
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (bool, bool)); ok {
-		return returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (bool, bool)); ok {
+		return returnFunc(ctx, testId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) bool); ok {
+		r0 = returnFunc(ctx, testId)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
-		r1 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) bool); ok {
+		r1 = returnFunc(ctx, testId)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
 	return r0, r1
 }
 
-// GetMediaDir provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) GetMediaDir(testId string) (string, error) {
-	ret := _mock.Called(testId)
+// UploadMedia provides a mock function for the type MockMediaStorageService
+func (_mock *MockMediaStorageService) UploadMedia(ctx context.Context, testId string, localDir string) (int, error) {
+	ret := _mock.Called(ctx, testId, localDir)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetMediaDir")
+		panic("no return value specified for UploadMedia")
 	}
 
-	var r0 string
+	var r0 int
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string) (string, error)); ok {
-		return returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (int, error)); ok {
+		return returnFunc(ctx, testId, localDir)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		r0 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) int); ok {
+		r0 = returnFunc(ctx, testId, localDir)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(int)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
-		r1 = returnFunc(testId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = returnFunc(ctx, testId, localDir)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
-}
-
-// CleanupMedia provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) CleanupMedia(testId string) error {
-	ret := _mock.Called(testId)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CleanupMedia")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(string) error); ok {
-		r0 = returnFunc(testId)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
 }
