@@ -107,23 +107,23 @@ func (_c *MockAutotesterAPIService_ExecuteTest_Call) RunAndReturn(run func(ctx c
 }
 
 // GenerateTest provides a mock function for the type MockAutotesterAPIService
-func (_mock *MockAutotesterAPIService) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
+func (_mock *MockAutotesterAPIService) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestToolResponse, error) {
 	ret := _mock.Called(ctx, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateTest")
 	}
 
-	var r0 *entity.GenerateTestResponse
+	var r0 *entity.GenerateTestToolResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) (*entity.GenerateTestToolResponse, error)); ok {
 		return returnFunc(ctx, request)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) *entity.GenerateTestResponse); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) *entity.GenerateTestToolResponse); ok {
 		r0 = returnFunc(ctx, request)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*entity.GenerateTestResponse)
+			r0 = ret.Get(0).(*entity.GenerateTestToolResponse)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest) error); ok {
@@ -164,12 +164,12 @@ func (_c *MockAutotesterAPIService_GenerateTest_Call) Run(run func(ctx context.C
 	return _c
 }
 
-func (_c *MockAutotesterAPIService_GenerateTest_Call) Return(generateTestResponse *entity.GenerateTestResponse, err error) *MockAutotesterAPIService_GenerateTest_Call {
-	_c.Call.Return(generateTestResponse, err)
+func (_c *MockAutotesterAPIService_GenerateTest_Call) Return(generateTestToolResponse *entity.GenerateTestToolResponse, err error) *MockAutotesterAPIService_GenerateTest_Call {
+	_c.Call.Return(generateTestToolResponse, err)
 	return _c
 }
 
-func (_c *MockAutotesterAPIService_GenerateTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)) *MockAutotesterAPIService_GenerateTest_Call {
+func (_c *MockAutotesterAPIService_GenerateTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestToolResponse, error)) *MockAutotesterAPIService_GenerateTest_Call {
 	_c.Call.Return(run)
 	return _c
 }
