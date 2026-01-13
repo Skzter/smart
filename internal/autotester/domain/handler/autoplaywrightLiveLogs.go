@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gin-gonic/gin"
@@ -124,6 +125,14 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 
 		case status := <-statusCh:
 			c.SSEvent("status", status)
+
+			// Upload media files to S3 (regardless of test result - we want media for both passed and failed tests)
+			mediaDir := filepath.Join(a.config.MediaDirAutopw, testID)
+			if count, err := a.mediaStorageService.UploadMedia(c.Request.Context(), testID, mediaDir); err != nil {
+				a.logger.Error("failed to upload media files: " + err.Error())
+			} else if count > 0 {
+				a.logger.Info("uploaded media files to S3", "testId", testID, "count", count)
+			}
 
 			if status.StatusCode == 0 {
 				code, err := a.localTestcaseStorageService.Read(testID, containerInfo.UserID, containerInfo.SessionID)
