@@ -203,17 +203,17 @@ tasks:
     desc: Stops postgres container
     dir: "deployments"
     cmds:
-      - docker compose -f compose.dev.yml down
+      - docker compose -f compose.dev.yml stop postgres 
 
   goose-up:
     desc: Migrates postgres database up
-    dir: "internal/autotester/infrastructure/database/sql/schema"
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
     cmds:
       - go tool goose postgres {{.DB_URL}} up
 
   goose-down:
     desc: Migrates postgres database down
-    dir: "internal/autotester/infrastructure/database/sql/schema"
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
     cmds:
       - go tool goose postgres {{.DB_URL}} down
 

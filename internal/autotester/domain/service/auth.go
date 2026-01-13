@@ -83,7 +83,7 @@ func (a *auth) GenerateToken(ctx context.Context, userId string) (*entity.Token,
 		return nil, err
 	}
 	token := rand.Text()
-	expiresAt := time.Now().UTC().Add(time.Hour * time.Duration(a.config.TokenExpirationTimeHours))
+	expiresAt := time.Now().UTC().Add(24 * time.Hour * time.Duration(a.config.TokenExpirationTimeDays))
 	dbToken, err = a.db.UpsertToken(ctx, database.UpsertTokenParams{
 		UserID:    userId,
 		Token:     token,

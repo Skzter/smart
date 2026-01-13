@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // HandleGenerateToken takes a UserID and checks the database for a valid token.
@@ -22,7 +22,7 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 	if err := c.BindJSON(&user); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to bind JSON")
-		a.metricsService.IncRequestError("invalid JSON")
+		a.metricsService.IncRequestError("invalid_JSON")
 		a.metricsService.RecordRequestDuration(time.Since(start))
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
@@ -30,8 +30,8 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 		})
 		return
 	}
-	if user.UserId == "" {
-		span.RecordError(fmt.Errorf("missing required parameter"))
+	if err := assert.StringNotEmpty(user.UserId); err != nil {
+		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing required parameter")
 		a.metricsService.IncRequestError("missing_parameters")
 		a.metricsService.RecordRequestDuration(time.Since(start))
