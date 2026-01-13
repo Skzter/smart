@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	entity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity/wrapper"
+	sharedError "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -211,7 +212,7 @@ func (s *S3Wrapper) UploadParquetFile(ctx context.Context, key string, data []by
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return fmt.Errorf("failed to upload parquet file: %w", err)
+		return sharedError.ErrInternalServer
 	}
 
 	span.AddEvent("Parquet file uploaded", trace.WithAttributes(
@@ -266,6 +267,7 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 		)
 		return nil, nil, fmt.Errorf("failed to download parquet file: %w", err)
 	}
+
 	defer func() {
 		if closeErr := result.Body.Close(); closeErr != nil {
 			s.logger.Error("Failed to close response body",
@@ -284,7 +286,7 @@ func (s *S3Wrapper) DownloadParquetFile(ctx context.Context, key string) ([]byte
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return nil, nil, fmt.Errorf("failed to read downloaded file: %w", err)
+		return nil, nil, sharedError.ErrInternalServer
 	}
 
 	span.AddEvent("Parquet file downloaded", trace.WithAttributes(
@@ -337,7 +339,7 @@ func (s *S3Wrapper) ListParquetFiles(ctx context.Context, prefix string) ([]stri
 				slog.String("bucket", s.config.Bucket),
 				slog.String("error", err.Error()),
 			)
-			return nil, fmt.Errorf("failed to list objects: %w", err)
+			return nil, sharedError.ErrInternalServer
 		}
 
 		for _, obj := range output.Contents {
@@ -398,7 +400,7 @@ func (s *S3Wrapper) DeleteParquetFile(ctx context.Context, key string) error {
 			slog.String("key", key),
 			slog.String("error", err.Error()),
 		)
-		return fmt.Errorf("failed to delete parquet file: %w", err)
+		return sharedError.ErrInternalServer
 	}
 
 	span.AddEvent("Parquet file deleted", trace.WithAttributes(
