@@ -15,7 +15,7 @@ vi.mock("svelte-sonner", () => ({
 
 // Mock API
 vi.mock("$lib/api", () => ({
-    getUserChats: vi.fn(),
+    getChats: vi.fn(),
 }));
 
 // Mock shared state

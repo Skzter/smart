@@ -134,7 +134,7 @@ describe("API Functions", () => {
             },
         ];
 
-        it("should make a GET request to /chats/:userId", async () => {
+        it("should make a GET request to /chats", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: { chatSummarys: mockChatSummaries },
@@ -144,7 +144,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/${mockUserId}/chats`,
+                url: `/chats`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatSummaries);
@@ -384,7 +384,7 @@ describe("API Functions", () => {
             lastAutoPlaywrightPrompt: "last prompt here",
         };
 
-        it("should make a GET request to /users/:userId/chats/:chatId", async () => {
+        it("should make a GET request to /chats/:chatId", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
@@ -392,13 +392,13 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/${mockUserId}/chats/${mockChatId}`,
+                url: `/chats/${mockChatId}`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatResponse);
         });
 
-        it("should use the current user and chat ids from shared state", async () => {
+        it("should use the current chat id from shared state", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
@@ -409,7 +409,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/differentUser/chats/differentChat`,
+                url: `/chats/differentChat`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
         });
