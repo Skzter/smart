@@ -147,7 +147,7 @@ func (g *groupManager) AddChatToGroup(ctx context.Context, groupId string, chatI
 
 	if err := g.chatStorage.SaveChat(ctx, chat); err != nil {
 		span.RecordError(err)
-		g.logger.Error("error while loading storing", "err", err)
+		g.logger.Error("error while storing chat", "err", err)
 		span.SetStatus(codes.Error, "error while storing modified chat")
 		return errors.ErrInternalServer
 	}

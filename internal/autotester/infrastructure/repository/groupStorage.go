@@ -241,12 +241,6 @@ func (r *groupStorage) ListAll(ctx context.Context) ([]*entity.Group, error) {
 		span.SetStatus(codes.Error, "failed to list group parquet files")
 		return nil, fmt.Errorf("failed to list group parquet files: %w", err)
 	}
-	if len(keys) == 0 {
-		err := fmt.Errorf("no group files found in storage")
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "no groups found")
-		return nil, err
-	}
 
 	result := make([]*entity.Group, 0, len(keys))
 	for _, key := range keys {

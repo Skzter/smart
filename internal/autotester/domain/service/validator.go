@@ -117,6 +117,7 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 		return fmt.Errorf("missing fields %w", err)
 	}
 
+	// asserts that chat doesn't contain empty chatIds
 	if err := assert.StringsNotEmpty(
 		chat.Groups...,
 	); err != nil {

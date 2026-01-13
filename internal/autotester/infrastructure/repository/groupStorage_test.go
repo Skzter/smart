@@ -510,7 +510,7 @@ func listAllGroupTestCaseProvider(ctx context.Context) []struct {
 					Return([]string{}, nil).Once()
 			},
 			wantCount: 0,
-			wantErr:   true,
+			wantErr:   false,
 			ctx:       ctx,
 		},
 		{
