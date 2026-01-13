@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	tcRedis "github.com/testcontainers/testcontainers-go/modules/redis"
 
+	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
 // newIntegrationLogger returns a logger that discards all output
@@ -52,7 +52,7 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 	}
 
 	// Initialize real Redis cache repository
-	cacheRepo, err := repository.NewRedisCache(logger, cfg)
+	cacheRepo, err := sharedRepository.NewRedisCache(logger, cfg)
 	require.NoError(t, err)
 	defer func() {
 		_ = cacheRepo.Close() // ignore close error intentionally

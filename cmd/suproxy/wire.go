@@ -117,11 +117,11 @@ func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (
 }
 
 // RedisCacheProvider provides a new RedisCache
-func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (repository.Cache, error) {
-	return repository.NewRedisCache(log, cfg)
+func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (sharedRepo.Cache, error) {
+	return sharedRepo.NewRedisCache(log, cfg)
 }
 
 // CacheServiceProvider provides a new CacheService
-func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) (service.CacheService, error) {
+func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo sharedRepo.Cache) (service.CacheService, error) {
 	return service.NewCacheService(log, cfg, repo)
 }

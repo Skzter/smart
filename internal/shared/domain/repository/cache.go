@@ -15,7 +15,7 @@ import (
 // RedisClient wraps the underlying redis client for easier mocking.
 type RedisClient interface {
 	Get(ctx context.Context, key string) *redis.StringCmd
-	Set(ctx context.Context, key string, value interface{}, ttl time.Duration) *redis.StatusCmd
+	Set(ctx context.Context, key string, value any, ttl time.Duration) *redis.StatusCmd
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	Close() error
 }

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
+	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
 // CacheService interface defines the business logic for caching supplier or mock responses
@@ -29,12 +29,12 @@ type CacheService interface {
 type cacheService struct {
 	log  *slog.Logger
 	cfg  *config.Config
-	repo repository.Cache
+	repo sharedRepository.Cache
 	ttls entity.CacheTTLPolicy
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Config, repo repository.Cache) (CacheService, error) {
+func NewCacheService(log *slog.Logger, cfg *config.Config, repo sharedRepository.Cache) (CacheService, error) {
 	if err := assert.NotNil(log, cfg, repo); err != nil {
 		return nil, err
 	}
