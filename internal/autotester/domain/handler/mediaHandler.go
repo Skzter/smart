@@ -9,6 +9,7 @@ import (
 // HandleGetScreenshot handles requests for test screenshots.
 // GET /api/v1/test/:testId/screenshot
 // Returns a JSON response with the S3 URL to the screenshot.
+// nolint:dupl
 func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetScreenshot")
 	defer span.End()
@@ -46,6 +47,7 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 // HandleGetVideo handles requests for test videos.
 // GET /api/v1/test/:testId/video
 // Returns a JSON response with the S3 URL to the video.
+// nolint:dupl
 func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetVideo")
 	defer span.End()
