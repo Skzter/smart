@@ -2,9 +2,7 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/codes"
@@ -23,10 +21,9 @@ import (
 //nolint:funlen
 func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	start := time.Now()
-	ctx := c.Request.Context()
 	var userRequest entity.UserRequest
 
-	_, span := a.tracer.Start(ctx, "autotesterController.HandleChatRequest")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleChatRequest")
 	defer span.End()
 
 	if err := c.BindJSON(&userRequest); err != nil {
@@ -46,7 +43,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		return
 	}
 
-	chat, err := a.chatManager.LoadChat(c, userRequest)
+	chat, err := a.chatManager.LoadChat(ctx, userRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: sharedErrors.ErrInternalServer.Error()})
 		a.logger.Error("Loading Chat failed", "error", err)
@@ -56,13 +53,13 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	defer func() {
 		// only update chat when no errors
 		if c.Writer.Status() == http.StatusOK {
-			if err := a.chatManager.SaveChat(c, chat); err != nil {
+			if err := a.chatManager.SaveChat(ctx, chat, userRequest.UserId); err != nil {
 				a.logger.Error("Updating stored chat failed", "err", err.Error())
 			}
 		}
 	}()
 
-	generatedCode, err := a.generationService.GeneratePrompt(c, chat, &userRequest)
+	generatedCode, err := a.generationService.GeneratePrompt(ctx, chat, &userRequest)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to generate prompt")
@@ -79,7 +76,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 	c.JSON(http.StatusOK,
 		&entity.ResponseForUser{
 			Message: sharedEntity.Message{Body: generatedCode},
-			UserId:  chat.UserId,
+			UserId:  userRequest.UserId,
 			ChatId:  chat.Id,
 		})
 }
@@ -111,7 +108,7 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 	defer func() {
 		// only update chat when no errors
 		if c.Writer.Status() == http.StatusOK {
-			if err := a.chatManager.SaveChat(c, chat); err != nil {
+			if err := a.chatManager.SaveChat(c, chat, userRequest.UserId); err != nil {
 				a.logger.Error("Updating stored chat failed", "err", err.Error())
 			}
 		}
@@ -128,7 +125,7 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 		c.JSON(http.StatusOK,
 			&entity.ResponseForUser{
 				Message: sharedEntity.Message{Body: msg},
-				UserId:  chat.UserId,
+				UserId:  userRequest.UserId,
 				ChatId:  chat.Id,
 			})
 		return
@@ -137,7 +134,7 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 	c.JSON(http.StatusOK,
 		entity.ResponseForUser{
 			Message: sharedEntity.Message{},
-			UserId:  chat.UserId,
+			UserId:  userRequest.UserId,
 			ChatId:  chat.Id,
 		})
 }
@@ -146,11 +143,10 @@ func (a *AutotesterController) HandleChatRequestValidity(c *gin.Context) {
 // Expects a JSON with UserRequestDTO and returns a ResponseForUser.
 func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	start := time.Now()
-	ctx := c.Request.Context()
 	var body entity.UserRequest
 	var resp entity.ResponseForUser
 
-	_, span := a.tracer.Start(ctx, "autotesterController.HandleUserInfoRequest")
+	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUserInfoRequest")
 	defer span.End()
 
 	if err := c.BindJSON(&body); err != nil {
@@ -168,34 +164,14 @@ func (a *AutotesterController) HandleUserInfoRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ResponseForUser{ChatId: resp.ChatId})
 }
 
-// HandleGetUserChats processes a request for all chats of a given user.
-// Expects an Auth0-style userId (e.g. auth0|687270280dca20b77cfdcf74) as URL parameter.
-func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
+// HandleGetChats processes a request for all chats, optionally filtered by groups.
+func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	start := time.Now()
-	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
-	var parameters entity.UserChatSummaryParameters
-	if err := c.ShouldBindUri(&parameters); err != nil {
-		a.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
-			Error: "Bad Request",
-		})
-		return
-	}
-	// checking if style: auth0|id is there
-	if !isValid(parameters.UserID) {
-		span.RecordError(fmt.Errorf("invalid user id: %s", parameters.UserID))
-		span.SetStatus(codes.Error, "invalid user id")
-		a.metricsService.IncRequestError("invalid_user_id")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("invalid id format")
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid id format"})
-		return
-	}
-
 	var queryParameters entity.UserChatSummaryQueryParameters
-	if err := c.ShouldBindQuery(&queryParameters); err != nil {
+	if err := c.BindQuery(&queryParameters); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "Bad Request",
@@ -203,14 +179,15 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 		return
 	}
 
-	chats, err := a.chatStorageService.LoadUserChats(c, parameters.UserID)
+	chats, err := a.chatStorageService.LoadSummaries(ctx, queryParameters.Groups...)
+
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to load user chats")
 		a.metricsService.IncRequestError("load_user_chats_failed")
 		a.metricsService.RecordRequestDuration(time.Since(start))
 		a.logger.Error(err.Error())
-		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "no history found for this user"})
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "failed to load chats"})
 		return
 	}
 
@@ -228,22 +205,15 @@ func (a *AutotesterController) HandleGetUserChats(c *gin.Context) {
 	})
 }
 
-func isValid(userId string) bool {
-	tokens := strings.Split(userId, "|")
-	if len(tokens) != 2 || tokens[0] != "auth0" || tokens[1] == "" {
-		return false
-	}
-	return true
-}
-
 // GetChatById returns a full chat including all messages for a given chatId and userId.
 func (a *AutotesterController) GetChatById(c *gin.Context) {
 	start := time.Now()
-	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
+
 	var parameters entity.UserChatsParameter
 
-	if err := c.ShouldBindUri(&parameters); err != nil {
+	if err := c.BindUri(&parameters); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "invalid parameters",
@@ -251,24 +221,14 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 		return
 	}
 
-	if !isValid(parameters.UserID) {
-		span.RecordError(fmt.Errorf("invalid user id: %s", parameters.UserID))
-		span.SetStatus(codes.Error, "invalid user id")
-		a.metricsService.IncRequestError("invalid_user_id")
-		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("invalid userId format", "userId", parameters.UserID)
-		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "invalid userId format"})
-		return
-	}
-
-	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), parameters.UserID, parameters.ChatID)
+	chat, err := a.chatStorageService.LoadChat(ctx, parameters.ChatID)
 	if err != nil {
 		if errors.Is(err, sharedErrors.ErrChatNotFound) {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "failed to find user chat")
 			a.metricsService.IncRequestError("find_user_chat_failed")
 			a.metricsService.RecordRequestDuration(time.Since(start))
-			a.logger.Info("chat not found", "chatId", parameters.ChatID, "userId", parameters.UserID)
+			a.logger.Info("chat not found", "chatId", parameters.ChatID)
 			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
 			return
 		}
@@ -276,7 +236,7 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 		span.SetStatus(codes.Error, "failed to load user chat")
 		a.metricsService.IncRequestError("load_user_chat_failed")
 		a.metricsService.RecordRequestDuration(time.Since(start))
-		a.logger.Error("LoadChat failed", "error", err, "chatId", parameters.ChatID, "userId", parameters.UserID)
+		a.logger.Error("LoadChat failed", "error", err, "chatId", parameters.ChatID)
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
 		return
 	}
