@@ -160,10 +160,7 @@ func TestHandleCreateGroup(t *testing.T) {
 			RequestBody: `{
 				"description": "A test group"
 			}`,
-			ExpectedStatus: http.StatusOK, // BindJSON will succeed but groupName will be empty
-			MockSetup: []MockSetup{
-				{Function: "Create", ExpectedResponse: []any{"group-uuid-123", nil}},
-			},
+			ExpectedStatus: http.StatusBadRequest,
 		},
 	}
 
