@@ -2,16 +2,15 @@ package handler
 
 import (
 	"net/http"
-	"os"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
 // HandleGetScreenshot handles requests for test screenshots.
 // GET /api/v1/test/:testId/screenshot
+// Returns a JSON response with the S3 URL to the screenshot.
 func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
-	_, span := a.tracer.Start(c, "autotesterController.HandleGetScreenshot")
+	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetScreenshot")
 	defer span.End()
 
 	testID := c.Param("testId")
@@ -21,16 +20,16 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 	}
 
 	// Check if screenshot exists
-	hasScreenshot, _ := a.mediaStorageService.HasMedia(testID)
+	hasScreenshot, _ := a.mediaStorageService.HasMedia(ctx, testID)
 	if !hasScreenshot {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no screenshot found for this test"})
 		return
 	}
 
-	// Get the screenshot path for serving via file
-	screenshotPath, err := a.mediaStorageService.GetScreenshotPath(testID)
+	// Get the screenshot URL from S3
+	screenshotUrl, err := a.mediaStorageService.GetScreenshotUrl(ctx, testID)
 	if err != nil {
-		a.logger.Error("failed to get screenshot path",
+		a.logger.Error("failed to get screenshot URL",
 			"testId", testID,
 			"error", err.Error(),
 		)
@@ -38,16 +37,17 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 		return
 	}
 
-	// Serve the file with proper content type
-	c.Header("Content-Type", "image/png")
-	c.Header("Cache-Control", "public, max-age=3600")
-	c.File(screenshotPath)
+	c.JSON(http.StatusOK, gin.H{
+		"testId": testID,
+		"url":    screenshotUrl,
+	})
 }
 
 // HandleGetVideo handles requests for test videos.
 // GET /api/v1/test/:testId/video
+// Returns a JSON response with the S3 URL to the video.
 func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
-	_, span := a.tracer.Start(c, "autotesterController.HandleGetVideo")
+	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetVideo")
 	defer span.End()
 
 	testID := c.Param("testId")
@@ -57,16 +57,16 @@ func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 	}
 
 	// Check if video exists
-	_, hasVideo := a.mediaStorageService.HasMedia(testID)
+	_, hasVideo := a.mediaStorageService.HasMedia(ctx, testID)
 	if !hasVideo {
 		c.JSON(http.StatusNotFound, gin.H{"error": "no video found for this test"})
 		return
 	}
 
-	// Get the video path
-	videoPath, err := a.mediaStorageService.GetVideoPath(testID)
+	// Get the video URL from S3
+	videoUrl, err := a.mediaStorageService.GetVideoUrl(ctx, testID)
 	if err != nil {
-		a.logger.Error("failed to get video path",
+		a.logger.Error("failed to get video URL",
 			"testId", testID,
 			"error", err.Error(),
 		)
@@ -74,31 +74,16 @@ func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 		return
 	}
 
-	// Get file info for content length
-	fileInfo, err := os.Stat(videoPath)
-	if err != nil {
-		a.logger.Error("failed to stat video file",
-			"testId", testID,
-			"error", err.Error(),
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve video info"})
-		return
-	}
-
-	// Set headers for video streaming
-	c.Header("Content-Type", "video/webm")
-	c.Header("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
-	c.Header("Accept-Ranges", "bytes")
-	c.Header("Cache-Control", "public, max-age=3600")
-
-	// Serve the file (Gin handles range requests automatically)
-	c.File(videoPath)
+	c.JSON(http.StatusOK, gin.H{
+		"testId": testID,
+		"url":    videoUrl,
+	})
 }
 
 // HandleGetMediaInfo handles requests to check if media exists for a test.
 // GET /api/v1/test/:testId/media
 func (a *AutotesterController) HandleGetMediaInfo(c *gin.Context) {
-	_, span := a.tracer.Start(c, "autotesterController.HandleGetMediaInfo")
+	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetMediaInfo")
 	defer span.End()
 
 	testID := c.Param("testId")
@@ -107,7 +92,7 @@ func (a *AutotesterController) HandleGetMediaInfo(c *gin.Context) {
 		return
 	}
 
-	hasScreenshot, hasVideo := a.mediaStorageService.HasMedia(testID)
+	hasScreenshot, hasVideo := a.mediaStorageService.HasMedia(ctx, testID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"testId":        testID,

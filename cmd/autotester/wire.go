@@ -141,9 +141,9 @@ func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, 
 	return sharedService.NewMetricsService("autotester", logger)
 }
 
-// MediaFileSystemProvider provides a new media filesystem.
-func MediaFileSystemProvider(cfg *config.Config) (repository.MediaFileSystem, error) {
-	return repository.NewMediaFileSystem(cfg.MediaDirAutopw)
+// MediaFileSystemProvider provides a new media filesystem using S3.
+func MediaFileSystemProvider(s3Wrapper wrapperService.S3StorageWrapper) (repository.MediaFileSystem, error) {
+	return repository.NewMediaFileSystem(s3Wrapper, "test-media")
 }
 
 // MediaStorageServiceProvider provides a new media storage service.
