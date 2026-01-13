@@ -7,5 +7,5 @@ type AssignChatToGroupRequestURI struct {
 
 // AssignChatToGroupRequestJSON represents the JSON payload for assigning a chat to a group
 type AssignChatToGroupRequestJSON struct {
-	GroupIds []string `json:"groupIds" binding:"min=1,dive,required,uuid"`
+	GroupIds []string `json:"groupIds" binding:"min=1,unique,dive,required,uuid"`
 }
