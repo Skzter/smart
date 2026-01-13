@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -75,34 +74,26 @@ func NewTestcaseStorageRepository(
 // nolint:dupl
 func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.TestCase, userId string) (string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		r.logger.Error("context must not be nil",
-			slog.Any("error", err),
-		)
-		return "", sharedErrors.ErrInternalServer
+		return "", fmt.Errorf("context must not be nil: %w", err)
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Create")
 	defer span.End()
 
 	if err := validateTestCaseData(obj); err != nil {
-		r.logger.Error("validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return "", sharedErrors.ErrValidation
+		return "", fmt.Errorf("validation failed: %w", err)
 	}
 	if err := assert.StringNotEmpty(userId); err != nil {
-		r.logger.Error("userId validation failed", slog.String("error", err.Error()))
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "userId validation failed")
-		return "", sharedErrors.ErrValidation
+		return "", fmt.Errorf("userId must not be empty")
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(ctx, *obj)
 	if err != nil {
-		r.logger.Error("failed to write parquet", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to write parquet")
-		return "", sharedErrors.ErrInternalServer
+		return "", err
 	}
 	key := r.generateTestCaseKey(obj.TestID)
 	time := fmt.Sprintf("%d", time.Now().UTC().Unix())
@@ -116,10 +107,9 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		r.logger.Error("failed to upload parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload parquet file")
-		return "", sharedErrors.ErrInternalServer
+		return "", err
 	}
 
 	span.AddEvent("object successfully written and uploaded", trace.WithAttributes(
@@ -136,48 +126,41 @@ func (r *testcaseStorageRepository) Create(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*entity.TestCase, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		r.logger.Error("context must not be nil",
-			slog.Any("error", err),
-		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("context must not be nil: %w", err)
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Read")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.logger.Error("key validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return nil, sharedErrors.ErrValidation
+		return nil, fmt.Errorf("key must not be empty")
 	}
 
 	data, _, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
-		r.logger.Error("failed to download parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to download parquet file")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, err
 	}
 
 	items, err := r.parquetWrapper.ReadStructsFromParquet(ctx, data)
 	if err != nil {
-		r.logger.Error("failed to read parquet data", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to read parquet data")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, err
 	}
 	if len(items) == 0 {
-		r.logger.Error("no data found in parquet file", slog.String("key", key))
+		err := fmt.Errorf("no data found for key %s", key)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no data found")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, err
 	}
 	if err := validateTestCaseData(&items[0]); err != nil {
-		r.logger.Error("validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return nil, sharedErrors.ErrValidation
+		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -188,10 +171,7 @@ func (r *testcaseStorageRepository) Read(ctx context.Context, key string) (*enti
 // Returns a slice of TestcaseMetadata containing key, author, timestamps, and name for each test case.
 func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*entity.TestcaseMetadata, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		r.logger.Error("context must not be nil",
-			slog.Any("error", err),
-		)
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("context must not be nil: %w", err)
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.ReadAllMetadata")
@@ -199,10 +179,9 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 
 	fileKeys, err := r.s3Wrapper.ListParquetFiles(ctx, r.s3Prefix)
 	if err != nil {
-		r.logger.Error("failed to list all parquet files", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to list all parquet files")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("failed to list all parquet files: %w", err)
 	}
 
 	allMetadata := make([]*entity.TestcaseMetadata, 0, len(fileKeys))
@@ -242,43 +221,36 @@ func (r *testcaseStorageRepository) ReadAllMetadata(ctx context.Context) ([]*ent
 // nolint:dupl
 func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.TestCase, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		r.logger.Error("context must not be nil",
-			slog.Any("error", err),
-		)
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context must not be nil: %w", err)
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Update")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.logger.Error("key validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("key must not be empty")
 	}
 
 	if err := validateTestCaseData(obj); err != nil {
-		r.logger.Error("validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("validation failed: %w", err)
 	}
 
 	_, oldMetadata, err := r.s3Wrapper.DownloadParquetFile(ctx, key)
 	if err != nil {
-		r.logger.Error("failed to check if key exists", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to read old metadata")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to read old metadata: %w", err)
 	}
 
 	parquetData, err := r.parquetWrapper.WriteStructToParquet(ctx, *obj)
 	if err != nil {
-		r.logger.Error("failed to serialize object", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to serialize object")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to serialize object: %w", err)
 	}
 
 	metadata := map[string]string{
@@ -291,10 +263,9 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 
 	err = r.s3Wrapper.UploadParquetFile(ctx, key, parquetData, metadata)
 	if err != nil {
-		r.logger.Error("failed to upload updated object", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload updated object")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to upload updated object: %w", err)
 	}
 
 	span.AddEvent("object successfully updated", trace.WithAttributes(
@@ -311,27 +282,22 @@ func (r *testcaseStorageRepository) Update(ctx context.Context, obj *entity.Test
 // nolint:dupl
 func (r *testcaseStorageRepository) Delete(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		r.logger.Error("context must not be nil",
-			slog.Any("error", err),
-		)
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context must not be nil: %w", err)
 	}
 
 	ctx, span := r.tracer.Start(ctx, "testCaseStorageRepository.Delete")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.logger.Error("key validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("key must not be empty")
 	}
 
 	if err := r.s3Wrapper.DeleteParquetFile(ctx, key); err != nil {
-		r.logger.Error("failed to delete parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to delete parquet file")
-		return sharedErrors.ErrInternalServer
+		return err
 	}
 
 	span.AddEvent("object successfully deleted", trace.WithAttributes(
