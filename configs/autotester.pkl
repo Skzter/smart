@@ -263,4 +263,4 @@ defaultLimitTests: Int = 50
 
 taglistConfig: taglist = taglist
 
-tokenExpirationTimeDays: Int = 30
+tokenExpirationTime: Duration = 30.d

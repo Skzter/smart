@@ -1,6 +1,6 @@
 version: "2"
 sql:
-  - schema: "internal/autotester/infrastructure/database/sql/migrations"
+  - schema: "internal/autotester/infrastructure/database/sql/schema"
     queries: "internal/autotester/infrastructure/database/sql/queries"
     engine: "postgresql"
     gen:
