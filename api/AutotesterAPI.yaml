@@ -888,7 +888,7 @@ components:
           description: "ID of the user for whom the token was generated."
         token:
           type: string
-          description: "JWT or authentication token string."
+          description: "authentication token string."
         createdAt:
           type: string
           format: date-time
@@ -912,3 +912,22 @@ components:
         - createdAt
         - updatedAt
         - expiresAt
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the group
+        name:
+          type: string
+          description: Name of the group
+        description:
+          type: string
+          description: Description of the group
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the group was created
+        createdBy:
+          type: string
+          description: ID of the user who created the group
