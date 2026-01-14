@@ -112,6 +112,21 @@
     }
 }
 
+    function commitTitleChange(target: HTMLInputElement) {
+        const newTitle = target.value.trim();
+        if (!newTitle || newTitle === summary.title) return;
+
+        updateChatTitleStance?.(summary.chatId, newTitle);
+
+        saveTitle(newTitle)
+            .then(() => {
+                toast.success("Chat title updated successfully");
+            })
+            .catch((err) => {
+                toast.error("Failed to save chat title: " + err.message);
+            });
+    }
+
 </script>
 
 <Sidebar.MenuItem>
@@ -132,7 +147,7 @@
                         onblur={(e) => {
                             const newTitle = (e.target as HTMLInputElement).value.trim();
                             if (newTitle && newTitle !== summary.title) {
-                                updateChatTitleStance?.(summary.chatId, newTitle);
+                                commitTitleChange(e.target as HTMLInputElement);
                             }
                             edit = false;
                         }}
@@ -140,13 +155,9 @@
                         if (e.key === "Enter") {
                         const newTitle = (e.target as HTMLInputElement).value.trim();
                         if (newTitle && newTitle !== summary.title) {
-                            updateChatTitleStance?.(summary.chatId, newTitle);
-                            saveTitle(newTitle);
+                            commitTitleChange(e.target as HTMLInputElement);
                             edit = false;
                         }
-                        if (e.key === "Escape") {
-                            edit = false;
-                    }
                     }}
                     }
                 />
