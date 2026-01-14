@@ -91,26 +91,26 @@
     }
 
     async function saveTitle(newTitle: string) {
-    const trimmed = newTitle.trim();
-    edit = false;
+        const trimmed = newTitle.trim();
+        edit = false;
 
-    if (!trimmed || trimmed === summary.title) {
-        return;
+        if (!trimmed || trimmed === summary.title) {
+            return;
+        }
+
+        try {
+            const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
+            updateChatTitleState(updated.chatId, updated.title, updated.updatedAt);
+
+        } catch (error) {
+            toast.error("Umbenennen fehlgeschlagen", {
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Unbekannter Fehler",
+            });
+        }
     }
-
-    try {
-        const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
-        updateChatTitleState(updated.chatId, updated.title, updated.updatedAt);
-
-    } catch (error) {
-        toast.error("Umbenennen fehlgeschlagen", {
-            description:
-                error instanceof Error
-                    ? error.message
-                    : "Unbekannter Fehler",
-        });
-    }
-}
 
     function commitTitleChange(target: HTMLInputElement) {
         const newTitle = target.value.trim();

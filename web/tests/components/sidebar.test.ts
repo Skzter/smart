@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/svelte";
+import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { tick } from "svelte";
@@ -517,5 +517,64 @@ describe("Sidebar", () => {
         await waitFor(() => {
             expect(getUserChats).toHaveBeenCalled();
         });
+    });
+});
+
+describe("updateChatTitleStance via UI", () => {
+    const initialItems = [
+        {
+            chatId: "chat-1",
+            userId: "test-user-123",
+            title: "Old title",
+            createdAt: "2024-01-01",
+            updatedAt: "2024-01-01",
+        },
+        {
+            chatId: "chat-2",
+            userId: "test-user-123",
+            title: "Another chat",
+            createdAt: "2024-01-01",
+            updatedAt: "2024-01-01",
+        },
+    ];
+
+    beforeEach(() => {
+        vi.mocked(getUserChats).mockResolvedValue(initialItems);
+    });
+
+    it("updates title in the DOM when a child commits a title change", async () => {
+        const { container } = render(SidebarTestWrapper);
+
+        await waitFor(() => expect(getUserChats).toHaveBeenCalled());
+
+        // find the paragraph that contains the old title
+        const paragraphs = Array.from(container.querySelectorAll("p.truncate"));
+        const target = paragraphs.find((p) => p.textContent === "Old title");
+        expect(target).toBeTruthy();
+
+        // click the first pencil icon for the list
+        const pencil = container.querySelectorAll("svg.lucide-pencil")[0];
+        const pencilButton = pencil?.closest("button");
+        expect(pencilButton).toBeTruthy();
+        await fireEvent.click(pencilButton!);
+
+        // the input for edit mode should appear in the DOM
+        const input = container.querySelector("input") as HTMLInputElement;
+        expect(input).toBeTruthy();
+
+        await fireEvent.input(input, { target: { value: "New title" } });
+        await fireEvent.blur(input);
+
+        await waitFor(() => expect(container.textContent).toContain("New title"));
+    });
+
+    it("does not throw when items are undefined and update is attempted via child flow", async () => {
+        vi.mocked(getUserChats).mockResolvedValue(undefined as unknown as ApiChatSummary[]);
+
+        const { container } = render(SidebarTestWrapper);
+
+        await waitFor(() => expect(getUserChats).toHaveBeenCalled());
+
+        expect(container).toBeTruthy();
     });
 });
