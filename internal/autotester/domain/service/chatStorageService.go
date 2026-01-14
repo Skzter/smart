@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -102,7 +103,7 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	return chat, nil
 }
 
-// LoadSummaries retrieves an all ChatSummarys associated with any of the given groupIds
+// LoadSummaries retrieves all ChatSummarys associated with any of the given groupIds
 // The resulting slice is ordered by updatedAt in descending order
 func (s *chatStorageService) LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error) {
 	if err := assert.NotNil(ctx); err != nil {
@@ -132,8 +133,11 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, groupIds ...stri
 	}
 
 	// sort in descending order by UpdatedAt
-	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
-		return -a.UpdatedAt.Compare(b.UpdatedAt)
+	slices.SortStableFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
+		if updated := -a.UpdatedAt.Compare(b.UpdatedAt); updated != 0 {
+			return updated
+		}
+		return strings.Compare(a.ChatId, b.ChatId)
 	})
 	span.SetStatus(codes.Ok, "")
 	return summaries, nil
