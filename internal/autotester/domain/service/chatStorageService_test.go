@@ -201,12 +201,14 @@ func TestLoadSummaries(t *testing.T) {
 		name        string
 		groups      []string
 		listReturns []any
+		expected    []*entity.ChatSummary
 		wantErr     bool
 		ctx         context.Context
 	}{
 		{
 			name:        "success, no groups",
 			listReturns: []any{orderedResult, nil},
+			expected:    orderedResult,
 			wantErr:     false,
 			ctx:         context.Background(),
 			groups:      []string{},
@@ -214,6 +216,7 @@ func TestLoadSummaries(t *testing.T) {
 		{
 			name:        "success, filtered by Group groups",
 			listReturns: []any{append(orderedResult, &entity.ChatSummary{UpdatedAt: time.Unix(1, 0), Groups: []string{"0"}}), nil},
+			expected:    orderedResult,
 			wantErr:     false,
 			ctx:         context.Background(),
 			groups:      []string{"1"},
@@ -232,9 +235,26 @@ func TestLoadSummaries(t *testing.T) {
 		{
 			name:        "inverse order",
 			listReturns: []any{[]*entity.ChatSummary{{UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}}, {UpdatedAt: time.Unix(200, 0), Groups: []string{"1", "2"}}}, nil},
+			expected:    orderedResult,
 			wantErr:     false,
 			ctx:         context.Background(),
 			groups:      []string{},
+		},
+		{
+			name: "secondary sort by ChatId when UpdatedAt equal",
+			listReturns: []any{[]*entity.ChatSummary{
+				{ChatId: "chat-z", UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}},
+				{ChatId: "chat-a", UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}},
+				{ChatId: "chat-m", UpdatedAt: time.Unix(200, 0), Groups: []string{"1"}},
+			}, nil},
+			expected: []*entity.ChatSummary{
+				{ChatId: "chat-m", UpdatedAt: time.Unix(200, 0), Groups: []string{"1"}},
+				{ChatId: "chat-a", UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}},
+				{ChatId: "chat-z", UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}},
+			},
+			wantErr: false,
+			ctx:     context.Background(),
+			groups:  []string{},
 		},
 		{
 			name:        "repo returns error",
@@ -264,7 +284,11 @@ func TestLoadSummaries(t *testing.T) {
 				assert.Nil(t, res)
 			} else {
 				assert.Nil(t, err)
-				assert.Equal(t, orderedResult, res)
+				if test.expected != nil {
+					assert.Equal(t, test.expected, res)
+				} else {
+					assert.NotNil(t, res)
+				}
 			}
 		})
 	}
