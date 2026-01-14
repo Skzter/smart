@@ -59,6 +59,10 @@ func (m *McpServer) registerTools() error {
 	if err != nil {
 		return err
 	}
+	readTestLogStreamTool, err := tools.NewReadTestLogStreamTool(m.logger)
+	if err != nil {
+		return err
+	}
 
 	testLogStreamResource, err := resource.NewTestLogStreamResource(m.logger, m.autotesterService)
 	if err != nil {
@@ -86,9 +90,16 @@ func (m *McpServer) registerTools() error {
 
 	m.logger.Info("Registered tool: run_test")
 
+	mcp.AddTool(m.server, &mcp.Tool{
+		Name:        "read_testLogStream",
+		Description: "Reads logstream based on testId",
+	}, readTestLogStreamTool.ReadTestLogStream)
+
+	m.logger.Info("Registered tool: read_testLogStream")
+
 	m.server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "testlog_stream",
-		Description: "Provides access to test execution logs",
+		Description: "Provides access to test execution logs", // TODO: ausbauen mehr informationen zur nutzung geben also mehrmals benutzen bis final = true und so
 		URITemplate: "mcp://tests/{testId}/logs",
 		MIMEType:    "text/plain",
 	}, testLogStreamResource.ReadTestLogStream)
