@@ -73,6 +73,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -102,6 +103,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 			)
@@ -174,6 +176,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -215,6 +218,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 			)

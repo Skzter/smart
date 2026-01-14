@@ -107,16 +107,16 @@ func (_c *MockChatManager_LoadChat_Call) RunAndReturn(run func(context1 context.
 }
 
 // SaveChat provides a mock function for the type MockChatManager
-func (_mock *MockChatManager) SaveChat(context1 context.Context, chat *entity.Chat) error {
-	ret := _mock.Called(context1, chat)
+func (_mock *MockChatManager) SaveChat(context1 context.Context, chat *entity.Chat, s string) error {
+	ret := _mock.Called(context1, chat, s)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveChat")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat) error); ok {
-		r0 = returnFunc(context1, chat)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, string) error); ok {
+		r0 = returnFunc(context1, chat, s)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -131,11 +131,12 @@ type MockChatManager_SaveChat_Call struct {
 // SaveChat is a helper method to define mock.On call
 //   - context1 context.Context
 //   - chat *entity.Chat
-func (_e *MockChatManager_Expecter) SaveChat(context1 interface{}, chat interface{}) *MockChatManager_SaveChat_Call {
-	return &MockChatManager_SaveChat_Call{Call: _e.mock.On("SaveChat", context1, chat)}
+//   - s string
+func (_e *MockChatManager_Expecter) SaveChat(context1 interface{}, chat interface{}, s interface{}) *MockChatManager_SaveChat_Call {
+	return &MockChatManager_SaveChat_Call{Call: _e.mock.On("SaveChat", context1, chat, s)}
 }
 
-func (_c *MockChatManager_SaveChat_Call) Run(run func(context1 context.Context, chat *entity.Chat)) *MockChatManager_SaveChat_Call {
+func (_c *MockChatManager_SaveChat_Call) Run(run func(context1 context.Context, chat *entity.Chat, s string)) *MockChatManager_SaveChat_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -145,9 +146,14 @@ func (_c *MockChatManager_SaveChat_Call) Run(run func(context1 context.Context, 
 		if args[1] != nil {
 			arg1 = args[1].(*entity.Chat)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -158,7 +164,7 @@ func (_c *MockChatManager_SaveChat_Call) Return(err error) *MockChatManager_Save
 	return _c
 }
 
-func (_c *MockChatManager_SaveChat_Call) RunAndReturn(run func(context1 context.Context, chat *entity.Chat) error) *MockChatManager_SaveChat_Call {
+func (_c *MockChatManager_SaveChat_Call) RunAndReturn(run func(context1 context.Context, chat *entity.Chat, s string) error) *MockChatManager_SaveChat_Call {
 	_c.Call.Return(run)
 	return _c
 }
