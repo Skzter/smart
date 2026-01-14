@@ -8,7 +8,6 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 )
@@ -71,16 +70,10 @@ func NewRedisCache(logger *slog.Logger, cfg *config.Config) (Cache, error) {
 // Get retrieves a cached value by key and reports whether it was a hit.
 func (r *redisCache) Get(ctx context.Context, key string) ([]byte, bool, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		r.log.Error("context cannot be nil",
-			slog.Any("error", err),
-		)
-		return nil, false, errors.ErrInternalServer
+		return nil, false, fmt.Errorf("context cannot be nil, %w", err)
 	}
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.log.Error("key cannot be empty",
-			slog.Any("error", err),
-		)
-		return nil, false, errors.ErrInternalServer
+		return nil, false, fmt.Errorf("key cannot be empty, %w", err)
 	}
 
 	val, err := r.rdb.Get(ctx, key).Bytes()
@@ -89,7 +82,7 @@ func (r *redisCache) Get(ctx context.Context, key string) ([]byte, bool, error) 
 	}
 	if err != nil {
 		r.log.Error("redis: get failed", "key", key, "err", err)
-		return nil, false, errors.ErrInternalServer
+		return nil, false, err
 	}
 	return val, true, nil
 }
@@ -97,26 +90,17 @@ func (r *redisCache) Get(ctx context.Context, key string) ([]byte, bool, error) 
 // Set stores a value with an expiration time.
 func (r *redisCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
 	if err := assert.NotNil(ctx); err != nil {
-		r.log.Error("context cannot be nil",
-			slog.Any("error", err),
-		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.log.Error("key cannot be empty",
-			slog.Any("error", err),
-		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("key cannot be empty, %w", err)
 	}
 	if err := assert.NotNil(value); err != nil {
-		r.log.Error("value cannot be nil",
-			slog.Any("error", err),
-		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("value cannot be nil, %w", err)
 	}
 	if err := r.rdb.Set(ctx, key, value, ttl).Err(); err != nil {
 		r.log.Error("redis: set failed", "key", key, "ttl", ttl, "err", err)
-		return errors.ErrInternalServer
+		return err
 	}
 
 	r.log.Debug("redis: set", "key", key, "ttl", ttl)
@@ -126,19 +110,13 @@ func (r *redisCache) Set(ctx context.Context, key string, value []byte, ttl time
 // Delete removes a value from the cache.
 func (r *redisCache) Delete(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		r.log.Error("context cannot be nil",
-			slog.Any("error", err),
-		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 	if err := assert.StringNotEmpty(key); err != nil {
-		r.log.Error("key cannot be empty",
-			slog.Any("error", err),
-		)
-		return errors.ErrInternalServer
+		return fmt.Errorf("key cannot be empty, %w", err)
 	}
 	if err := r.rdb.Del(ctx, key).Err(); err != nil {
-		return errors.ErrInternalServer
+		return err
 	}
 
 	r.log.Debug("redis: delete", "key", key)

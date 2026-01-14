@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
-	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	service "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -64,26 +63,23 @@ func NewDatabaseRepository(
 // CreateRequest writes the given entry to the database by converting it to Parquet format and uploading it to S3.
 func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity.DatabaseEntry) error {
 	if err := assert.NotNil(ctx); err != nil {
-		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.CreateRequest")
 	defer span.End()
 
 	if err := validateDbEntry(dbEntry); err != nil {
-		dbR.logger.Error("dbEntry validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "dbEntry validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
 
 	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(ctx, dbEntry)
 	if err != nil {
-		dbR.logger.Error("failed to write parquet", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to write parquet")
-		return sharedErrors.ErrGeneration
+		return fmt.Errorf("failed to write parquet: %w", err)
 	}
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -97,10 +93,9 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
-		dbR.logger.Error("failed to upload parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload parquet file")
-		return sharedErrors.ErrGeneration
+		return fmt.Errorf("failed to upload existing parquet: %w", err)
 	}
 
 	span.AddEvent("object successfully written and uploaded", trace.WithAttributes(
@@ -115,25 +110,22 @@ func (dbR *databaseRepository) CreateRequest(ctx context.Context, dbEntry entity
 // ReadRequest retrieves a request from the database by its key, downloading the Parquet file and reading its content.
 func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*entity.DatabaseEntry, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return nil, sharedErrors.ErrGeneration
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.ReadRequest")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		dbR.logger.Error(("key must not be empty"), slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return nil, sharedErrors.ErrValidation
+		return nil, fmt.Errorf("key must not be empty: %w", err)
 	}
 
 	parquetData, metadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
-		dbR.logger.Error("failed to download existing parquet", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to download parquet file")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("failed to download existing parquet: %w", err)
 	}
 	dbR.logger.Debug("file downloaded",
 		slog.Int("size", len(parquetData)),
@@ -141,10 +133,9 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 	)
 	dbEntries, err := dbR.parquetWrapper.ReadStructsFromParquet(ctx, parquetData)
 	if err != nil {
-		dbR.logger.Error("failed to read parquet data", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to read parquet data")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("failed to read parquet data: %w", err)
 	}
 	dbR.logger.Debug("events read from parquet", slog.Int("count", len(dbEntries)))
 	firstEntry := dbEntries[0]
@@ -161,41 +152,36 @@ func (dbR *databaseRepository) ReadRequest(ctx context.Context, key string) (*en
 // UpdateRequest updates an existing request in the database by downloading the Parquet file, modifying its content, and re-uploading it.
 func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, dbEntry entity.DatabaseEntry) error {
 	if err := assert.NotNil(ctx); err != nil {
-		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.UpdateRequest")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		dbR.logger.Error("key must not be empty", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("key must not be empty: %w", err)
 	}
 
 	if err := validateDbEntry(dbEntry); err != nil {
-		dbR.logger.Error("dbEntry validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "dbEntry validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("failed to validate dbEntry: %w", err)
 	}
 
 	_, oldmetadata, err := dbR.s3Wrapper.DownloadParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
-		dbR.logger.Error("failed to download existing parquet", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to download parquet file")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to download data: %w", err)
 	}
 
 	parquetData, err := dbR.parquetWrapper.WriteStructToParquet(ctx, dbEntry)
 	if err != nil {
-		dbR.logger.Error("failed to write parquet", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to write parquet")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to write parquet: %w", err)
 	}
 
 	dbR.logger.Debug("parquet data created", slog.Int("size_bytes", len(parquetData)))
@@ -208,10 +194,9 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 
 	err = dbR.s3Wrapper.UploadParquetFile(ctx, dbR.entryPrefix+key, parquetData, metadata)
 	if err != nil {
-		dbR.logger.Error("failed to upload parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to upload parquet file")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to upload file: %w", err)
 	}
 
 	span.AddEvent("object successfully overwritten", trace.WithAttributes(
@@ -226,26 +211,23 @@ func (dbR *databaseRepository) UpdateRequest(ctx context.Context, key string, db
 // DeleteRequest deletes a request from the database by removing the Parquet file associated with the given key.
 func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) error {
 	if err := assert.NotNil(ctx); err != nil {
-		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.DeleteRequest")
 	defer span.End()
 
 	if err := assert.StringNotEmpty(key); err != nil {
-		dbR.logger.Error("key must not be empty", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "key validation failed")
-		return sharedErrors.ErrValidation
+		return fmt.Errorf("key must not be empty: %w", err)
 	}
 
 	err := dbR.s3Wrapper.DeleteParquetFile(ctx, dbR.entryPrefix+key)
 	if err != nil {
-		dbR.logger.Error("failed to delete parquet file", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to delete parquet file")
-		return sharedErrors.ErrInternalServer
+		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
 	dbR.logger.Debug("file deleted successfully", slog.String("key", key))
@@ -261,8 +243,7 @@ func (dbR *databaseRepository) DeleteRequest(ctx context.Context, key string) er
 
 func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		dbR.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("context cannot be nil, %w", err)
 	}
 
 	ctx, span := dbR.tracer.Start(ctx, "databaseRepository.ListAllKeys")
@@ -270,10 +251,9 @@ func (dbR *databaseRepository) ListAllKeys(ctx context.Context) ([]string, error
 
 	keys, err := dbR.s3Wrapper.ListParquetFiles(ctx, dbR.entryPrefix)
 	if err != nil {
-		dbR.logger.Error("failed to list parquet files", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to list parquet files")
-		return nil, sharedErrors.ErrInternalServer
+		return nil, fmt.Errorf("failed to list parquet files: %w", err)
 	}
 
 	span.AddEvent("ListAllKeys: finished loading keys", trace.WithAttributes(

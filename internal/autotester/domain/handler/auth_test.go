@@ -96,6 +96,7 @@ func TestHandleGenerateToken(t *testing.T) {
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockSetup != nil {
 				mockAuth.On("GenerateToken", mock.Anything, mock.Anything).
@@ -119,6 +120,7 @@ func TestHandleGenerateToken(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 				mockAuth,

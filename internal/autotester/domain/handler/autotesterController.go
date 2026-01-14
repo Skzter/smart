@@ -24,6 +24,7 @@ type AutotesterController struct {
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
 	chatManager                  service.ChatManager
+	groupManager                 service.GroupManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
 	authService                  service.Auth
@@ -41,6 +42,7 @@ func NewAutotesterController(
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
 	chatManager service.ChatManager,
+	groupManager service.GroupManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
 	authService service.Auth,
@@ -55,6 +57,7 @@ func NewAutotesterController(
 		remoteTestcaseStorageService,
 		chatStorageService,
 		chatManager,
+		groupManager,
 		tracer,
 		metricsService,
 		authService,
@@ -72,6 +75,7 @@ func NewAutotesterController(
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
 		chatManager:                  chatManager,
+		groupManager:                 groupManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
 		authService:                  authService,

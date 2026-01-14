@@ -230,6 +230,7 @@ func TestHandleLogRequest(t *testing.T) {
 	mockLocal := mocks.NewMockTestcaseLocalStorageService(t)
 	mockChat := mocks.NewMockChatStorageService(t)
 	mockRemote := mocks.NewMockTestcaseStorageService(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetrics := sharedMocks.NewMockMetricsService(t)
 	mockAuth := mocks.NewMockAuth(t)
@@ -263,6 +264,7 @@ func TestHandleLogRequest(t *testing.T) {
 				mockChat,
 				mockRemote,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetrics,
 				mockAuth,

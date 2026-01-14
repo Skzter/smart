@@ -125,6 +125,7 @@ func TestHandleRunContainer(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
@@ -151,6 +152,7 @@ func TestHandleRunContainer(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
 				mockAuth,
