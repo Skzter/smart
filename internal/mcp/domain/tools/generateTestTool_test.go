@@ -73,84 +73,111 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 		input          entity.GenerateTestRequest
 		mockSetup      func(*mocks.MockAutotesterAPIService)
 		expectedError  bool
-		expectedOutput entity.GenerateTestResponse
+		expectedOutput entity.GenerateTestToolResponse
 	}{
 		{
 			name: "successful test generation",
 			input: entity.GenerateTestRequest{
-				Prompt:         "Create a test for login",
-				UserId:         "user123",
-				ConversationId: "conv456",
+				Prompt: "Create a test for login",
+				UserId: "user123",
+				ChatId: "conv456",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
-				expectedResponse := &entity.GenerateTestResponse{
-					Result: entity.GenerateMessage{
+				expectedResponse := &entity.GenerateTestToolResponse{
+					GenerateMsg: &entity.GenerateMessage{
 						Id:        "msg1",
 						Role:      "assistant",
 						Body:      "Generated test code here",
 						CreatedAt: time.Now(),
 					},
-					UserId:         "user123",
-					ConversationId: "conv456",
+					UserId: "user123",
+					ChatId: "conv456",
 				}
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
 			},
 			expectedError: false,
-			expectedOutput: entity.GenerateTestResponse{
-				Result: entity.GenerateMessage{
+			expectedOutput: entity.GenerateTestToolResponse{
+				GenerateMsg: &entity.GenerateMessage{
 					Id:   "msg1",
 					Role: "assistant",
 					Body: "Generated test code here",
 				},
-				UserId:         "user123",
-				ConversationId: "conv456",
+				UserId: "user123",
+				ChatId: "conv456",
+			},
+		},
+		{
+			name: "validation feedback received",
+			input: entity.GenerateTestRequest{
+				Prompt: "Incomplete prompt",
+				UserId: "user123",
+				ChatId: "conv456",
+			},
+			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+				expectedResponse := &entity.GenerateTestToolResponse{
+					ValidateMsg: &entity.ValidateMessage{
+						Body: "Please provide more context",
+					},
+					UserId: "user123",
+					ChatId: "conv456",
+				}
+				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
+					Return(expectedResponse, nil).Once()
+			},
+			expectedError: false,
+			expectedOutput: entity.GenerateTestToolResponse{
+				ValidateMsg: &entity.ValidateMessage{
+					Body: "Please provide more context",
+				},
+				UserId: "user123",
+				ChatId: "conv456",
 			},
 		},
 		{
 			name: "service returns error",
 			input: entity.GenerateTestRequest{
-				Prompt:         "Invalid prompt",
-				UserId:         "user789",
-				ConversationId: "conv999",
+				Prompt: "Invalid prompt",
+				UserId: "user789",
+				ChatId: "conv999",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(nil, errors.New("backend service unavailable")).Once()
 			},
 			expectedError:  true,
-			expectedOutput: entity.GenerateTestResponse{},
+			expectedOutput: entity.GenerateTestToolResponse{},
 		},
 		{
 			name: "empty prompt",
 			input: entity.GenerateTestRequest{
-				Prompt:         "",
-				UserId:         "user000",
-				ConversationId: "conv000",
+				Prompt: "",
+				UserId: "user000",
+				ChatId: "conv000",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
-				expectedResponse := &entity.GenerateTestResponse{
-					Result: entity.GenerateMessage{
+				expectedResponse := &entity.GenerateTestToolResponse{
+					GenerateMsg: &entity.GenerateMessage{
 						Id:        "msg2",
 						Role:      "assistant",
 						Body:      "",
 						CreatedAt: time.Now(),
 					},
-					UserId:         "user000",
-					ConversationId: "conv000",
+					UserId: "user000",
+					ChatId: "conv000",
 				}
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
 			},
 			expectedError: false,
-			expectedOutput: entity.GenerateTestResponse{
-				Result: entity.GenerateMessage{
+			expectedOutput: entity.GenerateTestToolResponse{
+				GenerateMsg: &entity.GenerateMessage{
 					Id:   "msg2",
 					Role: "assistant",
 					Body: "",
 				},
-				UserId:         "user000",
-				ConversationId: "conv000",
+				UserId: "user000",
+				ChatId: "conv000",
 			},
 		},
 	}
@@ -172,10 +199,23 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, test.expectedOutput.UserId, output.UserId)
-				assert.Equal(t, test.expectedOutput.ConversationId, output.ConversationId)
-				assert.Equal(t, test.expectedOutput.Result.Id, output.Result.Id)
-				assert.Equal(t, test.expectedOutput.Result.Role, output.Result.Role)
-				assert.Equal(t, test.expectedOutput.Result.Body, output.Result.Body)
+				assert.Equal(t, test.expectedOutput.ChatId, output.ChatId)
+
+				if test.expectedOutput.GenerateMsg != nil {
+					assert.NotNil(t, output.GenerateMsg)
+					assert.Equal(t, test.expectedOutput.GenerateMsg.Id, output.GenerateMsg.Id)
+					assert.Equal(t, test.expectedOutput.GenerateMsg.Role, output.GenerateMsg.Role)
+					assert.Equal(t, test.expectedOutput.GenerateMsg.Body, output.GenerateMsg.Body)
+				} else {
+					assert.Nil(t, output.GenerateMsg)
+				}
+
+				if test.expectedOutput.ValidateMsg != nil {
+					assert.NotNil(t, output.ValidateMsg)
+					assert.Equal(t, test.expectedOutput.ValidateMsg.Body, output.ValidateMsg.Body)
+				} else {
+					assert.Nil(t, output.ValidateMsg)
+				}
 			}
 		})
 	}

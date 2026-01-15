@@ -15,7 +15,7 @@ vi.mock("svelte-sonner", () => ({
 
 // Mock API
 vi.mock("$lib/api", () => ({
-    getUserChats: vi.fn(),
+    getChats: vi.fn(),
 }));
 
 // Mock shared state
@@ -25,7 +25,7 @@ vi.mock("$lib/shared.svelte", () => ({
     ChatFilter: { sortBy: "recent", timeFilter: "all" },
 }));
 
-import { getUserChats } from "$lib/api";
+import { getChats } from "$lib/api";
 import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 
@@ -39,7 +39,7 @@ describe("Sidebar", () => {
     });
 
     it("renders the sidebar with loading state initially", async () => {
-        vi.mocked(getUserChats).mockImplementation(() => new Promise(() => {})); // Never resolves
+        vi.mocked(getChats).mockImplementation(() => new Promise(() => {})); // Never resolves
 
         const { container } = render(SidebarTestWrapper);
 
@@ -59,17 +59,17 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
     it("displays error when API call fails", async () => {
-        vi.mocked(getUserChats).mockRejectedValue(new Error("API Error"));
+        vi.mocked(getChats).mockRejectedValue(new Error("API Error"));
 
         render(SidebarTestWrapper);
 
@@ -84,7 +84,7 @@ describe("Sidebar", () => {
         render(SidebarTestWrapper);
         await tick();
 
-        expect(getUserChats).not.toHaveBeenCalled();
+        expect(getChats).not.toHaveBeenCalled();
     });
 
     it("categorizes chat as 'Heute' for today's chats", async () => {
@@ -98,12 +98,12 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -120,12 +120,12 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -142,12 +142,12 @@ describe("Sidebar", () => {
                 updatedAt: lastWeek.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -164,12 +164,12 @@ describe("Sidebar", () => {
                 updatedAt: thisMonth.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -186,12 +186,12 @@ describe("Sidebar", () => {
                 updatedAt: older.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -228,12 +228,12 @@ describe("Sidebar", () => {
                 ).toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -249,12 +249,12 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -288,22 +288,22 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
     it("handles empty chat list", async () => {
-        vi.mocked(getUserChats).mockResolvedValue([]);
+        vi.mocked(getChats).mockResolvedValue([]);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
@@ -335,22 +335,22 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
     it("renders SidebarHeader component", async () => {
-        vi.mocked(getUserChats).mockResolvedValue([]);
+        vi.mocked(getChats).mockResolvedValue([]);
 
         const { container } = render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
 
         expect(container).toBeInTheDocument();
@@ -377,17 +377,17 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
     it("handles non-Error exceptions", async () => {
-        vi.mocked(getUserChats).mockRejectedValue("String error");
+        vi.mocked(getChats).mockRejectedValue("String error");
 
         render(SidebarTestWrapper);
 
@@ -412,12 +412,12 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
 
         const tomorrow = new Date();
@@ -465,17 +465,17 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 
     it("returns empty array when items is undefined in updateGroupsWithDateRange", async () => {
-        vi.mocked(getUserChats).mockImplementation(() => new Promise(() => {}));
+        vi.mocked(getChats).mockImplementation(() => new Promise(() => {}));
 
         const { container } = render(SidebarTestWrapper);
         await tick();
@@ -510,12 +510,12 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getUserChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue(mockChats);
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getUserChats).toHaveBeenCalled();
+            expect(getChats).toHaveBeenCalled();
         });
     });
 });

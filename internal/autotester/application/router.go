@@ -25,8 +25,8 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
 		apiV1.POST("/validate", controller.HandleChatRequestValidity)
-		apiV1.GET("/users/:userId/chats", controller.HandleGetUserChats)
-		apiV1.GET("/users/:userId/chats/:chatId", controller.GetChatById)
+		apiV1.GET("/chats", controller.HandleGetChats)
+		apiV1.GET("/chats/:chatId", controller.GetChatById)
 		apiV1.PATCH("users/:userId/chats/:chatId/title", controller.HandleUpdateChatTitle)
 		apiV1.GET("/template", controller.HandleGetTemplate)
 		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
@@ -34,6 +34,11 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+
+		apiV1.GET("/groups", controller.HandleGetGroups)
+		apiV1.POST("/groups", controller.HandleCreateGroup)
+		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
+		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
 	}
 
 	if !isHeadless {

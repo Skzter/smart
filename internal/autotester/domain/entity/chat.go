@@ -16,11 +16,14 @@ type MessageType uint
 
 // Chat represents a single Chat, identified by a unique id and associated with a user.
 type Chat struct {
-	Id        string    `json:"id"`
-	UserId    string    `json:"userId"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Title     string    `json:"title"`
+	Id     string   `json:"id"`
+	Author string   `json:"author"`
+	Groups []string `json:"groups"`
+
+	LastModifiedBy string    `json:"lastModifiedBy"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	Title          string    `json:"title"`
 
 	Messages []*Message `json:"messages"`
 	index    map[MessageType][]int
@@ -29,16 +32,17 @@ type Chat struct {
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
 }
 
-// NewChat creates a new chat with for the given user with the given messages
+// NewChat creates a new chat for the given user with the given messages
 func NewChat(userId string, messages []*Message) *Chat {
 	now := time.Now().UTC()
 	return &Chat{
-		Id:        uuid.NewString(),
-		UserId:    userId,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Title:     "Neuer Chat",
-		Messages:  messages,
+		Id:             uuid.NewString(),
+		Author:         userId,
+		LastModifiedBy: userId,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		Title:          "Neuer Chat",
+		Messages:       messages,
 	}
 }
 

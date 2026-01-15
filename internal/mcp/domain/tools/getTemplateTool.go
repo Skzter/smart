@@ -30,7 +30,7 @@ func NewGetTemplateTool(logger *slog.Logger, autotesterAPIService service.Autote
 
 // GetTemplate Requests template from backend
 func (tt *GetTemplateTool) GetTemplate(ctx context.Context, request *mcp.CallToolRequest, input entity.TemplateIn) (result *mcp.CallToolResult, output entity.TemplateResponse, _ error) {
-	tt.logger.Info("GetTemplate tool called")
+	tt.logger.Debug("GetTemplate tool called")
 
 	template, err := tt.autotesterAPIService.GetTemplate(ctx)
 	if err != nil {
@@ -38,6 +38,6 @@ func (tt *GetTemplateTool) GetTemplate(ctx context.Context, request *mcp.CallToo
 		return nil, entity.TemplateResponse{}, err
 	}
 
-	tt.logger.Info("Template retrieved successfully", "length", len(template.Content))
+	tt.logger.Debug("Template retrieved successfully", "length", len(template.Content))
 	return nil, entity.TemplateResponse{Content: template.Content}, nil
 }

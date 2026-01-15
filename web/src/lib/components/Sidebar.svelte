@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import Group from "./Group.svelte";
-    import { getUserChats } from "$lib/api";
+    import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
     import { ChatDate, ChatFilter, user } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
@@ -28,7 +28,7 @@
         if (!user.id) return;
         (async () => {
             try {
-                items = (await getUserChats()) as ApiChatSummary[];
+                items = (await getChats()) as ApiChatSummary[];
             } catch (err) {
                 if (err instanceof Error) {
                     error = err.message;

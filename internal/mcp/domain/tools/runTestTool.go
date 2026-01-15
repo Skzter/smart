@@ -30,7 +30,7 @@ func NewRunTestTool(logger *slog.Logger, autotesterAPIService service.Autotester
 
 // RunTest starts to run a test in the backend
 func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest, input entity.ExecuteTestRequest) (result *mcp.CallToolResult, output entity.RunTestResponse, _ error) {
-	tt.logger.Info("RunTest tool called")
+	tt.logger.Debug("RunTest tool called")
 
 	testResult, err := tt.autotesterAPIService.ExecuteTest(ctx, &input)
 	if err != nil {
@@ -38,6 +38,6 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 		return nil, entity.RunTestResponse{}, err
 	}
 
-	tt.logger.Info("Test executed successfully", "result", testResult)
+	tt.logger.Debug("Test executed successfully", "result", testResult)
 	return nil, entity.RunTestResponse{Result: testResult.Result}, nil
 }

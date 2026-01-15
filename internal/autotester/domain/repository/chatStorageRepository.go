@@ -22,13 +22,13 @@ type ChatStorageRepository interface {
 	Create(ctx context.Context, obj *entity.Chat) error
 
 	// Read retrieves a Chat object from storage by a key generated from the provided userId and chatId.
-	Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error)
+	Read(ctx context.Context, chatId string) (*entity.Chat, error)
 
 	// Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
-	Delete(ctx context.Context, userId string, chatId string) error
+	Delete(ctx context.Context, chatId string) error
 
 	// FindByUserId retrieves an slice of all ChatSummarys associated with the given userId
-	FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error)
+	ListAll(ctx context.Context) ([]*entity.ChatSummary, error)
 }
 
 const prefixChat = "chat"
@@ -77,16 +77,18 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("chat.id", obj.Id),
-		attribute.String("chat.user_id", obj.UserId),
+		attribute.String("chat.author", obj.Author),
 		attribute.Int("chat.message_count", len(obj.Messages)),
 	)
 
 	summary := entity.ChatSummary{
-		ChatId:    obj.Id,
-		UserId:    obj.UserId,
-		Title:     obj.Title,
-		CreatedAt: obj.CreatedAt,
-		UpdatedAt: obj.UpdatedAt,
+		ChatId:         obj.Id,
+		Author:         obj.Author,
+		Groups:         obj.Groups,
+		LastModifiedBy: obj.LastModifiedBy,
+		Title:          obj.Title,
+		CreatedAt:      obj.CreatedAt,
+		UpdatedAt:      obj.UpdatedAt,
 	}
 
 	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(ctx, *obj)
@@ -103,7 +105,7 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		return err
 	}
 
-	chatkey, summaryKey := generateKeys(obj.UserId, obj.Id)
+	chatkey, summaryKey := generateKeys(obj.Id)
 	err = r.s3Wrapper.UploadParquetFile(ctx, chatkey, chatParquet, map[string]string{})
 	if err != nil {
 		span.RecordError(err)
@@ -142,16 +144,15 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 // Read retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 // Returns the Chat or an error.
 // nolint:dupl
-func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
+func (r *chatStorageRepository) Read(ctx context.Context, chatId string) (*entity.Chat, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
-	key, _ := generateKeys(userId, chatId)
+	key, _ := generateKeys(chatId)
 
 	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.Read")
 	defer span.End()
 	span.SetAttributes(
-		attribute.String("chat.user_id", userId),
 		attribute.String("chat.id", chatId),
 	)
 
@@ -182,16 +183,15 @@ func (r *chatStorageRepository) Read(ctx context.Context, userId string, chatId 
 // Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
 // Returns an error if the deletion fails.
 // nolint:dupl
-func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatId string) error {
+func (r *chatStorageRepository) Delete(ctx context.Context, chatId string) error {
 	if err := assert.NotNil(ctx); err != nil {
 		return err
 	}
-	chatkey, summaryKey := generateKeys(userId, chatId)
+	chatkey, summaryKey := generateKeys(chatId)
 
 	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.Delete")
 	defer span.End()
 	span.SetAttributes(
-		attribute.String("chat.user_id", userId),
 		attribute.String("chat.id", chatId),
 	)
 
@@ -224,18 +224,17 @@ func (r *chatStorageRepository) Delete(ctx context.Context, userId string, chatI
 	return nil
 }
 
-// FindByUserId retrieves an all ChatSummarys associated with the given userId
+// ListAll retrieves all ChatSummarys
 // Returns a slice of ChatSummary Objects or an error
-func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string) ([]*entity.ChatSummary, error) {
+func (r *chatStorageRepository) ListAll(ctx context.Context) ([]*entity.ChatSummary, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
 
-	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.FindByUserID")
+	ctx, span := r.tracer.Start(ctx, "chatStorageRepository.ListAll")
 	defer span.End()
-	span.SetAttributes(attribute.String("chat.user_id", userId))
 
-	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprintf("%s/%s/summary", prefixChat, userId))
+	keys, err := r.s3Wrapper.ListParquetFiles(ctx, fmt.Sprintf("%s/summary", prefixChat))
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to list summary parquet files")
@@ -274,7 +273,7 @@ func (r *chatStorageRepository) FindByUserID(ctx context.Context, userId string)
 	return result, nil
 }
 
-func generateKeys(userId string, chatId string) (string, string) {
-	return fmt.Sprintf("%s/%s/full/%s.parquet", prefixChat, userId, chatId),
-		fmt.Sprintf("%s/%s/summary/%s.parquet", prefixChat, userId, chatId)
+func generateKeys(chatId string) (string, string) {
+	return fmt.Sprintf("%s/full/%s.parquet", prefixChat, chatId),
+		fmt.Sprintf("%s/summary/%s.parquet", prefixChat, chatId)
 }

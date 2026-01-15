@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
     generatePrompt,
-    getUserChats,
+    getChats,
     getTemplate,
     saveTestLocal,
     runContainer,
@@ -135,21 +135,21 @@ describe("getUserChats", () => {
         },
     ];
 
-    it("should make a GET request to /chats/:userId", async () => {
-        const mockedAxios = axios as unknown as Mock;
-        mockedAxios.mockResolvedValue({
-            data: { chatSummarys: mockChatSummaries },
-        });
+        it("should make a GET request to /chats", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                data: { chatSummarys: mockChatSummaries },
+            });
 
-        const result = await getUserChats();
+            const result = await getChats();
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "get",
-            url: `/users/${mockUserId}/chats`,
-            baseURL: "http://localhost:8081/api/v1/",
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `/chats`,
+                baseURL: "http://localhost:8081/api/v1/",
+            });
+            expect(result).toEqual(mockChatSummaries);
         });
-        expect(result).toEqual(mockChatSummaries);
-    });
 
     it("should reject when the API call fails", async () => {
         const mockedAxios = axios as unknown as Mock;
@@ -163,15 +163,15 @@ describe("getUserChats", () => {
         };
         mockedAxios.mockRejectedValue(err);
 
-        await expect(getUserChats()).rejects.toThrow(
-            "Failed to fetch user chats",
-        );
+            await expect(getChats()).rejects.toThrow(
+                "Failed to fetch user chats",
+            );
+        });
     });
-});
-describe.skip("validatePrompt TOOD: fix this test", () => {
-    it("should make a POST request to /validate with proper params", async () => {
-        const mockedAxios = axios as unknown as Mock;
-        mockedAxios.mockResolvedValue({ data: mockValidateResponse });
+    describe.skip("validatePrompt TOOD: fix this test", () => {
+        it("should make a POST request to /validate with proper params", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: mockValidateResponse });
 
         await validatePrompt(mockValidateParams);
 
@@ -385,35 +385,35 @@ describe("getChatById", () => {
         lastAutoPlaywrightPrompt: "last prompt here",
     };
 
-    it("should make a GET request to /users/:userId/chats/:chatId", async () => {
-        const mockedAxios = axios as unknown as Mock;
-        mockedAxios.mockResolvedValue({ data: mockChatResponse });
+        it("should make a GET request to /chats/:chatId", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
         const result = await getChatById();
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "get",
-            url: `/users/${mockUserId}/chats/${mockChatId}`,
-            baseURL: "http://localhost:8081/api/v1/",
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `/chats/${mockChatId}`,
+                baseURL: "http://localhost:8081/api/v1/",
+            });
+            expect(result).toEqual(mockChatResponse);
         });
-        expect(result).toEqual(mockChatResponse);
-    });
 
-    it("should use the current user and chat ids from shared state", async () => {
-        const mockedAxios = axios as unknown as Mock;
-        mockedAxios.mockResolvedValue({ data: mockChatResponse });
+        it("should use the current chat id from shared state", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
         shared.user.id = "differentUser";
         shared.chat.id = "differentChat";
 
         await getChatById();
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "get",
-            url: `/users/differentUser/chats/differentChat`,
-            baseURL: "http://localhost:8081/api/v1/",
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `/chats/differentChat`,
+                baseURL: "http://localhost:8081/api/v1/",
+            });
         });
-    });
 
     it("should reject when the API call fails", async () => {
         const mockedAxios = axios as unknown as Mock;
