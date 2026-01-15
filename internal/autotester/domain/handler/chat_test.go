@@ -55,7 +55,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
@@ -72,7 +72,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 		},
@@ -84,7 +84,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
@@ -99,7 +99,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
@@ -116,7 +116,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
@@ -220,7 +220,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -235,7 +235,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -250,7 +250,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusInternalServerError,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -264,7 +264,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 		},
@@ -276,7 +276,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:   http.StatusInternalServerError,
 			MockResponseLoad: []any{nil, errors.New("err")},
@@ -289,7 +289,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -352,9 +352,9 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			TestName: "Valid UserRequestBody",
 			UserRequestBody: `{
 				"userId": "9177b856-46a0-11f0-9fe2-0242ac120002",
-				"allConversations": [
+				"allChats": [
 				  {
-					"ConversationId": "string",
+					"ChatId": "string",
 					"Messages": [
 					  {
 						"data": "string",

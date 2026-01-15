@@ -170,12 +170,12 @@ paths:
             type: string
           description: "ID of the user deleting the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        - name: conversationId
+        - name: chatId
           in: query
           required: true
           schema:
             type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
 
       responses:
@@ -218,7 +218,7 @@ paths:
               required:
                 - userId
                 - testId
-                - sessionId
+                - chatId
               properties:
                 userId:
                   type: string
@@ -228,10 +228,10 @@ paths:
                   type: string
                   description: Unique identifier of the test to run
                   example: "test456"
-                sessionId:
+                chatId:
                   type: string
-                  description: Unique identifier of the session
-                  example: "session789"
+                  description: Unique identifier of the chat
+                  example: "chat789"
       responses:
         "200":
           description: Test executed successfully
@@ -357,7 +357,7 @@ paths:
     get:
       summary: Get full chat by ID
       description: |
-        Returns a full chat (conversation) for the given user, including all messages.
+        Returns a full chat for the given user, including all messages.
       parameters:
         - in: path
           name: chatId
@@ -396,7 +396,7 @@ paths:
       summary: Retrieve stored test cases with optional filters
       description: >
         Returns test cases belonging to the specified user. Additional optional
-        query parameters can be used to filter for specific test cases, conversations,
+        query parameters can be used to filter for specific test cases, chats,
         or by creation timestamps.
       parameters:
         - name: author
@@ -625,10 +625,10 @@ components:
         createdAt:
           type: "number"
 
-    Conversation:
+    chat:
       type: object
       properties:
-        conversationId:
+        chatId:
           type: string
         Messages:
           type: array
@@ -647,10 +647,10 @@ components:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        allConversations:
+        allChats:
           type: array
           items:
-            $ref: "#/components/schemas/Conversation"
+            $ref: "#/components/schemas/Chats"
 
     Chat:
       type: object
@@ -706,7 +706,7 @@ components:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
 
@@ -721,7 +721,7 @@ components:
             userId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            conversationId:
+            chatId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
@@ -739,16 +739,16 @@ components:
       type: object
       required:
         - userId
-        - conversationId
+        - chatId
         - code
       properties:
         userId:
           type: string
           description: "ID of the user saving the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
         code:
           type: string
@@ -808,7 +808,7 @@ components:
           example: "auth0|687270280dca20b77cfdcf74"
         title:
           type: string
-          example: "Login Test Conversation"
+          example: "Login Test Chat"
         createdAt:
           type: string
           format: date-time
