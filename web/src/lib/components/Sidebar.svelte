@@ -181,13 +181,13 @@
     }
 
     function updateChatTitleStance(chatId: string, title: string) {
-    if (!items) return;
+        if (!items) return;
 
-    const chat = items.find((c) => c.chatId === chatId);
-    if (chat) {
-        chat.title = title;
-        chat.updatedAt = new Date().toISOString();
-        items = [...items];
+        const chat = items.find((c) => c.chatId === chatId);
+        if (chat) {
+            chat.title = title;
+            chat.updatedAt = new Date().toISOString();
+            items = [...items];
     }
 }
 </script>

@@ -539,13 +539,13 @@ describe("updateChatTitleStance via UI", () => {
     ];
 
     beforeEach(() => {
-        vi.mocked(getUserChats).mockResolvedValue(initialItems);
+        vi.mocked(getChats).mockResolvedValue(initialItems);
     });
 
     it("updates title in the DOM when a child commits a title change", async () => {
         const { container } = render(SidebarTestWrapper);
 
-        await waitFor(() => expect(getUserChats).toHaveBeenCalled());
+        await waitFor(() => expect(getChats).toHaveBeenCalled());
 
         // find the paragraph that contains the old title
         const paragraphs = Array.from(container.querySelectorAll("p.truncate"));
@@ -569,11 +569,11 @@ describe("updateChatTitleStance via UI", () => {
     });
 
     it("does not throw when items are undefined and update is attempted via child flow", async () => {
-        vi.mocked(getUserChats).mockResolvedValue(undefined as unknown as ApiChatSummary[]);
+        vi.mocked(getChats).mockResolvedValue(undefined as unknown as ApiChatSummary[]);
 
         const { container } = render(SidebarTestWrapper);
 
-        await waitFor(() => expect(getUserChats).toHaveBeenCalled());
+        await waitFor(() => expect(getChats).toHaveBeenCalled());
 
         expect(container).toBeTruthy();
     });
