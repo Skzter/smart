@@ -3,11 +3,14 @@ package resource
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -17,44 +20,68 @@ import (
 // running (final: false) or completed (final: true), allowing LLMs to make intelligent
 // decisions about polling for new logs.
 type TestLogStreamResource struct {
-	logger               *slog.Logger
-	autotesterAPIService service.AutotesterAPIService
+	logger *slog.Logger
+	store  store.TestLogStreamStore
 }
 
 // NewTestLogStreamResource creates a new TestLogStreamResource instance.
 // It validates that all required dependencies (logger and autotesterAPIService) are provided.
 //
 // Returns an error if any dependency is nil.
-func NewTestLogStreamResource(logger *slog.Logger, autotesterAPIService service.AutotesterAPIService) (*TestLogStreamResource, error) {
-	if err := assert.NotNil(logger, autotesterAPIService); err != nil {
+func NewTestLogStreamResource(logger *slog.Logger, store store.TestLogStreamStore) (*TestLogStreamResource, error) {
+	if err := assert.NotNil(logger, store); err != nil {
 		return nil, err
 	}
 	return &TestLogStreamResource{
-		logger:               logger,
-		autotesterAPIService: autotesterAPIService,
+		logger: logger,
+		store:  store,
 	}, nil
 }
 
 // ReadTestLogStream reads test execution logs for a given testId from the MCP resource request.
 // It extracts the testId from the resource URI (format: mcp://tests/{testId}/logs) and fetches
 // the accumulated logs from the autotester service.
-//
-// The response includes a "final" metadata flag:
-//   - final: false indicates the test is still running and more logs may be available
-//   - final: true indicates the test has completed and all logs are included
-//
-// This allows LLMs to make intelligent decisions about whether to continue polling
-// for new logs or if the test execution is fully complete.
 func (ls *TestLogStreamResource) ReadTestLogStream(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
 	uri := req.Params.URI
-	// TODO: service anschließen
-	return &mcp.ReadResourceResult{
-		Meta: mcp.Meta{"final": true}, // dynamisch setzen
-		Contents: []*mcp.ResourceContents{
-			{
-				URI:  uri,
-				Text: "Hey",
-			},
+
+	// expected format: mcp://tests/{testId}/logs
+	const prefix = "mcp://tests/"
+	const suffix = "/logs"
+	if !strings.HasPrefix(uri, prefix) || !strings.HasSuffix(uri, suffix) {
+		ls.logger.Warn("invalid test logs uri", "uri", uri)
+		return nil, nil
+	}
+
+	testId := strings.TrimSuffix(strings.TrimPrefix(uri, prefix), suffix)
+	ls.logger.Debug("extracted test id from uri", "testId", testId)
+
+	stream, exists := ls.store.GetStream(testId)
+	if !exists {
+		return nil, fmt.Errorf("stream for testId: %s doesnt exist", testId)
+	}
+
+	events := stream.GetEvents()
+
+	payload := map[string]any{
+		"events": events,
+		"meta": map[string]any{
+			"final": stream.IsCompleted(),
 		},
+	}
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		ls.logger.Error("failed to marshal log events", "err", err)
+		return nil, err
+	}
+
+	contents := &mcp.ResourceContents{
+		URI:      uri,
+		MIMEType: "application/json",
+		Text:     string(b),
+	}
+
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{contents},
 	}, nil
 }

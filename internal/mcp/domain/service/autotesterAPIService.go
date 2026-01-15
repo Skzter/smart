@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -169,10 +168,9 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 				continue
 			}
 
-			var logEvent entity.LogEvent
-			if err := json.Unmarshal(event.Data, &logEvent); err != nil {
-				s.logger.Warn("Failed to decode log event", "error", err, "testId", testId, "data", string(event.Data))
-				continue
+			logEvent := entity.LogEvent{
+				Event: string(event.Event),
+				Data:  string(event.Data),
 			}
 			s.store.AddEvent(testId, logEvent)
 		}

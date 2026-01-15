@@ -72,7 +72,7 @@ func (m *McpServer) registerTools() error {
 		return err
 	}
 
-	testLogStreamResource, err := resource.NewTestLogStreamResource(m.logger, m.autotesterService)
+	testLogStreamResource, err := resource.NewTestLogStreamResource(m.logger, m.store)
 	if err != nil {
 		return err
 	}
