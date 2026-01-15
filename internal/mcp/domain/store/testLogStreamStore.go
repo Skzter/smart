@@ -7,7 +7,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 )
 
-// TestLogStreamStoreInterface defines the contract for managing test log streams.
+// TestLogStreamStore defines the contract for managing test log streams.
 type TestLogStreamStore interface {
 	// AddEvent adds a log event to the stream of a test. If the stream does not exist, it is created automatically.
 	AddEvent(testId string, event entity.LogEvent)

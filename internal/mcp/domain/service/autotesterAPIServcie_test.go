@@ -10,41 +10,47 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/mocks/repository"
+	mocksStore "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/mocks/store"
 )
 
 func TestNewAutotesterAPIService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := mocks.NewMockAutotesterAPIRepository(t)
+	mockStore := mocksStore.NewMockTestLogStreamStore(t)
 
 	tests := []struct {
 		name      string
 		logger    *slog.Logger
 		repo      *mocks.MockAutotesterAPIRepository
+		store     *mocksStore.MockTestLogStreamStore
 		expectErr bool
 	}{
 		{
 			name:      "success",
 			logger:    logger,
 			repo:      mockRepo,
+			store:     mockStore,
 			expectErr: false,
 		},
 		{
 			name:      "nil-logger",
 			logger:    nil,
 			repo:      mockRepo,
+			store:     mockStore,
 			expectErr: true,
 		},
 		{
 			name:      "nil-repo",
 			logger:    logger,
 			repo:      nil,
+			store:     mockStore,
 			expectErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewAutotesterAPIService(test.logger, test.repo)
+			svc, err := NewAutotesterAPIService(test.logger, test.repo, test.store)
 			if test.expectErr {
 				require.Error(t, err)
 				require.Nil(t, svc)
@@ -92,9 +98,10 @@ func TestGetTemplate(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
+			mockStore := mocksStore.NewMockTestLogStreamStore(t)
 			test.setupMock(mockRepo)
 
-			svc, err := NewAutotesterAPIService(logger, mockRepo)
+			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
 			res, err := svc.GetTemplate(context.Background())
@@ -255,9 +262,10 @@ func TestGenerateTest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
+			mockStore := mocksStore.NewMockTestLogStreamStore(t)
 			test.setupMock(mockRepo)
 
-			svc, err := NewAutotesterAPIService(logger, mockRepo)
+			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
 			res, err := svc.GenerateTest(context.Background(), test.request)
@@ -384,9 +392,10 @@ func TestExecuteTest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
+			mockStore := mocksStore.NewMockTestLogStreamStore(t)
 			test.setupMock(mockRepo)
 
-			svc, err := NewAutotesterAPIService(logger, mockRepo)
+			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
 			res, err := svc.ExecuteTest(context.Background(), test.request)

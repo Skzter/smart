@@ -29,15 +29,20 @@ func NewRunTestTool(logger *slog.Logger, autotesterAPIService service.Autotester
 }
 
 // RunTest starts to run a test in the backend
-func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest, input entity.ExecuteTestRequest) (result *mcp.CallToolResult, output entity.RunTestResponse, _ error) {
+func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest, input entity.ExecuteTestRequest) (result *mcp.CallToolResult, output entity.ExecuteTestResponse, _ error) {
 	tt.logger.Debug("RunTest tool called")
 
 	testResult, err := tt.autotesterAPIService.ExecuteTest(ctx, &input)
 	if err != nil {
 		tt.logger.Error("Failed to run test", "error", err)
-		return nil, entity.RunTestResponse{}, err
+		return nil, entity.ExecuteTestResponse{}, err
 	}
 
-	tt.logger.Debug("Test executed successfully", "result", testResult)
-	return nil, entity.RunTestResponse{Result: testResult.Result}, nil
+	tt.logger.Debug("Test started successfully", "result", testResult)
+
+	if err := tt.autotesterAPIService.ReadTestLogStream(ctx, testResult.TestId); err != nil {
+		tt.logger.Error("Failed to start log stream consumption", "error", err, "testId", testResult.TestId)
+	}
+
+	return nil, *testResult, nil
 }

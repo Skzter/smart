@@ -9,6 +9,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	r3labs "github.com/r3labs/sse/v2"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -29,6 +31,11 @@ type AutotesterAPIRepository interface {
 
 	// RunTest executes a test by ID via the API.
 	RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error)
+
+	// ReadTestLogStream opens a connection to the backend SSE stream.
+	// This method is blocking and writes events to the provided channel.
+	// Returns an error if the stream cannot be established or fails.
+	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *r3labs.Event) error
 }
 
 type autotesterAPIRepository struct {
@@ -132,8 +139,20 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 		return nil, err
 	}
 
-	a.logger.Debug("Successfullywie d test run")
+	a.logger.Debug("Successfully run test")
 	return &result, nil
+}
+
+// ReadTestLogStream establishes an SSE connection to the backend stream.
+// It is a blocking call and follows the lifecycle of the provided context.
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *r3labs.Event) error {
+	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
+	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
+
+	client := r3labs.NewClient(url)
+	client.Connection = a.httpClient
+
+	return client.SubscribeChanWithContext(ctx, "", eventsCh)
 }
 
 // newJSONRequest creates an HTTP request with an optional JSON body and sets

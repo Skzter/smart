@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
+	r3labs "github.com/r3labs/sse/v2"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -20,23 +24,29 @@ type AutotesterAPIService interface {
 
 	// ExecuteTest runs an existing test by ID.
 	ExecuteTest(ctx context.Context, request *entity.ExecuteTestRequest) (*entity.ExecuteTestResponse, error)
+
+	// ReadTestLogStream reads log events from the backend stream and stores them.
+	// It marks the stream as complete when the backend stream is exhausted.
+	ReadTestLogStream(ctx context.Context, testId string) error
 }
 
 type autotesterAPIService struct {
 	logger *slog.Logger
 	repo   repository.AutotesterAPIRepository
+	store  store.TestLogStreamStore
 }
 
 // NewAutotesterAPIService creates a new service for the Autotester API.
-// Expects a logger and a repository, checks both for nil.
-func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIRepository) (AutotesterAPIService, error) {
-	if err := assert.NotNil(logger, repo); err != nil {
+// Expects a logger, a repository, and a test log stream store, checks all for nil.
+func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIRepository, store store.TestLogStreamStore) (AutotesterAPIService, error) {
+	if err := assert.NotNil(logger, repo, store); err != nil {
 		return nil, err
 	}
 
 	return &autotesterAPIService{
 		logger: logger,
 		repo:   repo,
+		store:  store,
 	}, nil
 }
 
@@ -131,5 +141,43 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 
 	s.logger.Info("Successfully executed test", "summary", combined)
 
-	return &entity.ExecuteTestResponse{Result: combined}, nil
+	return &entity.ExecuteTestResponse{Result: combined, TestId: saveResp.TestId}, nil
+}
+
+func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
+	s.logger.Debug("Reading test log stream via API", "testId", testId)
+
+	rawEventsCh := make(chan *r3labs.Event)
+
+	bgCtx := context.Background()
+
+	go func() {
+		defer func() {
+			s.logger.Debug("Stream processing complete", "testId", testId)
+			s.store.CompleteStream(testId)
+			close(rawEventsCh)
+		}()
+
+		go func() {
+			if err := s.repo.ReadTestLogStream(bgCtx, testId, rawEventsCh); err != nil {
+				s.logger.Error("SSE stream interrupted or failed to start", "error", err, "testId", testId)
+			}
+		}()
+
+		for event := range rawEventsCh {
+			if event == nil {
+				continue
+			}
+
+			var logEvent entity.LogEvent
+			if err := json.Unmarshal(event.Data, &logEvent); err != nil {
+				s.logger.Warn("Failed to decode log event", "error", err, "testId", testId, "data", string(event.Data))
+				continue
+			}
+			s.store.AddEvent(testId, logEvent)
+		}
+	}()
+
+	s.logger.Info("Started background task for test log stream", "testId", testId)
+	return nil
 }

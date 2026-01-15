@@ -8,6 +8,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/resource"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/tools"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -16,18 +17,25 @@ import (
 type McpServer struct {
 	server            *mcp.Server
 	autotesterService service.AutotesterAPIService
+	store             store.TestLogStreamStore
 	logger            *slog.Logger
 }
 
 // NewMcpServer creates a new MCP server instance with all dependencies
-func NewMcpServer(server *mcp.Server, autotesterService service.AutotesterAPIService, logger *slog.Logger) (*McpServer, error) {
-	if err := assert.NotNil(server, autotesterService, logger); err != nil {
+func NewMcpServer(
+	server *mcp.Server,
+	autotesterService service.AutotesterAPIService,
+	store store.TestLogStreamStore,
+	logger *slog.Logger,
+) (*McpServer, error) {
+	if err := assert.NotNil(server, autotesterService, store, logger); err != nil {
 		return nil, err
 	}
 
 	wrapper := &McpServer{
 		server:            server,
 		autotesterService: autotesterService,
+		store:             store,
 		logger:            logger,
 	}
 
@@ -59,7 +67,7 @@ func (m *McpServer) registerTools() error {
 	if err != nil {
 		return err
 	}
-	readTestLogStreamTool, err := tools.NewReadTestLogStreamTool(m.logger)
+	readTestLogStreamTool, err := tools.NewReadTestLogStreamTool(m.logger, m.store)
 	if err != nil {
 		return err
 	}
@@ -99,7 +107,7 @@ func (m *McpServer) registerTools() error {
 
 	m.server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "testlog_stream",
-		Description: "Provides access to test execution logs", // TODO: ausbauen mehr informationen zur nutzung geben also mehrmals benutzen bis final = true und so
+		Description: "Provides access to test execution logs",
 		URITemplate: "mcp://tests/{testId}/logs",
 		MIMEType:    "text/plain",
 	}, testLogStreamResource.ReadTestLogStream)

@@ -33,7 +33,9 @@ require (
 
 require (
 	github.com/google/jsonschema-go v0.3.0 // indirect
+	github.com/r3labs/sse/v2 v2.10.0 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+	gopkg.in/cenkalti/backoff.v1 v1.1.0 // indirect
 )
 
 require (
