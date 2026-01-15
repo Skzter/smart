@@ -18,9 +18,6 @@ type TestLogStreamStore interface {
 
 	// CompleteStream marks the log stream of a test as completed.
 	CompleteStream(testId string)
-
-	// DeleteStream removes the log stream for a given test ID.
-	DeleteStream(testId string)
 }
 
 // TestLogStreamStore manages log streams for tests, providing thread-safe access
@@ -67,13 +64,6 @@ func (tlss *testLogStreamStore) CompleteStream(testId string) {
 	if stream, exists := tlss.GetStream(testId); exists {
 		stream.SetComplete()
 	}
-}
-
-// DeleteStream removes the log stream for a given test ID.
-func (tlss *testLogStreamStore) DeleteStream(testId string) {
-	tlss.mu.Lock()
-	defer tlss.mu.Unlock()
-	delete(tlss.streams, testId)
 }
 
 // cleanup periodically removes log streams that are older than 24 hours.

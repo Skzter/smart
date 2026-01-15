@@ -122,46 +122,6 @@ func (_c *MockTestLogStreamStore_CompleteStream_Call) RunAndReturn(run func(test
 	return _c
 }
 
-// DeleteStream provides a mock function for the type MockTestLogStreamStore
-func (_mock *MockTestLogStreamStore) DeleteStream(testId string) {
-	_mock.Called(testId)
-	return
-}
-
-// MockTestLogStreamStore_DeleteStream_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteStream'
-type MockTestLogStreamStore_DeleteStream_Call struct {
-	*mock.Call
-}
-
-// DeleteStream is a helper method to define mock.On call
-//   - testId string
-func (_e *MockTestLogStreamStore_Expecter) DeleteStream(testId interface{}) *MockTestLogStreamStore_DeleteStream_Call {
-	return &MockTestLogStreamStore_DeleteStream_Call{Call: _e.mock.On("DeleteStream", testId)}
-}
-
-func (_c *MockTestLogStreamStore_DeleteStream_Call) Run(run func(testId string)) *MockTestLogStreamStore_DeleteStream_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockTestLogStreamStore_DeleteStream_Call) Return() *MockTestLogStreamStore_DeleteStream_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *MockTestLogStreamStore_DeleteStream_Call) RunAndReturn(run func(testId string)) *MockTestLogStreamStore_DeleteStream_Call {
-	_c.Run(run)
-	return _c
-}
-
 // GetStream provides a mock function for the type MockTestLogStreamStore
 func (_mock *MockTestLogStreamStore) GetStream(testId string) (*entity.LogStream, bool) {
 	ret := _mock.Called(testId)

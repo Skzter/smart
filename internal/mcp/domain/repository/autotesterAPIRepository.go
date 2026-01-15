@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -8,8 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-
-	r3labs "github.com/r3labs/sse/v2"
+	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -35,7 +35,7 @@ type AutotesterAPIRepository interface {
 	// ReadTestLogStream opens a connection to the backend SSE stream.
 	// This method is blocking and writes events to the provided channel.
 	// Returns an error if the stream cannot be established or fails.
-	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *r3labs.Event) error
+	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *entity.LogEvent) error
 }
 
 type autotesterAPIRepository struct {
@@ -145,14 +145,76 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 
 // ReadTestLogStream establishes an SSE connection to the backend stream.
 // It is a blocking call and follows the lifecycle of the provided context.
-func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *r3labs.Event) error {
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *entity.LogEvent) error {
 	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
 	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
 
-	client := r3labs.NewClient(url)
-	client.Connection = a.httpClient
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
 
-	return client.SubscribeChanWithContext(ctx, "", eventsCh)
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
+
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to connect to stream: %w", err)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			a.logger.Warn("Failed to close response body", "error", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	defer close(eventsCh)
+
+	scanner := bufio.NewScanner(resp.Body)
+	var currentEvent entity.LogEvent
+	for scanner.Scan() {
+		line := scanner.Text()
+		a.logger.Debug("Read line from stream", "testId", testId, "line", line)
+
+		if line == "" {
+			if currentEvent.Event != "" || currentEvent.Data != "" {
+				eventCopy := currentEvent
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case eventsCh <- &eventCopy:
+					a.logger.Debug("Successfully sent SSE event to channel", "testId", testId, "event", eventCopy.Event)
+				}
+				currentEvent = entity.LogEvent{}
+			}
+			continue
+		}
+
+		if after, ok := strings.CutPrefix(line, "event:"); ok {
+			currentEvent.Event = after
+		} else if after, ok := strings.CutPrefix(line, "data:"); ok {
+			dataPart := after
+			if currentEvent.Data != "" {
+				currentEvent.Data += "\n" + dataPart
+			} else {
+				currentEvent.Data = dataPart
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return fmt.Errorf("error reading stream: %w", err)
+	}
+
+	return nil
 }
 
 // newJSONRequest creates an HTTP request with an optional JSON body and sets

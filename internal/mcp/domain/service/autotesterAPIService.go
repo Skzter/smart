@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	r3labs "github.com/r3labs/sse/v2"
-
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
@@ -144,38 +142,39 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 }
 
 func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
-	s.logger.Debug("Reading test log stream via API", "testId", testId)
+	s.logger.Info("Start reading and processing log stream", "testId", testId)
 
-	rawEventsCh := make(chan *r3labs.Event)
+	rawEventsCh := make(chan *entity.LogEvent, 32)
+	streamCtx, cancelStream := context.WithCancel(context.Background())
 
-	bgCtx := context.Background()
-
+	// PRODUCER
 	go func() {
-		defer func() {
-			s.logger.Debug("Stream processing complete", "testId", testId)
-			s.store.CompleteStream(testId)
-			close(rawEventsCh)
-		}()
-
-		go func() {
-			if err := s.repo.ReadTestLogStream(bgCtx, testId, rawEventsCh); err != nil {
-				s.logger.Error("SSE stream interrupted or failed to start", "error", err, "testId", testId)
-			}
-		}()
-
-		for event := range rawEventsCh {
-			if event == nil {
-				continue
-			}
-
-			logEvent := entity.LogEvent{
-				Event: string(event.Event),
-				Data:  string(event.Data),
-			}
-			s.store.AddEvent(testId, logEvent)
+		defer cancelStream()
+		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
+		if err := s.repo.ReadTestLogStream(streamCtx, testId, rawEventsCh); err != nil {
+			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
 		}
+		s.logger.Debug("PRODUCER: SSE reader stopped", "testId", testId)
 	}()
 
-	s.logger.Info("Started background task for test log stream", "testId", testId)
+	// CONSUMER
+	go func() {
+		defer cancelStream()
+		s.logger.Debug("CONSUMER: Starting event processor", "testId", testId)
+
+		for event := range rawEventsCh {
+			if event != nil {
+				s.logger.Debug("CONSUMER: Received event",
+					"testId", testId,
+					"event", event.Event,
+				)
+				s.store.AddEvent(testId, *event)
+			}
+		}
+
+		s.logger.Info("Stream read and processed", "testId", testId)
+		s.store.CompleteStream(testId)
+	}()
+
 	return nil
 }
