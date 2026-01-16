@@ -247,36 +247,43 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 
 // HandleUpdateChatTitle allows a user to update the title of an existing chat.
 func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
-	_, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
 	defer span.End()
 
-	chatID := c.Param("chatId")
-	userID := c.Param("userId")
+	type UpdateChatUri struct {
+		UserId string `uri:"userId" binding:"required"`
+		ChatId string `uri:"chatId" binding:"required"`
+	}
 
-	if assert.StringNotEmpty(userID) != nil {
+	var uri UpdateChatUri
+	if err := c.ShouldBindUri(&uri); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
-		a.logger.Error("No UserID provided in Request")
 		return
 	}
 
-	var req struct {
-		Title string `json:"title"`
+	userRequest := entity.UserRequest{
+		UserId: uri.UserId,
+		ChatId: uri.ChatId,
 	}
 
+	type UpdateTitleRequest struct {
+		Title string `json:"title" binding:"required"`
+	}
+
+	var req UpdateTitleRequest
 	if err := c.BindJSON(&req); err != nil {
-		a.logger.Error("JSON binding failed", "error", err)
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
 
-	chat, err := a.chatStorageService.LoadChat(c.Request.Context(), chatID)
+	chat, err := a.chatStorageService.LoadChat(ctx, userRequest.ChatId)
 	if err != nil {
-		a.logger.Error("LoadChat failed", "error", err, "chatId", chatID, "userId", userID)
+		a.logger.Error("LoadChat failed", "error", err, "chatId", userRequest.ChatId, "userId", userRequest.UserId)
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
 		return
 	}
 
-	if chat.Author != userID {
+	if chat.Author != userRequest.UserId {
 		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
 		return
 	}
@@ -289,14 +296,12 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 
 	chat.Title = title
 
-	if err := a.chatManager.SaveChat(c.Request.Context(), chat, userID); err != nil {
-		a.logger.Error("Saving updated chat failed", "error", err)
+	if err := a.chatManager.SaveChat(c.Request.Context(), chat, userRequest.UserId); err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not save chat"})
 		return
 	}
 
 	a.metricsService.IncRequestSuccess()
 	span.SetStatus(codes.Ok, "")
-
 	c.JSON(http.StatusOK, chat)
 }

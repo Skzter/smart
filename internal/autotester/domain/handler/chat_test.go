@@ -705,11 +705,13 @@ func TestGetChatById_Success_ReturnsChat(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestHandleUpdateChatTitle(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
+
 	tests := []struct {
 		TestName          string
 		UserId            string
@@ -753,7 +755,20 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			ExpectedStatus:    http.StatusInternalServerError,
 			ExpectedErrorText: "could not load chat",
 		},
+		{
+			TestName:    "Title too long",
+			UserId:      validUserID,
+			ChatId:      validChatID,
+			RequestBody: `{"title":"1234567890123456789012345678901"}`,
+			MockResponseLoad: []*entity.Chat{
+				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			},
+			MockErrorLoad:     []error{nil},
+			ExpectedStatus:    http.StatusBadRequest,
+			ExpectedErrorText: "Title must be 1–30 characters",
+		},
 	}
+
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
 	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
@@ -772,29 +787,42 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockResponseLoad != nil {
-				mockChatStorageServ.On("LoadChat", mock.Anything, test.ChatId).Return(test.MockResponseLoad[0], test.MockErrorLoad[0])
+				mockChatStorageServ.
+					On("LoadChat", mock.Anything, mock.Anything).
+					Return(test.MockResponseLoad[0], test.MockErrorLoad[0])
 			}
+
 			if test.MockErrorSave != nil {
-				mockChatManager.On("SaveChat", mock.Anything, mock.Anything, mock.Anything).Return(test.MockErrorSave[0]).Maybe()
+				mockChatManager.
+					On("SaveChat", mock.Anything, mock.Anything, mock.Anything).
+					Return(test.MockErrorSave[0]).
+					Maybe()
 			}
 
-			req, _ := http.NewRequest(http.MethodPut, "/users/"+test.UserId+"/chats/"+test.ChatId, bytes.NewBufferString(test.RequestBody))
+			router := gin.New()
+
+			controller, _ := NewAutotesterController(
+				logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ,
+				mockDockerServ, mockChatStorageServ, mockRemoteStorageServ,
+				mockChatManager, mockGroupManager, tracer, mockMetricsServ,
+			)
+
+			router.PATCH("/users/:userId/chats/:chatId", controller.HandleUpdateChatTitle)
+
+			req, _ := http.NewRequest(
+				http.MethodPatch,
+				"/users/"+test.UserId+"/chats/"+test.ChatId,
+				bytes.NewBufferString(test.RequestBody),
+			)
 			req.Header.Set("Content-Type", "application/json")
-			rec := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(rec)
-			ctx.Request = req
-			ctx.Params = []gin.Param{
-				{Key: "userId", Value: test.UserId},
-				{Key: "chatId", Value: test.ChatId},
-			}
 
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
-				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroupManager, tracer, mockMetricsServ)
-			controller.HandleUpdateChatTitle(ctx)
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
 			}
+
 			if test.ExpectedErrorText != "" {
 				var resp entity.ErrorMessage
 				_ = json.Unmarshal(rec.Body.Bytes(), &resp)
@@ -803,62 +831,5 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestHandleUpdateChatTitle_TitleTooLong(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	cfg, _ := config.LoadConfig()
-	logger := slog.New(slog.DiscardHandler)
-	tracer := otel.Tracer("test")
-
-	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-	mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
-	mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
-	mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
-	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
-
-	mockGenServ := mocks.NewMockGeneratePrompt(t)
-	mockValServ := mocks.NewMockValidator(t)
-	mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
-	mockDockerServ := mocks.NewMockDocker(t)
-	mockChatStorageServ := mocks.NewMockChatStorageService(t)
-	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
-	mockChatManager := mocks.NewMockChatManager(t)
-	mockGroupManager := mocks.NewMockGroupManager(t)
-	mockChatStorageServ.On("LoadChat", mock.Anything, validChatID).
-		Return(&entity.Chat{
-			Id:     validChatID,
-			Author: validUserID,
-			Title:  "Old Title",
-		}, nil)
-
-	mockChatManager.On("SaveChat", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
-
-	requestBody := `{"title":"This title is way too long to be accepted by the system"}`
-	req, _ := http.NewRequest(http.MethodPut, "/users/"+validUserID+"/chats/"+validChatID, bytes.NewBufferString(requestBody))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(rec)
-	ctx.Request = req
-	ctx.Params = []gin.Param{
-		{Key: "userId", Value: validUserID},
-		{Key: "chatId", Value: validChatID},
-	}
-
-	controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ,
-		mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroupManager, tracer, mockMetricsServ)
-
-	controller.HandleUpdateChatTitle(ctx)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, rec.Code)
-	}
-
-	var resp entity.ErrorMessage
-	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	expectedError := "Title must be 1–30 characters"
-	if resp.Error != expectedError {
-		t.Errorf("Expected error '%s', got '%s'", expectedError, resp.Error)
 	}
 }
