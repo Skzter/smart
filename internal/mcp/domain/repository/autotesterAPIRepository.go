@@ -47,7 +47,7 @@ type autotesterAPIRepository struct {
 // NewAutotesterAPIRepository creates a new instance of AutotesterAPIRepository.
 // It initializes the repository with an HTTP client, base URL, and logger for API communication.
 func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, baseURL string) (AutotesterAPIRepository, error) {
-	if err := assert.NotNil(logger); err != nil {
+	if err := assert.NotNil(logger, httpClient); err != nil {
 		return nil, err
 	}
 
