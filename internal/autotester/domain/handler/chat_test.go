@@ -145,6 +145,7 @@ func TestHandleChatRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			for _, mc := range test.MockSetup {
@@ -183,6 +184,7 @@ func TestHandleChatRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleChatRequest(ctx)
@@ -310,6 +312,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockResponseLoad != nil {
@@ -327,8 +330,20 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
-				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroupManager, tracer, mockMetricsServ)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				mockGroupManager,
+				tracer,
+				mockMetricsServ,
+				mockAuth)
 			controller.HandleChatRequestValidity(ctx)
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
@@ -382,6 +397,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -416,6 +432,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			if err != nil {
@@ -487,6 +504,7 @@ func TestGetUserChats(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -517,6 +535,7 @@ func TestGetUserChats(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			router.GET("/api/v1/chats/", controller.HandleGetChats)
 
@@ -547,6 +566,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -574,6 +594,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		mockGroupManager,
 		tracer,
 		mockMetricsServ,
+		mockAuth,
 	)
 	if buildErr != nil {
 		t.Fatalf("failed to build controller: %v", buildErr)
@@ -596,6 +617,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -619,6 +641,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 		mockGroupManager,
 		tracer,
 		mockMetricsServ,
+		mockAuth,
 	)
 	if err != nil {
 		t.Fatalf("failed to build controller: %v", err)
