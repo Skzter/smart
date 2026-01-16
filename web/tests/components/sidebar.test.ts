@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { tick } from "svelte";
 import SidebarTestWrapper from "../helpers/SidebarTestWrapper.svelte";
-import type { ApiChatSummary } from "$lib/types";
+import type { ApiChatSummary } from "$types/api";
 import type { DateRange } from "bits-ui";
 
 // Mock toast
@@ -78,13 +78,15 @@ describe("Sidebar", () => {
         });
     });
 
-    it("does not load chats when user.id is undefined", async () => {
+    it("loads chats even when user.id is undefined", async () => {
         (user as unknown as { id: undefined }).id = undefined;
-
+    
+        vi.mocked(getChats).mockResolvedValue([]);
+    
         render(SidebarTestWrapper);
         await tick();
-
-        expect(getChats).not.toHaveBeenCalled();
+    
+        expect(getChats).toHaveBeenCalledTimes(1);
     });
 
     it("categorizes chat as 'Heute' for today's chats", async () => {
