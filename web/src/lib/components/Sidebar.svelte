@@ -3,7 +3,7 @@
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
-    import { ChatDate, ChatFilter, user } from "$lib/shared.svelte";
+    import { ChatDate, ChatFilter } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
@@ -24,7 +24,6 @@
     );
 
     $effect(() => {
-        if (!user.id) return;
         (async () => {
             try {
                 items = (await getChats()) as ApiChatSummary[];
