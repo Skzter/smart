@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
@@ -406,6 +408,97 @@ func TestExecuteTest(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, res)
 			require.Equal(t, test.expectedMatch, res.Result)
+		})
+	}
+}
+
+func TestReadTestLogStream(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name                 string
+		testId               string
+		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, chan struct{}, *[]entity.LogEvent)
+		expectedStoreContent []entity.LogEvent
+	}{
+		{
+			name:   "success - transmits all events to store",
+			testId: "test-123",
+			expectedStoreContent: []entity.LogEvent{
+				{Event: "log", Data: "test started"},
+				{Event: "log", Data: "something"},
+				{Event: "finish", Data: "terminated"},
+			},
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, done chan struct{}, captured *[]entity.LogEvent) {
+				events := []entity.LogEvent{
+					{Event: "log", Data: "test started"},
+					{Event: "log", Data: "something"},
+					{Event: "finish", Data: "terminated"},
+				}
+
+				mr.EXPECT().
+					ReadTestLogStream(mock.Anything, "test-123", mock.Anything).
+					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+						for i := range events {
+							ch <- &events[i]
+						}
+					}).
+					Return(nil).
+					Once()
+
+				ms.EXPECT().
+					AddEvent("test-123", mock.Anything).
+					Run(func(id string, ev entity.LogEvent) {
+						*captured = append(*captured, ev)
+					}).
+					Return().
+					Times(3)
+
+				ms.EXPECT().
+					CompleteStream("test-123").
+					Run(func(id string) {
+						close(done)
+					})
+			},
+		},
+		{
+			name:                 "repo returns error when connecting",
+			testId:               "test-123",
+			expectedStoreContent: []entity.LogEvent{},
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, done chan struct{}, captured *[]entity.LogEvent) {
+				mr.EXPECT().
+					ReadTestLogStream(mock.Anything, "test-123", mock.Anything).
+					Return(errors.New("connection failed")).
+					Once()
+
+				ms.EXPECT().
+					CompleteStream("test-123").
+					Run(func(id string) {
+						close(done)
+					})
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
+			mockStore := mocksStore.NewMockTestLogStreamStore(t)
+			done := make(chan struct{})
+			capturedEvents := []entity.LogEvent{}
+			test.setupMock(mockRepo, mockStore, done, &capturedEvents)
+
+			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
+			require.NoError(t, err)
+
+			svc.ReadTestLogStream(context.Background(), test.testId)
+
+			select {
+			case <-done:
+				require.Equal(t, test.expectedStoreContent, capturedEvents)
+			case <-time.After(5 * time.Second):
+				t.Errorf("timeout goroutines didn't terminate")
+			}
 		})
 	}
 }

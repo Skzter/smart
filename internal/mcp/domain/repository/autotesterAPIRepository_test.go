@@ -509,9 +509,11 @@ func TestReadTestLogStream(t *testing.T) {
 				cancel()
 
 				err = <-errCh
+				close(eventsCh)
 			} else {
-				defer cancel()
 				err = repo.ReadTestLogStream(ctx, test.testId, eventsCh)
+				close(eventsCh)
+				cancel()
 			}
 
 			if test.expectErr {

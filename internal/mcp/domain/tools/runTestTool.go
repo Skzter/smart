@@ -40,9 +40,7 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 
 	tt.logger.Debug("Test started successfully", "result", testResult)
 
-	if err := tt.autotesterAPIService.ReadTestLogStream(ctx, testResult.TestId); err != nil {
-		tt.logger.Error("Failed to start log stream consumption", "error", err, "testId", testResult.TestId)
-	}
+	tt.autotesterAPIService.ReadTestLogStream(ctx, testResult.TestId)
 
 	return nil, *testResult, nil
 }

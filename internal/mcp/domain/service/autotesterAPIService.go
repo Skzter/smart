@@ -24,7 +24,7 @@ type AutotesterAPIService interface {
 
 	// ReadTestLogStream reads log events from the backend stream and stores them.
 	// It marks the stream as complete when the backend stream is exhausted.
-	ReadTestLogStream(ctx context.Context, testId string) error
+	ReadTestLogStream(ctx context.Context, testId string)
 }
 
 type autotesterAPIService struct {
@@ -141,7 +141,7 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 	return &entity.ExecuteTestResponse{Result: combined, TestId: saveResp.TestId}, nil
 }
 
-func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
+func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
 
 	rawEventsCh := make(chan *entity.LogEvent, 32)
@@ -150,6 +150,7 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 	// PRODUCER
 	go func() {
 		defer cancelStream()
+		defer close(rawEventsCh)
 		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
 		if err := s.repo.ReadTestLogStream(streamCtx, testId, rawEventsCh); err != nil {
 			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
@@ -175,6 +176,4 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 		s.logger.Info("Stream read and processed", "testId", testId)
 		s.store.CompleteStream(testId)
 	}()
-
-	return nil
 }

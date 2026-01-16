@@ -87,8 +87,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
-					Return(nil).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -108,8 +107,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
-					Return(nil).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -143,8 +141,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
-					Return(nil).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -164,8 +161,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
-					Return(nil).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{

@@ -35,7 +35,7 @@ type AutotesterAPIRepository interface {
 	// ReadTestLogStream opens a connection to the backend SSE stream.
 	// This method is blocking and writes events to the provided channel.
 	// Returns an error if the stream cannot be established or fails.
-	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *entity.LogEvent) error
+	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error
 }
 
 type autotesterAPIRepository struct {
@@ -145,7 +145,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 
 // ReadTestLogStream establishes an SSE connection to the backend stream.
 // It is a blocking call and follows the lifecycle of the provided context.
-func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan *entity.LogEvent) error {
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
 	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
 	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
 
@@ -172,8 +172,6 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
-
-	defer close(eventsCh)
 
 	scanner := bufio.NewScanner(resp.Body)
 	var currentEvent entity.LogEvent
