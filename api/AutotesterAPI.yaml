@@ -302,7 +302,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/generate:
+    post:
+      summary: Generate authentication token for a user
+      description: |
+        Generates and returns a new authentication token for the specified user. Only accessible from internal networks.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        "200":
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          description: Bad request (invalid userId or malformed JSON)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error (token generation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /chats:
     get:
@@ -850,6 +880,38 @@ components:
           type: string
           description: "Descriptive name of the test case."
           example: "Login form test"
+    Token:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: "ID of the user for whom the token was generated."
+        token:
+          type: string
+          description: "authentication token string."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token was created."
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token was last updated."
+        expiresAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token will expire."
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Timestamp when the token was revoked, if applicable."
+      required:
+        - userId
+        - token
+        - createdAt
+        - updatedAt
+        - expiresAt
     Group:
       type: object
       properties:
