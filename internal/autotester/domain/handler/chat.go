@@ -250,40 +250,27 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
 	defer span.End()
 
-	type UpdateChatUri struct {
-		UserId string `uri:"userId" binding:"required"`
-		ChatId string `uri:"chatId" binding:"required"`
-	}
+	var uri entity.UpdateChatUri
 
-	var uri UpdateChatUri
 	if err := c.ShouldBindUri(&uri); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
 
-	userRequest := entity.UserRequest{
-		UserId: uri.UserId,
-		ChatId: uri.ChatId,
-	}
-
-	type UpdateTitleRequest struct {
-		Title string `json:"title" binding:"required"`
-	}
-
-	var req UpdateTitleRequest
-	if err := c.BindJSON(&req); err != nil {
+	var req entity.UpdateTitleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
 		return
 	}
 
-	chat, err := a.chatStorageService.LoadChat(ctx, userRequest.ChatId)
+	chat, err := a.chatStorageService.LoadChat(ctx, uri.ChatId)
 	if err != nil {
-		a.logger.Error("LoadChat failed", "error", err, "chatId", userRequest.ChatId, "userId", userRequest.UserId)
+		a.logger.Error("LoadChat failed", "error", err, "chatId", uri.ChatId, "userId", uri.UserId)
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
 		return
 	}
 
-	if chat.Author != userRequest.UserId {
+	if chat.Author != uri.UserId {
 		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
 		return
 	}
@@ -296,7 +283,7 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 
 	chat.Title = title
 
-	if err := a.chatManager.SaveChat(c.Request.Context(), chat, userRequest.UserId); err != nil {
+	if err := a.chatManager.SaveChat(c.Request.Context(), chat, uri.UserId); err != nil {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not save chat"})
 		return
 	}
