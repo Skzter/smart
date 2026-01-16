@@ -210,12 +210,12 @@ func Test_parseTitleFromRequest(t *testing.T) {
 		{
 			name:     "empty string",
 			input:    "",
-			expected: "Neuer Chat",
+			expected: "",
 		},
 		{
 			name:     "whitespace only",
 			input:    "   ",
-			expected: "Neuer Chat",
+			expected: "",
 		},
 		{
 			name:     "simple test title",
@@ -235,12 +235,12 @@ func Test_parseTitleFromRequest(t *testing.T) {
 		{
 			name:     "no test call in string",
 			input:    `console.log("Nothing here")`,
-			expected: "Neuer Chat",
+			expected: "",
 		},
 		{
 			name:     "empty title in test",
 			input:    `test("")`,
-			expected: "Neuer Chat",
+			expected: "",
 		},
 		{
 			name:     "multiple test calls, take first",
@@ -251,7 +251,7 @@ func Test_parseTitleFromRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.parseTitleFromRequest(tt.input)
+			got, _ := s.parseTitleFromRequest(tt.input)
 			if got != tt.expected {
 				t.Errorf("ParseTitleFromRequest(%q) = %q; want %q", tt.input, got, tt.expected)
 			}
