@@ -44,10 +44,10 @@ func TestNewChatStorageService(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewChatSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && svc == nil {
-				t.Errorf("NewSessionSummaryStorageService() returned nil service")
+				t.Errorf("NewChatSummaryStorageService() returned nil service")
 			}
 		})
 	}

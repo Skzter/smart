@@ -134,7 +134,7 @@ export class Runner {
                 {
                     userId: sanitizedUserId,
                     testId: this.getCurTest(),
-                    sessionId: this.chatId,
+                    chatId: this.chatId,
                 },
                 {
                     onStepBegin: (message) => {

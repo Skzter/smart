@@ -39,7 +39,7 @@ export async function generatePrompt(
 }
 
 /** Validates the prompt by sending it to the /validationRes endpoint
- * @param body: object containing userId, conversationId, and prompt
+ * @param body: object containing userId, chatId, and prompt
  */
 export async function validatePrompt(
     request: ApiChatRequest,
@@ -155,7 +155,7 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
             url: "/deleteLocal",
             params: {
                 testcaseId,
-                conversationId: chat.id,
+                chatId: chat.id,
                 userId: user.id,
             },
         });

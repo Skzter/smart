@@ -25,7 +25,7 @@ const responses = new Counter('autotester_responses');
 export default function () {
   const payload = { ...payloads[Math.floor(Math.random() * payloads.length)] };
 
-  // Randomize IDs if needed to simulate different sessions, but for now fixed is fine
+  // Randomize IDs if needed to simulate different chats, but for now fixed is fine
   
   const headers = { 'Content-Type': 'application/json' };
   const res = http.post(baseUrl, JSON.stringify(payload), {
