@@ -4,7 +4,7 @@
     import { LucideMessageSquare, Pencil } from "@lucide/svelte";
     import { getChatById } from "$lib/api";
     import { toast } from "svelte-sonner";
-    import { type Message, chat, messages, user } from "$lib/shared.svelte";
+    import { type Message, chat, messages } from "$lib/shared.svelte";
 
     let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
     let edit = $state(false);
@@ -64,10 +64,9 @@
 
     async function invokeSwitchChat() {
         try {
-            user.id = summary.userId;
             chat.id = summary.chatId;
             chat.isLoading = false;
-            const response = await getChatById();
+            const response = await getChatById(summary.chatId);
             messages.length = 0;
             messages.push(...convertApiMessagesToMessages(response.messages));
         } catch (error) {

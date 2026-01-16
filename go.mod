@@ -281,7 +281,6 @@ require (
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mattn/goveralls v0.0.12 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mdelapenya/tlscert v0.2.0 // indirect
 	github.com/mgechev/revive v1.9.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

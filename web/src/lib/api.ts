@@ -121,11 +121,11 @@ export async function runContainer(request: ApiRunContainer): Promise<void> {
     });
 }
 
-export async function getChatById(): Promise<ApiGetChatByIdResponse> {
+export async function getChatById(chatId: string): Promise<ApiGetChatByIdResponse> {
     try {
         const response = await axios({
             method: "get",
-            url: `/chats/${chat.id}`,
+            url: `/chats/${chatId}`,
             baseURL: baseURL,
         });
         return response.data;
