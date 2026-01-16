@@ -9,6 +9,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -32,11 +35,12 @@ type autotesterAPIRepository struct {
 	logger     *slog.Logger
 	httpClient *http.Client
 	baseURL    string
+	tracer     trace.Tracer
 }
 
 // NewAutotesterAPIRepository creates a new instance of AutotesterAPIRepository.
 // It initializes the repository with an HTTP client, base URL, and logger for API communication.
-func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, baseURL string) (AutotesterAPIRepository, error) {
+func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, baseURL string, tracer trace.Tracer) (AutotesterAPIRepository, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
@@ -45,11 +49,16 @@ func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, ba
 		logger:     logger,
 		httpClient: httpClient,
 		baseURL:    baseURL,
+		tracer:     tracer,
 	}, nil
 }
 
 func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/template", a.baseURL)
+
+	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.GetTemplate")
+	defer span.End()
+
 	req, err := a.newJSONRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
@@ -67,6 +76,14 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 
 func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/chat", a.baseURL)
+
+	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.GenerateTest")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("user.id", request.UserId),
+		attribute.String("conversation.id", request.ConversationId),
+	)
+
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
@@ -84,6 +101,14 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 
 func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/saveLocal", a.baseURL)
+
+	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.SaveTest")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("user.id", request.UserId),
+		attribute.String("conversation.id", request.ConversationId),
+	)
+
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
@@ -101,6 +126,15 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 
 func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/run", a.baseURL)
+
+	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.RunTest")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("test.id", request.TestId),
+		attribute.String("user.id", request.UserId),
+		attribute.String("conversation.id", request.ConversationId),
+	)
+
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)

@@ -7,11 +7,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/tracing"
 )
 
 func main() {
@@ -20,7 +22,17 @@ func main() {
 		panic(err)
 	}
 
-	mcpServer, err := InitializeMcpServer(cfg)
+	tracer, shutdown, err := tracing.Setup("mcp")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := shutdown(); err != nil {
+			panic(err)
+		}
+	}()
+
+	mcpServer, err := InitializeMcpServer(cfg, tracer)
 	if err != nil {
 		panic(err)
 	}
@@ -43,22 +55,23 @@ func main() {
 		return mcpServer.Server()
 	}, nil)
 
-	mux := http.NewServeMux()
-	mux.Handle("/mcp/", handler)
+	router := gin.Default()
+	router.Use(gin.Recovery())
+	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
 
-	srv := &http.Server{
-		Addr:              cfg.Port,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
+	mcpHandler := func(c *gin.Context) {
+		handler.ServeHTTP(c.Writer, c.Request)
 	}
+
+	router.Group("/mcp", mcpHandler)
 
 	go func() {
 		<-ctx.Done()
 		log.Println("Shutting down MCP HTTP server...")
-		_ = srv.Shutdown(context.Background())
+		os.Exit(0)
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := router.Run(cfg.Port); err != nil {
 		panic(err)
 	}
 }
