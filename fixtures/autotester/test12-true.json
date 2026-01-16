@@ -1,6 +1,6 @@
 {
     "message": {
-        "data": "Erzeuge Playwright-Tests via Autoplaywright für Check24. Base-URL: https://urlaub.check24.de/. Szenario: Schritt 1. Ablauf: Der Nutzer scrollt zu 'Urlaubsregionen entdecken'. Assertions: Die Rubrik 'Urlaubsregionen entdecken' enthält das Wort 'Mallorca'. Testdaten/Setup: Chat-Bereinigung.",
+        "data": "Erzeuge Playwright-Tests via Autoplaywright für Check24. Base-URL: https://urlaub.check24.de/. Szenario: Schritt 1. Ablauf: Der Nutzer scrollt zu 'Urlaubsregionen entdecken'. Assertions: Die Rubrik 'Urlaubsregionen entdecken' enthält das Wort 'Mallorca'. Testdaten/Setup: Session-Bereinigung.",
         "agent": "user"
     },
     "userId": "testuser",

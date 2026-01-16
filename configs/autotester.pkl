@@ -49,14 +49,14 @@ class Prompts {
            (3) Test Scenario: At least one reproducible UI flow or scenario described in natural language (e.g., “brief or implicit scenario indicators such as ‘Schritt 1’ are valid if the intent is clear”).  
            (4) Element Description: Clear, natural-language descriptions of the relevant UI elements used in the flow (“implicit or generic actions like ‘search for [keyword]’ count as sufficient if understandable in context”).  
            (5) Assertions/Success Criteria: Expected outcomes or success conditions that can be verified after performing the actions (e.g., “After login, the dashboard page loads, the URL contains '/dashboard', and the text ‘Welcome’ appears”).  
-           (6) Test Data or Setup/Teardown: A description of how test data is provided, prepared, or cleaned up before/after the test (e.g., “Use TEST_USER credentials; after the test, log out and clear the chat”).
+           (6) Test Data or Setup/Teardown: A description of how test data is provided, prepared, or cleaned up before/after the test (e.g., “Use TEST_USER credentials; after the test, log out and clear the session”).
 
            ### Industry-Standard Example Prompts within the System Prompt
 
            The following examples are used within the System Prompt to support validation. These examples should be included in the System Prompt:
 
            **Example 1 (Login Flow, Natural Description):**
-           “Generate Playwright tests via AutoPlaywright for Check24. Base URL: https://staging.check24.de. Scenario: User login. Flow: The user clicks on ‘Sign In’, sees the email input field with placeholder ‘Email address’ and a password field, enters valid credentials (ENV variables TEST_USER/TEST_PASS) and clicks ‘Login’. Assertions: After login, the dashboard page loads, the URL contains '/dashboard', and the text ‘Welcome’ appears. Setup: Ensure that the test user exists; Teardown: Log out and clear chat.”
+           “Generate Playwright tests via AutoPlaywright for Check24. Base URL: https://staging.check24.de. Scenario: User login. Flow: The user clicks on ‘Sign In’, sees the email input field with placeholder ‘Email address’ and a password field, enters valid credentials (ENV variables TEST_USER/TEST_PASS) and clicks ‘Login’. Assertions: After login, the dashboard page loads, the URL contains '/dashboard', and the text ‘Welcome’ appears. Setup: Ensure that the test user exists; Teardown: Log out and clear session.”
 
            **Example 2 (Product Search, Natural Description):**
            “AutoPlaywright should generate a test for Check24’s travel division. Base URL: https://staging.check24.de/reise. Scenario: Flight search from Munich to Barcelona in August. Flow: On the homepage, the user selects ‘Search Flight’, enters ‘Munich’ in the departure field, ‘Barcelona’ in the destination field, selects a date via calendar widget (August), and clicks the ‘Search’ button. Assertions: The URL contains '/reise/flug', the list of flights is visible and contains at least one entry. Test Data/Setup: Example flight data from a fixture file; Teardown: Close browser.”
@@ -64,11 +64,11 @@ class Prompts {
            **Example 3 (Error Case Contact Form):**
            “Playwright test via AutoPlaywright for the Check24 contact page. Base URL: https://staging.check24.de/kontakt. Scenario: Submit with invalid email. Flow: The user opens the contact page, fills the name field with ‘First Last’, enters text without ‘@’ in the email field, fills the message field, clicks ‘Send’. Assertions: Error message ‘Invalid email address’ appears and the form remains open. Test Data: A fixed invalid email; Setup/Teardown: No persistence needed.”
 
-           **Example 4 (Chat Timeout, Natural Description):**
-           “AutoPlaywright test for logout on inactivity. Base URL: https://staging.check24.de. Scenario: Login and chat timeout. Flow: The user logs in (fields as above), waits or simulates timeout, interacts again, expects redirection to the login page with text ‘Please log in again’. Assertions: After timeout and interaction, the login page is displayed. Test Data/Setup: TEST_USER exists; Setup: Enable chat timeout configuration; Teardown: Clear chat.”
+           **Example 4 (Session Timeout, Natural Description):**
+           “AutoPlaywright test for logout on inactivity. Base URL: https://staging.check24.de. Scenario: Login and session timeout. Flow: The user logs in (fields as above), waits or simulates timeout, interacts again, expects redirection to the login page with text ‘Please log in again’. Assertions: After timeout and interaction, the login page is displayed. Test Data/Setup: TEST_USER exists; Setup: Enable session timeout configuration; Teardown: Clear session.”
 
             **Example 5 (Region Selection, Natural Description):**
-           “Generate Playwright tests via AutoPlaywright for Check24. Base URL: https://urlaub.check24.de/. Scenario: Switch from Step 1 to Step 4 via 'Urlaubsregionen entdecken'. Flow: The user clicks on 'Mallorca' under 'Urlaubsregionen entdecken'. Assertions: After clicking, the user lands on https://urlaub.check24.de/suche/hotel. At least one hotel offer tile is visible, and the word 'Mallorca' appears in all offer tiles. Test Data/Setup: chat cleanup.”
+           “Generate Playwright tests via AutoPlaywright for Check24. Base URL: https://urlaub.check24.de/. Scenario: Switch from Step 1 to Step 4 via 'Urlaubsregionen entdecken'. Flow: The user clicks on 'Mallorca' under 'Urlaubsregionen entdecken'. Assertions: After clicking, the user lands on https://urlaub.check24.de/suche/hotel. At least one hotel offer tile is visible, and the word 'Mallorca' appears in all offer tiles. Test Data/Setup: Session cleanup.”
 
            Additionally, use these industry-standard example prompts as reference (see documentation) to evaluate structure and completeness. If any point is missing, yield `false`.
 
