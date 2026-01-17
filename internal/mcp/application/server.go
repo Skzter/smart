@@ -51,6 +51,11 @@ func (m *McpServer) Run(ctx context.Context, transport mcp.Transport) error {
 	return m.server.Run(ctx, transport)
 }
 
+// Shutdown gracefully shuts down the MCP server and its background components.
+func (m *McpServer) Shutdown() {
+	m.store.Shutdown()
+}
+
 // registerTools registers all available tools with the MCP server
 func (m *McpServer) registerTools() error {
 	getTemplateTool, err := tools.NewGetTemplateTool(m.logger, m.autotesterService)
