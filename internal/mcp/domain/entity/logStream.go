@@ -16,7 +16,7 @@ type LogStream struct {
 // NewLogStream creates a new LogStream with an empty events list and current creation timestamp.
 func NewLogStream() *LogStream {
 	return &LogStream{
-		events:    make([]LogEvent, 0),
+		events:    make([]LogEvent, 0, 5),
 		completed: false,
 		CreatedAt: time.Now(),
 	}
