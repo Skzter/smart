@@ -2,64 +2,56 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/otel"
-
-	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 )
 
 // nolint:funlen
-func TestHandleRunContainer(t *testing.T) {
+func TestHandleGenerateToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
-	type mockSetupFunc func(
-		local *mocks.MockTestcaseLocalStorageService,
-		docker *mocks.MockDocker,
-	)
+	now := time.Now()
+	validToken := &entity.Token{
+		UserID:    "user123",
+		Token:     "generated-token-abc",
+		CreatedAt: now,
+		UpdatedAt: now,
+		ExpiresAt: now.Add(24 * time.Hour),
+		RevokedAt: nil,
+	}
 
 	tests := []struct {
 		TestName       string
 		RequestBody    string
 		ExpectedStatus int
 		ExpectedBody   string
-		MockSetup      mockSetupFunc
+		MockSetup      []any
 	}{
 		{
-			TestName: "Valid run container request",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
+			TestName:       "Valid generate token request",
+			RequestBody:    `{"userId": "user123"}`,
 			ExpectedStatus: http.StatusOK,
-			ExpectedBody:   `{"result":"Test started"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
-					Return("/tmp/session789.ts", nil)
-
-				docker.On("RunTest",
-					mock.Anything,
-					"/tmp/session789.ts",
-					"test456",
-					"user123",
-					"session789",
-				).Return("container-id", nil)
-			},
+			ExpectedBody:   mustMarshal(validToken),
+			MockSetup:      []any{validToken, nil},
 		},
 		{
 			TestName:       "Invalid JSON",
@@ -68,49 +60,23 @@ func TestHandleRunContainer(t *testing.T) {
 			ExpectedBody:   `{"message":"Bad Request"}`,
 		},
 		{
-			TestName: "Missing required fields",
-			RequestBody: `{
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
+			TestName:       "Empty userId",
+			RequestBody:    `{"userId": ""}`,
 			ExpectedStatus: http.StatusBadRequest,
-			ExpectedBody:   `{"message":"Missing required parameters"}`,
+			ExpectedBody:   `{"message":"Bad Request"}`,
 		},
 		{
-			TestName: "GetTestPath fails",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
+			TestName:       "Missing userId field",
+			RequestBody:    `{}`,
 			ExpectedStatus: http.StatusBadRequest,
-			ExpectedBody:   `{"message":"files not found"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
-					Return("", errors.New("files not found"))
-			},
+			ExpectedBody:   `{"message":"Bad Request"}`,
 		},
 		{
-			TestName: "RunTest fails",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
+			TestName:       "GenerateToken service error",
+			RequestBody:    `{"userId": "user123"}`,
 			ExpectedStatus: http.StatusInternalServerError,
-			ExpectedBody:   `{"message":"running error"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
-					Return("/tmp/test.spec.ts", nil)
-
-				docker.On("RunTest",
-					mock.Anything,
-					"/tmp/test.spec.ts",
-					"test456",
-					"user123",
-					"session789",
-				).Return("", errors.New("running error"))
-			},
+			ExpectedBody:   `{"message":"Internal Server Error"}`,
+			MockSetup:      []any{nil, errors.New("database error")},
 		},
 	}
 
@@ -124,18 +90,20 @@ func TestHandleRunContainer(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-			mockAuth := mocks.NewMockAuth(t)
-			mockGroupManager := mocks.NewMockGroupManager(t)
-
+			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockSetup != nil {
-				test.MockSetup(mockLocalStorageServ, mockDockerServ)
+				mockAuth.On("GenerateToken", mock.Anything, mock.Anything).
+					Return(test.MockSetup...)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/token", bytes.NewBufferString(test.RequestBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			rec := httptest.NewRecorder()
@@ -161,7 +129,7 @@ func TestHandleRunContainer(t *testing.T) {
 				t.Fatalf("Controller build failed: %v", err)
 			}
 
-			controller.HandleRunContainer(ctx)
+			controller.HandleGenerateToken(ctx)
 
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d. Body: %s",
@@ -172,9 +140,15 @@ func TestHandleRunContainer(t *testing.T) {
 				t.Errorf("Expected body %s, got %s",
 					test.ExpectedBody, rec.Body.String())
 			}
-
-			mockLocalStorageServ.AssertExpectations(t)
-			mockDockerServ.AssertExpectations(t)
 		})
 	}
+}
+
+// mustMarshal marshals v to JSON string, panics on error.
+func mustMarshal(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }

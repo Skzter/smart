@@ -314,7 +314,7 @@ build_mcp_go_container:
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/autotester-mcp:latest
   script:
-    - docker build -f deployments/mpc/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
+    - docker build -f deployments/mcp/Dockerfile.prod -t $IMAGE_TAG --build-arg DOPPLER_TOKEN=$DOPPLER_TOKEN .
     - docker push $IMAGE_TAG
 
 build_autotester_run_container:
