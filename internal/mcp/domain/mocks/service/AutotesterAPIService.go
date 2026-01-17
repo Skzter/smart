@@ -237,9 +237,20 @@ func (_c *MockAutotesterAPIService_GetTemplate_Call) RunAndReturn(run func(ctx c
 }
 
 // ReadTestLogStream provides a mock function for the type MockAutotesterAPIService
-func (_mock *MockAutotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) {
-	_mock.Called(ctx, testId)
-	return
+func (_mock *MockAutotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
+	ret := _mock.Called(ctx, testId)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReadTestLogStream")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, testId)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
 }
 
 // MockAutotesterAPIService_ReadTestLogStream_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReadTestLogStream'
@@ -272,12 +283,12 @@ func (_c *MockAutotesterAPIService_ReadTestLogStream_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockAutotesterAPIService_ReadTestLogStream_Call) Return() *MockAutotesterAPIService_ReadTestLogStream_Call {
-	_c.Call.Return()
+func (_c *MockAutotesterAPIService_ReadTestLogStream_Call) Return(err error) *MockAutotesterAPIService_ReadTestLogStream_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockAutotesterAPIService_ReadTestLogStream_Call) RunAndReturn(run func(ctx context.Context, testId string)) *MockAutotesterAPIService_ReadTestLogStream_Call {
-	_c.Run(run)
+func (_c *MockAutotesterAPIService_ReadTestLogStream_Call) RunAndReturn(run func(ctx context.Context, testId string) error) *MockAutotesterAPIService_ReadTestLogStream_Call {
+	_c.Call.Return(run)
 	return _c
 }

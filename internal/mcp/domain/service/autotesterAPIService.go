@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"golang.org/x/sync/errgroup"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
@@ -24,7 +26,7 @@ type AutotesterAPIService interface {
 
 	// ReadTestLogStream reads log events from the backend stream and stores them.
 	// It marks the stream as complete when the backend stream is exhausted.
-	ReadTestLogStream(ctx context.Context, testId string)
+	ReadTestLogStream(ctx context.Context, testId string) error
 }
 
 type autotesterAPIService struct {
@@ -141,39 +143,58 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 	return &entity.ExecuteTestResponse{Result: combined, TestId: saveResp.TestId}, nil
 }
 
-func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) {
+func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
 
-	rawEventsCh := make(chan *entity.LogEvent, 32)
-	streamCtx, cancelStream := context.WithCancel(context.Background())
+	rawEventsCh := make(chan *entity.LogEvent, 512)
+	wg, groupCtx := errgroup.WithContext(ctx)
 
-	// PRODUCER
-	go func() {
-		defer cancelStream()
+	// PRODUCER: reads logstream
+	wg.Go(func() error {
 		defer close(rawEventsCh)
 		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
-		if err := s.repo.ReadTestLogStream(streamCtx, testId, rawEventsCh); err != nil {
+
+		if err := s.repo.ReadTestLogStream(groupCtx, testId, rawEventsCh); err != nil {
 			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
+			return err
 		}
 		s.logger.Debug("PRODUCER: SSE reader stopped", "testId", testId)
-	}()
+		return nil
+	})
 
-	// CONSUMER
-	go func() {
-		defer cancelStream()
+	// CONSUMER: add logEvents to store
+	wg.Go(func() error {
 		s.logger.Debug("CONSUMER: Starting event processor", "testId", testId)
 
-		for event := range rawEventsCh {
-			if event != nil {
-				s.logger.Debug("CONSUMER: Received event",
-					"testId", testId,
-					"event", event.Event,
-				)
-				s.store.AddEvent(testId, *event)
+		for {
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+			case event, ok := <-rawEventsCh:
+				if !ok {
+					s.logger.Info("Stream read and processed", "testId", testId)
+
+					return nil
+				}
+				if event != nil {
+					s.logger.Debug("CONSUMER: Received event",
+						"testId", testId,
+						"event", event.Event,
+					)
+					s.store.AddEvent(testId, *event)
+				}
 			}
 		}
+	})
 
-		s.logger.Info("Stream read and processed", "testId", testId)
-		s.store.CompleteStream(testId)
-	}()
+	err := wg.Wait()
+
+	s.store.CompleteStream(testId)
+
+	if err != nil {
+		s.logger.Error("Log stream processing failed", "testId", testId, "error", err)
+		return err
+	}
+
+	return nil
 }

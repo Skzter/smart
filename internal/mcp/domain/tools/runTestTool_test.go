@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -70,7 +71,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          entity.ExecuteTestRequest
-		mockSetup      func(*mocks.MockAutotesterAPIService)
+		mockSetup      func(*mocks.MockAutotesterAPIService, chan bool)
 		expectedError  bool
 		expectedOutput entity.RunTestResponse
 	}{
@@ -81,13 +82,17 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				ChatId: "conv456",
 				Test:   "describe('Login', () => { it('should login', () => { expect(true).toBe(true); }); });",
 			},
-			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
 				expectedResponse := &entity.ExecuteTestResponse{
 					Result: "PASSED",
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
+					Run(func(ctx context.Context, id string) {
+						done <- true
+					}).
+					Return(nil).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -101,13 +106,16 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				ChatId: "conv999",
 				Test:   "describe('Broken Test', () => { it('should fail', () => { expect(true).toBe(false); }); });",
 			},
-			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
 				expectedResponse := &entity.ExecuteTestResponse{
 					Result: "FAILED",
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
+					Run(func(ctx context.Context, id string) {
+						done <- true
+					}).Return(nil).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -121,7 +129,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				ChatId: "conv000",
 				Test:   "invalid test code",
 			},
-			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(nil, errors.New("test execution failed")).Once()
 			},
@@ -135,13 +143,16 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				ChatId: "conv222",
 				Test:   "",
 			},
-			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
 				expectedResponse := &entity.ExecuteTestResponse{
 					Result: "ERROR: empty test",
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
+					Run(func(ctx context.Context, id string) {
+						done <- true
+					}).Return(nil).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -155,13 +166,16 @@ func TestRunTestTool_RunTest(t *testing.T) {
 				ChatId: "conv666",
 				Test:   "describe('Complex Test', () => { it('should work', () => { /* complex logic */ }); });",
 			},
-			mockSetup: func(m *mocks.MockAutotesterAPIService) {
+			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
 				expectedResponse := &entity.ExecuteTestResponse{
 					Result: "PASSED: 5 tests passed, 0 failed, duration: 2.5s",
 				}
 				m.EXPECT().ExecuteTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
-				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).Once()
+				m.EXPECT().ReadTestLogStream(mock.Anything, mock.Anything).
+					Run(func(ctx context.Context, id string) {
+						done <- true
+					}).Return(nil).Once()
 			},
 			expectedError: false,
 			expectedOutput: entity.RunTestResponse{
@@ -173,7 +187,8 @@ func TestRunTestTool_RunTest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockService := mocks.NewMockAutotesterAPIService(t)
-			test.mockSetup(mockService)
+			done := make(chan bool, 1)
+			test.mockSetup(mockService, done)
 
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 			tool, err := NewRunTestTool(logger, mockService)
@@ -182,6 +197,12 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			ctx := context.Background()
 			_, output, err := tool.RunTest(ctx, nil, test.input)
 
+			if !test.expectedError {
+				select {
+				case <-done:
+				case <-time.After(100 * time.Millisecond):
+				}
+			}
 			if test.expectedError {
 				assert.Error(t, err)
 			} else {

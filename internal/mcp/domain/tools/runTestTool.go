@@ -40,7 +40,14 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 
 	tt.logger.Debug("Test started successfully", "result", testResult)
 
-	tt.autotesterAPIService.ReadTestLogStream(ctx, testResult.TestId)
+	go func() {
+		if err := tt.autotesterAPIService.ReadTestLogStream(context.Background(), testResult.TestId); err != nil {
+			tt.logger.Error("Backgroud log streaming failed",
+				"testId", testResult.TestId,
+				"error", err,
+			)
+		}
+	}()
 
 	return nil, *testResult, nil
 }

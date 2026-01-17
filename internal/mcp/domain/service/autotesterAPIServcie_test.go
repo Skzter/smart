@@ -412,14 +412,17 @@ func TestExecuteTest(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestReadTestLogStream(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
 		name                 string
 		testId               string
-		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, chan struct{}, *[]entity.LogEvent)
 		expectedStoreContent []entity.LogEvent
+		excpectError         bool
+		cancelContextDuring  bool
+		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, *[]entity.LogEvent)
 	}{
 		{
 			name:   "success - transmits all events to store",
@@ -429,7 +432,8 @@ func TestReadTestLogStream(t *testing.T) {
 				{Event: "log", Data: "something"},
 				{Event: "finish", Data: "terminated"},
 			},
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, done chan struct{}, captured *[]entity.LogEvent) {
+			excpectError: false,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
 				events := []entity.LogEvent{
 					{Event: "log", Data: "test started"},
 					{Event: "log", Data: "something"},
@@ -454,28 +458,57 @@ func TestReadTestLogStream(t *testing.T) {
 					Return().
 					Times(3)
 
-				ms.EXPECT().
-					CompleteStream("test-123").
-					Run(func(id string) {
-						close(done)
-					})
+				ms.EXPECT().CompleteStream("test-123").Once()
 			},
 		},
 		{
 			name:                 "repo returns error when connecting",
 			testId:               "test-123",
 			expectedStoreContent: []entity.LogEvent{},
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, done chan struct{}, captured *[]entity.LogEvent) {
+			excpectError:         true,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
 				mr.EXPECT().
 					ReadTestLogStream(mock.Anything, "test-123", mock.Anything).
 					Return(errors.New("connection failed")).
 					Once()
 
-				ms.EXPECT().
-					CompleteStream("test-123").
-					Run(func(id string) {
-						close(done)
-					})
+				ms.EXPECT().CompleteStream("test-123").Once()
+			},
+		},
+		{
+			name:   "handles nil events - filters them out",
+			testId: "test-nil",
+			expectedStoreContent: []entity.LogEvent{
+				{Event: "valid", Data: "data"},
+			},
+			excpectError: false,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+				mr.EXPECT().ReadTestLogStream(mock.Anything, "test-nil", mock.Anything).
+					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+						ch <- &entity.LogEvent{Event: "valid", Data: "data"}
+						ch <- nil // should be ignored
+					}).Return(nil).Once()
+				ms.EXPECT().AddEvent("test-nil", mock.Anything).Run(func(id string, ev entity.LogEvent) {
+					*captured = append(*captured, ev)
+				}).Return().Once()
+				ms.EXPECT().CompleteStream("test-nil").Once()
+			},
+		},
+		{
+			name:                 "terminates processing on context cancellation",
+			testId:               "test-cancel",
+			expectedStoreContent: []entity.LogEvent{},
+			excpectError:         true,
+			cancelContextDuring:  true,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+				mr.EXPECT().
+					ReadTestLogStream(mock.Anything, "test-cancel", mock.Anything).
+					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+						<-ctx.Done()
+					}).
+					Return(context.Canceled).Once()
+
+				ms.EXPECT().CompleteStream("test-cancel").Once()
 			},
 		},
 	}
@@ -484,20 +517,34 @@ func TestReadTestLogStream(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 			mockStore := mocksStore.NewMockTestLogStreamStore(t)
-			done := make(chan struct{})
 			capturedEvents := []entity.LogEvent{}
-			test.setupMock(mockRepo, mockStore, done, &capturedEvents)
+
+			test.setupMock(mockRepo, mockStore, &capturedEvents)
 
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
-			svc.ReadTestLogStream(context.Background(), test.testId)
+			var ctx context.Context
+			var cancel context.CancelFunc
 
-			select {
-			case <-done:
+			if test.cancelContextDuring {
+				ctx, cancel = context.WithCancel(context.Background())
+				go func() {
+					time.Sleep(50 * time.Millisecond)
+					cancel()
+				}()
+			} else {
+				ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+			}
+			defer cancel()
+
+			err = svc.ReadTestLogStream(ctx, test.testId)
+
+			if test.excpectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 				require.Equal(t, test.expectedStoreContent, capturedEvents)
-			case <-time.After(5 * time.Second):
-				t.Errorf("timeout goroutines didn't terminate")
 			}
 		})
 	}
