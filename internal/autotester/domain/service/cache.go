@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -19,9 +20,7 @@ import (
 // This Cache Service is responsible for caching the chats from the users
 type Cache interface {
 	LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
-	StoreOrReplace(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error
-	/* GenerateKey */
-	/* Init */
+	Store(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error
 }
 
 type cache struct {
@@ -37,8 +36,6 @@ func NewCacheService(config *config.Autotester, logger *slog.Logger, cacheRepo s
 	if err := assert.NotNil(config, logger, cacheRepo, tracer); err != nil {
 		return nil, err
 	}
-
-	/* maybe init cache here with chats */
 
 	return &cache{
 		config:    config,
@@ -82,10 +79,36 @@ func (c *cache) LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
 	return &chat, nil
 }
 
-// StoreOrReplace stores the Chat when the Cache is not full, if the Cache is full it will replace an entry with this new one
+// Store stores the Chat when the Cache is not full, if the Cache is full it will replace an entry with this new one
 // CacheReplacementStrategy: tbd (maybe Least Recently Used)
 // if successful, no error
 // else, error
-func (c *cache) StoreOrReplace(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error {
+func (c *cache) Store(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error {
+	if err := assert.NotNil(ctx, chat); err != nil {
+		return err
+	}
+	if err := assert.StringNotEmpty(key); err != nil {
+		return err
+	}
+
+	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.LookUp")
+	defer span.End()
+
+	key = fmt.Sprintf("autotester:cache:%s", key)
+	data, err := json.Marshal(chat)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache entry marshal error")
+		return err
+	}
+
+	err = c.cacheRepo.Set(ctx, key, data, timeToLive)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache set error")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
