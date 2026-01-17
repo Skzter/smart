@@ -18,7 +18,7 @@ import (
 // Implementations must handle persistence and any required initialization.
 type ChatManager interface {
 	LoadChat(context.Context, entity.UserRequest) (*entity.Chat, error)
-	SaveChat(context.Context, *entity.Chat) error
+	SaveChat(context.Context, *entity.Chat, string) error
 }
 
 // chatManager is the concrete implementation of Chat that delegates persistence to a storage service
@@ -67,7 +67,7 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 		return chat, nil
 	}
 
-	chat, err := c.storageService.LoadChat(ctx, request.UserId, request.ChatId)
+	chat, err := c.storageService.LoadChat(ctx, request.ChatId)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while loading chat")
@@ -80,7 +80,7 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 
 // SaveChat updates timestamps and the last-used prompts on the chat before delegating
 // persistence to the storage service.
-func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat) error {
+func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat, userId string) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}
@@ -88,6 +88,7 @@ func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat) error {
 	defer span.End()
 
 	chat.UpdatedAt = time.Now().UTC()
+	chat.LastModifiedBy = userId
 
 	if err := c.storageService.SaveChat(ctx, chat); err != nil {
 		span.RecordError(err)

@@ -303,7 +303,8 @@ func TestValidateChat(t *testing.T) {
 			name: "valid Chat",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -322,7 +323,8 @@ func TestValidateChat(t *testing.T) {
 		{
 			name: "empty id",
 			chat: &entity.Chat{
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -333,7 +335,7 @@ func TestValidateChat(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "empty userId",
+			name: "empty Author",
 			chat: &entity.Chat{
 				Id:                       "chat123",
 				CreatedAt:                time.Now(),
@@ -349,7 +351,8 @@ func TestValidateChat(t *testing.T) {
 			name: "empty Messages",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -363,7 +366,8 @@ func TestValidateChat(t *testing.T) {
 			name: "invalid message",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
@@ -377,7 +381,8 @@ func TestValidateChat(t *testing.T) {
 			name: "updatedAt zero",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Now(),
 				UpdatedAt:                time.Time{},
 				LastTest:                 "test123",
@@ -391,12 +396,29 @@ func TestValidateChat(t *testing.T) {
 			name: "createdAt zero",
 			chat: &entity.Chat{
 				Id:                       "chat123",
-				UserId:                   "user123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
 				CreatedAt:                time.Time{},
 				UpdatedAt:                time.Now(),
 				LastTest:                 "test123",
 				LastAutoPlaywrightPrompt: "apw prompt",
 				Messages:                 []*entity.Message{{Message: sharedEntity.Message{Id: id, Role: "role", Body: "body", CreatedAt: time.Now()}, Type: entity.MessageTypeValidation}},
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "groups with empty string",
+			chat: &entity.Chat{
+				Id:                       "chat123",
+				Author:                   "user123",
+				LastModifiedBy:           "user123",
+				CreatedAt:                time.Now(),
+				UpdatedAt:                time.Now(),
+				LastTest:                 "test123",
+				LastAutoPlaywrightPrompt: "apw prompt",
+				Messages:                 []*entity.Message{{Message: sharedEntity.Message{Id: id, Role: "role", Body: "body", CreatedAt: time.Now()}, Type: entity.MessageTypeValidation}},
+				Groups:                   []string{""},
 			},
 			ctx:     context.Background(),
 			wantErr: true,
@@ -474,6 +496,101 @@ func TestValidateMessages(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			err := svc.ValidateMessage(test.ctx, test.message)
+
+			if test.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+// nolint:funlen
+func TestValidateGroup(t *testing.T) {
+	serviceMock := mocks.NewMockOpenAI(t)
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+	svc, err := NewValidatorService(serviceMock, &config.Autotester{}, logger, tracer)
+	if err != nil {
+		t.Fatalf("failed to create validator service: %v", err)
+	}
+	now := time.Now()
+
+	tests := []struct {
+		name    string
+		group   *entity.Group
+		ctx     context.Context
+		wantErr bool
+	}{
+		{
+			name: "valid Group",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+			},
+			ctx:     context.Background(),
+			wantErr: false,
+		},
+		{
+			name:    "nil assert failed",
+			group:   nil,
+			ctx:     nil,
+			wantErr: true,
+		},
+		{
+			name: "empty Id",
+			group: &entity.Group{
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "empty Name",
+			group: &entity.Group{
+				Id:          "group123",
+				Description: "A test group",
+				CreatedAt:   now,
+				CreatedBy:   "user123",
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "empty CreatedBy",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   now,
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+		{
+			name: "createdAt zero",
+			group: &entity.Group{
+				Id:          "group123",
+				Name:        "Test Group",
+				Description: "A test group",
+				CreatedAt:   time.Time{},
+				CreatedBy:   "user123",
+			},
+			ctx:     context.Background(),
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := svc.ValidateGroup(test.ctx, test.group)
 
 			if test.wantErr {
 				assert.Error(t, err)

@@ -3,11 +3,16 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/application"
@@ -16,6 +21,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/infrastructure/database"
+	infra "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/infrastructure/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared"
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
@@ -54,6 +61,12 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
 		MetricsServiceProvider,
+		DatabaseRepositoryProvider,
+		service.NewAuthService,
+		service.NewGroupStorage,
+		infra.NewGroupStorage,
+		GroupParquetWrapperProvider,
+		service.NewGroupManager,
 	)
 
 	return nil, nil
@@ -97,6 +110,11 @@ func TestCaseParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.Parqu
 	return wrapperService.NewParquetWrapper[entity.TestCase](logger, cfg, tracer)
 }
 
+// GroupParquetWrapperProvider provides a new Group parquet wrapper with default parquet config.
+func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Group], error) {
+	return wrapperService.NewParquetWrapper[entity.Group](logger, cfg, tracer)
+}
+
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
@@ -137,4 +155,23 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
+}
+
+func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, err
+	}
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		return nil, fmt.Errorf("no DB_URL set in .env")
+	}
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("error opening database: %s", err)
+	}
+	if err := dbConn.Ping(); err != nil {
+		return nil, err
+	}
+	return database.New(dbConn), nil
 }

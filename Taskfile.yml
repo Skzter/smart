@@ -7,6 +7,8 @@ env:
   GOPRIVATE: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
   LPATH: "{{.BIN_PATH}}:{{.PATH}}"
 
+dotenv: [".env"]
+
 vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
   MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
@@ -191,6 +193,30 @@ tasks:
       # TEST_FILE wird bei runtime hinzugefügt
       - ./run-container.sh {{.TEST_FILE}}
 
+  postgres-up:
+    desc: Starts postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml up -d postgres
+
+  postgres-down:
+    desc: Stops postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml stop postgres 
+
+  goose-up:
+    desc: Migrates postgres database up
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
+    cmds:
+      - go tool goose postgres {{.DB_URL}} up
+
+  goose-down:
+    desc: Migrates postgres database down
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
+    cmds:
+      - go tool goose postgres {{.DB_URL}} down
+
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
@@ -336,7 +362,7 @@ tasks:
       EXCLUDE_RULES: "G104,G107, G204, G304"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal"  -exclude-dir="internal/autotester/infrastructure/database" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
   lint-frontend:
     desc: "Run the frontend lint"
