@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
@@ -51,7 +53,33 @@ func NewCacheService(config *config.Autotester, logger *slog.Logger, cacheRepo s
 // if a cache miss occurs, it will return a nil chat and no error
 // if anything else fails, it will return a nil chat and an error
 func (c *cache) LookUp(ctx context.Context, chatId string) (*entity.Chat, error) {
-	return nil, nil
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
+	if err := assert.StringNotEmpty(chatId); err != nil {
+		return nil, err
+	}
+
+	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.LookUp")
+	defer span.End()
+
+	entry, hit, err := c.cacheRepo.Get(ctx, chatId)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache repo get error")
+		return nil, err
+	}
+	if !hit {
+		return nil, nil
+	}
+	var chat entity.Chat
+	if err := json.Unmarshal(entry, &chat); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache entry unmarshal error")
+		return nil, err
+	}
+	span.SetStatus(codes.Ok, "")
+	return &chat, nil
 }
 
 // StoreOrReplace stores the Chat when the Cache is not full, if the Cache is full it will replace an entry with this new one
