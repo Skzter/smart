@@ -173,11 +173,23 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
+	reader := bufio.NewReader(resp.Body)
 	var currentEvent entity.LogEvent
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return fmt.Errorf("error reading stream: %w", err)
+		}
+
+		line = strings.TrimRight(line, "\r\n")
 		a.logger.Debug("Read line from stream", "testId", testId, "line", line)
+
+		if strings.HasPrefix(line, ":") {
+			continue
+		}
 
 		if line == "" {
 			if currentEvent.Event != "" || currentEvent.Data != "" {
@@ -194,22 +206,15 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 		}
 
 		if after, ok := strings.CutPrefix(line, "event:"); ok {
-			currentEvent.Event = after
+			currentEvent.Event = strings.TrimSpace(after)
 		} else if after, ok := strings.CutPrefix(line, "data:"); ok {
-			dataPart := after
+			dataPart := strings.TrimSpace(after)
 			if currentEvent.Data != "" {
 				currentEvent.Data += "\n" + dataPart
 			} else {
 				currentEvent.Data = dataPart
 			}
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-		return fmt.Errorf("error reading stream: %w", err)
 	}
 
 	return nil

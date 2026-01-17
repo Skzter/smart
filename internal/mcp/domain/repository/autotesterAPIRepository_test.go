@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -462,6 +463,47 @@ func TestReadTestLogStream(t *testing.T) {
 			},
 			expectErr:     true,
 			cancelContext: true,
+		},
+		{
+			name:       "spaces-and-multiline-data",
+			testId:     "uuid-spaces",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:  trim-me  \ndata:   {\"key\": \"value\"}   \ndata: second-line \n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "trim-me", Data: "{\"key\": \"value\"}\nsecond-line"},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "very-large-data-line",
+			testId:     "uuid-large",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:large\ndata:" + strings.Repeat("A", 70000) + "\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "large", Data: strings.Repeat("A", 70000)},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "robustness-invalid-and-comments",
+			testId:     "uuid-456",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				": this is an SSE comment and should be ignored\n",
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+				"invalid line without prefix and colon is ignored by logic\n",
+				": yet another comment\n",
+				"event:log\ndata:{\"content\":\"still running\"}\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+				{Event: "log", Data: "{\"content\":\"still running\"}"},
+			},
+			expectErr: false,
 		},
 	}
 
