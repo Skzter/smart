@@ -82,28 +82,28 @@ func (m *McpServer) registerTools() error {
 		Description: "Retrieves the test generation template from the autotester backend",
 	}, getTemplateTool.GetTemplate)
 
-	m.logger.Info("Registered tool: get_template")
+	m.logger.Debug("Registered tool: get_template")
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "generate_test",
 		Description: "takes prompt, sends it to backend and receives feedback to display in frontend",
 	}, generateTestTool.GenerateTest)
 
-	m.logger.Info("Registered tool: generate_test")
+	m.logger.Debug("Registered tool: generate_test")
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "run_test",
 		Description: "Runs test based on testId, returns either success or failed",
 	}, runTestTool.RunTest)
 
-	m.logger.Info("Registered tool: run_test")
+	m.logger.Debug("Registered tool: run_test")
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "read_testLogStream",
 		Description: "Reads logstream based on testId",
 	}, readTestLogStreamTool.ReadTestLogStream)
 
-	m.logger.Info("Registered tool: read_testLogStream")
+	m.logger.Debug("Registered tool: read_testLogStream")
 
 	m.server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "testlog_stream",
@@ -112,7 +112,7 @@ func (m *McpServer) registerTools() error {
 		MIMEType:    "text/plain",
 	}, testLogStreamResource.ReadTestLogStream)
 
-	m.logger.Info("Registered resource template: mcp://tests/123/logs")
+	m.logger.Debug("Registered resource template: mcp://tests/123/logs")
 	return nil
 }
 
