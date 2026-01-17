@@ -116,10 +116,9 @@
         const newTitle = target.value.trim();
         if (!newTitle || newTitle === summary.title) return;
 
-        updateChatTitleStance?.(summary.chatId, newTitle);
-
         saveTitle(newTitle)
             .then(() => {
+                updateChatTitleStance?.(summary.chatId, newTitle);
                 toast.success("Chat title updated successfully");
             })
             .catch((err) => {
