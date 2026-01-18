@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -68,16 +69,17 @@ func TestLoadChat(t *testing.T) {
 	now := time.Now().UTC()
 
 	tests := []struct {
-		name           string
-		setupMock      func(*mocks.MockChatStorageService)
-		request        entity.UserRequest
-		expectErr      bool
-		expectNewChat  bool
-		expectedChatId string
+		name             string
+		setupStorageMock func(*mocks.MockChatStorageService)
+		setupCacheMock   []any
+		request          entity.UserRequest
+		expectErr        bool
+		expectNewChat    bool
+		expectedChatId   string
 	}{
 		{
 			name: "create new chat when ChatId empty",
-			setupMock: func(*mocks.MockChatStorageService) {
+			setupStorageMock: func(*mocks.MockChatStorageService) {
 			},
 			request: entity.UserRequest{
 				UserId: "user1",
@@ -87,14 +89,15 @@ func TestLoadChat(t *testing.T) {
 			expectNewChat: true,
 		},
 		{
-			name: "load existing chat from storage",
-			setupMock: func(storage *mocks.MockChatStorageService) {
+			name: "cache miss, load existing chat from storage",
+			setupStorageMock: func(storage *mocks.MockChatStorageService) {
 				storage.On("LoadChat", mock.Anything, "chat2").Return(&entity.Chat{
 					Id:             "chat2",
 					Author:         "user2",
 					LastModifiedBy: "user2",
 				}, nil).Once()
 			},
+			setupCacheMock: []any{nil, nil},
 			request: entity.UserRequest{
 				UserId: "user2",
 				ChatId: "chat2",
@@ -105,7 +108,7 @@ func TestLoadChat(t *testing.T) {
 		},
 		{
 			name: "nil ctx returns error",
-			setupMock: func(*mocks.MockChatStorageService) {
+			setupStorageMock: func(*mocks.MockChatStorageService) {
 			},
 			request: entity.UserRequest{
 				UserId: "u",
@@ -114,15 +117,50 @@ func TestLoadChat(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name: "error while loading chat",
-			setupMock: func(storage *mocks.MockChatStorageService) {
+			name: "cache miss, error while loading chat",
+			setupStorageMock: func(storage *mocks.MockChatStorageService) {
 				storage.On("LoadChat", mock.Anything, "chat2").Return(nil, errors.New("err")).Once()
 			},
+			setupCacheMock: []any{nil, nil},
 			request: entity.UserRequest{
 				UserId: "user2",
 				ChatId: "chat2",
 			},
 			expectErr: true,
+		},
+		{
+			name: "cache hit, load chat from cache",
+			setupStorageMock: func(*mocks.MockChatStorageService) {
+			},
+			setupCacheMock: []any{&entity.Chat{
+				Id:     "chat14",
+				Author: "id14",
+			}, nil},
+			request: entity.UserRequest{
+				UserId: "id14",
+				ChatId: "chat14",
+			},
+			expectErr:      false,
+			expectNewChat:  false,
+			expectedChatId: "chat14",
+		},
+		{
+			name: "cache error, load existing chat from storage",
+			setupStorageMock: func(storage *mocks.MockChatStorageService) {
+				storage.On("LoadChat", mock.Anything, "chat2").Return(&entity.Chat{
+					Id:             "chat2",
+					Author:         "user2",
+					LastModifiedBy: "user2",
+				}, nil).Once()
+			},
+			setupCacheMock: []any{nil, nil},
+			request: entity.UserRequest{
+				UserId: "user2",
+				ChatId: "chat2",
+			},
+			expectErr:      false,
+			expectNewChat:  false,
+			expectedChatId: "chat2",
 		},
 	}
 
@@ -130,9 +168,12 @@ func TestLoadChat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// reset mock
 			storage := mocks.NewMockChatStorageService(t)
-			tt.setupMock(storage)
+			tt.setupStorageMock(storage)
 
 			cache := mocks.NewMockCache(t)
+			if tt.setupCacheMock != nil {
+				cache.On("LookUp", mock.Anything, tt.request.ChatId).Return(tt.setupCacheMock...)
+			}
 
 			svc, err := NewChatManager(logger, storage, cfg, cache, tracer)
 			assert.Nil(t, err)
@@ -172,17 +213,34 @@ func TestSaveChat(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name      string
-		setupMock func(ch *entity.Chat, storage *mocks.MockChatStorageService)
-		chat      *entity.Chat
-		ctx       context.Context
-		expectErr bool
+		name             string
+		setupStorageMock func(ch *entity.Chat, storage *mocks.MockChatStorageService)
+		setupCacheMock   []any
+		chat             *entity.Chat
+		ctx              context.Context
+		expectErr        bool
 	}{
 		{
-			name: "save updates timestamps and prompts",
-			setupMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
+			name: "save updates timestamps and prompts, no cache error",
+			setupStorageMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
 				storage.On("SaveChat", mock.Anything, mock.AnythingOfType("*entity.Chat")).Return(nil).Once()
 			},
+			setupCacheMock: []any{nil},
+			chat: &entity.Chat{
+				Id:             "c1",
+				Author:         "u1",
+				LastModifiedBy: "u1",
+				CreatedAt:      time.Now().Add(-time.Hour).UTC(),
+			},
+			ctx:       context.Background(),
+			expectErr: false,
+		},
+		{
+			name: "save updates timestamps and prompts, cache error",
+			setupStorageMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
+				storage.On("SaveChat", mock.Anything, mock.AnythingOfType("*entity.Chat")).Return(nil).Once()
+			},
+			setupCacheMock: []any{fmt.Errorf("cache storing fails")},
 			chat: &entity.Chat{
 				Id:             "c1",
 				Author:         "u1",
@@ -194,7 +252,7 @@ func TestSaveChat(t *testing.T) {
 		},
 		{
 			name: "nil ctx returns error and does not call storage",
-			setupMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
+			setupStorageMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
 			},
 			chat: &entity.Chat{
 				Id:             "c2",
@@ -206,7 +264,7 @@ func TestSaveChat(t *testing.T) {
 		},
 		{
 			name: "save chat error",
-			setupMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
+			setupStorageMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
 				storage.On("SaveChat", mock.Anything, mock.AnythingOfType("*entity.Chat")).Return(errors.New("err")).Once()
 			},
 			chat: &entity.Chat{
@@ -224,9 +282,13 @@ func TestSaveChat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// reset mock
 			storage := mocks.NewMockChatStorageService(t)
-			tt.setupMock(tt.chat, storage)
+			tt.setupStorageMock(tt.chat, storage)
 
 			cache := mocks.NewMockCache(t)
+
+			if tt.setupCacheMock != nil {
+				cache.On("Store", mock.Anything, tt.chat, time.Duration(0)).Return(tt.setupCacheMock...)
+			}
 
 			svc, err := NewChatManager(logger, storage, cfg, cache, tracer)
 			assert.Nil(t, err)
