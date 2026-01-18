@@ -110,7 +110,7 @@ func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat, userId st
 		return err
 	}
 
-	if err := c.cacheService.Store(ctx, chat, 0); err != nil {
+	if err := c.cacheService.Store(ctx, chat); err != nil {
 		c.logger.Info("cache store error", "error", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while caching chat")

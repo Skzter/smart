@@ -6,7 +6,6 @@ package mocks
 
 import (
 	"context"
-	"time"
 
 	mock "github.com/stretchr/testify/mock"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
@@ -108,16 +107,16 @@ func (_c *MockCache_LookUp_Call) RunAndReturn(run func(ctx context.Context, chat
 }
 
 // Store provides a mock function for the type MockCache
-func (_mock *MockCache) Store(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error {
-	ret := _mock.Called(ctx, chat, timeToLive)
+func (_mock *MockCache) Store(ctx context.Context, chat *entity.Chat) error {
+	ret := _mock.Called(ctx, chat)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Store")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, time.Duration) error); ok {
-		r0 = returnFunc(ctx, chat, timeToLive)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat) error); ok {
+		r0 = returnFunc(ctx, chat)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -132,12 +131,11 @@ type MockCache_Store_Call struct {
 // Store is a helper method to define mock.On call
 //   - ctx context.Context
 //   - chat *entity.Chat
-//   - timeToLive time.Duration
-func (_e *MockCache_Expecter) Store(ctx interface{}, chat interface{}, timeToLive interface{}) *MockCache_Store_Call {
-	return &MockCache_Store_Call{Call: _e.mock.On("Store", ctx, chat, timeToLive)}
+func (_e *MockCache_Expecter) Store(ctx interface{}, chat interface{}) *MockCache_Store_Call {
+	return &MockCache_Store_Call{Call: _e.mock.On("Store", ctx, chat)}
 }
 
-func (_c *MockCache_Store_Call) Run(run func(ctx context.Context, chat *entity.Chat, timeToLive time.Duration)) *MockCache_Store_Call {
+func (_c *MockCache_Store_Call) Run(run func(ctx context.Context, chat *entity.Chat)) *MockCache_Store_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -147,14 +145,9 @@ func (_c *MockCache_Store_Call) Run(run func(ctx context.Context, chat *entity.C
 		if args[1] != nil {
 			arg1 = args[1].(*entity.Chat)
 		}
-		var arg2 time.Duration
-		if args[2] != nil {
-			arg2 = args[2].(time.Duration)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -165,7 +158,7 @@ func (_c *MockCache_Store_Call) Return(err error) *MockCache_Store_Call {
 	return _c
 }
 
-func (_c *MockCache_Store_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error) *MockCache_Store_Call {
+func (_c *MockCache_Store_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat) error) *MockCache_Store_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -165,7 +165,6 @@ func TestStore(t *testing.T) {
 	tests := []struct {
 		name              string
 		ctx               context.Context
-		timeToLive        time.Duration
 		chat              *entity.Chat
 		mockCacheResponse []any
 		wantErr           bool
@@ -177,16 +176,8 @@ func TestStore(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:       "error - ttl is 0",
-			ctx:        t.Context(),
-			chat:       chat,
-			timeToLive: 0,
-			wantErr:    true,
-		},
-		{
 			name:              "error - cache fails",
 			ctx:               t.Context(),
-			timeToLive:        1,
 			chat:              chat,
 			mockCacheResponse: []any{fmt.Errorf("cache error")},
 			wantErr:           true,
@@ -194,7 +185,6 @@ func TestStore(t *testing.T) {
 		{
 			name:              "success - cache stores data",
 			ctx:               t.Context(),
-			timeToLive:        1,
 			chat:              chat,
 			mockCacheResponse: []any{nil},
 			wantErr:           false,
@@ -212,9 +202,9 @@ func TestStore(t *testing.T) {
 
 			if tc.mockCacheResponse != nil {
 				chatByte, _ := json.Marshal(tc.chat)
-				mockCacheRepo.On("Set", mock.Anything, generateKey(tc.chat.Id), chatByte, tc.timeToLive).Return(tc.mockCacheResponse...)
+				mockCacheRepo.On("Set", mock.Anything, generateKey(tc.chat.Id), chatByte, time.Duration(0)).Return(tc.mockCacheResponse...)
 			}
-			err := cacheSrv.Store(tc.ctx, tc.chat, tc.timeToLive)
+			err := cacheSrv.Store(tc.ctx, tc.chat)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {

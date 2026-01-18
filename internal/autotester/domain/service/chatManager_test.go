@@ -287,7 +287,7 @@ func TestSaveChat(t *testing.T) {
 			cache := mocks.NewMockCache(t)
 
 			if tt.setupCacheMock != nil {
-				cache.On("Store", mock.Anything, tt.chat, time.Duration(0)).Return(tt.setupCacheMock...)
+				cache.On("Store", mock.Anything, tt.chat).Return(tt.setupCacheMock...)
 			}
 
 			svc, err := NewChatManager(logger, storage, cfg, cache, tracer)

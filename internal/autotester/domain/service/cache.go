@@ -20,7 +20,7 @@ import (
 // This Cache Service is responsible for caching the chats from the users
 type Cache interface {
 	LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
-	Store(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error
+	Store(ctx context.Context, chat *entity.Chat) error
 }
 
 type cache struct {
@@ -84,13 +84,9 @@ func (c *cache) LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
 // CacheReplacementStrategy: tbd (maybe Least Recently Used)
 // if successful, no error
 // else, error
-func (c *cache) Store(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error {
+func (c *cache) Store(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
-	}
-
-	if timeToLive < 1 {
-		return fmt.Errorf("err: timeToLive has to be greater than 0")
 	}
 
 	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.Store")
@@ -104,7 +100,8 @@ func (c *cache) Store(ctx context.Context, chat *entity.Chat, timeToLive time.Du
 		return err
 	}
 
-	err = c.cacheRepo.Set(ctx, key, data, timeToLive)
+	// 0 as ttl means no expiration, cache is setup with least recently used eviction policy
+	err = c.cacheRepo.Set(ctx, key, data, time.Duration(0))
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "cache set error")
