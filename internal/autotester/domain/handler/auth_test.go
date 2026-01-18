@@ -1,114 +1,269 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
+
+	"go.opentelemetry.io/otel"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 )
 
 // nolint:funlen
+func TestHandleGenerateToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg, _ := config.LoadConfig()
+	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
+
+	now := time.Now()
+	validToken := &entity.Token{
+		UserID:    "user123",
+		Token:     "generated-token-abc",
+		CreatedAt: now,
+		UpdatedAt: now,
+		ExpiresAt: now.Add(24 * time.Hour),
+		RevokedAt: nil,
+	}
+
+	tests := []struct {
+		TestName       string
+		RequestBody    string
+		ExpectedStatus int
+		ExpectedBody   string
+		MockSetup      []any
+	}{
+		{
+			TestName:       "Valid generate token request",
+			RequestBody:    `{"userId": "user123"}`,
+			ExpectedStatus: http.StatusOK,
+			ExpectedBody:   mustMarshal(validToken),
+			MockSetup:      []any{validToken, nil},
+		},
+		{
+			TestName:       "Invalid JSON",
+			RequestBody:    `{"invalid":json}`,
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedBody:   `{"message":"Bad Request"}`,
+		},
+		{
+			TestName:       "Empty userId",
+			RequestBody:    `{"userId": ""}`,
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedBody:   `{"message":"Bad Request"}`,
+		},
+		{
+			TestName:       "Missing userId field",
+			RequestBody:    `{}`,
+			ExpectedStatus: http.StatusBadRequest,
+			ExpectedBody:   `{"message":"Bad Request"}`,
+		},
+		{
+			TestName:       "GenerateToken service error",
+			RequestBody:    `{"userId": "user123"}`,
+			ExpectedStatus: http.StatusInternalServerError,
+			ExpectedBody:   `{"message":"Internal Server Error"}`,
+			MockSetup:      []any{nil, errors.New("database error")},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.TestName, func(t *testing.T) {
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			// Setup metrics mock to accept any calls
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
+
+			if test.MockSetup != nil {
+				mockAuth.On("GenerateToken", mock.Anything, mock.Anything).
+					Return(test.MockSetup...)
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/token", bytes.NewBufferString(test.RequestBody))
+			req.Header.Set("Content-Type", "application/json")
+
+			rec := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(rec)
+			ctx.Request = req
+
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				mockGroupManager,
+				tracer,
+				mockMetricsServ,
+				mockAuth,
+			)
+			if err != nil {
+				t.Fatalf("Controller build failed: %v", err)
+			}
+
+			controller.HandleGenerateToken(ctx)
+
+			if rec.Code != test.ExpectedStatus {
+				t.Errorf("Expected status %d, got %d. Body: %s",
+					test.ExpectedStatus, rec.Code, rec.Body.String())
+			}
+
+			if rec.Body.String() != test.ExpectedBody {
+				t.Errorf("Expected body %s, got %s",
+					test.ExpectedBody, rec.Body.String())
+			}
+		})
+	}
+}
+
+// mustMarshal marshals v to JSON string, panics on error.
+func mustMarshal(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
+//nolint:funlen
 func TestHandleValidateJWT(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
 		authHeader     string
-		setupMock      func(m *mocks.MockJWTValidator)
+		validateResult *entity.ValidationResult
+		validateErr    error
 		expectedStatus int
-		expectValidate bool
 	}{
 		{
 			name:           "missing Authorization header -> unauthorized",
 			authHeader:     "",
-			setupMock:      nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectValidate: false,
 		},
 		{
 			name:           "wrong scheme -> unauthorized",
 			authHeader:     "Token abc",
-			setupMock:      nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectValidate: false,
 		},
 		{
 			name:           "empty bearer token -> unauthorized",
 			authHeader:     "Bearer    ",
-			setupMock:      nil,
 			expectedStatus: http.StatusUnauthorized,
-			expectValidate: false,
 		},
 		{
-			name:       "Validate returns error -> unauthorized",
-			authHeader: "Bearer abc",
-			setupMock: func(m *mocks.MockJWTValidator) {
-				m.On("Validate", mock.Anything, "abc").
-					Return(entity.ValidationResult{Valid: false, Revoked: false}, errors.New("boom")).
-					Once()
-			},
+			name:           "ValidateToken returns error -> unauthorized",
+			authHeader:     "Bearer abc",
+			validateResult: &entity.ValidationResult{Valid: false, Revoked: false},
+			validateErr:    errors.New("boom"),
 			expectedStatus: http.StatusUnauthorized,
-			expectValidate: true,
 		},
 		{
-			name:       "token invalid -> unauthorized",
-			authHeader: "Bearer abc",
-			setupMock: func(m *mocks.MockJWTValidator) {
-				m.On("Validate", mock.Anything, "abc").
-					Return(entity.ValidationResult{Valid: false, Revoked: false}, nil).
-					Once()
-			},
+			name:           "token invalid -> unauthorized",
+			authHeader:     "Bearer abc",
+			validateResult: &entity.ValidationResult{Valid: false, Revoked: false},
 			expectedStatus: http.StatusUnauthorized,
-			expectValidate: true,
 		},
 		{
-			name:       "token revoked -> forbidden",
-			authHeader: "Bearer abc",
-			setupMock: func(m *mocks.MockJWTValidator) {
-				m.On("Validate", mock.Anything, "abc").
-					Return(entity.ValidationResult{Valid: true, Revoked: true}, nil).
-					Once()
-			},
+			name:           "token revoked -> forbidden",
+			authHeader:     "Bearer abc",
+			validateResult: &entity.ValidationResult{Valid: true, Revoked: true},
 			expectedStatus: http.StatusForbidden,
-			expectValidate: true,
 		},
 		{
-			name:       "token valid -> ok",
-			authHeader: "Bearer abc",
-			setupMock: func(m *mocks.MockJWTValidator) {
-				m.On("Validate", mock.Anything, "abc").
-					Return(entity.ValidationResult{Valid: true, Revoked: false}, nil).
-					Once()
-			},
+			name:           "token valid -> ok",
+			authHeader:     "Bearer abc",
+			validateResult: &entity.ValidationResult{Valid: true, Revoked: false},
 			expectedStatus: http.StatusOK,
-			expectValidate: true,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockJWTValidator := mocks.NewMockJWTValidator(t)
+			mockGenServ := mocks.NewMockGeneratePrompt(t)
+			mockValServ := mocks.NewMockValidator(t)
+			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
+			mockDockerServ := mocks.NewMockDocker(t)
+			mockChatManager := mocks.NewMockChatManager(t)
+			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
 
-			controller := &AutotesterController{
-				logger:       logger,
-				jwtValidator: mockJWTValidator,
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
+
+			// Setup Auth expectations only when header looks like Bearer <token>
+			if strings.HasPrefix(tc.authHeader, "Bearer ") && strings.TrimSpace(strings.TrimPrefix(tc.authHeader, "Bearer ")) != "" {
+				// GetBearerToken wird im Code direkt aus Header geparsed, wird nicht gemockt (ist echte Funktion im authService),
+				// aber hier mocken wir den AuthService selbst, daher müssen wir ValidateToken erwarten.
+				mockAuth.On("GetBearerToken", mock.Anything).Return(strings.TrimSpace(strings.TrimPrefix(tc.authHeader, "Bearer ")), nil).Maybe()
+				if tc.validateResult != nil || tc.validateErr != nil {
+					mockAuth.On("ValidateToken", mock.Anything, "abc").Return(tc.validateResult, tc.validateErr).Maybe()
+				} else {
+					mockAuth.On("ValidateToken", mock.Anything, "abc").Return(&entity.ValidationResult{Valid: false, Revoked: false}, nil).Maybe()
+				}
+			} else {
+				// For invalid/missing headers, GetBearerToken should error
+				mockAuth.On("GetBearerToken", mock.Anything).Return("", errors.New("missing/invalid header")).Maybe()
 			}
 
-			if tc.setupMock != nil {
-				tc.setupMock(mockJWTValidator)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				mockGroupManager,
+				tracer,
+				mockMetricsServ,
+				mockAuth,
+			)
+			if err != nil {
+				t.Fatalf("Controller build failed: %v", err)
 			}
 
-			req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/validate", nil)
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/validate", nil)
 			if tc.authHeader != "" {
 				req.Header.Set("Authorization", tc.authHeader)
 			}
@@ -119,10 +274,8 @@ func TestHandleValidateJWT(t *testing.T) {
 
 			controller.HandleValidateJWT(ctx)
 
-			assert.Equal(t, tc.expectedStatus, rec.Code)
-
-			if !tc.expectValidate {
-				mockJWTValidator.AssertNotCalled(t, "Validate", mock.Anything, mock.Anything)
+			if rec.Code != tc.expectedStatus {
+				t.Errorf("Expected status %d, got %d", tc.expectedStatus, rec.Code)
 			}
 		})
 	}

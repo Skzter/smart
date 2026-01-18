@@ -262,3 +262,5 @@ defaultLimitChats: String = "10"
 defaultLimitTests: Int = 50
 
 taglistConfig: taglist = taglist
+
+tokenExpirationTime: Duration = 30.d

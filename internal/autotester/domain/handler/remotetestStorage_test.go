@@ -237,7 +237,8 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
-			mockJWT := mocks.NewMockJWTValidator(t)
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -255,9 +256,10 @@ func TestHandleGetRemoteTestcase(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
-				mockJWT,
+				mockAuth,
 			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)

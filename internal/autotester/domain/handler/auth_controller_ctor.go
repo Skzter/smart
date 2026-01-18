@@ -9,9 +9,9 @@ import (
 // NewAuthController returns a minimal controller instance that is sufficient
 // for the auth validate endpoint. This avoids having to build the whole
 // controller graph in unit tests.
-func NewAuthController(logger *slog.Logger, jwtValidator service.JWTValidator) *AutotesterController {
+func NewAuthController(logger *slog.Logger, authService service.Auth) *AutotesterController {
 	return &AutotesterController{
-		logger:       logger,
-		jwtValidator: jwtValidator,
+		logger:      logger,
+		authService: authService,
 	}
 }

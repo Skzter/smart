@@ -24,9 +24,10 @@ type AutotesterController struct {
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
 	chatManager                  service.ChatManager
+	groupManager                 service.GroupManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
-	jwtValidator                 service.JWTValidator
+	authService                  service.Auth
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -41,9 +42,10 @@ func NewAutotesterController(
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
 	chatManager service.ChatManager,
+	groupManager service.GroupManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
-	jwtValidator service.JWTValidator,
+	authService service.Auth,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -55,9 +57,10 @@ func NewAutotesterController(
 		remoteTestcaseStorageService,
 		chatStorageService,
 		chatManager,
+		groupManager,
 		tracer,
 		metricsService,
-		jwtValidator,
+		authService,
 	); err != nil {
 		return nil, err
 	}
@@ -72,8 +75,9 @@ func NewAutotesterController(
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
 		chatManager:                  chatManager,
+		groupManager:                 groupManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
-		jwtValidator:                 jwtValidator,
+		authService:                  authService,
 	}, nil
 }

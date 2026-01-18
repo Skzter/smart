@@ -39,8 +39,8 @@ func (_m *MockChatStorageService) EXPECT() *MockChatStorageService_Expecter {
 }
 
 // LoadChat provides a mock function for the type MockChatStorageService
-func (_mock *MockChatStorageService) LoadChat(ctx context.Context, userId string, chatId string) (*entity.Chat, error) {
-	ret := _mock.Called(ctx, userId, chatId)
+func (_mock *MockChatStorageService) LoadChat(ctx context.Context, chatId string) (*entity.Chat, error) {
+	ret := _mock.Called(ctx, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for LoadChat")
@@ -48,18 +48,18 @@ func (_mock *MockChatStorageService) LoadChat(ctx context.Context, userId string
 
 	var r0 *entity.Chat
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (*entity.Chat, error)); ok {
-		return returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*entity.Chat, error)); ok {
+		return returnFunc(ctx, chatId)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) *entity.Chat); ok {
-		r0 = returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *entity.Chat); ok {
+		r0 = returnFunc(ctx, chatId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.Chat)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, userId, chatId)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, chatId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -73,13 +73,12 @@ type MockChatStorageService_LoadChat_Call struct {
 
 // LoadChat is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userId string
 //   - chatId string
-func (_e *MockChatStorageService_Expecter) LoadChat(ctx interface{}, userId interface{}, chatId interface{}) *MockChatStorageService_LoadChat_Call {
-	return &MockChatStorageService_LoadChat_Call{Call: _e.mock.On("LoadChat", ctx, userId, chatId)}
+func (_e *MockChatStorageService_Expecter) LoadChat(ctx interface{}, chatId interface{}) *MockChatStorageService_LoadChat_Call {
+	return &MockChatStorageService_LoadChat_Call{Call: _e.mock.On("LoadChat", ctx, chatId)}
 }
 
-func (_c *MockChatStorageService_LoadChat_Call) Run(run func(ctx context.Context, userId string, chatId string)) *MockChatStorageService_LoadChat_Call {
+func (_c *MockChatStorageService_LoadChat_Call) Run(run func(ctx context.Context, chatId string)) *MockChatStorageService_LoadChat_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -89,14 +88,9 @@ func (_c *MockChatStorageService_LoadChat_Call) Run(run func(ctx context.Context
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -107,75 +101,84 @@ func (_c *MockChatStorageService_LoadChat_Call) Return(chat *entity.Chat, err er
 	return _c
 }
 
-func (_c *MockChatStorageService_LoadChat_Call) RunAndReturn(run func(ctx context.Context, userId string, chatId string) (*entity.Chat, error)) *MockChatStorageService_LoadChat_Call {
+func (_c *MockChatStorageService_LoadChat_Call) RunAndReturn(run func(ctx context.Context, chatId string) (*entity.Chat, error)) *MockChatStorageService_LoadChat_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// LoadUserChats provides a mock function for the type MockChatStorageService
-func (_mock *MockChatStorageService) LoadUserChats(ctx context.Context, userID string) ([]*entity.ChatSummary, error) {
-	ret := _mock.Called(ctx, userID)
+// LoadSummaries provides a mock function for the type MockChatStorageService
+func (_mock *MockChatStorageService) LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error) {
+	var tmpRet mock.Arguments
+	if len(groupIds) > 0 {
+		tmpRet = _mock.Called(ctx, groupIds)
+	} else {
+		tmpRet = _mock.Called(ctx)
+	}
+	ret := tmpRet
 
 	if len(ret) == 0 {
-		panic("no return value specified for LoadUserChats")
+		panic("no return value specified for LoadSummaries")
 	}
 
 	var r0 []*entity.ChatSummary
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]*entity.ChatSummary, error)); ok {
-		return returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ...string) ([]*entity.ChatSummary, error)); ok {
+		return returnFunc(ctx, groupIds...)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []*entity.ChatSummary); ok {
-		r0 = returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, ...string) []*entity.ChatSummary); ok {
+		r0 = returnFunc(ctx, groupIds...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*entity.ChatSummary)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, userID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, ...string) error); ok {
+		r1 = returnFunc(ctx, groupIds...)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockChatStorageService_LoadUserChats_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadUserChats'
-type MockChatStorageService_LoadUserChats_Call struct {
+// MockChatStorageService_LoadSummaries_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'LoadSummaries'
+type MockChatStorageService_LoadSummaries_Call struct {
 	*mock.Call
 }
 
-// LoadUserChats is a helper method to define mock.On call
+// LoadSummaries is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
-func (_e *MockChatStorageService_Expecter) LoadUserChats(ctx interface{}, userID interface{}) *MockChatStorageService_LoadUserChats_Call {
-	return &MockChatStorageService_LoadUserChats_Call{Call: _e.mock.On("LoadUserChats", ctx, userID)}
+//   - groupIds ...string
+func (_e *MockChatStorageService_Expecter) LoadSummaries(ctx interface{}, groupIds ...interface{}) *MockChatStorageService_LoadSummaries_Call {
+	return &MockChatStorageService_LoadSummaries_Call{Call: _e.mock.On("LoadSummaries",
+		append([]interface{}{ctx}, groupIds...)...)}
 }
 
-func (_c *MockChatStorageService_LoadUserChats_Call) Run(run func(ctx context.Context, userID string)) *MockChatStorageService_LoadUserChats_Call {
+func (_c *MockChatStorageService_LoadSummaries_Call) Run(run func(ctx context.Context, groupIds ...string)) *MockChatStorageService_LoadSummaries_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
+		var arg1 []string
+		var variadicArgs []string
+		if len(args) > 1 {
+			variadicArgs = args[1].([]string)
 		}
+		arg1 = variadicArgs
 		run(
 			arg0,
-			arg1,
+			arg1...,
 		)
 	})
 	return _c
 }
 
-func (_c *MockChatStorageService_LoadUserChats_Call) Return(chatSummarys []*entity.ChatSummary, err error) *MockChatStorageService_LoadUserChats_Call {
+func (_c *MockChatStorageService_LoadSummaries_Call) Return(chatSummarys []*entity.ChatSummary, err error) *MockChatStorageService_LoadSummaries_Call {
 	_c.Call.Return(chatSummarys, err)
 	return _c
 }
 
-func (_c *MockChatStorageService_LoadUserChats_Call) RunAndReturn(run func(ctx context.Context, userID string) ([]*entity.ChatSummary, error)) *MockChatStorageService_LoadUserChats_Call {
+func (_c *MockChatStorageService_LoadSummaries_Call) RunAndReturn(run func(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error)) *MockChatStorageService_LoadSummaries_Call {
 	_c.Call.Return(run)
 	return _c
 }
