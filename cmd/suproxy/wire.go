@@ -82,14 +82,17 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 	return sharedService.NewOpenAI(repo, tracer)
 }
 
+// HTTPClientProvider provides a new HTTPClient
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
+// DatabaseParquetWrapperProvider provides a new DatabaseParquetWrapper
 func DatabaseParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig(), tracer)
 }
 
+// S3WrapperProvider provides a new S3Wrapper
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Suproxy, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
 	config := wconfig.S3Config{
 		Region:    cfg.Region,
@@ -117,6 +120,7 @@ func DatabaseRepositoryProvider(
 	)
 }
 
+// TagsearchServiceProvider provides a new TagsearchService
 func TagsearchServiceProvider(cfg *config.Suproxy, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
 }

@@ -73,14 +73,18 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 
 	return nil, nil
 }
+
+// RouterProvider provides a new Router
 func RouterProvider(logger *slog.Logger, controller *handler.AutotesterController, isHeadless bool) (*gin.Engine, error) {
 	return application.NewRouter(logger, controller, isHeadless)
 }
 
+// TaglistConfigProvider provides a new Taglist Config
 func TaglistConfigProvider(cfg *config.Autotester) *sharedConfig.TaglistConfig {
 	return cfg.TaglistConfig
 }
 
+// RedisConfigProvider provides a new Redis Config
 func RedisConfigProvider(cfg *config.Autotester) *sharedConfig.RedisConfig {
 	return cfg.RedisConfig
 }
@@ -120,6 +124,7 @@ func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetC
 	return wrapperService.NewParquetWrapper[entity.Group](logger, cfg, tracer)
 }
 
+// S3WrapperProvider provides a new S3Wrapper
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
@@ -135,14 +140,17 @@ func FileSystemProvider(cfg *config.Autotester) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
+// DockerClientProvider provides a new Docker Client
 func DockerClientProvider() (service.DockerClient, error) {
 	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
 
+// TestcaseLocalStorageServiceProvider provides a new TestcaseLocalStorageService
 func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Autotester, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
 
+// TestCaseStorageRepositoryProvider provides a new TestCaseStorageRepository
 func TestCaseStorageRepositoryProvider(
 	logger *slog.Logger,
 	s3Wrapper wrapperService.S3StorageWrapper,
@@ -158,10 +166,12 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 	return wrapperService.DefaultParquetConfig()
 }
 
+// MetricsServiceProvider provides a new MetricsService
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
 }
 
+// DatabaseRepositoryProvider provides a new DatabaseRepository
 func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
 	err := godotenv.Load()
 	if err != nil {
