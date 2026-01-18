@@ -94,7 +94,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 		Cmd: []string{
 			"/bin/bash",
 			"-c",
-			fmt.Sprintf("cd /apw && npx playwright test %s", basefile),
+			fmt.Sprintf("cd /app && npx playwright test %s", basefile),
 		},
 		AttachStdout: true,
 		AttachStderr: true,
@@ -107,7 +107,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 			{
 				Type:   mount.TypeBind,
 				Source: filename,
-				Target: fmt.Sprintf("/apw/%s", basefile),
+				Target: fmt.Sprintf("/app/%s", basefile),
 			},
 		},
 	}
