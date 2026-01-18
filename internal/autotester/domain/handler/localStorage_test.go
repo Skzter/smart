@@ -73,6 +73,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
@@ -106,6 +107,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			if err != nil {
 				t.Errorf("build failed")
@@ -176,6 +178,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
@@ -221,6 +224,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			if err != nil {
 				t.Errorf("build failed")

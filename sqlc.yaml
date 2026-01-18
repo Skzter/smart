@@ -1,0 +1,8 @@
+version: "2"
+sql:
+  - schema: "internal/autotester/infrastructure/database/sql/schema"
+    queries: "internal/autotester/infrastructure/database/sql/queries"
+    engine: "postgresql"
+    gen:
+      go:
+        out: "internal/autotester/infrastructure/database"
