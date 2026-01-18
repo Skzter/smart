@@ -38,6 +38,7 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 	wire.Build(
 		shared.SharedProviderSet,
 		TaglistConfigProvider,
+		RedisConfigProvider,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
@@ -54,6 +55,7 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 		service.NewGeneratePromptService,
 		DockerClientProvider,
 		service.NewDocker,
+		service.NewCacheService,
 		service.NewChatManager,
 		service.NewChatStorageService,
 		repository.NewChatStorageRepository,

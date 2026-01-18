@@ -75,6 +75,7 @@ packages:
       TestcaseStorageService:
       Auth:
       GroupStorage:
+      Cache:
       GroupManager:
 
   #MCP

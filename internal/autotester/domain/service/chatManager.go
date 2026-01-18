@@ -27,19 +27,21 @@ type chatManager struct {
 	storageService ChatStorageService
 	logger         *slog.Logger
 	cfg            config.Autotester
+	cacheService   Cache
 	tracer         trace.Tracer
 }
 
 // NewChatManager constructs a new Chat service instance. It validates required dependencies and
 // copies the provided config into the service.
-func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Autotester, trace trace.Tracer) (ChatManager, error) {
-	if err := assert.NotNil(logger, storageService, cfg, trace); err != nil {
+func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Autotester, cache Cache, trace trace.Tracer) (ChatManager, error) {
+	if err := assert.NotNil(logger, storageService, cfg, trace, cache); err != nil {
 		return nil, err
 	}
 	return &chatManager{
 		storageService: storageService,
 		logger:         logger,
 		cfg:            *cfg,
+		cacheService:   cache,
 		tracer:         trace,
 	}, nil
 }

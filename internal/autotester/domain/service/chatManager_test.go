@@ -19,6 +19,7 @@ import (
 func TestNewChat(t *testing.T) {
 	logger := slog.Default()
 	storage := mocks.NewMockChatStorageService(t)
+	cache := mocks.NewMockCache(t)
 	cfg := &config.Autotester{}
 	tracer := otel.Tracer("test")
 
@@ -41,7 +42,7 @@ func TestNewChat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			svc, err := NewChatManager(tt.logger, storage, cfg, tracer)
+			svc, err := NewChatManager(tt.logger, storage, cfg, cache, tracer)
 			if tt.wantErr {
 				assert.NotNil(t, err)
 				assert.Nil(t, svc)
@@ -53,6 +54,7 @@ func TestNewChat(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestLoadChat(t *testing.T) {
 	logger := slog.Default()
 	cfg := &config.Autotester{
@@ -130,7 +132,9 @@ func TestLoadChat(t *testing.T) {
 			storage := mocks.NewMockChatStorageService(t)
 			tt.setupMock(storage)
 
-			svc, err := NewChatManager(logger, storage, cfg, tracer)
+			cache := mocks.NewMockCache(t)
+
+			svc, err := NewChatManager(logger, storage, cfg, cache, tracer)
 			assert.Nil(t, err)
 
 			ctx := context.Background()
@@ -222,7 +226,9 @@ func TestSaveChat(t *testing.T) {
 			storage := mocks.NewMockChatStorageService(t)
 			tt.setupMock(tt.chat, storage)
 
-			svc, err := NewChatManager(logger, storage, cfg, tracer)
+			cache := mocks.NewMockCache(t)
+
+			svc, err := NewChatManager(logger, storage, cfg, cache, tracer)
 			assert.Nil(t, err)
 
 			err = svc.SaveChat(tt.ctx, tt.chat, "user")
