@@ -2,7 +2,7 @@
 module suproxy
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
-import "shared/taglist.pkl"
+import "shared/shared.pkl"
 
 model: String ="gpt-5-mini-2025-08-07"
 
@@ -113,13 +113,6 @@ bucket: String = "smart-suproxy"
 
 entryPrefix: String = "supplierData/"
 
-taglistConfig: taglist = taglist
+taglistConfig: shared.TaglistConfig = shared.taglist
 
-class RedisConfig {
-    addr: String = "localhost:6379"
-    password: String = ""
-    db: Int = 0
-    protocol: Int = 2
-}
-
-redis: RedisConfig
+redisConfig: shared.RedisConfig = shared.redis

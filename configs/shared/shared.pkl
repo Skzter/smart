@@ -1,0 +1,21 @@
+@go.Package { name = "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config" }
+module shared
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
+
+class RedisConfig {
+    addr: String = "localhost:6379"
+    password: String = ""
+    db: Int = 0
+    protocol: Int = 2
+}
+
+redis: RedisConfig
+
+class TaglistConfig {
+    Bucket: String = "smart-taglist"
+    region: String = "eu-central-1"
+    entryPrefix: String = "taglist/"
+}
+
+taglist: TaglistConfig

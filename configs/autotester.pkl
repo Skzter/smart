@@ -2,7 +2,7 @@
 module autotester
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
-import "shared/taglist.pkl"
+import "shared/shared.pkl"
 
 const model: String = "gpt-5-mini-2025-08-07"
 const autoplaywright_debug: Boolean = true
@@ -261,6 +261,8 @@ defaultLimitChats: String = "10"
 
 defaultLimitTests: Int = 50
 
-taglistConfig: taglist = taglist
+taglistConfig: shared.TaglistConfig = shared.taglist
+
+redisConfig: shared.RedisConfig = shared.redis
 
 tokenExpirationTime: Duration = 30.d

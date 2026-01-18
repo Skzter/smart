@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository/mocks"
 )
 
@@ -38,7 +38,7 @@ func TestNewRedisCache(t *testing.T) {
 	tests := []struct {
 		name     string
 		logger   *slog.Logger
-		cfg      *config.Suproxy
+		cfg      *config.RedisConfig
 		wantErr  bool
 		wantAddr string
 	}{
@@ -49,28 +49,19 @@ func TestNewRedisCache(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "nil cfg.Redis → default options",
-			logger:   newCacheTestLogger(),
-			cfg:      &config.Suproxy{Redis: nil},
-			wantErr:  false,
-			wantAddr: "localhost:6379",
-		},
-		{
 			name:    "nil logger → error",
 			logger:  nil,
-			cfg:     &config.Suproxy{},
+			cfg:     &config.RedisConfig{},
 			wantErr: true,
 		},
 		{
 			name:   "full valid redis config",
 			logger: newCacheTestLogger(),
-			cfg: &config.Suproxy{
-				Redis: &config.RedisConfig{
-					Addr:     "localhost:9999",
-					Password: "pw",
-					Db:       2,
-					Protocol: 3,
-				},
+			cfg: &config.RedisConfig{
+				Addr:     "localhost:9999",
+				Password: "pw",
+				Db:       2,
+				Protocol: 3,
 			},
 			wantErr:  false,
 			wantAddr: "localhost:9999",

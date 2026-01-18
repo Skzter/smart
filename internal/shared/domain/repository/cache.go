@@ -8,8 +8,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 )
 
 // RedisClient wraps the underlying redis client for easier mocking.
@@ -35,28 +35,16 @@ type redisCache struct {
 }
 
 // NewRedisCache initializes a new Redis-based cache implementation.
-func NewRedisCache(logger *slog.Logger, cfg *config.Suproxy) (Cache, error) {
-	if err := assert.NotNil(logger); err != nil {
-		return nil, fmt.Errorf("logger cannot be nil, %w", err)
+func NewRedisCache(logger *slog.Logger, cfg *config.RedisConfig) (Cache, error) {
+	if err := assert.NotNil(logger, cfg); err != nil {
+		return nil, err
 	}
 
-	if err := assert.NotNil(cfg); err != nil {
-		return nil, fmt.Errorf("config cannot be nil, %w", err)
-	}
-
-	// Default options
 	opts := redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-		Protocol: 2,
-	}
-
-	if cfg.Redis != nil {
-		opts.Addr = cfg.Redis.Addr
-		opts.Password = cfg.Redis.Password
-		opts.DB = cfg.Redis.Db
-		opts.Protocol = cfg.Redis.Protocol
+		Addr:     cfg.Addr,
+		Password: cfg.Password,
+		DB:       cfg.Db,
+		Protocol: cfg.Protocol,
 	}
 
 	client := redis.NewClient(&opts)

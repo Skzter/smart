@@ -37,6 +37,7 @@ import (
 func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
 	wire.Build(
 		shared.SharedProviderSet,
+		TaglistConfigProvider,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
@@ -51,7 +52,6 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
-		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
 		service.NewChatManager,
@@ -71,13 +71,16 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 
 	return nil, nil
 }
-
 func RouterProvider(logger *slog.Logger, controller *handler.AutotesterController, isHeadless bool) (*gin.Engine, error) {
 	return application.NewRouter(logger, controller, isHeadless)
 }
 
-func TaglistConfigProvider(cfg *config.Autotester) *sharedConfig.Taglist {
+func TaglistConfigProvider(cfg *config.Autotester) *sharedConfig.TaglistConfig {
 	return cfg.TaglistConfig
+}
+
+func RedisConfigProvider(cfg *config.Autotester) *sharedConfig.RedisConfig {
+	return cfg.RedisConfig
 }
 
 // LoggerProvider provides a new logger.

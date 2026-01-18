@@ -34,6 +34,8 @@ func InitializeApp(cfg *config.Suproxy, tracer trace.Tracer) (*gin.Engine, error
 		handler.NewSuproxyController,
 		service.NewValidator,
 		HTTPClientProvider,
+		TaglistConfigProvider,
+		RedisConfigProvider,
 		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
@@ -43,9 +45,7 @@ func InitializeApp(cfg *config.Suproxy, tracer trace.Tracer) (*gin.Engine, error
 		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
 		TagsearchServiceProvider,
-		TaglistConfigProvider,
 		MetricsServiceProvider,
-		RedisCacheProvider,
 		CacheServiceProvider,
 	)
 
@@ -58,8 +58,13 @@ func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, 
 }
 
 // TaglistConfigProvider provides a new TaglistConfig.
-func TaglistConfigProvider(cfg *config.Suproxy) *sharedConfig.Taglist {
+func TaglistConfigProvider(cfg *config.Suproxy) *sharedConfig.TaglistConfig {
 	return cfg.TaglistConfig
+}
+
+// RedisConfigProvider provides a new RedisConfig.
+func RedisConfigProvider(cfg *config.Suproxy) *sharedConfig.RedisConfig {
+	return cfg.RedisConfig
 }
 
 // LoggerProvider provides a new logger.
@@ -114,11 +119,6 @@ func DatabaseRepositoryProvider(
 
 func TagsearchServiceProvider(cfg *config.Suproxy, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
-}
-
-// RedisCacheProvider provides a new RedisCache
-func RedisCacheProvider(log *slog.Logger, cfg *config.Suproxy) (sharedRepo.Cache, error) {
-	return sharedRepo.NewRedisCache(log, cfg)
 }
 
 // CacheServiceProvider provides a new CacheService
