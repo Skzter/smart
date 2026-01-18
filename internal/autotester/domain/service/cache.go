@@ -20,7 +20,7 @@ import (
 // This Cache Service is responsible for caching the chats from the users
 type Cache interface {
 	LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
-	Store(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error
+	Store(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error
 }
 
 type cache struct {
@@ -60,7 +60,8 @@ func (c *cache) LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
 	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.LookUp")
 	defer span.End()
 
-	entry, hit, err := c.cacheRepo.Get(ctx, chatId)
+	key := generateKey(chatId)
+	entry, hit, err := c.cacheRepo.Get(ctx, key)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "cache repo get error")
@@ -83,18 +84,19 @@ func (c *cache) LookUp(ctx context.Context, chatId string) (*entity.Chat, error)
 // CacheReplacementStrategy: tbd (maybe Least Recently Used)
 // if successful, no error
 // else, error
-func (c *cache) Store(ctx context.Context, chat entity.Chat, key string, timeToLive time.Duration) error {
+func (c *cache) Store(ctx context.Context, chat *entity.Chat, timeToLive time.Duration) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
 	}
-	if err := assert.StringNotEmpty(key); err != nil {
-		return err
+
+	if timeToLive < 1 {
+		return fmt.Errorf("err: timeToLive has to be greater than 0")
 	}
 
-	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.LookUp")
+	ctx, span := c.tracer.Start(ctx, "AutotesterCacheService.Store")
 	defer span.End()
 
-	key = fmt.Sprintf("autotester:cache:%s", key)
+	key := generateKey(chat.Id)
 	data, err := json.Marshal(chat)
 	if err != nil {
 		span.RecordError(err)
@@ -111,4 +113,8 @@ func (c *cache) Store(ctx context.Context, chat entity.Chat, key string, timeToL
 
 	span.SetStatus(codes.Ok, "")
 	return nil
+}
+
+func generateKey(chatId string) string {
+	return fmt.Sprintf("autotester:cache:%s", chatId)
 }
