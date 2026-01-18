@@ -64,6 +64,8 @@ services:
     restart: always
     networks:
       - default
+    ports:
+      - "6379:6379"
 
   nginx:
     image: nginx:alpine

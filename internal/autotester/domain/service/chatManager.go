@@ -56,6 +56,7 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 
 	ctx, span := c.tracer.Start(ctx, "chatManager.LoadChat")
 	defer span.End()
+	start := time.Now()
 
 	if request.ChatId == "" {
 		chat := entity.NewChat(request.UserId, []*entity.Message{})
@@ -78,6 +79,7 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 	}
 
 	if cachedChat != nil {
+		c.logger.Debug("cache hit", "elapsed time", time.Since(start))
 		return cachedChat, nil
 	}
 
@@ -87,6 +89,8 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 		span.SetStatus(codes.Error, "error while loading chat")
 		return nil, err
 	}
+
+	c.logger.Debug("cache miss", "elapsed time", time.Since(start))
 
 	span.SetStatus(codes.Ok, "")
 	return chat, nil
