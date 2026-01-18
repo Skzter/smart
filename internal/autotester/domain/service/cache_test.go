@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -130,11 +131,11 @@ func TestLookUp(t *testing.T) {
 			}
 
 			if tc.mockCacheResponse != nil {
-				mockCache.On("Get", mock.Anything, tc.chatId).Return(tc.mockCacheResponse...)
+				mockCache.On("Get", mock.Anything, generateKey(tc.chatId)).Return(tc.mockCacheResponse...)
 			}
+
 			chat, err := cacheSrv.LookUp(tc.ctx, tc.chatId)
-			t.Logf("tc setup\nhit: %t, wantErr: %t\n", tc.cacheHit, tc.wantErr)
-			t.Logf("Chat is %v and error %v and wantChat %v\n", chat, err, tc.wantChat)
+
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, chat)
@@ -149,6 +150,75 @@ func TestLookUp(t *testing.T) {
 					assert.NotNil(t, chat)
 					assert.Equal(t, tc.wantChat, chat)
 				}
+			}
+		})
+	}
+}
+
+func TestStore(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	cfg, _ := config.LoadConfig()
+	tracer := otel.Tracer("test")
+	chatId := "user456"
+	chat := entity.NewChat(chatId, nil)
+
+	tests := []struct {
+		name              string
+		ctx               context.Context
+		timeToLive        time.Duration
+		chat              *entity.Chat
+		mockCacheResponse []any
+		wantErr           bool
+	}{
+		{
+			name:    "error - nil context and nil chat",
+			ctx:     nil,
+			chat:    nil,
+			wantErr: true,
+		},
+		{
+			name:       "error - ttl is 0",
+			ctx:        t.Context(),
+			chat:       chat,
+			timeToLive: 0,
+			wantErr:    true,
+		},
+		{
+			name:              "error - cache fails",
+			ctx:               t.Context(),
+			timeToLive:        1,
+			chat:              chat,
+			mockCacheResponse: []any{fmt.Errorf("cache error")},
+			wantErr:           true,
+		},
+		{
+			name:              "success - cache stores data",
+			ctx:               t.Context(),
+			timeToLive:        1,
+			chat:              chat,
+			mockCacheResponse: []any{nil},
+			wantErr:           false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockCacheRepo := sharedMocks.NewMockCache(t)
+			cacheSrv := &cache{
+				config:    cfg,
+				logger:    logger,
+				cacheRepo: mockCacheRepo,
+				tracer:    tracer,
+			}
+
+			if tc.mockCacheResponse != nil {
+				chatByte, _ := json.Marshal(tc.chat)
+				mockCacheRepo.On("Set", mock.Anything, generateKey(tc.chat.Id), chatByte, tc.timeToLive).Return(tc.mockCacheResponse...)
+			}
+			err := cacheSrv.Store(tc.ctx, tc.chat, tc.timeToLive)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
