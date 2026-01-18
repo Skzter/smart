@@ -90,6 +90,9 @@ services:
 
   redis:
     image: valkey/valkey:alpine
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    volumes:
+      - ./valkey.conf:/etc/valkey/valkey.conf
     networks:
       - default
     ports:
