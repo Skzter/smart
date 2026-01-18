@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	tcRedis "github.com/testcontainers/testcontainers-go/modules/redis"
 
+	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -42,24 +43,25 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 
 	// Create Redis config pointing to the test container
 	logger := newIntegrationLogger()
-	cfg := &config.Suproxy{
-		Redis: &config.RedisConfig{
-			Addr:     addr,
-			Password: "",
-			Db:       0,
-			Protocol: 2,
-		},
+	suproxyCfg, err := config.LoadAppConfig()
+	require.NoError(t, err)
+
+	suproxyCfg.RedisConfig = &sharedConfig.RedisConfig{
+		Addr:     addr,
+		Password: "",
+		Db:       0,
+		Protocol: 2,
 	}
 
 	// Initialize real Redis cache repository
-	cacheRepo, err := sharedRepository.NewRedisCache(logger, cfg)
+	cacheRepo, err := sharedRepository.NewRedisCache(logger, suproxyCfg.RedisConfig)
 	require.NoError(t, err)
 	defer func() {
 		_ = cacheRepo.Close() // ignore close error intentionally
 	}()
 
 	// Create CacheService instance using the real repository
-	cacheSvc, err := NewCacheService(logger, cfg, cacheRepo)
+	cacheSvc, err := NewCacheService(logger, suproxyCfg, cacheRepo)
 	require.NoError(t, err)
 
 	// Build example request used as cache key input
