@@ -92,6 +92,8 @@ services:
     image: valkey/valkey:alpine
     networks:
       - default
+    ports:
+      - "6379:6379"
 
   postgres:
     image: postgres:17-alpine
