@@ -69,6 +69,18 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 		return chat, nil
 	}
 
+	// cache miss produces nil, nil
+	cachedChat, err := c.cacheService.LookUp(ctx, request.ChatId)
+	if err != nil {
+		c.logger.Info("cache lookup error", "error", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache access error")
+	}
+
+	if cachedChat != nil {
+		return cachedChat, nil
+	}
+
 	chat, err := c.storageService.LoadChat(ctx, request.ChatId)
 	if err != nil {
 		span.RecordError(err)
@@ -96,6 +108,12 @@ func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat, userId st
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
+	}
+
+	if err := c.cacheService.Store(ctx, chat, 0); err != nil {
+		c.logger.Info("cache store error", "error", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while caching chat")
 	}
 	span.SetStatus(codes.Ok, "")
 	return nil
