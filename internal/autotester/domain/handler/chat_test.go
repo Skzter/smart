@@ -808,6 +808,7 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 
 			if test.MockResponseLoad != nil {
 				mockChatStorageServ.
@@ -827,7 +828,7 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			controller, _ := NewAutotesterController(
 				logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ,
 				mockDockerServ, mockChatStorageServ, mockRemoteStorageServ,
-				mockChatManager, mockGroupManager, tracer, mockMetricsServ,
+				mockChatManager, mockGroupManager, tracer, mockMetricsServ, mockAuth,
 			)
 
 			router.PATCH("/users/:userId/chats/:chatId", controller.HandleUpdateChatTitle)
