@@ -3,63 +3,70 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 )
 
-// nolint:funlen
 func TestJWTValidatorValidate(t *testing.T) {
-	tests := []struct {
-		name        string
-		token       string
-		wantValid   bool
-		wantRevoked bool
-		wantErr     bool
-	}{
-		{
-			name:        "empty token -> error + invalid",
-			token:       "",
-			wantValid:   false,
-			wantRevoked: false,
-			wantErr:     true,
-		},
-		{
-			name:        "whitespace token -> error + invalid",
-			token:       "   ",
-			wantValid:   false,
-			wantRevoked: false,
-			wantErr:     true,
-		},
-		{
-			name:        "non-empty token -> valid (stub behavior)",
-			token:       "abc",
-			wantValid:   true,
-			wantRevoked: false,
-			wantErr:     false,
-		},
-		{
-			name:        "non-empty token with spaces -> valid (stub behavior)",
-			token:       "  abc  ",
-			wantValid:   true,
-			wantRevoked: false,
-			wantErr:     false,
-		},
+	t.Setenv("JWT_SECRET", "test-secret-123")
+
+	v, err := NewJWTValidator()
+	assert.NoError(t, err)
+
+	sign := func(claims jwt.Claims, secret string) string {
+		t.Helper()
+		tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		s, signErr := tok.SignedString([]byte(secret))
+		assert.NoError(t, signErr)
+		return s
 	}
 
-	v := NewJWTValidator()
+	now := time.Now()
+
+	validToken := sign(jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+	}, "test-secret-123")
+
+	expiredToken := sign(jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(now.Add(-10 * time.Minute)),
+	}, "test-secret-123")
+
+	missingExpToken := sign(jwt.MapClaims{
+		"sub": "user123",
+	}, "test-secret-123")
+
+	invalidSignatureToken := sign(jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(now.Add(10 * time.Minute)),
+	}, "wrong-secret")
+
+	tests := []struct {
+		name      string
+		token     string
+		wantValid bool
+		wantErr   bool
+	}{
+		{"empty token -> error + invalid", "", false, true},
+		{"whitespace token -> error + invalid", "   ", false, true},
+		{"valid token -> ok", validToken, true, false},
+		{"expired token -> error + invalid", expiredToken, false, true},
+		{"missing exp -> error + invalid", missingExpToken, false, true},
+		{"invalid signature -> error + invalid", invalidSignatureToken, false, true},
+	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := v.Validate(context.Background(), tc.token)
+			res, e := v.Validate(context.Background(), tc.token)
 
 			if tc.wantErr {
-				assert.Error(t, err)
+				assert.Error(t, e)
 			} else {
-				assert.NoError(t, err)
+				assert.NoError(t, e)
 			}
 
 			assert.Equal(t, tc.wantValid, res.Valid)
-			assert.Equal(t, tc.wantRevoked, res.Revoked)
+			assert.False(t, res.Revoked)
 		})
 	}
 }

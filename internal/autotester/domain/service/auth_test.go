@@ -9,8 +9,10 @@ import (
 	"testing"
 	"time"
 
+	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
@@ -414,6 +416,160 @@ func TestConvSqlNullTimeIntoTime(t *testing.T) {
 			} else {
 				assert.NotNil(t, result)
 				assert.Equal(t, tc.expected.Unix(), result.Unix())
+			}
+		})
+	}
+}
+
+// nolint:funlen
+func TestValidateToken(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	cfg, _ := config.LoadConfig()
+	tr := otel.Tracer("test")
+
+	makeJWTWithAlg := func(exp time.Time, secret string, alg jwt.SigningMethod) string {
+		t.Helper()
+		claims := jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(exp),
+		}
+		token := jwt.NewWithClaims(alg, claims)
+		s, err := token.SignedString([]byte(secret))
+		require.NoError(t, err)
+		return s
+	}
+
+	now := time.Now()
+
+	// default secret (will be overwritten per subtest)
+	secret := "test-secret"
+
+	validJWT := makeJWTWithAlg(now.Add(time.Hour), secret, jwt.SigningMethodHS256)
+	expiredJWT := makeJWTWithAlg(now.Add(-time.Hour), secret, jwt.SigningMethodHS256)
+	invalidSigJWT := makeJWTWithAlg(now.Add(time.Hour), "wrong-secret", jwt.SigningMethodHS256)
+	hs512JWT := makeJWTWithAlg(now.Add(time.Hour), secret, jwt.SigningMethodHS512)
+
+	tests := []struct {
+		name        string
+		token       string
+		dbResp      []any
+		wantValid   bool
+		wantRevoked bool
+		wantErr     bool
+
+		nilCtx      bool
+		unsetSecret bool
+	}{
+		{
+			name:  "invalid signature -> invalid (no db call)",
+			token: invalidSigJWT,
+		},
+		{
+			name:  "expired token -> invalid (no db call)",
+			token: expiredJWT,
+		},
+		{
+			name:      "unexpected signing method (HS512) -> invalid (no db call)",
+			token:     hs512JWT,
+			wantValid: false,
+		},
+		{
+			name:      "malformed token -> invalid (no db call)",
+			token:     "not-a-jwt",
+			wantValid: false,
+		},
+		{
+			name:    "nil ctx -> error",
+			token:   validJWT,
+			wantErr: true,
+			nilCtx:  true,
+		},
+		{
+			name:    "empty token -> error",
+			token:   "",
+			wantErr: true,
+		},
+		{
+			name:        "missing JWT_SECRET -> error",
+			token:       validJWT,
+			wantErr:     true,
+			unsetSecret: true,
+		},
+		{
+			name:   "valid jwt not in db -> invalid",
+			token:  validJWT,
+			dbResp: []any{database.RefreshToken{}, sql.ErrNoRows},
+		},
+		{
+			name:  "valid jwt and revoked in db -> valid + revoked",
+			token: validJWT,
+			dbResp: []any{
+				database.RefreshToken{
+					RevokedAt: sql.NullTime{Valid: true, Time: now},
+					ExpiresAt: now.Add(time.Hour),
+				}, nil,
+			},
+			wantValid:   true,
+			wantRevoked: true,
+		},
+		{
+			name:  "valid jwt and not revoked in db -> valid",
+			token: validJWT,
+			dbResp: []any{
+				database.RefreshToken{
+					RevokedAt: sql.NullTime{Valid: false},
+					ExpiresAt: now.Add(time.Hour),
+				}, nil,
+			},
+			wantValid: true,
+		},
+		{
+			name:    "db error -> error",
+			token:   validJWT,
+			dbResp:  []any{database.RefreshToken{}, errors.New("db down")},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.unsetSecret {
+				t.Setenv("JWT_SECRET", "")
+			} else {
+				t.Setenv("JWT_SECRET", secret)
+			}
+
+			mockDB := mockRepo.NewMockTokenDatabase(t)
+			if tc.dbResp != nil {
+				mockDB.On("ReadTokenByToken", mock.Anything, tc.token).Return(tc.dbResp...)
+			}
+
+			authSrv := &auth{
+				logger: logger,
+				config: cfg,
+				db:     mockDB,
+				tracer: tr,
+			}
+
+			ctx := t.Context()
+			if tc.nilCtx {
+				ctx = nil
+			}
+
+			res, err := authSrv.ValidateToken(ctx, tc.token)
+
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, res)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, res)
+			assert.Equal(t, tc.wantValid, res.Valid)
+			assert.Equal(t, tc.wantRevoked, res.Revoked)
+
+			if tc.dbResp == nil {
+				mockDB.AssertNotCalled(t, "ReadTokenByToken", mock.Anything, tc.token)
 			}
 		})
 	}
