@@ -133,27 +133,40 @@ func TestChatStorageSaveChat(t *testing.T) {
 	}
 }
 
+// nolint:funlen
 func TestChatStorageLoadChat(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name           string
-		chatid         string
-		loadReturns    []any
-		validReturns   []any
-		mockSetupCache []any
-		ctx            context.Context
-		wantErr        bool
+		name                 string
+		chatid               string
+		loadReturns          []any
+		validReturns         []any
+		mockSetupLookupCache []any
+		mockSetupStoreCache  []any
+		ctx                  context.Context
+		wantErr              bool
 	}{
 		{
-			name:           "success - loading from s3, cache miss",
-			chatid:         "chat123",
-			loadReturns:    []any{&entity.Chat{}, nil},
-			validReturns:   []any{nil},
-			mockSetupCache: []any{nil, nil},
-			ctx:            context.Background(),
-			wantErr:        false,
+			name:                 "success - loading from s3, cache miss, cache store success",
+			chatid:               "chat123",
+			loadReturns:          []any{&entity.Chat{}, nil},
+			validReturns:         []any{nil},
+			mockSetupLookupCache: []any{nil, nil},
+			mockSetupStoreCache:  []any{nil},
+			ctx:                  context.Background(),
+			wantErr:              false,
+		},
+		{
+			name:                 "success - loading from s3, cache miss, cache store error",
+			chatid:               "chat123",
+			loadReturns:          []any{&entity.Chat{}, nil},
+			validReturns:         []any{nil},
+			mockSetupLookupCache: []any{nil, nil},
+			mockSetupStoreCache:  []any{fmt.Errorf("cache store error")},
+			ctx:                  context.Background(),
+			wantErr:              false,
 		},
 		{
 			name:    "nil assert failed",
@@ -167,37 +180,38 @@ func TestChatStorageLoadChat(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:           "repo returns error, cache miss",
-			chatid:         "chat123",
-			loadReturns:    []any{nil, errors.New("repo error")},
-			mockSetupCache: []any{nil, fmt.Errorf("cache error")},
-			ctx:            context.Background(),
-			wantErr:        true,
+			name:                 "repo returns error, cache miss",
+			chatid:               "chat123",
+			loadReturns:          []any{nil, errors.New("repo error")},
+			mockSetupLookupCache: []any{nil, fmt.Errorf("cache error")},
+			ctx:                  context.Background(),
+			wantErr:              true,
 		},
 		{
-			name:           "repo returns invalid chat",
-			chatid:         "chat123",
-			loadReturns:    []any{&entity.Chat{}, nil},
-			validReturns:   []any{errors.New("err")},
-			mockSetupCache: []any{nil, nil},
-			ctx:            context.Background(),
-			wantErr:        true,
+			name:                 "repo returns invalid chat",
+			chatid:               "chat123",
+			loadReturns:          []any{&entity.Chat{}, nil},
+			validReturns:         []any{errors.New("err")},
+			mockSetupLookupCache: []any{nil, nil},
+			ctx:                  context.Background(),
+			wantErr:              true,
 		},
 		{
-			name:           "cache hit but invalid chat",
-			chatid:         "chat123",
-			mockSetupCache: []any{&entity.Chat{}, nil},
-			validReturns:   []any{errors.New("err")},
-			ctx:            context.Background(),
-			wantErr:        true,
+			name:                 "cache hit but invalid chat",
+			chatid:               "chat123",
+			mockSetupLookupCache: []any{&entity.Chat{}, nil},
+			validReturns:         []any{errors.New("err")},
+			loadReturns:          []any{&entity.Chat{}, nil},
+			ctx:                  context.Background(),
+			wantErr:              true,
 		},
 		{
-			name:           "cache hit with valid chat",
-			chatid:         "chat123",
-			mockSetupCache: []any{&entity.Chat{}, nil},
-			validReturns:   []any{nil},
-			ctx:            context.Background(),
-			wantErr:        false,
+			name:                 "cache hit with valid chat",
+			chatid:               "chat123",
+			mockSetupLookupCache: []any{&entity.Chat{}, nil},
+			validReturns:         []any{nil},
+			ctx:                  context.Background(),
+			wantErr:              false,
 		},
 	}
 
@@ -213,8 +227,11 @@ func TestChatStorageLoadChat(t *testing.T) {
 			if test.validReturns != nil {
 				mockVal.On("ValidateChat", mock.Anything, &entity.Chat{}).Return(test.validReturns...)
 			}
-			if test.mockSetupCache != nil {
-				mockCache.On("LookUp", mock.Anything, mock.Anything).Return(test.mockSetupCache...)
+			if test.mockSetupLookupCache != nil {
+				mockCache.On("LookUp", mock.Anything, mock.Anything).Return(test.mockSetupLookupCache...)
+			}
+			if test.mockSetupStoreCache != nil {
+				mockCache.On("Store", mock.Anything, mock.Anything).Return(test.mockSetupStoreCache...)
 			}
 
 			// mockCache.On("LookUp", mock.Anything, test.ChatId).Return(tt.setupCacheMock...)

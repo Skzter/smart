@@ -106,12 +106,13 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 
 	if cachedChat != nil {
 		if err := s.validator.ValidateChat(ctx, cachedChat); err != nil {
+			s.logger.Warn("retrieved invalid chat from cache", "error", err)
 			span.RecordError(err)
-			span.SetStatus(codes.Error, "retrieved invalid chat")
-			return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
+			span.SetStatus(codes.Error, "retrieved invalid chat from cache")
+		} else {
+			s.logger.Debug("cache hit", "elapsed time", time.Since(start))
+			return cachedChat, nil
 		}
-		s.logger.Debug("cache hit", "elapsed time", time.Since(start))
-		return cachedChat, nil
 	}
 
 	chat, err := s.repo.Read(ctx, chatId)
@@ -125,6 +126,12 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "retrieved invalid chat")
 		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
+	}
+
+	if err := s.cache.Store(ctx, chat); err != nil {
+		s.logger.Warn("cache store error", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat in cache")
 	}
 
 	s.logger.Debug("cache miss", "elapsed time", time.Since(start))
