@@ -261,6 +261,6 @@ defaultLimitChats: String = "10"
 
 defaultLimitTests: Int = 50
 
-defaultPageSize: Int = 20
+pageSize: Int = 10
 
 taglistConfig: taglist = taglist

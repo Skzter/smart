@@ -179,7 +179,7 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 		return
 	}
 
-	chats, hasMore, err := a.chatStorageService.LoadSummaries(ctx, query.Offset, query.Limit, query.Groups...)
+	chats, hasMore, err := a.chatStorageService.LoadSummaries(ctx, query.Page*a.config.PageSize, a.config.PageSize, query.Groups...)
 
 	if err != nil {
 		span.RecordError(err)
@@ -197,6 +197,7 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.ChatSummarys{
 		ChatSummarys: chats,
 		HasMore:      hasMore,
+		PageSize:     a.config.PageSize,
 	})
 }
 

@@ -3,5 +3,6 @@ package entity
 // ChatSummarys is an entity for holding an array of ChatSummarys
 type ChatSummarys struct {
 	ChatSummarys []*ChatSummary `json:"chatSummarys"`
+	PageSize     int            `json:"pageSize"`
 	HasMore      bool           `json:"hasMore"`
 }

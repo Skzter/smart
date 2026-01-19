@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -46,14 +45,13 @@ type chatStorageService struct {
 	repo      repository.ChatStorageRepository
 	validator Validator
 	tracer    trace.Tracer
-	cfg       *config.Config
 
 	summaries []*entity.ChatSummary
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer, cfg *config.Config) (ChatStorageService, error) {
+func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer) (ChatStorageService, error) {
 	if err := assert.NotNil(logger, repo, validator); err != nil {
 		return nil, err
 	}
@@ -71,7 +69,6 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		validator: validator,
 		tracer:    tracer,
 		summaries: summaries,
-		cfg:       cfg,
 	}, nil
 }
 
@@ -166,8 +163,8 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limi
 		return nil, false, fmt.Errorf("groupId must not be empty string")
 	}
 
-	if assert.NumberGreaterThan(limit, 0) != nil {
-		limit = int(s.cfg.DefaultPageSize)
+	if err := assert.NumberGreaterThan(limit, 0); err != nil {
+		return nil, false, err
 	}
 
 	if err := assert.NumberGreaterOrEqualThan(offset, 0); err != nil {

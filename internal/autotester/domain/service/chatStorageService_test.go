@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/otel"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 	servmocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
@@ -19,9 +18,6 @@ import (
 
 // nolint: dupl
 func TestNewChatStorageService(t *testing.T) {
-	cfg := &config.Config{
-		DefaultPageSize: 10,
-	}
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	emptySummaries := []*entity.ChatSummary{}
@@ -70,7 +66,7 @@ func TestNewChatStorageService(t *testing.T) {
 				mockRepo.On("ListAll", mock.Anything).Return(test.listReturns...)
 			}
 
-			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer, cfg)
+			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewChatStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -86,9 +82,6 @@ func TestNewChatStorageService(t *testing.T) {
 
 // nolint: dupl
 func TestChatStorageSaveChat(t *testing.T) {
-	cfg := &config.Config{
-		DefaultPageSize: 10,
-	}
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	existingSummaries := []*entity.ChatSummary{
@@ -159,7 +152,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 				mockVal.On("ValidateChat", mock.Anything, test.chat).Return(test.validRetuns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer, cfg)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -174,9 +167,6 @@ func TestChatStorageSaveChat(t *testing.T) {
 }
 
 func TestChatStorageLoadChat(t *testing.T) {
-	cfg := &config.Config{
-		DefaultPageSize: 10,
-	}
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
@@ -239,7 +229,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 				mockVal.On("ValidateChat", mock.Anything, &entity.Chat{}).Return(test.validReturns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer, cfg)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -259,9 +249,6 @@ func TestChatStorageLoadChat(t *testing.T) {
 
 //nolint:funlen
 func TestLoadSummaries(t *testing.T) {
-	cfg := &config.Config{
-		DefaultPageSize: 10,
-	}
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
@@ -285,15 +272,22 @@ func TestLoadSummaries(t *testing.T) {
 		ctx             context.Context
 	}{
 		{
-			name:            "success - no groups, no pagination",
-			offset:          0,
-			limit:           0,
-			initialSummary:  allSummaries,
-			expected:        allSummaries,
-			expectedHasMore: false,
-			wantErr:         false,
-			ctx:             context.Background(),
-			groups:          []string{},
+			name:           "error - limit is 0",
+			offset:         0,
+			limit:          0,
+			initialSummary: allSummaries,
+			wantErr:        true,
+			ctx:            context.Background(),
+			groups:         []string{},
+		},
+		{
+			name:           "error - limit is negative",
+			offset:         0,
+			limit:          -5,
+			initialSummary: allSummaries,
+			wantErr:        true,
+			ctx:            context.Background(),
+			groups:         []string{},
 		},
 		{
 			name:            "success - with limit",
@@ -371,6 +365,7 @@ func TestLoadSummaries(t *testing.T) {
 			name:           "offset negative",
 			wantErr:        true,
 			ctx:            context.Background(),
+			limit:          2,
 			offset:         -1,
 			initialSummary: allSummaries,
 		},
@@ -431,7 +426,7 @@ func TestLoadSummaries(t *testing.T) {
 			// Mock ListAll for initialization
 			mockRepo.On("ListAll", mock.Anything).Return(test.initialSummary, nil)
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer, cfg)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
