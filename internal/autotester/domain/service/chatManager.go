@@ -27,21 +27,19 @@ type chatManager struct {
 	storageService ChatStorageService
 	logger         *slog.Logger
 	cfg            config.Autotester
-	cacheService   Cache
 	tracer         trace.Tracer
 }
 
 // NewChatManager constructs a new Chat service instance. It validates required dependencies and
 // copies the provided config into the service.
-func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Autotester, cache Cache, trace trace.Tracer) (ChatManager, error) {
-	if err := assert.NotNil(logger, storageService, cfg, trace, cache); err != nil {
+func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Autotester, trace trace.Tracer) (ChatManager, error) {
+	if err := assert.NotNil(logger, storageService, cfg, trace); err != nil {
 		return nil, err
 	}
 	return &chatManager{
 		storageService: storageService,
 		logger:         logger,
 		cfg:            *cfg,
-		cacheService:   cache,
 		tracer:         trace,
 	}, nil
 }
@@ -56,7 +54,6 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 
 	ctx, span := c.tracer.Start(ctx, "chatManager.LoadChat")
 	defer span.End()
-	start := time.Now()
 
 	if request.ChatId == "" {
 		chat := entity.NewChat(request.UserId, []*entity.Message{})
@@ -70,27 +67,12 @@ func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) 
 		return chat, nil
 	}
 
-	// cache miss produces nil, nil
-	cachedChat, err := c.cacheService.LookUp(ctx, request.ChatId)
-	if err != nil {
-		c.logger.Info("cache lookup error", "error", err)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "cache access error")
-	}
-
-	if cachedChat != nil {
-		c.logger.Debug("cache hit", "elapsed time", time.Since(start))
-		return cachedChat, nil
-	}
-
 	chat, err := c.storageService.LoadChat(ctx, request.ChatId)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while loading chat")
 		return nil, err
 	}
-
-	c.logger.Debug("cache miss", "elapsed time", time.Since(start))
 
 	span.SetStatus(codes.Ok, "")
 	return chat, nil
@@ -112,12 +94,6 @@ func (c *chatManager) SaveChat(ctx context.Context, chat *entity.Chat, userId st
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
-	}
-
-	if err := c.cacheService.Store(ctx, chat); err != nil {
-		c.logger.Info("cache store error", "error", err)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "error while caching chat")
 	}
 	span.SetStatus(codes.Ok, "")
 	return nil

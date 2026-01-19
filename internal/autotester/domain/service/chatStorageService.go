@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"time"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -32,13 +33,14 @@ type chatStorageService struct {
 	logger    *slog.Logger
 	repo      repository.ChatStorageRepository
 	validator Validator
+	cache     Cache
 	tracer    trace.Tracer
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer) (ChatStorageService, error) {
-	if err := assert.NotNil(logger, repo, validator); err != nil {
+func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, cache Cache, tracer trace.Tracer) (ChatStorageService, error) {
+	if err := assert.NotNil(logger, repo, validator, cache); err != nil {
 		return nil, err
 	}
 
@@ -46,6 +48,7 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		logger:    logger,
 		repo:      repo,
 		validator: validator,
+		cache:     cache,
 		tracer:    tracer,
 	}, nil
 }
@@ -68,6 +71,12 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
 	}
+
+	if err := s.cache.Store(ctx, chat); err != nil {
+		s.logger.Warn("cache store error", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat in cache")
+	}
 	return nil
 }
 
@@ -85,6 +94,26 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
+	start := time.Now()
+
+	// cache miss produces nil, nil
+	cachedChat, err := s.cache.LookUp(ctx, chatId)
+	if err != nil {
+		s.logger.Info("cache lookup error", "error", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache access error")
+	}
+
+	if cachedChat != nil {
+		if err := s.validator.ValidateChat(ctx, cachedChat); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "retrieved invalid chat")
+			return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
+		}
+		s.logger.Debug("cache hit", "elapsed time", time.Since(start))
+		return cachedChat, nil
+	}
+
 	chat, err := s.repo.Read(ctx, chatId)
 	if err != nil {
 		span.RecordError(err)
@@ -98,6 +127,7 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
 	}
 
+	s.logger.Debug("cache miss", "elapsed time", time.Since(start))
 	span.SetStatus(codes.Ok, "")
 	return chat, nil
 }

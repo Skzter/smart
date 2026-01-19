@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -21,6 +22,7 @@ func TestNewChatStorageService(t *testing.T) {
 	logger := slog.Default()
 	mockRepo := mocks.NewMockChatStorageRepository(t)
 	mockValidator := servmocks.NewMockValidator(t)
+	mockCache := servmocks.NewMockCache(t)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -42,7 +44,7 @@ func TestNewChatStorageService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer)
+			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, mockCache, tracer)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -59,18 +61,28 @@ func TestChatStorageSaveChat(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name          string
-		createReturns []any
-		validRetuns   []any
-		wantErr       bool
-		chat          *entity.Chat
+		name           string
+		createReturns  []any
+		validRetuns    []any
+		mockCacheSetup []any
+		wantErr        bool
+		chat           *entity.Chat
 	}{
 		{
-			name:          "success",
-			createReturns: []any{nil},
-			validRetuns:   []any{nil},
-			wantErr:       false,
-			chat:          &entity.Chat{},
+			name:           "success - storing in s3 and cache",
+			createReturns:  []any{nil},
+			validRetuns:    []any{nil},
+			mockCacheSetup: []any{nil},
+			wantErr:        false,
+			chat:           &entity.Chat{},
+		},
+		{
+			name:           "success - storing in s3 but cache fails",
+			createReturns:  []any{nil},
+			validRetuns:    []any{nil},
+			mockCacheSetup: []any{fmt.Errorf("cache storing error")},
+			wantErr:        false,
+			chat:           &entity.Chat{},
 		},
 		{
 			name:    "nil assert error",
@@ -78,13 +90,13 @@ func TestChatStorageSaveChat(t *testing.T) {
 			chat:    nil,
 		},
 		{
-			name:        "validation error",
+			name:        "error - validation error",
 			wantErr:     true,
 			validRetuns: []any{errors.New("err")},
 			chat:        &entity.Chat{},
 		},
 		{
-			name:          "repo returns error",
+			name:          "error - repo returns error",
 			createReturns: []any{errors.New("repo error")},
 			validRetuns:   []any{nil},
 			wantErr:       true,
@@ -96,6 +108,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
 			mockVal := servmocks.NewMockValidator(t)
+			mockCache := servmocks.NewMockCache(t)
 
 			if test.createReturns != nil {
 				mockRepo.On("Create", mock.Anything, test.chat).Return(test.createReturns...)
@@ -104,7 +117,11 @@ func TestChatStorageSaveChat(t *testing.T) {
 				mockVal.On("ValidateChat", mock.Anything, test.chat).Return(test.validRetuns...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
+			if test.mockCacheSetup != nil {
+				mockCache.On("Store", mock.Anything, test.chat).Return(test.mockCacheSetup...)
+			}
+
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -121,20 +138,22 @@ func TestChatStorageLoadChat(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name         string
-		chatid       string
-		loadReturns  []any
-		validReturns []any
-		ctx          context.Context
-		wantErr      bool
+		name           string
+		chatid         string
+		loadReturns    []any
+		validReturns   []any
+		mockSetupCache []any
+		ctx            context.Context
+		wantErr        bool
 	}{
 		{
-			name:         "success",
-			chatid:       "chat123",
-			loadReturns:  []any{&entity.Chat{}, nil},
-			validReturns: []any{nil},
-			ctx:          context.Background(),
-			wantErr:      false,
+			name:           "success - loading from s3, cache miss",
+			chatid:         "chat123",
+			loadReturns:    []any{&entity.Chat{}, nil},
+			validReturns:   []any{nil},
+			mockSetupCache: []any{nil, nil},
+			ctx:            context.Background(),
+			wantErr:        false,
 		},
 		{
 			name:    "nil assert failed",
@@ -142,25 +161,43 @@ func TestChatStorageLoadChat(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "invalid chatId",
+			name:    "empty chatId",
 			chatid:  "",
 			ctx:     context.Background(),
 			wantErr: true,
 		},
 		{
-			name:        "repo returns error",
-			chatid:      "chat123",
-			loadReturns: []any{nil, errors.New("repo error")},
-			ctx:         context.Background(),
-			wantErr:     true,
+			name:           "repo returns error, cache miss",
+			chatid:         "chat123",
+			loadReturns:    []any{nil, errors.New("repo error")},
+			mockSetupCache: []any{nil, fmt.Errorf("cache error")},
+			ctx:            context.Background(),
+			wantErr:        true,
 		},
 		{
-			name:         "repo returns invalid chat",
-			chatid:       "chat123",
-			loadReturns:  []any{&entity.Chat{}, nil},
-			validReturns: []any{errors.New("err")},
-			ctx:          context.Background(),
-			wantErr:      true,
+			name:           "repo returns invalid chat",
+			chatid:         "chat123",
+			loadReturns:    []any{&entity.Chat{}, nil},
+			validReturns:   []any{errors.New("err")},
+			mockSetupCache: []any{nil, nil},
+			ctx:            context.Background(),
+			wantErr:        true,
+		},
+		{
+			name:           "cache hit but invalid chat",
+			chatid:         "chat123",
+			mockSetupCache: []any{&entity.Chat{}, nil},
+			validReturns:   []any{errors.New("err")},
+			ctx:            context.Background(),
+			wantErr:        true,
+		},
+		{
+			name:           "cache hit with valid chat",
+			chatid:         "chat123",
+			mockSetupCache: []any{&entity.Chat{}, nil},
+			validReturns:   []any{nil},
+			ctx:            context.Background(),
+			wantErr:        false,
 		},
 	}
 
@@ -168,6 +205,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
 			mockVal := servmocks.NewMockValidator(t)
+			mockCache := servmocks.NewMockCache(t)
 
 			if test.loadReturns != nil {
 				mockRepo.On("Read", mock.Anything, test.chatid).Return(test.loadReturns...)
@@ -175,8 +213,12 @@ func TestChatStorageLoadChat(t *testing.T) {
 			if test.validReturns != nil {
 				mockVal.On("ValidateChat", mock.Anything, &entity.Chat{}).Return(test.validReturns...)
 			}
+			if test.mockSetupCache != nil {
+				mockCache.On("LookUp", mock.Anything, mock.Anything).Return(test.mockSetupCache...)
+			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, tracer)
+			// mockCache.On("LookUp", mock.Anything, test.ChatId).Return(tt.setupCacheMock...)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -245,6 +287,7 @@ func TestLoadSummaries(t *testing.T) {
 		},
 	}
 
+	mockCache := servmocks.NewMockCache(t)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
@@ -254,7 +297,7 @@ func TestLoadSummaries(t *testing.T) {
 
 			val := servmocks.NewMockValidator(t)
 
-			svc, err := NewChatStorageService(logger, mockRepo, val, tracer)
+			svc, err := NewChatStorageService(logger, mockRepo, val, mockCache, tracer)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
