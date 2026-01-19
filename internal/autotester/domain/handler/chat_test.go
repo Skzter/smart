@@ -454,13 +454,13 @@ func TestGetUserChats(t *testing.T) {
 		{
 			name:             "error - no chat history for given user found",
 			limit:            "123",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "error - empty limit but no history found",
 			limit:            "",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
@@ -475,8 +475,29 @@ func TestGetUserChats(t *testing.T) {
 					ChatId:    "2",
 					UpdatedAt: time.Now().Add(-10 * time.Hour),
 				},
-			}, nil},
+			}, false, nil},
 			expectedStatus: http.StatusOK,
+		},
+		{
+			name:  "success with hasMore true",
+			limit: "2",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:             "success with empty result",
+			limit:            "10",
+			mockResponseLoad: []any{[]*entity.ChatSummary{}, false, nil},
+			expectedStatus:   http.StatusOK,
 		},
 	}
 
@@ -499,7 +520,7 @@ func TestGetUserChats(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			if tc.mockResponseLoad != nil {
-				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
 			gin.SetMode(gin.TestMode)
 			router := gin.New()

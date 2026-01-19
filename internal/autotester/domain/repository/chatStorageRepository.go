@@ -19,7 +19,7 @@ import (
 type ChatStorageRepository interface {
 	// Create stores the provided Chat object, as well as a generated ChatSummary Object in the underlying storage system.
 	// The Storage key is generated from the entites userId and chatId, so duplicate entities will be overwriten
-	Create(ctx context.Context, obj *entity.Chat) error
+	Create(ctx context.Context, obj *entity.Chat, summary *entity.ChatSummary) error
 
 	// Read retrieves a Chat object from storage by a key generated from the provided userId and chatId.
 	Read(ctx context.Context, chatId string) (*entity.Chat, error)
@@ -27,7 +27,7 @@ type ChatStorageRepository interface {
 	// Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
 	Delete(ctx context.Context, chatId string) error
 
-	// FindByUserId retrieves an slice of all ChatSummarys associated with the given userId
+	// FindByUserId retrieves an slice of all ChatSummarys
 	ListAll(ctx context.Context) ([]*entity.ChatSummary, error)
 }
 
@@ -68,8 +68,8 @@ func NewChatStorageRepository(
 // The Storage key is generated from the entites userId and chatId, so duplicate entities will be overwriten
 // Returns an error if unsuccessfull, or nil otherwise
 // nolint:dupl
-func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) error {
-	if err := assert.NotNil(ctx, obj); err != nil {
+func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat, summary *entity.ChatSummary) error {
+	if err := assert.NotNil(ctx, obj, summary); err != nil {
 		return err
 	}
 
@@ -81,16 +81,6 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		attribute.Int("chat.message_count", len(obj.Messages)),
 	)
 
-	summary := entity.ChatSummary{
-		ChatId:         obj.Id,
-		Author:         obj.Author,
-		Groups:         obj.Groups,
-		LastModifiedBy: obj.LastModifiedBy,
-		Title:          obj.Title,
-		CreatedAt:      obj.CreatedAt,
-		UpdatedAt:      obj.UpdatedAt,
-	}
-
 	chatParquet, err := r.chatParquetWrapper.WriteStructToParquet(ctx, *obj)
 	if err != nil {
 		span.RecordError(err)
@@ -98,7 +88,7 @@ func (r *chatStorageRepository) Create(ctx context.Context, obj *entity.Chat) er
 		return err
 	}
 
-	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(ctx, summary)
+	summaryParquet, err := r.summaryParquetWrapper.WriteStructToParquet(ctx, *summary)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to serialize chat summary")
