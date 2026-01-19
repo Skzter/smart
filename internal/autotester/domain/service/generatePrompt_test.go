@@ -23,7 +23,7 @@ import (
 func TestNewGeneratePromptService(t *testing.T) {
 	openai := mocks.NewMockOpenAI(t)
 	taglist := mocks.NewMockTaglistStorage(t)
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	cfg := config.Autotester{}
 	validator := autotesterMocks.NewMockValidator(t)
 	tracer := otel.Tracer("test")
@@ -99,7 +99,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 }
 
 func TestGeneratePrompt(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	cfg := &config.Autotester{
 		Prompts: &config.Prompts{
 			AutoPlaywrightPromptT: "system prompt %s",

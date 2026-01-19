@@ -19,7 +19,7 @@ import (
 
 // nolint: dupl
 func TestNewChatStorageService(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockChatStorageRepository(t)
 	mockValidator := servmocks.NewMockValidator(t)
 	mockCache := servmocks.NewMockCache(t)
@@ -57,7 +57,7 @@ func TestNewChatStorageService(t *testing.T) {
 
 // nolint: dupl
 func TestChatStorageSaveChat(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -134,7 +134,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 }
 
 func TestChatStorageLoadChat(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -235,7 +235,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 }
 
 func TestLoadSummaries(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	orderedResult := []*entity.ChatSummary{{UpdatedAt: time.Unix(200, 0), Groups: []string{"1", "2"}}, {UpdatedAt: time.Unix(100, 0), Groups: []string{"1"}}}
 

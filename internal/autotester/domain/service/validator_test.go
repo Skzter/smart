@@ -22,7 +22,7 @@ import (
 //nolint:dupl
 func TestNewValidatorService(t *testing.T) {
 	service := mocks.NewMockOpenAI(t)
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	cfg := config.Autotester{}
 	tracer := otel.Tracer("test")
 

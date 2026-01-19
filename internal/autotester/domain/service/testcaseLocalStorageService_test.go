@@ -14,7 +14,7 @@ import (
 
 // nolint:dupl
 func TestNewTestcaseLocalStorageService(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockTestcaseLocalStorageRepository(t)
 
 	tests := []struct {
@@ -56,7 +56,7 @@ func TestNewTestcaseLocalStorageService(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	testCase := &entity.TestCase{
 		TestID: "test-1",
@@ -115,7 +115,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -172,7 +172,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestGetTestPath(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -229,7 +229,7 @@ func TestGetTestPath(t *testing.T) {
 }
 
 func TestGetTestPathsBySession(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -299,7 +299,7 @@ func TestGetTestPathsBySession(t *testing.T) {
 }
 
 func TestGetTestPathsByUser(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -366,7 +366,7 @@ func TestGetTestPathsByUser(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -417,7 +417,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestCleanupOldTests(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
