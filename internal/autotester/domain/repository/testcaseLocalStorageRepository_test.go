@@ -34,7 +34,7 @@ func (m testMockFileInfo) IsDir() bool        { return false }
 func (m testMockFileInfo) Sys() interface{}   { return nil }
 
 func TestNewTestcaseLocalStorageRepository(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	filesystem := mocks.NewMockFileSystem(t)
 
 	tests := []struct {
@@ -152,7 +152,7 @@ func getSaveTestCases() []saveTestCase {
 }
 
 func TestSave(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tests := getSaveTestCases()
 
 	for _, tc := range tests {
@@ -182,7 +182,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	testID := "123e4567-e89b-12d3-a456-426614174000"
 	sessionID := "0001"
 	userID := "user1"
@@ -333,7 +333,7 @@ func getTestPathTestCases() []getTestPathTestCase {
 }
 
 func TestGetTestPath(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tests := getTestPathTestCases()
 
 	for _, tc := range tests {
@@ -469,7 +469,7 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 }
 
 func TestGetTestPathsBySession(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tests := getTestPathsBySessionTestCases()
 
 	for _, tc := range tests {
@@ -599,7 +599,7 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 }
 
 func TestGetTestPathsByUser(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tests := getTestPathsByUserTestCases()
 
 	for _, tc := range tests {
@@ -639,7 +639,7 @@ func TestGetTestPathsByUser(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name      string
@@ -711,7 +711,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteOlderThan(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	now := time.Now()
 	oldTime := now.Add(-48 * time.Hour)

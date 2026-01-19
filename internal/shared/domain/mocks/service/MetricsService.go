@@ -37,117 +37,6 @@ func (_m *MockMetricsService) EXPECT() *MockMetricsService_Expecter {
 	return &MockMetricsService_Expecter{mock: &_m.Mock}
 }
 
-// IncRequestSuccess provides a mock function for the type MockMetricsService
-func (_mock *MockMetricsService) IncRequestSuccess() {
-	_mock.Called()
-}
-
-// MockMetricsService_IncRequestSuccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncRequestSuccess'
-type MockMetricsService_IncRequestSuccess_Call struct {
-	*mock.Call
-}
-
-// IncRequestSuccess is a helper method to define mock.On call
-func (_e *MockMetricsService_Expecter) IncRequestSuccess() *MockMetricsService_IncRequestSuccess_Call {
-	return &MockMetricsService_IncRequestSuccess_Call{Call: _e.mock.On("IncRequestSuccess")}
-}
-
-func (_c *MockMetricsService_IncRequestSuccess_Call) Run(run func()) *MockMetricsService_IncRequestSuccess_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *MockMetricsService_IncRequestSuccess_Call) Return() *MockMetricsService_IncRequestSuccess_Call {
-	_c.Call.Return()
-	return _c
-}
-
-// IncRequestError provides a mock function for the type MockMetricsService
-func (_mock *MockMetricsService) IncRequestError(errorType string) {
-	_mock.Called(errorType)
-}
-
-// MockMetricsService_IncRequestError_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncRequestError'
-type MockMetricsService_IncRequestError_Call struct {
-	*mock.Call
-}
-
-// IncRequestError is a helper method to define mock.On call
-//   - errorType string
-func (_e *MockMetricsService_Expecter) IncRequestError(errorType interface{}) *MockMetricsService_IncRequestError_Call {
-	return &MockMetricsService_IncRequestError_Call{Call: _e.mock.On("IncRequestError", errorType)}
-}
-
-func (_c *MockMetricsService_IncRequestError_Call) Run(run func(errorType string)) *MockMetricsService_IncRequestError_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string))
-	})
-	return _c
-}
-
-func (_c *MockMetricsService_IncRequestError_Call) Return() *MockMetricsService_IncRequestError_Call {
-	_c.Call.Return()
-	return _c
-}
-
-// RecordRequestDuration provides a mock function for the type MockMetricsService
-func (_mock *MockMetricsService) RecordRequestDuration(duration time.Duration) {
-	_mock.Called(duration)
-}
-
-// MockMetricsService_RecordRequestDuration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordRequestDuration'
-type MockMetricsService_RecordRequestDuration_Call struct {
-	*mock.Call
-}
-
-// RecordRequestDuration is a helper method to define mock.On call
-//   - duration time.Duration
-func (_e *MockMetricsService_Expecter) RecordRequestDuration(duration interface{}) *MockMetricsService_RecordRequestDuration_Call {
-	return &MockMetricsService_RecordRequestDuration_Call{Call: _e.mock.On("RecordRequestDuration", duration)}
-}
-
-func (_c *MockMetricsService_RecordRequestDuration_Call) Run(run func(duration time.Duration)) *MockMetricsService_RecordRequestDuration_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(time.Duration))
-	})
-	return _c
-}
-
-func (_c *MockMetricsService_RecordRequestDuration_Call) Return() *MockMetricsService_RecordRequestDuration_Call {
-	_c.Call.Return()
-	return _c
-}
-
-// RecordStatusCode provides a mock function for the type MockMetricsService
-func (_mock *MockMetricsService) RecordStatusCode(statusCode int) {
-	_mock.Called(statusCode)
-}
-
-// MockMetricsService_RecordStatusCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordStatusCode'
-type MockMetricsService_RecordStatusCode_Call struct {
-	*mock.Call
-}
-
-// RecordStatusCode is a helper method to define mock.On call
-//   - statusCode int
-func (_e *MockMetricsService_Expecter) RecordStatusCode(statusCode interface{}) *MockMetricsService_RecordStatusCode_Call {
-	return &MockMetricsService_RecordStatusCode_Call{Call: _e.mock.On("RecordStatusCode", statusCode)}
-}
-
-func (_c *MockMetricsService_RecordStatusCode_Call) Run(run func(statusCode int)) *MockMetricsService_RecordStatusCode_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(int))
-	})
-	return _c
-}
-
-func (_c *MockMetricsService_RecordStatusCode_Call) Return() *MockMetricsService_RecordStatusCode_Call {
-	_c.Call.Return()
-	return _c
-}
-
 // Close provides a mock function for the type MockMetricsService
 func (_mock *MockMetricsService) Close() error {
 	ret := _mock.Called()
@@ -184,5 +73,163 @@ func (_c *MockMetricsService_Close_Call) Run(run func()) *MockMetricsService_Clo
 
 func (_c *MockMetricsService_Close_Call) Return(err error) *MockMetricsService_Close_Call {
 	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMetricsService_Close_Call) RunAndReturn(run func() error) *MockMetricsService_Close_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// IncRequestError provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) IncRequestError(errorType string) {
+	_mock.Called(errorType)
+	return
+}
+
+// MockMetricsService_IncRequestError_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncRequestError'
+type MockMetricsService_IncRequestError_Call struct {
+	*mock.Call
+}
+
+// IncRequestError is a helper method to define mock.On call
+//   - errorType string
+func (_e *MockMetricsService_Expecter) IncRequestError(errorType interface{}) *MockMetricsService_IncRequestError_Call {
+	return &MockMetricsService_IncRequestError_Call{Call: _e.mock.On("IncRequestError", errorType)}
+}
+
+func (_c *MockMetricsService_IncRequestError_Call) Run(run func(errorType string)) *MockMetricsService_IncRequestError_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_IncRequestError_Call) Return() *MockMetricsService_IncRequestError_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_IncRequestError_Call) RunAndReturn(run func(errorType string)) *MockMetricsService_IncRequestError_Call {
+	_c.Run(run)
+	return _c
+}
+
+// IncRequestSuccess provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) IncRequestSuccess() {
+	_mock.Called()
+	return
+}
+
+// MockMetricsService_IncRequestSuccess_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncRequestSuccess'
+type MockMetricsService_IncRequestSuccess_Call struct {
+	*mock.Call
+}
+
+// IncRequestSuccess is a helper method to define mock.On call
+func (_e *MockMetricsService_Expecter) IncRequestSuccess() *MockMetricsService_IncRequestSuccess_Call {
+	return &MockMetricsService_IncRequestSuccess_Call{Call: _e.mock.On("IncRequestSuccess")}
+}
+
+func (_c *MockMetricsService_IncRequestSuccess_Call) Run(run func()) *MockMetricsService_IncRequestSuccess_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_IncRequestSuccess_Call) Return() *MockMetricsService_IncRequestSuccess_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_IncRequestSuccess_Call) RunAndReturn(run func()) *MockMetricsService_IncRequestSuccess_Call {
+	_c.Run(run)
+	return _c
+}
+
+// RecordRequestDuration provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) RecordRequestDuration(duration time.Duration) {
+	_mock.Called(duration)
+	return
+}
+
+// MockMetricsService_RecordRequestDuration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordRequestDuration'
+type MockMetricsService_RecordRequestDuration_Call struct {
+	*mock.Call
+}
+
+// RecordRequestDuration is a helper method to define mock.On call
+//   - duration time.Duration
+func (_e *MockMetricsService_Expecter) RecordRequestDuration(duration interface{}) *MockMetricsService_RecordRequestDuration_Call {
+	return &MockMetricsService_RecordRequestDuration_Call{Call: _e.mock.On("RecordRequestDuration", duration)}
+}
+
+func (_c *MockMetricsService_RecordRequestDuration_Call) Run(run func(duration time.Duration)) *MockMetricsService_RecordRequestDuration_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 time.Duration
+		if args[0] != nil {
+			arg0 = args[0].(time.Duration)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_RecordRequestDuration_Call) Return() *MockMetricsService_RecordRequestDuration_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_RecordRequestDuration_Call) RunAndReturn(run func(duration time.Duration)) *MockMetricsService_RecordRequestDuration_Call {
+	_c.Run(run)
+	return _c
+}
+
+// RecordStatusCode provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) RecordStatusCode(statusCode int) {
+	_mock.Called(statusCode)
+	return
+}
+
+// MockMetricsService_RecordStatusCode_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordStatusCode'
+type MockMetricsService_RecordStatusCode_Call struct {
+	*mock.Call
+}
+
+// RecordStatusCode is a helper method to define mock.On call
+//   - statusCode int
+func (_e *MockMetricsService_Expecter) RecordStatusCode(statusCode interface{}) *MockMetricsService_RecordStatusCode_Call {
+	return &MockMetricsService_RecordStatusCode_Call{Call: _e.mock.On("RecordStatusCode", statusCode)}
+}
+
+func (_c *MockMetricsService_RecordStatusCode_Call) Run(run func(statusCode int)) *MockMetricsService_RecordStatusCode_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 int
+		if args[0] != nil {
+			arg0 = args[0].(int)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_RecordStatusCode_Call) Return() *MockMetricsService_RecordStatusCode_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_RecordStatusCode_Call) RunAndReturn(run func(statusCode int)) *MockMetricsService_RecordStatusCode_Call {
+	_c.Run(run)
 	return _c
 }

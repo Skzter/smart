@@ -4,7 +4,6 @@ package service
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"strings"
 	"testing"
@@ -21,7 +20,7 @@ import (
 
 // newIntegrationLogger returns a logger that discards all output
 func newIntegrationLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 // TestCacheService_Integration_WithRedis verifies end-to-end cache behavior using a Redis Testcontainers module instance

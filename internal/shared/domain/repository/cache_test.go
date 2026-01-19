@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"testing"
 	"time"
@@ -19,7 +18,7 @@ import (
 const testRedisKey = "test-key"
 
 func newCacheTestLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 func setupCacheMocks(t *testing.T) (*redisCache, *mocks.MockRedisClient) {

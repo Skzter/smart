@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -26,7 +25,7 @@ func TestNewGenerateTestTool(t *testing.T) {
 	}{
 		{
 			name:              "successful creation",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: mocks.NewMockAutotesterAPIService(t),
 			expectedError:     false,
 		},
@@ -39,7 +38,7 @@ func TestNewGenerateTestTool(t *testing.T) {
 		},
 		{
 			name:              "nil autotester service",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: nil,
 			expectedError:     true,
 			expectedErrorMsg:  "nil",
@@ -187,7 +186,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			mockService := mocks.NewMockAutotesterAPIService(t)
 			test.mockSetup(mockService)
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			logger := slog.New(slog.DiscardHandler)
 			tool, err := NewGenerateTestTool(logger, mockService)
 			assert.NoError(t, err)
 

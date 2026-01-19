@@ -72,7 +72,7 @@ func TestNewSuproxyController(t *testing.T) {
 		{
 			name:       "valid",
 			cfg:        &config.Suproxy{},
-			log:        slog.Default(),
+			log:        slog.New(slog.DiscardHandler),
 			val:        RejectValidator(t),
 			clt:        &http.Client{},
 			db:         mocks.NewMockDatabaseService(t),

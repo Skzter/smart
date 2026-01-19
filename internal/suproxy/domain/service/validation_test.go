@@ -27,7 +27,7 @@ func TestNewValidator(t *testing.T) {
 		Model:                 "gpt-4",
 		MaxItemsPerValidation: 5,
 	}
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	serv := sharedMocks.NewMockOpenAI(t)
 	tracer := otel.Tracer("test")
 
