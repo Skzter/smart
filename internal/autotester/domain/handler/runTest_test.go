@@ -44,20 +44,20 @@ func TestHandleRunContainer(t *testing.T) {
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			ExpectedBody:   `{"result":"Test started"}`,
 			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
-					Return("/tmp/session789.ts", nil)
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/chat789.ts", nil)
 
 				docker.On("RunTest",
 					mock.Anything,
-					"/tmp/session789.ts",
+					"/tmp/chat789.ts",
 					"test456",
 					"user123",
-					"session789",
+					"chat789",
 				).Return("container-id", nil)
 			},
 		},
@@ -71,7 +71,7 @@ func TestHandleRunContainer(t *testing.T) {
 			TestName: "Missing required fields",
 			RequestBody: `{
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 			ExpectedBody:   `{"message":"Missing required parameters"}`,
@@ -81,12 +81,12 @@ func TestHandleRunContainer(t *testing.T) {
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 			ExpectedBody:   `{"message":"files not found"}`,
 			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
+				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("", errors.New("files not found"))
 			},
 		},
@@ -95,12 +95,12 @@ func TestHandleRunContainer(t *testing.T) {
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			ExpectedBody:   `{"message":"running error"}`,
 			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
-				local.On("GetTestPath", "test456", "user123", "session789").
+				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("/tmp/test.spec.ts", nil)
 
 				docker.On("RunTest",
@@ -108,7 +108,7 @@ func TestHandleRunContainer(t *testing.T) {
 					"/tmp/test.spec.ts",
 					"test456",
 					"user123",
-					"session789",
+					"chat789",
 				).Return("", errors.New("running error"))
 			},
 		},
@@ -124,6 +124,8 @@ func TestHandleRunContainer(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
@@ -150,8 +152,10 @@ func TestHandleRunContainer(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)

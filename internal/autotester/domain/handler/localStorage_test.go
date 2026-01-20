@@ -35,12 +35,12 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			TestName: "Valid save request",
 			RequestBody: `{
 				"userId": "user123",
-				"conversationId": "conv456",
+				"chatId": "chat456",
 				"code": "import { test, expect } from '@playwright/test';\n\ntest('example test', async ({ page }) => {\n  await page.goto('https://example.com');\n});"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Save(mock.Anything, "user123", "conv456").Return(nil).Once()
+				m.EXPECT().Save(mock.Anything, "user123", "chat456").Return(nil).Once()
 			},
 		},
 		{
@@ -53,12 +53,12 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			TestName: "Save service fails",
 			RequestBody: `{
 				"userId": "user789",
-				"conversationId": "conv789",
+				"chatId": "chat789",
 				"code": "test code"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Save(mock.Anything, "user789", "conv789").Return(errors.New("database error")).Once()
+				m.EXPECT().Save(mock.Anything, "user789", "chat789").Return(errors.New("database error")).Once()
 			},
 		},
 	}
@@ -73,6 +73,8 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -102,8 +104,10 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			if err != nil {
 				t.Errorf("build failed")
@@ -133,13 +137,13 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 		{
 			TestName: "Valid delete request",
 			QueryParams: map[string]string{
-				"testcaseId":     "test123",
-				"userId":         "user123",
-				"conversationId": "conv456",
+				"testcaseId": "test123",
+				"userId":     "user123",
+				"chatId":     "chat456",
 			},
 			ExpectedStatus: http.StatusOK,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Delete("test123", "user123", "conv456").Return(nil).Once()
+				m.EXPECT().Delete("test123", "user123", "chat456").Return(nil).Once()
 			},
 		},
 		{
@@ -153,13 +157,13 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 		{
 			TestName: "Delete service fails",
 			QueryParams: map[string]string{
-				"testcaseId":     "test789",
-				"userId":         "user789",
-				"conversationId": "conv789",
+				"testcaseId": "test789",
+				"userId":     "user789",
+				"chatId":     "chat789",
 			},
 			ExpectedStatus: http.StatusInternalServerError,
 			SetupMock: func(m *mocks.MockTestcaseLocalStorageService) {
-				m.EXPECT().Delete("test789", "user789", "conv789").Return(errors.New("database error")).Once()
+				m.EXPECT().Delete("test789", "user789", "chat789").Return(errors.New("database error")).Once()
 			},
 		},
 	}
@@ -174,6 +178,8 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			// Setup metrics mock to accept any calls
 			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -215,8 +221,10 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockChatStorageServ,
 				mockRemoteStorageServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			if err != nil {
 				t.Errorf("build failed")

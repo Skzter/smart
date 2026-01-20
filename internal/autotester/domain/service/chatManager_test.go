@@ -87,9 +87,10 @@ func TestLoadChat(t *testing.T) {
 		{
 			name: "load existing chat from storage",
 			setupMock: func(storage *mocks.MockChatStorageService) {
-				storage.On("LoadChat", mock.Anything, "user2", "chat2").Return(&entity.Chat{
-					Id:     "chat2",
-					UserId: "user2",
+				storage.On("LoadChat", mock.Anything, "chat2").Return(&entity.Chat{
+					Id:             "chat2",
+					Author:         "user2",
+					LastModifiedBy: "user2",
 				}, nil).Once()
 			},
 			request: entity.UserRequest{
@@ -113,7 +114,7 @@ func TestLoadChat(t *testing.T) {
 		{
 			name: "error while loading chat",
 			setupMock: func(storage *mocks.MockChatStorageService) {
-				storage.On("LoadChat", mock.Anything, "user2", "chat2").Return(nil, errors.New("err")).Once()
+				storage.On("LoadChat", mock.Anything, "chat2").Return(nil, errors.New("err")).Once()
 			},
 			request: entity.UserRequest{
 				UserId: "user2",
@@ -146,7 +147,6 @@ func TestLoadChat(t *testing.T) {
 			assert.Nil(t, err)
 			assert.NotNil(t, got)
 			if tt.expectNewChat {
-				assert.Equal(t, tt.request.UserId, got.UserId)
 				assert.NotEmpty(t, got.Id)
 				assert.True(t, got.CreatedAt.After(now.Add(-time.Minute)))
 				assert.Len(t, got.Messages, 0)
@@ -180,9 +180,10 @@ func TestSaveChat(t *testing.T) {
 				storage.On("SaveChat", mock.Anything, mock.AnythingOfType("*entity.Chat")).Return(nil).Once()
 			},
 			chat: &entity.Chat{
-				Id:        "c1",
-				UserId:    "u1",
-				CreatedAt: time.Now().Add(-time.Hour).UTC(),
+				Id:             "c1",
+				Author:         "u1",
+				LastModifiedBy: "u1",
+				CreatedAt:      time.Now().Add(-time.Hour).UTC(),
 			},
 			ctx:       context.Background(),
 			expectErr: false,
@@ -192,8 +193,9 @@ func TestSaveChat(t *testing.T) {
 			setupMock: func(ch *entity.Chat, storage *mocks.MockChatStorageService) {
 			},
 			chat: &entity.Chat{
-				Id:     "c2",
-				UserId: "u2",
+				Id:             "c2",
+				Author:         "u2",
+				LastModifiedBy: "u2",
 			},
 			ctx:       nil,
 			expectErr: true,
@@ -204,9 +206,10 @@ func TestSaveChat(t *testing.T) {
 				storage.On("SaveChat", mock.Anything, mock.AnythingOfType("*entity.Chat")).Return(errors.New("err")).Once()
 			},
 			chat: &entity.Chat{
-				Id:        "c1",
-				UserId:    "u1",
-				CreatedAt: time.Now().Add(-time.Hour).UTC(),
+				Id:             "c1",
+				Author:         "u1",
+				LastModifiedBy: "u1",
+				CreatedAt:      time.Now().Add(-time.Hour).UTC(),
 			},
 			ctx:       context.Background(),
 			expectErr: true,
@@ -222,7 +225,7 @@ func TestSaveChat(t *testing.T) {
 			svc, err := NewChatManager(logger, storage, cfg, tracer)
 			assert.Nil(t, err)
 
-			err = svc.SaveChat(tt.ctx, tt.chat)
+			err = svc.SaveChat(tt.ctx, tt.chat, "user")
 			if tt.expectErr {
 				assert.NotNil(t, err)
 				return

@@ -39,7 +39,7 @@ export async function generatePrompt(
 }
 
 /** Validates the prompt by sending it to the /validationRes endpoint
- * @param body: object containing userId, conversationId, and prompt
+ * @param body: object containing userId, chatId, and prompt
  */
 export async function validatePrompt(
     request: ApiChatRequest,
@@ -66,11 +66,11 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getUserChats(): Promise<ApiChatSummary[]> {
+export async function getChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `/users/${user.id}/chats`,
+            url: `/chats`,
             baseURL: baseURL,
         });
         return response.data.chatSummarys;
@@ -112,33 +112,20 @@ export async function saveTestLocal(
 }
 
 // must block exectution until test is done
-export async function runContainer(
-    request: ApiRunContainer,
-    handler: {
-        onStepEnd?: (message: string) => void;
-        onError?: (error: Error) => void;
-        onStepBegin?: (message: string) => void;
-    },
-): Promise<void> {
-    try {
-        handler.onStepBegin?.("Getting Results...");
-        const response = await axios({
-            method: "post",
-            url: "run",
-            baseURL: baseURL,
-            data: request,
-        });
-        handler.onStepEnd?.(response.data.result);
-    } catch (error) {
-        handler.onError?.(getErrorMessage(error));
-    }
+export async function runContainer(request: ApiRunContainer): Promise<void> {
+    await axios({
+        method: "post",
+        url: "run",
+        baseURL,
+        data: request,
+    });
 }
 
 export async function getChatById(): Promise<ApiGetChatByIdResponse> {
     try {
         const response = await axios({
             method: "get",
-            url: `/users/${user.id}/chats/${chat.id}`,
+            url: `/chats/${chat.id}`,
             baseURL: baseURL,
         });
         return response.data;
@@ -155,7 +142,7 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
             url: "/deleteLocal",
             params: {
                 testcaseId,
-                conversationId: chat.id,
+                chatId: chat.id,
                 userId: user.id,
             },
         });

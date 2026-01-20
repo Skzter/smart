@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
     generatePrompt,
-    getUserChats,
+    getChats,
     getTemplate,
     saveTestLocal,
     runContainer,
@@ -134,17 +134,17 @@ describe("API Functions", () => {
             },
         ];
 
-        it("should make a GET request to /chats/:userId", async () => {
+        it("should make a GET request to /chats", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: { chatSummarys: mockChatSummaries },
             });
 
-            const result = await getUserChats();
+            const result = await getChats();
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/${mockUserId}/chats`,
+                url: `/chats`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatSummaries);
@@ -162,7 +162,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(getUserChats()).rejects.toThrow(
+            await expect(getChats()).rejects.toThrow(
                 "Failed to fetch user chats",
             );
         });
@@ -209,7 +209,7 @@ describe("API Functions", () => {
                 mockValidateParams.userId,
             );
             expect(callArgs.data).toHaveProperty(
-                "conversationId",
+                "chatId",
                 mockValidateParams.chatId,
             );
             expect(callArgs.data).toHaveProperty(
@@ -303,7 +303,7 @@ describe("API Functions", () => {
         const mockParams = {
             userId: mockUserId,
             testId: "test123",
-            sessionId: "session456",
+            chatId: "chat456",
         };
         const mockResult = "Container executed successfully";
 
@@ -345,7 +345,7 @@ describe("API Functions", () => {
             const complexParams = {
                 userId: "user999",
                 testId: "test999",
-                sessionId: "session999",
+                chatId: "chat999",
             };
 
             await runContainer(complexParams, {});
@@ -384,7 +384,7 @@ describe("API Functions", () => {
             lastAutoPlaywrightPrompt: "last prompt here",
         };
 
-        it("should make a GET request to /users/:userId/chats/:chatId", async () => {
+        it("should make a GET request to /chats/:chatId", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
@@ -392,13 +392,13 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/${mockUserId}/chats/${mockChatId}`,
+                url: `/chats/${mockChatId}`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatResponse);
         });
 
-        it("should use the current user and chat ids from shared state", async () => {
+        it("should use the current chat id from shared state", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
@@ -409,7 +409,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/users/differentUser/chats/differentChat`,
+                url: `/chats/differentChat`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
         });
@@ -447,7 +447,7 @@ describe("API Functions", () => {
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: mockChatId,
+                    chatId: mockChatId,
                     userId: mockUserId,
                 },
             });
@@ -469,7 +469,7 @@ describe("API Functions", () => {
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: "chat999",
+                    chatId: "chat999",
                     userId: "user999",
                 },
             });

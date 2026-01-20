@@ -115,6 +115,82 @@ func TestGetTemplate(t *testing.T) {
 	}
 }
 
+func TestValidatePrompt(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name         string
+		statusCode   int
+		responseBody string
+		expectErr    bool
+		expectedMsg  string
+	}{
+		{
+			name:         "success - valid prompt",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":{"body":""},"userId":"user-123","chatId":"chat-456"}`,
+			expectErr:    false,
+			expectedMsg:  "",
+		},
+		{
+			name:         "success - invalid prompt with feedback",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":{"body":"Please provide more context"},"userId":"user-123","chatId":"chat-456"}`,
+			expectErr:    false,
+			expectedMsg:  "Please provide more context",
+		},
+		{
+			name:         "non-200 feedback",
+			statusCode:   http.StatusBadRequest,
+			responseBody: `error`,
+			expectErr:    true,
+			expectedMsg:  "",
+		},
+		{
+			name:         "invalid-json",
+			statusCode:   http.StatusOK,
+			responseBody: `{"message":`,
+			expectErr:    true,
+			expectedMsg:  "",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/api/v1/validate" {
+					http.NotFound(w, r)
+					return
+				}
+				w.WriteHeader(test.statusCode)
+				_, _ = w.Write([]byte(test.responseBody))
+			}))
+			defer srv.Close()
+
+			client := srv.Client()
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			require.NoError(t, err)
+
+			req := &entity.GenerateTestRequest{
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "chat-456",
+			}
+
+			res, err := repo.ValidatePrompt(context.Background(), req)
+			if test.expectErr {
+				require.Error(t, err)
+				require.Nil(t, res)
+				return
+			}
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, test.expectedMsg, res.Result.Body)
+			require.Equal(t, "user-123", res.UserId)
+			require.Equal(t, "chat-456", res.ChatId)
+		})
+	}
+}
 func TestGenerateTest(t *testing.T) {
 	logger := slog.Default()
 	tracer := otel.Tracer("test")
@@ -129,7 +205,7 @@ func TestGenerateTest(t *testing.T) {
 		{
 			name:         "success",
 			statusCode:   http.StatusOK,
-			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","conversationId":"conv-456"}`,
+			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
 			expectedTest: "generated test code",
 		},
@@ -166,9 +242,9 @@ func TestGenerateTest(t *testing.T) {
 			require.NoError(t, err)
 
 			req := &entity.GenerateTestRequest{
-				Prompt:         "test prompt",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.GenerateTest(context.Background(), req)
@@ -234,9 +310,9 @@ func TestSaveTest(t *testing.T) {
 			require.NoError(t, err)
 
 			req := &entity.SaveTestRequest{
-				Code:           "test code",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				Code:   "test code",
+				UserId: "user-123",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.SaveTest(context.Background(), req)
@@ -305,9 +381,9 @@ func TestRunTest(t *testing.T) {
 			require.NoError(t, err)
 
 			req := &entity.RunTestRequest{
-				TestId:         "test code",
-				UserId:         "user-123",
-				ConversationId: "conv-456",
+				TestId: "test code",
+				UserId: "user-123",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.RunTest(context.Background(), req)
@@ -370,7 +446,7 @@ func TestNewJSONRequest(t *testing.T) {
 			name:              "put-with-complex-body",
 			method:            http.MethodPut,
 			url:               "http://example.com/api",
-			body:              &entity.GenerateTestRequest{Prompt: "test", UserId: "u1", ConversationId: "c1"},
+			body:              &entity.GenerateTestRequest{Prompt: "test", UserId: "u1", ChatId: "c1"},
 			expectErr:         false,
 			expectContentType: true,
 		},
