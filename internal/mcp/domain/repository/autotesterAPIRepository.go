@@ -101,7 +101,7 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("user.id", request.UserId),
-		attribute.String("conversation.id", request.ConversationId),
+		attribute.String("conversation.id", request.ChatId),
 	)
 
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
@@ -126,7 +126,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("user.id", request.UserId),
-		attribute.String("conversation.id", request.ConversationId),
+		attribute.String("conversation.id", request.ChatId),
 	)
 
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
@@ -152,7 +152,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 	span.SetAttributes(
 		attribute.String("test.id", request.TestId),
 		attribute.String("user.id", request.UserId),
-		attribute.String("conversation.id", request.ConversationId),
+		attribute.String("conversation.id", request.ChatId),
 	)
 
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)

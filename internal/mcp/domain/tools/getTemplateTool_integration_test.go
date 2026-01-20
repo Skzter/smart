@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
@@ -21,8 +22,9 @@ func TestGetTemplateTool_Integration(t *testing.T) {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	httpClient := &http.Client{}
+	tracer := otel.Tracer("test")
 
-	repo, err := repository.NewAutotesterAPIRepository(logger, httpClient, baseURL)
+	repo, err := repository.NewAutotesterAPIRepository(logger, httpClient, baseURL, tracer)
 	require.NoError(t, err)
 
 	autotesterService, err := service.NewAutotesterAPIService(logger, repo)

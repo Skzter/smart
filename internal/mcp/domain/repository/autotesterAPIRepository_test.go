@@ -117,6 +117,7 @@ func TestGetTemplate(t *testing.T) {
 
 func TestValidatePrompt(t *testing.T) {
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name         string
@@ -168,7 +169,7 @@ func TestValidatePrompt(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			req := &entity.GenerateTestRequest{
