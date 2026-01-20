@@ -53,3 +53,25 @@ export type ApiGetChatByIdResponse = {
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
 };
+
+export type ApiGroup = {
+    id: string;
+    name: string;
+    description: string;
+    createdAt: string;
+    createdBy: string;
+  };
+  
+  export type ApiCreateGroupRequest = {
+    groupName: string;
+    description: string;
+    userId: string;
+  };
+  
+  export type ApiCreateGroupResponse = {
+    groupId: string;
+  };
+  
+  export type ApiAssignChatToGroupsRequest = {
+    groupIds: string[];
+  };  

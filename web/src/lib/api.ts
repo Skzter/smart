@@ -8,6 +8,9 @@ import type {
     ApiSaveTestLocalResponse,
     ApiRunContainer,
     ApiGetChatByIdResponse,
+    ApiGroup,
+    ApiCreateGroupRequest,
+    ApiCreateGroupResponse,
 } from "$types/api";
 import { chat, user } from "./shared.svelte";
 
@@ -166,3 +169,46 @@ function getErrorMessage(error: unknown): Error {
         );
     }
 }
+  
+export async function getGroups(): Promise<ApiGroup[]> {
+    try {
+        const response = await axios({ method: "get", url: "/groups", baseURL });
+        return response.data as ApiGroup[];
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function createGroup(request: ApiCreateGroupRequest,): Promise<ApiCreateGroupResponse> {
+    try {
+        const response = await axios({ method: "post", url: "/groups", baseURL, data: request });
+        return response.data as ApiCreateGroupResponse;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function assignChatToGroups(chatId: string, groupIds: string[]): Promise<void> {
+    try {
+        await axios({
+        method: "post",
+        url: `/chats/${chatId}/groups`,
+        baseURL,
+        data: { groupIds }, 
+        });
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function removeChatFromGroup(chatId: string, groupId: string): Promise<void> {
+    try {
+        await axios({
+        method: "delete",
+        url: `/chats/${chatId}/groups/${groupId}`,
+        baseURL,
+        });
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}  
