@@ -217,7 +217,7 @@ describe("API Functions", () => {
                 mockValidateParams.userId,
             );
             expect(callArgs.data).toHaveProperty(
-                "conversationId",
+                "chatId",
                 mockValidateParams.chatId,
             );
             expect(callArgs.data).toHaveProperty(
@@ -311,7 +311,7 @@ describe("API Functions", () => {
         const mockParams = {
             userId: mockUserId,
             testId: "test123",
-            sessionId: "session456",
+            chatId: "chat456",
         };
         const mockResult = "Container executed successfully";
 
@@ -353,7 +353,7 @@ describe("API Functions", () => {
             const complexParams = {
                 userId: "user999",
                 testId: "test999",
-                sessionId: "session999",
+                chatId: "chat999",
             };
 
             await runContainer(complexParams, {});
@@ -455,7 +455,7 @@ describe("API Functions", () => {
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: mockChatId,
+                    chatId: mockChatId,
                     userId: mockUserId,
                 },
             });
@@ -477,7 +477,7 @@ describe("API Functions", () => {
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: "chat999",
+                    chatId: "chat999",
                     userId: "user999",
                 },
             });

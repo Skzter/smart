@@ -40,7 +40,7 @@ export async function generatePrompt(
 }
 
 /** Validates the prompt by sending it to the /validationRes endpoint
- * @param body: object containing userId, conversationId, and prompt
+ * @param body: object containing userId, chatId, and prompt
  */
 export async function validatePrompt(
     request: ApiChatRequest,
@@ -123,26 +123,13 @@ export async function saveTestLocal(
 }
 
 // must block exectution until test is done
-export async function runContainer(
-    request: ApiRunContainer,
-    handler: {
-        onStepEnd?: (message: string) => void;
-        onError?: (error: Error) => void;
-        onStepBegin?: (message: string) => void;
-    },
-): Promise<void> {
-    try {
-        handler.onStepBegin?.("Getting Results...");
-        const response = await axios({
-            method: "post",
-            url: "/run",
-            baseURL: baseURL,
-            data: request,
-        });
-        handler.onStepEnd?.(response.data.result);
-    } catch (error) {
-        handler.onError?.(getErrorMessage(error));
-    }
+export async function runContainer(request: ApiRunContainer): Promise<void> {
+    await axios({
+        method: "post",
+        url: "/run",
+        baseURL,
+        data: request,
+    });
 }
 
 export async function getChatById(): Promise<ApiGetChatByIdResponse> {
@@ -166,7 +153,7 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
             url: "/deleteLocal",
             params: {
                 testcaseId,
-                conversationId: chat.id,
+                chatId: chat.id,
                 userId: user.id,
             },
         });

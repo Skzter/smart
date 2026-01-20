@@ -228,10 +228,10 @@ func (r *chatStorageRepository) ListAll(ctx context.Context) ([]*entity.ChatSumm
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to list summary parquet files")
-		return nil, fmt.Errorf("failed to list session summary parquet files: %w", err)
+		return nil, fmt.Errorf("failed to list chat summary parquet files: %w", err)
 	}
 	if len(keys) == 0 {
-		err := fmt.Errorf("no session summary files found in storage")
+		err := fmt.Errorf("no chat summary files found in storage")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "no chat summaries found")
 		return nil, err

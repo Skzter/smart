@@ -264,3 +264,5 @@ defaultLimitTests: Int = 50
 pageSize: Int = 10
 
 taglistConfig: taglist = taglist
+
+tokenExpirationTime: Duration = 30.d

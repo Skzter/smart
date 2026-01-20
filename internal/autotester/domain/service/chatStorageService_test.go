@@ -68,13 +68,10 @@ func TestNewChatStorageService(t *testing.T) {
 
 			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, tracer)
 			if (err != nil) != test.wantErr {
-				t.Errorf("NewChatStorageService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("NewChatSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if !test.wantErr && svc == nil {
-				t.Errorf("NewChatStorageService() returned nil service")
-			}
-			if test.listReturns != nil {
-				mockRepo.AssertExpectations(t)
+				t.Errorf("NewChatSummaryStorageService() returned nil service")
 			}
 		})
 	}

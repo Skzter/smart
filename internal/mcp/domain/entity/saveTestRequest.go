@@ -6,5 +6,5 @@ package entity
 type SaveTestRequest struct {
 	Code   string `json:"code"`
 	UserId string `json:"userId"`
-	ChatId string `json:"conversationId"`
+	ChatId string `json:"chatId"`
 }

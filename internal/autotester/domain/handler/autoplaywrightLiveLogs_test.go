@@ -103,7 +103,7 @@ func TestHandleLogRequest(t *testing.T) {
 				info := &entity.ContainerInfo{
 					ContainerID: "cid123",
 					UserID:      "user1",
-					SessionID:   "sess1",
+					ChatID:      "chat1",
 				}
 
 				d.On("GetContainerInfo", "abc").
@@ -129,7 +129,7 @@ func TestHandleLogRequest(t *testing.T) {
 			},
 			setupMocks: func(mockLocal *mocks.MockTestcaseLocalStorageService, mockRemote *mocks.MockTestcaseStorageService) {
 				mockLocal.
-					On("Read", "abc", "user1", "sess1").
+					On("Read", "abc", "user1", "chat1").
 					Return("test code", nil).
 					Once()
 
@@ -150,7 +150,7 @@ func TestHandleLogRequest(t *testing.T) {
 				info := &entity.ContainerInfo{
 					ContainerID: "cid123",
 					UserID:      "user1",
-					SessionID:   "sess1",
+					ChatID:      "chat1",
 				}
 
 				d.On("GetContainerInfo", "abc").
@@ -179,7 +179,7 @@ func TestHandleLogRequest(t *testing.T) {
 				mockRemote *mocks.MockTestcaseStorageService,
 			) {
 				mockLocal.
-					On("Read", "abc", "user1", "sess1").
+					On("Read", "abc", "user1", "chat1").
 					Return("test code", nil).
 					Once()
 
@@ -233,6 +233,7 @@ func TestHandleLogRequest(t *testing.T) {
 	mockGroupManager := mocks.NewMockGroupManager(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetrics := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 
 	mockMetrics.On("IncRequestSuccess").Maybe()
 	mockMetrics.On("IncRequestError", mock.Anything).Maybe()
@@ -266,6 +267,7 @@ func TestHandleLogRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetrics,
+				mockAuth,
 			)
 			if err != nil {
 				t.Fatalf("controller init failed: %v", err)

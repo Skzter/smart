@@ -68,6 +68,7 @@ func TestHandleGetGroups(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 
 			for _, mc := range test.MockSetup {
 				if mc.Function == "List" {
@@ -95,6 +96,7 @@ func TestHandleGetGroups(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleGetGroups(ctx)
@@ -181,6 +183,7 @@ func TestHandleCreateGroup(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 
 			for _, mc := range test.MockSetup {
 				if mc.Function == "Create" {
@@ -209,6 +212,7 @@ func TestHandleCreateGroup(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleCreateGroup(ctx)
@@ -331,6 +335,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 
 			for _, mc := range test.MockSetup {
 				if mc.Function == "AddChatToGroup" {
@@ -366,6 +371,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleAssignChatToGroups(ctx)
@@ -459,6 +465,7 @@ func TestHandleRemoveChatFromGroup(t *testing.T) {
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 
 			for _, mc := range test.MockSetup {
 				if mc.Function == "RemoveChatFromGroup" {
@@ -492,6 +499,7 @@ func TestHandleRemoveChatFromGroup(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleRemoveChatFromGroup(ctx)

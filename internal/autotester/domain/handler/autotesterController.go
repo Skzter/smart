@@ -27,6 +27,7 @@ type AutotesterController struct {
 	groupManager                 service.GroupManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
+	authService                  service.Auth
 }
 
 // NewAutotesterController creates a new AutotesterController.
@@ -44,6 +45,7 @@ func NewAutotesterController(
 	groupManager service.GroupManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
+	authService service.Auth,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -58,6 +60,7 @@ func NewAutotesterController(
 		groupManager,
 		tracer,
 		metricsService,
+		authService,
 	); err != nil {
 		return nil, err
 	}
@@ -75,5 +78,6 @@ func NewAutotesterController(
 		groupManager:                 groupManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
+		authService:                  authService,
 	}, nil
 }
