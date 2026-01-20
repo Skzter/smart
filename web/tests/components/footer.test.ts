@@ -66,7 +66,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -89,10 +89,10 @@ describe.skip("Footer TODO: fix this test", () => {
             expect(mockGetChatResponse).toHaveBeenCalledWith({
                 prompt: "Test question",
                 userId: "test-user-123",
-                conversationId: "",
+                chatId: "",
             });
             expect(messages[0].answer).toBe("Test response");
-            expect(chat.id).toBe("conv-123");
+            expect(chat.id).toBe("chat-123");
         });
     });
 
@@ -160,7 +160,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -183,7 +183,7 @@ describe.skip("Footer TODO: fix this test", () => {
             expect(mockGetChatResponse).toHaveBeenCalledWith({
                 prompt: "Test with spaces",
                 userId: user.id,
-                conversationId: "",
+                chatId: "",
             });
         });
     });
@@ -197,7 +197,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
 
         let resolveFn: (value: unknown) => void;
@@ -251,7 +251,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -289,7 +289,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -323,7 +323,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -356,7 +356,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "new-conv-id",
+            chatId: "new-chat-id",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -378,12 +378,12 @@ describe.skip("Footer TODO: fix this test", () => {
         await userSetup.click(button);
 
         await waitFor(() => {
-            expect(chat.id).toBe("new-conv-id");
+            expect(chat.id).toBe("new-chat-id");
         });
     });
 
-    it("handles existing conversationId in subsequent calls", async () => {
-        chat.id = "existing-conv-123";
+    it("handles existing chatId in subsequent calls", async () => {
+        chat.id = "existing-chat-123";
 
         const mockResponse = {
             message: {
@@ -393,7 +393,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "existing-conv-123",
+            chatId: "existing-chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -416,7 +416,7 @@ describe.skip("Footer TODO: fix this test", () => {
             expect(mockGetChatResponse).toHaveBeenCalledWith({
                 prompt: "Follow-up question",
                 userId: "test-user-123",
-                conversationId: "existing-conv-123",
+                chatId: "existing-chat-123",
             });
         });
     });
@@ -430,7 +430,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 
@@ -454,7 +454,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 expect.objectContaining({
                     prompt: "Test",
                     userId: "test-user-123",
-                    conversationId: "",
+                    chatId: "",
                 }),
             );
         });
@@ -469,7 +469,7 @@ describe.skip("Footer TODO: fix this test", () => {
                 createdAt: Date.now(),
             },
             userId: "test-user-123",
-            conversationId: "conv-123",
+            chatId: "chat-123",
         };
         mockGetChatResponse.mockResolvedValue(mockResponse);
 

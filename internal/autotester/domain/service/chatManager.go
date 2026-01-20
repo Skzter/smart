@@ -44,7 +44,7 @@ func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg 
 	}, nil
 }
 
-// LoadChat either loads an existing chat from storage (when request.ChatId is set) or
+// LoadChat either loads an existing chat from storage (when request.ChatID is set) or
 // creates and returns a new chat object initialized with a generated UUID, creation time,
 // empty message slice and the initial user prompt.
 func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) (*entity.Chat, error) {

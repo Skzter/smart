@@ -79,7 +79,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "successful test execution - passed",
 			input: entity.ExecuteTestRequest{
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 				Test:   "describe('Login', () => { it('should login', () => { expect(true).toBe(true); }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
@@ -103,7 +103,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "successful test execution - failed",
 			input: entity.ExecuteTestRequest{
 				UserId: "user789",
-				ChatId: "conv999",
+				ChatId: "chat999",
 				Test:   "describe('Broken Test', () => { it('should fail', () => { expect(true).toBe(false); }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
@@ -126,7 +126,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "service returns error",
 			input: entity.ExecuteTestRequest{
 				UserId: "user000",
-				ChatId: "conv000",
+				ChatId: "chat000",
 				Test:   "invalid test code",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
@@ -140,7 +140,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "empty test string",
 			input: entity.ExecuteTestRequest{
 				UserId: "user111",
-				ChatId: "conv222",
+				ChatId: "chat222",
 				Test:   "",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {
@@ -163,7 +163,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "test execution with detailed result",
 			input: entity.ExecuteTestRequest{
 				UserId: "user555",
-				ChatId: "conv666",
+				ChatId: "chat666",
 				Test:   "describe('Complex Test', () => { it('should work', () => { /* complex logic */ }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService, done chan bool) {

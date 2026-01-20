@@ -54,7 +54,7 @@ func (a *AutotesterController) HandleCreateGroup(c *gin.Context) {
 		return
 	}
 
-	groupId, err := a.groupManager.Create(ctx, request.GroupName, request.Description, request.UserId)
+	groupId, err := a.groupManager.Create(ctx, request.GroupName, request.Description, request.UserID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to create group")
