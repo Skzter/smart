@@ -22,7 +22,16 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	router.Use(gin.Recovery())
 	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
 
+	// Public routes (no auth middleware)
+	publicV1 := router.Group("/api/v1")
+	{
+		publicV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
+		publicV1.POST("/auth/validate", controller.HandleValidateJWT)
+	}
+
+	// Protected routes (auth middleware for all endpoints here)
 	apiV1 := router.Group("/api/v1")
+	apiV1.Use(controller.AuthMiddleware())
 	{
 		apiV1.POST("/chat", controller.HandleChatRequest)
 		apiV1.POST("/validate", controller.HandleChatRequestValidity)
@@ -34,8 +43,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
-		apiV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
-		apiV1.POST("/auth/validate", controller.HandleValidateJWT)
+
 		apiV1.GET("/groups", controller.HandleGetGroups)
 		apiV1.POST("/groups", controller.HandleCreateGroup)
 		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
