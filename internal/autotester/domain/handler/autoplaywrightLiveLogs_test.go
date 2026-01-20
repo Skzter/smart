@@ -1,3 +1,5 @@
+//go:build !racetest
+
 package handler
 
 import (

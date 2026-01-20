@@ -248,6 +248,11 @@ tasks:
     cmds:
       - go tool gotestsum -- -tags=integration ./...
 
+  test-race:
+    desc: "Run concurrent tests with race detector"
+    cmds:
+      - go tool gotestsum -- -race -tags=racetest ./...
+
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
     cmds:

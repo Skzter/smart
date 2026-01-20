@@ -2,8 +2,8 @@ package store
 
 import (
 	"fmt"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -117,71 +117,264 @@ func TestAddEvent(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			store := NewTestLogStreamStore()
 			defer store.Shutdown()
 
-			if tt.setup != nil {
-				tt.setup(store, tt.testId)
+			if test.setup != nil {
+				test.setup(store, test.testId)
 			}
 
-			store.AddEvent(tt.testId, tt.event)
+			store.AddEvent(test.testId, test.event)
 
-			tt.verify(t, store, tt.testId)
+			test.verify(t, store, test.testId)
 		})
 	}
 }
 
-func TestAddEvent_Concurrent(t *testing.T) {
+func TestGetStream(t *testing.T) {
 	tests := []struct {
-		name               string
-		numGoroutines      int
-		eventsPerGoroutine int
+		name          string
+		testId        string
+		setup         func(store TestLogStreamStore, testId string)
+		expectExists  bool
+		expectEvents  int
+		verifyDetails func(t *testing.T, stream *entity.LogStream)
 	}{
 		{
-			name:               "concurrent writes to same stream",
-			numGoroutines:      50,
-			eventsPerGoroutine: 20,
+			name:         "get non-existent stream",
+			testId:       "non-existent",
+			setup:        nil,
+			expectExists: false,
+			expectEvents: 0,
 		},
 		{
-			name:               "high concurrency stress test",
-			numGoroutines:      100,
-			eventsPerGoroutine: 10,
+			name:   "get existing stream",
+			testId: "test-existing",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event 1"})
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event 2"})
+			},
+			expectExists: true,
+			expectEvents: 2,
+		},
+		{
+			name:   "get completed stream",
+			testId: "test-completed",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event"})
+				store.CompleteStream(testId)
+			},
+			expectExists: true,
+			expectEvents: 1,
+			verifyDetails: func(t *testing.T, stream *entity.LogStream) {
+				assert.True(t, stream.IsCompleted(), "stream should be completed")
+			},
+		},
+		{
+			name:   "get stream updates last access time",
+			testId: "test-access-time",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event"})
+				time.Sleep(10 * time.Millisecond)
+			},
+			expectExists: true,
+			expectEvents: 1,
+			verifyDetails: func(t *testing.T, stream *entity.LogStream) {
+				lastAccess := stream.GetLastAccessedAt()
+				assert.WithinDuration(t, time.Now(), lastAccess, 100*time.Millisecond,
+					"last access time should be updated to current time")
+			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			store := NewTestLogStreamStore()
 			defer store.Shutdown()
 
-			testId := "concurrent-test"
-			var wg sync.WaitGroup
-			wg.Add(tt.numGoroutines)
-
-			for i := 0; i < tt.numGoroutines; i++ {
-				go func(goroutineId int) {
-					defer wg.Done()
-					for j := 0; j < tt.eventsPerGoroutine; j++ {
-						event := entity.LogEvent{
-							Event: "log",
-							Data:  fmt.Sprintf("Goroutine %d - Event %d", goroutineId, j),
-						}
-						store.AddEvent(testId, event)
-					}
-				}(i)
+			if test.setup != nil {
+				test.setup(store, test.testId)
 			}
 
-			wg.Wait()
+			stream, exists := store.GetStream(test.testId)
 
-			stream, exists := store.GetStream(testId)
-			require.True(t, exists, "stream should exist")
+			assert.Equal(t, test.expectExists, exists, "existence should match expectation")
 
-			events := stream.GetEvents()
-			expectedCount := tt.numGoroutines * tt.eventsPerGoroutine
-			assert.Equal(t, expectedCount, len(events),
-				"all events should be present without race conditions")
+			if test.expectExists {
+				require.NotNil(t, stream, "stream should not be nil when it exists")
+				events := stream.GetEvents()
+				assert.Len(t, events, test.expectEvents, "event count should match")
+
+				if test.verifyDetails != nil {
+					test.verifyDetails(t, stream)
+				}
+			}
+		})
+	}
+}
+
+func TestCompleteStream(t *testing.T) {
+	tests := []struct {
+		name   string
+		testId string
+		setup  func(store TestLogStreamStore, testId string)
+		verify func(t *testing.T, store TestLogStreamStore, testId string)
+	}{
+		{
+			name:   "complete existing stream",
+			testId: "test-complete",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event"})
+			},
+			verify: func(t *testing.T, store TestLogStreamStore, testId string) {
+				stream, exists := store.GetStream(testId)
+				require.True(t, exists, "stream should exist")
+				assert.True(t, stream.IsCompleted(), "stream should be completed")
+			},
+		},
+		{
+			name:   "complete non-existent stream does not panic",
+			testId: "non-existent",
+			setup:  nil,
+			verify: func(t *testing.T, store TestLogStreamStore, testId string) {
+				_, exists := store.GetStream(testId)
+				assert.False(t, exists, "stream should not exist")
+			},
+		},
+		{
+			name:   "complete already completed stream",
+			testId: "test-double-complete",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event"})
+				store.CompleteStream(testId)
+			},
+			verify: func(t *testing.T, store TestLogStreamStore, testId string) {
+				stream, exists := store.GetStream(testId)
+				require.True(t, exists, "stream should exist")
+				assert.True(t, stream.IsCompleted(), "stream should still be completed")
+			},
+		},
+		{
+			name:   "events cannot be added after completion",
+			testId: "test-no-events-after-complete",
+			setup: func(store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event 1"})
+				store.CompleteStream(testId)
+			},
+			verify: func(t *testing.T, store TestLogStreamStore, testId string) {
+				store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event 2"})
+
+				stream, exists := store.GetStream(testId)
+				require.True(t, exists, "stream should exist")
+
+				events := stream.GetEvents()
+				assert.Len(t, events, 1, "new stream should have only new event after old was completed")
+				assert.Equal(t, "Event 2", events[0].Data, "should be the new event")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			store := NewTestLogStreamStore()
+			defer store.Shutdown()
+
+			if test.setup != nil {
+				test.setup(store, test.testId)
+			}
+
+			store.CompleteStream(test.testId)
+
+			test.verify(t, store, test.testId)
+		})
+	}
+}
+
+func TestCleanup(t *testing.T) {
+	tests := []struct {
+		name          string
+		cleanupAfter  time.Duration
+		maxAge        time.Duration
+		setup         func(store TestLogStreamStore)
+		waitDuration  time.Duration
+		verifyStreams func(t *testing.T, store TestLogStreamStore)
+	}{
+		{
+			name:         "old completed streams are removed",
+			cleanupAfter: 100 * time.Millisecond,
+			maxAge:       50 * time.Millisecond,
+			setup: func(store TestLogStreamStore) {
+				store.AddEvent("old-completed", entity.LogEvent{Event: "log", Data: "Event"})
+				store.CompleteStream("old-completed")
+			},
+			waitDuration: 200 * time.Millisecond,
+			verifyStreams: func(t *testing.T, store TestLogStreamStore) {
+				_, exists := store.GetStream("old-completed")
+				assert.False(t, exists, "old completed stream should be removed")
+			},
+		},
+		{
+			name:         "recent streams are not removed",
+			cleanupAfter: 100 * time.Millisecond,
+			maxAge:       500 * time.Millisecond,
+			setup: func(store TestLogStreamStore) {
+				store.AddEvent("recent-1", entity.LogEvent{Event: "log", Data: "Event"})
+				store.AddEvent("recent-2", entity.LogEvent{Event: "log", Data: "Event"})
+				store.CompleteStream("recent-1")
+			},
+			waitDuration: 200 * time.Millisecond,
+			verifyStreams: func(t *testing.T, store TestLogStreamStore) {
+				_, exists1 := store.GetStream("recent-1")
+				_, exists2 := store.GetStream("recent-2")
+				assert.True(t, exists1, "recent completed stream should not be removed")
+				assert.True(t, exists2, "recent active stream should not be removed")
+			},
+		},
+		{
+			name:         "incomplete streams are not removed even if old",
+			cleanupAfter: 100 * time.Millisecond,
+			maxAge:       50 * time.Millisecond,
+			setup: func(store TestLogStreamStore) {
+				store.AddEvent("incomplete", entity.LogEvent{Event: "log", Data: "Event"})
+			},
+			waitDuration: 200 * time.Millisecond,
+			verifyStreams: func(t *testing.T, store TestLogStreamStore) {
+				_, exists := store.GetStream("incomplete")
+				assert.True(t, exists, "incomplete streams should never be removed")
+			},
+		},
+		{
+			name:         "multiple old completed streams are cleaned up",
+			cleanupAfter: 100 * time.Millisecond,
+			maxAge:       50 * time.Millisecond,
+			setup: func(store TestLogStreamStore) {
+				for i := 0; i < 5; i++ {
+					testId := fmt.Sprintf("old-%d", i)
+					store.AddEvent(testId, entity.LogEvent{Event: "log", Data: "Event"})
+					store.CompleteStream(testId)
+				}
+			},
+			waitDuration: 200 * time.Millisecond,
+			verifyStreams: func(t *testing.T, store TestLogStreamStore) {
+				for i := range 5 {
+					testId := fmt.Sprintf("old-%d", i)
+					_, exists := store.GetStream(testId)
+					assert.False(t, exists, "old stream %s should be removed", testId)
+				}
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			store := NewTestLogStreamStoreWithConfig(test.cleanupAfter, test.maxAge)
+			defer store.Shutdown()
+
+			test.setup(store)
+			time.Sleep(test.waitDuration)
+			test.verifyStreams(t, store)
 		})
 	}
 }

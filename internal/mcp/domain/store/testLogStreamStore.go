@@ -28,16 +28,27 @@ type TestLogStreamStore interface {
 // TestLogStreamStore manages log streams for tests, providing thread-safe access
 // and automatic cleanup of streams older than 24 hours.
 type testLogStreamStore struct {
-	streams       map[string]*entity.LogStream
-	stopCleanUpCh chan struct{}
-	mu            sync.RWMutex
+	streams         map[string]*entity.LogStream
+	stopCleanUpCh   chan struct{}
+	mu              sync.RWMutex
+	cleanupInterval time.Duration
+	streamMaxAge    time.Duration
 }
 
-// NewTestLogStreamStore creates a new TestLogStreamStore and starts the cleanup routine.
+// NewTestLogStreamStore creates a new TestLogStreamStore with default configuration and starts the cleanup routine.
+// Default: cleanup runs every hour and removes streams older than 24 hours.
 func NewTestLogStreamStore() TestLogStreamStore {
+	return NewTestLogStreamStoreWithConfig(1*time.Hour, 24*time.Hour)
+}
+
+// NewTestLogStreamStoreWithConfig creates a new TestLogStreamStore with custom cleanup settings.
+// This is primarily intended for testing purposes.
+func NewTestLogStreamStoreWithConfig(cleanupInterval, streamMaxAge time.Duration) TestLogStreamStore {
 	store := &testLogStreamStore{
-		streams:       make(map[string]*entity.LogStream),
-		stopCleanUpCh: make(chan struct{}),
+		streams:         make(map[string]*entity.LogStream),
+		stopCleanUpCh:   make(chan struct{}),
+		cleanupInterval: cleanupInterval,
+		streamMaxAge:    streamMaxAge,
 	}
 	go store.cleanup()
 	return store
@@ -82,11 +93,10 @@ func (tlss *testLogStreamStore) Shutdown() {
 	close(tlss.stopCleanUpCh)
 }
 
-// cleanup periodically removes log streams that are older than 24 hours and are marked as completed.
-// It runs in a background goroutine and checks every hour until Shutdown is called.
-// It should run in a background goroutine and checks every hour.
+// cleanup periodically removes log streams that are older than streamMaxAge and are marked as completed.
+// It runs in a background goroutine and checks every cleanupInterval until Shutdown is called.
 func (tlss *testLogStreamStore) cleanup() {
-	ticker := time.NewTicker(1 * time.Hour)
+	ticker := time.NewTicker(tlss.cleanupInterval)
 	defer ticker.Stop()
 
 	for {
@@ -97,7 +107,7 @@ func (tlss *testLogStreamStore) cleanup() {
 			tlss.mu.Lock()
 			now := time.Now()
 			for testId, stream := range tlss.streams {
-				if now.Sub(stream.GetLastAccessedAt()) > 24*time.Hour && stream.IsCompleted() {
+				if now.Sub(stream.GetLastAccessedAt()) > tlss.streamMaxAge && stream.IsCompleted() {
 					delete(tlss.streams, testId)
 				}
 			}
