@@ -6,13 +6,13 @@
 
     let {
         group = $bindable(),
-        updateChatTitleStance,
+        updateChatTitleState,
     }: {
         group: {
             label: string;
             summaries: ApiChatSummary[];
         };
-        updateChatTitleStance: (chatId: string, title: string) => void;
+        updateChatTitleState: (chatId: string, title: string) => void;
     } = $props();
 </script>
 
@@ -21,7 +21,7 @@
     <Sidebar.GroupContent>
         <Sidebar.Menu>
             {#each group.summaries as chat, key (chat.chatId)}
-                <ChatSummary bind:summary={group.summaries[key]} {updateChatTitleStance}></ChatSummary>
+                <ChatSummary bind:summary={group.summaries[key]} {updateChatTitleState}></ChatSummary>
             {/each}
         </Sidebar.Menu>
     </Sidebar.GroupContent>

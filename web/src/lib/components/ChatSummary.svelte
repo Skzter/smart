@@ -6,14 +6,13 @@
     import { toast } from "svelte-sonner";
     import { type Message, chat, messages, user } from "$lib/shared.svelte";
     import { updateChatTitle as updateChatTitleApi } from "$lib/api";
-    import { updateChatTitle as updateChatTitleState } from "$lib/shared.svelte";
-
+    
     let {
         summary = $bindable(),
-        updateChatTitleStance,
+        updateChatTitleState,
     }: {
         summary: ApiChatSummary;
-        updateChatTitleStance?: (chatId: string, title: string) => void;
+        updateChatTitleState?: (chatId: string, title: string) => void;
     } = $props();
     let edit = $state(false);
 
@@ -100,7 +99,7 @@
 
         try {
             const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
-            updateChatTitleState(updated.chatId, updated.title, updated.updatedAt);
+            updateChatTitleState?.(updated.chatId, updated.title);
 
         } catch (error) {
             toast.error("Umbenennen fehlgeschlagen", {
@@ -118,7 +117,7 @@
 
         saveTitle(newTitle)
             .then(() => {
-                updateChatTitleStance?.(summary.chatId, newTitle);
+                updateChatTitleState?.(summary.chatId, newTitle);
                 toast.success("Chat title updated successfully");
             })
             .catch((err) => {

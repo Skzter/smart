@@ -180,7 +180,7 @@
         return "früher";
     }
 
-    function updateChatTitleStance(chatId: string, title: string) {
+    function updateChatTitleState(chatId: string, title: string) {
         if (!items) return;
 
         const chat = items.find((c) => c.chatId === chatId);
@@ -205,7 +205,7 @@
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}
-                <Group bind:group={groupState[index]} {updateChatTitleStance}></Group>
+                <Group bind:group={groupState[index]} {updateChatTitleState}></Group>
             {/each}
         {/if}
     </Sidebar.Content>

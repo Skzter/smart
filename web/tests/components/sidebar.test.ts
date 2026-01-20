@@ -520,7 +520,7 @@ describe("Sidebar", () => {
     });
 });
 
-describe("updateChatTitleStance via UI", () => {
+describe("updateChatTitleState via UI", () => {
     const initialItems = [
         {
             chatId: "chat-1",

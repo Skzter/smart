@@ -27,23 +27,10 @@ vi.mock("$lib/hooks/api", () => ({
     updateChatTitle: vi.fn()
 }));
 
-vi.mock("$lib/hooks/shared", () => ({
-    updateChatTitle: vi.fn()
-}));
-
-// Mock shared state module used by the component
-vi.mock("$lib/shared.svelte", () => ({
-    chat: { id: "", isLoading: false },
-    messages: [] as ApiMessage[],
-    user: { id: "" },
-    updateChatTitle: vi.fn(),
-}));
-
-
 import ChatSummary from "../../src/lib/components/ChatSummary.svelte";
 import { getChatById } from "$lib/api";
-import { toast } from "svelte-sonner";
-import { chat, messages, user as sharedUser, updateChatTitle as updateChatTitleState } from "$lib/shared.svelte";
+import { toast } from "svelte-sonner";import { chat, messages, user as sharedUser} from "$lib/shared.svelte";
+
 import type {
     ApiChatSummary,
     ApiMessage,
@@ -906,10 +893,17 @@ describe("commitTitleChange and saveTitle", () => {
             title: "New title",
             updatedAt: "2024-01-01",
             userId: "user-1",
-            createdAt: "2023-12-01"
+            createdAt: "2023-12-01",
         });
 
-        const { container } = render(ChatSummary, { props: { summary } });
+        const updateChatTitleState = vi.fn();
+
+        const { container } = render(ChatSummary, {
+            props: {
+                summary,
+                updateChatTitleState,
+            },
+        });
 
         const pencil = container.querySelector("svg.lucide-pencil");
         const editButton = pencil?.closest("button");
@@ -922,20 +916,26 @@ describe("commitTitleChange and saveTitle", () => {
         await fireEvent.input(input, { target: { value: " New title " } });
         await fireEvent.blur(input);
 
-        await waitFor(() => expect(updateChatTitleApi).toHaveBeenCalledWith(
-            "chat-123",
-            "New title",
-            "user-1",
-        ));
+        await waitFor(() => {
+            expect(updateChatTitleApi).toHaveBeenCalledWith(
+                "chat-123",
+                "New title",
+                "user-1"
+            );
+        });
 
-        expect(updateChatTitleState).toHaveBeenCalledWith(
-            "chat-123",
-            "New title",
-            "2024-01-01",
-        );
 
-        expect(toast.success).toHaveBeenCalledWith("Chat title updated successfully");
-    });
+    expect(updateChatTitleState).toHaveBeenCalledWith(
+        "chat-123",
+        "New title",
+    );
+
+
+    expect(toast.success).toHaveBeenCalledWith(
+        "Chat title updated successfully"
+    );
+});
+
 
     it("shows error toast when saveTitle fails", async () => {
         const summary = {
@@ -1008,7 +1008,7 @@ describe("commitTitleChange and saveTitle", () => {
         const stub = vi.fn();
 
         const { container } = render(ChatSummary, {
-            props: { summary, updateChatTitleStance: stub },
+            props: { summary, updateChatTitleState: stub },
         });
 
         const pencil = container.querySelector("svg.lucide-pencil");
