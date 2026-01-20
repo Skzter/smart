@@ -21,7 +21,7 @@
     let page = $state(0);
     let initialized = $state(false);
 
-    let groupState = $derived(
+    let groupState = $derived.by(() =>
         updateGroupsWithDateRange(
             items,
             ChatDate.Range,
@@ -29,6 +29,13 @@
             ChatFilter.timeFilter,
         ),
     );
+
+    function updateChatSummary(chatId: string, updated: ApiChatSummary) {
+        const index = items.findIndex((item) => item.chatId === chatId);
+        if (index !== -1) {
+            items[index] = updated;
+        }
+    }
 
     async function loadMore() {
         if (!user.id || loading || !hasMore) return;
@@ -224,7 +231,7 @@
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}
-                <Group bind:group={groupState[index]}></Group>
+                <Group group={groupState[index]} {updateChatSummary}></Group>
             {/each}
             {#if loading}
                 <Sidebar.Group class="mt-2 flex items-center justify-center">
