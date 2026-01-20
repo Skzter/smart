@@ -176,7 +176,7 @@ export class Runner {
             await runContainer({
                 userId: sanitizedUserId,
                 testId: this.getCurTest(),
-                sessionId: this.chatId,
+                chatId: this.chatId,
             });
 
             this.startLogStream(this.getCurTest());

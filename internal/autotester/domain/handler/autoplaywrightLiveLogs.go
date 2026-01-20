@@ -126,7 +126,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 			c.SSEvent("status", status)
 
 			if status.StatusCode == 0 {
-				code, err := a.localTestcaseStorageService.Read(testID, containerInfo.UserID, containerInfo.SessionID)
+				code, err := a.localTestcaseStorageService.Read(testID, containerInfo.UserID, containerInfo.ChatID)
 				if err != nil {
 					a.logger.Error("failed to read local test file: " + err.Error())
 				} else {
