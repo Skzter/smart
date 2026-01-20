@@ -19,12 +19,12 @@ import (
 type ChatStorageService interface {
 	// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 	// Returns an error if the operation fails.
-	SaveChat(ctx context.Context, summary *entity.Chat) error
-	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
+	SaveChat(ctx context.Context, chat *entity.Chat) error
+	// LoadChat retrieves a Chat object from storage by a key generated from the provided chatId.
 	LoadChat(ctx context.Context, chatId string) (*entity.Chat, error)
-	// FindByUserId retrieves an all ChatSummarys associated with the given userId
-	// The resulting slice is ordered by updatedAt in descending order
-	// returns whether more summaries exist
+	// LoadSummaries retrieves all ChatSummarys associated with any of the given groupIds.
+	// The resulting slice is ordered by updatedAt in descending order.
+	// Returns whether more summaries exist.
 	LoadSummaries(ctx context.Context, offset int, limit int, groupIds ...string) ([]*entity.ChatSummary, bool, error)
 }
 
@@ -50,7 +50,7 @@ type chatStorageService struct {
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
-// Returns the service or an error if any of the arguments are nil.
+// Returns an error if required arguments are nil or if loading existing summaries fails.
 func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer) (ChatStorageService, error) {
 	if err := assert.NotNil(logger, repo, validator); err != nil {
 		return nil, err
@@ -72,7 +72,6 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 	}, nil
 }
 
-// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
@@ -116,7 +115,6 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	return nil
 }
 
-// LoadChat retrieves a Chat object from storage by a key generated from the provided chatId.
 func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*entity.Chat, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
@@ -147,8 +145,6 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	return chat, nil
 }
 
-// LoadSummaries retrieves all ChatSummarys associated with any of the given groupIds
-// The resulting slice is ordered by updatedAt in descending order
 func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limit int, groupIds ...string) ([]*entity.ChatSummary, bool, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, false, err
