@@ -4,6 +4,9 @@ info:
   description: api for the connection from frontend to backend.
   version: 1.0.0
 
+# NOTE: All paths must include /api/v1/ prefix for Prism API mock to work correctly.
+# Do not add a servers section with a baseUrl - paths must start with /api/v1/
+
 paths:
   /api/v1/chat:
     post:
