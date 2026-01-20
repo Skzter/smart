@@ -14,9 +14,9 @@ import (
 )
 
 const (
-	userID    = "user1"
-	sessionID = "0001"
-	testRoot  = "tempTests"
+	userID   = "user1"
+	chatID   = "0001"
+	testRoot = "tempTests"
 )
 
 // testMockFileInfo implements os.FileInfo for tests
@@ -75,7 +75,7 @@ type saveTestCase struct {
 	name      string
 	testcase  *entity.TestCase
 	userID    string
-	sessionID string
+	chatID    string
 	setupMock func(m *mocks.MockFileSystem)
 	wantErr   bool
 }
@@ -90,12 +90,12 @@ func getSaveTestCases() []saveTestCase {
 
 	return []saveTestCase{
 		{
-			name:      "success",
-			testcase:  baseTestcase,
-			userID:    userID,
-			sessionID: sessionID,
+			name:     "success",
+			testcase: baseTestcase,
+			userID:   userID,
+			chatID:   chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				dirPath := filepath.Join(userID, sessionID)
+				dirPath := filepath.Join(userID, chatID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
 
 				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
@@ -104,23 +104,23 @@ func getSaveTestCases() []saveTestCase {
 			wantErr: false,
 		},
 		{
-			name:      "mkdir fails",
-			testcase:  baseTestcase,
-			userID:    userID,
-			sessionID: sessionID,
+			name:     "mkdir fails",
+			testcase: baseTestcase,
+			userID:   userID,
+			chatID:   chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				dirPath := filepath.Join(userID, sessionID)
+				dirPath := filepath.Join(userID, chatID)
 				m.EXPECT().MkdirAll(dirPath).Return(assert.AnError).Once()
 			},
 			wantErr: true,
 		},
 		{
-			name:      "write fails",
-			testcase:  baseTestcase,
-			userID:    userID,
-			sessionID: sessionID,
+			name:     "write fails",
+			testcase: baseTestcase,
+			userID:   userID,
+			chatID:   chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				dirPath := filepath.Join(userID, sessionID)
+				dirPath := filepath.Join(userID, chatID)
 				m.EXPECT().MkdirAll(dirPath).Return(nil).Once()
 				expectedFilePath := filepath.Join(dirPath, baseTestcase.TestID+"."+testcaseLanguageDefault)
 				m.EXPECT().WriteFile(expectedFilePath, []byte(baseTestcase.TestCode.Code)).Return(assert.AnError).Once()
@@ -136,15 +136,15 @@ func getSaveTestCases() []saveTestCase {
 				},
 			},
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			setupMock: func(m *mocks.MockFileSystem) {},
 			wantErr:   true,
 		},
 		{
-			name:      "invalid path elements empty user/session",
+			name:      "invalid path elements empty user/chat",
 			testcase:  baseTestcase,
 			userID:    "",
-			sessionID: "",
+			chatID:    "",
 			setupMock: func(m *mocks.MockFileSystem) {},
 			wantErr:   true,
 		},
@@ -166,11 +166,11 @@ func TestSave(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			err = repo.Save(tc.testcase, tc.userID, tc.sessionID)
+			err = repo.Save(tc.testcase, tc.userID, tc.chatID)
 			if tc.wantErr {
 				assert.Error(t, err)
 				// If validation prevented filesystem calls:
-				if tc.name == "invalid test id (validation error)" || tc.userID == "" || tc.sessionID == "" {
+				if tc.name == "invalid test id (validation error)" || tc.userID == "" || tc.chatID == "" {
 					mockFS.AssertNotCalled(t, "MkdirAll")
 					mockFS.AssertNotCalled(t, "WriteFile")
 				}
@@ -184,7 +184,7 @@ func TestSave(t *testing.T) {
 func TestRead(t *testing.T) {
 	logger := slog.Default()
 	testID := "123e4567-e89b-12d3-a456-426614174000"
-	sessionID := "0001"
+	chatID := "0001"
 	userID := "user1"
 	expectedContent := []byte("console.log('hello');")
 
@@ -192,16 +192,16 @@ func TestRead(t *testing.T) {
 		name      string
 		testID    string
 		userID    string
-		sessionID string
+		chatID    string
 		setupMock func(m *mocks.MockFileSystem, relativePath string)
 		wantErr   bool
 		wantData  []byte
 	}{
 		{
-			name:      "success",
-			testID:    testID,
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "success",
+			testID: testID,
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
 				m.EXPECT().ReadFile(relativePath).Return(expectedContent, nil).Once()
 			},
@@ -212,7 +212,7 @@ func TestRead(t *testing.T) {
 			name:      "invalid path elements",
 			testID:    testID,
 			userID:    "",
-			sessionID: "",
+			chatID:    "",
 			setupMock: nil,
 			wantErr:   true,
 			wantData:  nil,
@@ -221,16 +221,16 @@ func TestRead(t *testing.T) {
 			name:      "invalid filename",
 			testID:    "invalid/test:id",
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			setupMock: nil,
 			wantErr:   true,
 			wantData:  nil,
 		},
 		{
-			name:      "read file fails",
-			testID:    testID,
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "read file fails",
+			testID: testID,
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
 				m.EXPECT().ReadFile(relativePath).Return(nil, assert.AnError).Once()
 			},
@@ -246,12 +246,12 @@ func TestRead(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+"."+testcaseLanguageDefault)
+			relativePath := filepath.Join(tc.userID, tc.chatID, tc.testID+"."+testcaseLanguageDefault)
 			if tc.setupMock != nil {
 				tc.setupMock(mockFS, relativePath)
 			}
 
-			data, err := repo.Read(tc.testID, tc.userID, tc.sessionID)
+			data, err := repo.Read(tc.testID, tc.userID, tc.chatID)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, data)
@@ -267,7 +267,7 @@ type getTestPathTestCase struct {
 	name      string
 	testID    string
 	userID    string
-	sessionID string
+	chatID    string
 	setupMock func(m *mocks.MockFileSystem, relativePath string)
 	wantErr   bool
 	wantPath  string
@@ -276,10 +276,10 @@ type getTestPathTestCase struct {
 func getTestPathTestCases() []getTestPathTestCase {
 	return []getTestPathTestCase{
 		{
-			name:      "success",
-			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "success",
+			testID: "123e4567-e89b-12d3-a456-426614174000",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
 				fullPath := filepath.Clean(filepath.Join(testRoot, relativePath))
 				m.EXPECT().GetFileStats(relativePath).Return(nil, nil).Once()
@@ -289,10 +289,10 @@ func getTestPathTestCases() []getTestPathTestCase {
 			wantPath: filepath.Clean(filepath.Join(testRoot, "user1/0001/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
 		},
 		{
-			name:      "file not found",
-			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "file not found",
+			testID: "123e4567-e89b-12d3-a456-426614174000",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
 				m.EXPECT().GetFileStats(relativePath).Return(nil, assert.AnError).Once()
 			},
@@ -300,10 +300,10 @@ func getTestPathTestCases() []getTestPathTestCase {
 			wantPath: "",
 		},
 		{
-			name:      "path validation fails",
-			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "path validation fails",
+			testID: "123e4567-e89b-12d3-a456-426614174000",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem, relativePath string) {
 				m.EXPECT().GetFileStats(relativePath).Return(nil, nil).Once()
 				m.EXPECT().GetValidatedPath(relativePath).Return("", assert.AnError).Once()
@@ -315,16 +315,16 @@ func getTestPathTestCases() []getTestPathTestCase {
 			name:      "invalid filename",
 			testID:    "invalid/test:id",
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			setupMock: nil,
 			wantErr:   true,
 			wantPath:  "",
 		},
 		{
-			name:      "invalid path elements empty user/session",
+			name:      "invalid path elements empty user/chat",
 			testID:    "123e4567-e89b-12d3-a456-426614174000",
 			userID:    "",
-			sessionID: "",
+			chatID:    "",
 			setupMock: nil,
 			wantErr:   true,
 			wantPath:  "",
@@ -343,12 +343,12 @@ func TestGetTestPath(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			relativePath := filepath.Join(tc.userID, tc.sessionID, tc.testID+"."+testcaseLanguageDefault)
+			relativePath := filepath.Join(tc.userID, tc.chatID, tc.testID+"."+testcaseLanguageDefault)
 			if tc.setupMock != nil {
 				tc.setupMock(mockFS, relativePath)
 			}
 
-			got, err := repo.GetTestPath(tc.testID, tc.userID, tc.sessionID)
+			got, err := repo.GetTestPath(tc.testID, tc.userID, tc.chatID)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, got)
@@ -365,10 +365,10 @@ func TestGetTestPath(t *testing.T) {
 	}
 }
 
-type getTestPathsBySessionTestCase struct {
+type getTestPathsByChatTestCase struct {
 	name      string
 	userID    string
-	sessionID string
+	chatID    string
 	fileNames []string
 	setupMock func(m *mocks.MockFileSystem)
 	wantErr   bool
@@ -376,25 +376,25 @@ type getTestPathsBySessionTestCase struct {
 	wantPaths []string
 }
 
-func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
-	return []getTestPathsBySessionTestCase{
+func getTestPathsByChatTestCases() []getTestPathsByChatTestCase {
+	return []getTestPathsByChatTestCase{
 		{
 			name:      "success",
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			fileNames: []string{"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault, "819b4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault},
 			setupMock: func(m *mocks.MockFileSystem) {
-				sessionPath := filepath.Join(userID, sessionID)
-				m.EXPECT().ReadDir(sessionPath).Return([]string{
+				chatPath := filepath.Join(userID, chatID)
+				m.EXPECT().ReadDir(chatPath).Return([]string{
 					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 					"819b4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path1 := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				path1 := filepath.Join(chatPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath1 := filepath.Clean(filepath.Join(testRoot, path1))
 				m.EXPECT().GetValidatedPath(path1).Return(fullPath1, nil).Once()
 
-				path2 := filepath.Join(sessionPath, "819b4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
+				path2 := filepath.Join(chatPath, "819b4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
 				fullPath2 := filepath.Clean(filepath.Join(testRoot, path2))
 				m.EXPECT().GetValidatedPath(path2).Return(fullPath2, nil).Once()
 			},
@@ -406,12 +406,12 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			},
 		},
 		{
-			name:      "read dir fails",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "read dir fails",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				sessionPath := filepath.Join(userID, sessionID)
-				m.EXPECT().ReadDir(sessionPath).Return(nil, assert.AnError).Once()
+				chatPath := filepath.Join(userID, chatID)
+				m.EXPECT().ReadDir(chatPath).Return(nil, assert.AnError).Once()
 			},
 			wantErr:   true,
 			wantCount: 0,
@@ -420,16 +420,16 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 		{
 			name:      "invalid testcase filename - should skip",
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			fileNames: []string{"invalid/test:id" + "." + testcaseLanguageDefault, "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault},
 			setupMock: func(m *mocks.MockFileSystem) {
-				sessionPath := filepath.Join(userID, sessionID)
-				m.EXPECT().ReadDir(sessionPath).Return([]string{
+				chatPath := filepath.Join(userID, chatID)
+				m.EXPECT().ReadDir(chatPath).Return([]string{
 					"invalid/test:id" + "." + testcaseLanguageDefault,
 					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				validPath := filepath.Join(chatPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath := filepath.Clean(filepath.Join(testRoot, validPath))
 				m.EXPECT().GetValidatedPath(validPath).Return(fullPath, nil).Once()
 			},
@@ -440,16 +440,16 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			},
 		},
 		{
-			name:      "path validation fails",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "path validation fails",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				sessionPath := filepath.Join(userID, sessionID)
-				m.EXPECT().ReadDir(sessionPath).Return([]string{
+				chatPath := filepath.Join(userID, chatID)
+				m.EXPECT().ReadDir(chatPath).Return([]string{
 					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				validPath := filepath.Join(sessionPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				validPath := filepath.Join(chatPath, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().GetValidatedPath(validPath).Return("", assert.AnError).Once()
 			},
 			wantErr:   true,
@@ -457,9 +457,9 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 			wantPaths: nil,
 		},
 		{
-			name:      "invalid path elements empty user/session",
+			name:      "invalid path elements empty user/chat",
 			userID:    "",
-			sessionID: "",
+			chatID:    "",
 			setupMock: nil,
 			wantErr:   true,
 			wantCount: 0,
@@ -468,9 +468,9 @@ func getTestPathsBySessionTestCases() []getTestPathsBySessionTestCase {
 	}
 }
 
-func TestGetTestPathsBySession(t *testing.T) {
+func TestGetTestPathsByChat(t *testing.T) {
 	logger := slog.Default()
-	tests := getTestPathsBySessionTestCases()
+	tests := getTestPathsByChatTestCases()
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -482,7 +482,7 @@ func TestGetTestPathsBySession(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			paths, err := repo.GetTestPathsBySession(tc.userID, tc.sessionID)
+			paths, err := repo.GetTestPathsByChat(tc.userID, tc.chatID)
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Nil(t, paths)
@@ -496,66 +496,66 @@ func TestGetTestPathsBySession(t *testing.T) {
 }
 
 type getTestPathsByUserTestCase struct {
-	name         string
-	userID       string
-	setupMock    func(m *mocks.MockFileSystem)
-	wantErr      bool
-	wantSessions int
-	wantPaths    map[string][]string
+	name      string
+	userID    string
+	setupMock func(m *mocks.MockFileSystem)
+	wantErr   bool
+	wantchats int
+	wantPaths map[string][]string
 }
 
 func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 	return []getTestPathsByUserTestCase{
 		{
-			name:   "success with multiple sessions",
+			name:   "success with multiple chats",
 			userID: userID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				m.EXPECT().ReadDir(userID).Return([]string{"session1", "session2"}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{"chat1", "chat2"}, nil).Once()
 
-				// session1 files
-				session1Path := filepath.Join(userID, "session1")
-				m.EXPECT().ReadDir(session1Path).Return([]string{
+				// chat1 files
+				chat1Path := filepath.Join(userID, "chat1")
+				m.EXPECT().ReadDir(chat1Path).Return([]string{
 					"123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault,
 					"223e4567-e89b-12d3-a456-426614174001" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path1 := filepath.Join(session1Path, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				path1 := filepath.Join(chat1Path, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				fullPath1 := filepath.Clean(filepath.Join(testRoot, path1))
 				m.EXPECT().GetValidatedPath(path1).Return(fullPath1, nil).Once()
 
-				path2 := filepath.Join(session1Path, "223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
+				path2 := filepath.Join(chat1Path, "223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)
 				fullPath2 := filepath.Clean(filepath.Join(testRoot, path2))
 				m.EXPECT().GetValidatedPath(path2).Return(fullPath2, nil).Once()
 
-				// session2 files
-				session2Path := filepath.Join(userID, "session2")
-				m.EXPECT().ReadDir(session2Path).Return([]string{
+				// chat2 files
+				chat2Path := filepath.Join(userID, "chat2")
+				m.EXPECT().ReadDir(chat2Path).Return([]string{
 					"323e4567-e89b-12d3-a456-426614174002" + "." + testcaseLanguageDefault,
 				}, nil).Once()
 
-				path3 := filepath.Join(session2Path, "323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)
+				path3 := filepath.Join(chat2Path, "323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)
 				fullPath3 := filepath.Clean(filepath.Join(testRoot, path3))
 				m.EXPECT().GetValidatedPath(path3).Return(fullPath3, nil).Once()
 			},
-			wantErr:      false,
-			wantSessions: 2,
+			wantErr:   false,
+			wantchats: 2,
 			wantPaths: map[string][]string{
-				"session1": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
-					filepath.Clean(filepath.Join(testRoot, "user1/session1/223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)),
+				"chat1": {
+					filepath.Clean(filepath.Join(testRoot, "user1/chat1/123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)),
+					filepath.Clean(filepath.Join(testRoot, "user1/chat1/223e4567-e89b-12d3-a456-426614174001"+"."+testcaseLanguageDefault)),
 				},
-				"session2": {
-					filepath.Clean(filepath.Join(testRoot, "user1/session2/323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)),
+				"chat2": {
+					filepath.Clean(filepath.Join(testRoot, "user1/chat2/323e4567-e89b-12d3-a456-426614174002"+"."+testcaseLanguageDefault)),
 				},
 			},
 		},
 		{
-			name:         "empty user id",
-			userID:       "",
-			setupMock:    func(m *mocks.MockFileSystem) {},
-			wantErr:      true,
-			wantSessions: 0,
-			wantPaths:    nil,
+			name:      "empty user id",
+			userID:    "",
+			setupMock: func(m *mocks.MockFileSystem) {},
+			wantErr:   true,
+			wantchats: 0,
+			wantPaths: nil,
 		},
 		{
 			name:   "read dir fails",
@@ -563,36 +563,36 @@ func getTestPathsByUserTestCases() []getTestPathsByUserTestCase {
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(userID).Return(nil, assert.AnError).Once()
 			},
-			wantErr:      true,
-			wantSessions: 0,
-			wantPaths:    nil,
+			wantErr:   true,
+			wantchats: 0,
+			wantPaths: nil,
 		},
 		{
-			name:   "read session fails",
+			name:   "read chat fails",
 			userID: userID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				m.EXPECT().ReadDir(userID).Return([]string{"session1"}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{"chat1"}, nil).Once()
 
-				session1Path := filepath.Join(userID, "session1")
-				m.EXPECT().ReadDir(session1Path).Return(nil, assert.AnError).Once()
+				chat1Path := filepath.Join(userID, "chat1")
+				m.EXPECT().ReadDir(chat1Path).Return(nil, assert.AnError).Once()
 			},
-			wantErr:      true,
-			wantSessions: 0,
-			wantPaths:    nil,
+			wantErr:   true,
+			wantchats: 0,
+			wantPaths: nil,
 		},
 		{
-			name:   "empty session",
+			name:   "empty chat",
 			userID: userID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				m.EXPECT().ReadDir(userID).Return([]string{"session1"}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{"chat1"}, nil).Once()
 
-				session1Path := filepath.Join(userID, "session1")
-				m.EXPECT().ReadDir(session1Path).Return([]string{}, nil).Once()
+				chat1Path := filepath.Join(userID, "chat1")
+				m.EXPECT().ReadDir(chat1Path).Return([]string{}, nil).Once()
 			},
-			wantErr:      false,
-			wantSessions: 1,
+			wantErr:   false,
+			wantchats: 1,
 			wantPaths: map[string][]string{
-				"session1": {},
+				"chat1": {},
 			},
 		},
 	}
@@ -620,11 +620,11 @@ func TestGetTestPathsByUser(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, results)
-				assert.Equal(t, tc.wantSessions, len(results))
+				assert.Equal(t, tc.wantchats, len(results))
 				if tc.wantPaths != nil {
-					for sessionId, expectedPaths := range tc.wantPaths {
-						actualPaths, ok := results[sessionId]
-						assert.True(t, ok, "session %s should exist in results", sessionId)
+					for chatID, expectedPaths := range tc.wantPaths {
+						actualPaths, ok := results[chatID]
+						assert.True(t, ok, "chat %s should exist in results", chatID)
 						assert.ElementsMatch(t, expectedPaths, actualPaths)
 					}
 				}
@@ -645,17 +645,17 @@ func TestDelete(t *testing.T) {
 		name      string
 		testID    string
 		userID    string
-		sessionID string
+		chatID    string
 		setupMock func(m *mocks.MockFileSystem)
 		wantErr   bool
 	}{
 		{
-			name:      "success",
-			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "success",
+			testID: "123e4567-e89b-12d3-a456-426614174000",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				path := filepath.Join(userID, chatID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().Remove(path, false).Return(nil).Once()
 			},
 			wantErr: false,
@@ -664,7 +664,7 @@ func TestDelete(t *testing.T) {
 			name:      "invalid path elements",
 			testID:    "",
 			userID:    "",
-			sessionID: "",
+			chatID:    "",
 			setupMock: func(m *mocks.MockFileSystem) {},
 			wantErr:   true,
 		},
@@ -672,17 +672,17 @@ func TestDelete(t *testing.T) {
 			name:      "invalid filename",
 			testID:    "invalid:test",
 			userID:    userID,
-			sessionID: sessionID,
+			chatID:    chatID,
 			setupMock: func(m *mocks.MockFileSystem) {},
 			wantErr:   true,
 		},
 		{
-			name:      "remove fails",
-			testID:    "123e4567-e89b-12d3-a456-426614174000",
-			userID:    userID,
-			sessionID: sessionID,
+			name:   "remove fails",
+			testID: "123e4567-e89b-12d3-a456-426614174000",
+			userID: userID,
+			chatID: chatID,
 			setupMock: func(m *mocks.MockFileSystem) {
-				path := filepath.Join(userID, sessionID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
+				path := filepath.Join(userID, chatID, "123e4567-e89b-12d3-a456-426614174000"+"."+testcaseLanguageDefault)
 				m.EXPECT().Remove(path, false).Return(assert.AnError).Once()
 			},
 			wantErr: true,
@@ -700,7 +700,7 @@ func TestDelete(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NotNil(t, repo)
 
-			err = repo.Delete(tc.testID, tc.userID, tc.sessionID)
+			err = repo.Delete(tc.testID, tc.userID, tc.chatID)
 			if tc.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -726,11 +726,11 @@ func TestDeleteOlderThan(t *testing.T) {
 			name: "success - deletes one old file",
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
-				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{chatID}, nil).Once()
 				fname := "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault
-				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
+				m.EXPECT().ReadDir(filepath.Join(userID, chatID)).Return([]string{fname}, nil).Once()
 
-				filePath := filepath.Join(userID, sessionID, fname)
+				filePath := filepath.Join(userID, chatID, fname)
 				m.EXPECT().GetFileStats(filePath).Return(testMockFileInfo{modTime: oldTime}, nil).Once()
 				m.EXPECT().Remove(filePath, false).Return(nil).Once()
 			},
@@ -749,10 +749,10 @@ func TestDeleteOlderThan(t *testing.T) {
 			name: "no files older than cutoff",
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
-				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
-				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{"newfile"}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{chatID}, nil).Once()
+				m.EXPECT().ReadDir(filepath.Join(userID, chatID)).Return([]string{"newfile"}, nil).Once()
 
-				filePath := filepath.Join(userID, sessionID, "newfile")
+				filePath := filepath.Join(userID, chatID, "newfile")
 				m.EXPECT().GetFileStats(filePath).Return(testMockFileInfo{modTime: now}, nil).Once()
 			},
 			wantErr:     false,
@@ -762,11 +762,11 @@ func TestDeleteOlderThan(t *testing.T) {
 			name: "delete fails but continues",
 			setupMock: func(m *mocks.MockFileSystem) {
 				m.EXPECT().ReadDir(".").Return([]string{userID}, nil).Once()
-				m.EXPECT().ReadDir(userID).Return([]string{sessionID}, nil).Once()
+				m.EXPECT().ReadDir(userID).Return([]string{chatID}, nil).Once()
 				fname := "123e4567-e89b-12d3-a456-426614174000" + "." + testcaseLanguageDefault
-				m.EXPECT().ReadDir(filepath.Join(userID, sessionID)).Return([]string{fname}, nil).Once()
+				m.EXPECT().ReadDir(filepath.Join(userID, chatID)).Return([]string{fname}, nil).Once()
 
-				filePath := filepath.Join(userID, sessionID, fname)
+				filePath := filepath.Join(userID, chatID, fname)
 				m.EXPECT().GetFileStats(filePath).Return(testMockFileInfo{modTime: oldTime}, nil).Once()
 				m.EXPECT().Remove(filePath, false).Return(assert.AnError).Once()
 			},
@@ -847,7 +847,7 @@ func TestValidatePathNameElements(t *testing.T) {
 	}{
 		{
 			name:    "all valid elements",
-			values:  []string{userID, sessionID, "123e4567-e89b-12d3-a456-426614174000"},
+			values:  []string{userID, chatID, "123e4567-e89b-12d3-a456-426614174000"},
 			wantErr: false,
 		},
 		{

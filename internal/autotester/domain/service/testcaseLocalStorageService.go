@@ -12,34 +12,34 @@ import (
 
 // TestcaseLocalStorageService provides business operations for managing TestCase files
 // in local storage. The service handles both frontend API operations (Save, Delete) and
-// test runner path provisioning (GetTestPath*). All operations are user- and session-scoped.
+// test runner path provisioning (GetTestPath*). All operations are user- and chat-scoped.
 type TestcaseLocalStorageService interface {
-	// Save stores the given TestCase for the specified user and session.
+	// Save stores the given TestCase for the specified user and chat.
 	// Returns an error when validation or storage fails.
-	Save(testcase *entity.TestCase, userId, sessionId string) error
+	Save(testcase *entity.TestCase, userId, chatId string) error
 
-	// Read loads the content of a specific testcase identified by testId for the given user and session.
+	// Read loads the content of a specific testcase identified by testId for the given user and chat.
 	// Returns the file content as a string, or an error if reading or validation fails.
-	Read(testId, userId, sessionId string) (string, error)
+	Read(testId, userId, chatId string) (string, error)
 
 	// GetTestPath returns the relative file path to a specific TestCase file,
 	// starting from the root of the local test storage directory.
 	// Returns an error if path validation fails or the file does not exist.
-	GetTestPath(testId, userId, sessionId string) (string, error)
+	GetTestPath(testId, userId, chatId string) (string, error)
 
-	// GetTestPathsBySession returns all relative TestCase file paths for a session,
+	// GetTestPathsBychat returns all relative TestCase file paths for a chat,
 	// starting from the root of the local test storage directory.
-	// Returns an error if the session directory cannot be read or path validation fails.
-	GetTestPathsBySession(userId, sessionId string) ([]string, error)
+	// Returns an error if the Chat directory cannot be read or path validation fails.
+	GetTestPathsByChat(userId, chatId string) ([]string, error)
 
-	// GetTestPathsByUser returns all relative TestCase file paths for a user, grouped by sessionId.
+	// GetTestPathsByUser returns all relative TestCase file paths for a user, grouped by chatId.
 	// Paths start from the root of the local test storage directory.
-	// Returns an error if the user directory cannot be read or any session directory read fails.
+	// Returns an error if the user directory cannot be read or any chat directory read fails.
 	GetTestPathsByUser(userId string) (map[string][]string, error)
 
-	// Delete removes a testcase identified by testId for the given user and session.
+	// Delete removes a testcase identified by testId for the given user and chat.
 	// Returns an error if path validation fails or the file cannot be deleted.
-	Delete(testId, userId, sessionId string) error
+	Delete(testId, userId, chatId string) error
 
 	// CleanupOldTests removes all testcases that are older than 24 hours.
 	// Returns an error if the cleanup operation fails.
@@ -80,18 +80,18 @@ func NewTestcaseLocalStorageService(logger *slog.Logger, repo repository.Testcas
 	return service, nil
 }
 
-func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, sessionId string) error {
+func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, chatId string) error {
 	s.logger.Debug("saving testcase",
 		slog.String("testId", testcase.TestID),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 
-	if err := s.repo.Save(testcase, userId, sessionId); err != nil {
+	if err := s.repo.Save(testcase, userId, chatId); err != nil {
 		s.logger.Error("failed to save testcase",
 			slog.String("testId", testcase.TestID),
 			slog.String("userId", userId),
-			slog.String("sessionId", sessionId),
+			slog.String("chatId", chatId),
 			slog.String("error", err.Error()),
 		)
 		return errors.ErrInternalServer
@@ -100,24 +100,24 @@ func (s *testcaseLocalStorageService) Save(testcase *entity.TestCase, userId, se
 	s.logger.Debug("testcase saved successfully",
 		slog.String("testId", testcase.TestID),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 	return nil
 }
 
-func (s *testcaseLocalStorageService) Read(testId, userId, sessionId string) (string, error) {
+func (s *testcaseLocalStorageService) Read(testId, userId, chatId string) (string, error) {
 	s.logger.Debug("reading testcase",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 
-	fileContent, err := s.repo.Read(testId, userId, sessionId)
+	fileContent, err := s.repo.Read(testId, userId, chatId)
 	if err != nil {
 		s.logger.Error("failed to read testcase file",
 			slog.String("testId", testId),
 			slog.String("userId", userId),
-			slog.String("sessionId", sessionId),
+			slog.String("chatId", chatId),
 			slog.String("error", err.Error()),
 		)
 		return "", errors.ErrInternalServer
@@ -126,25 +126,25 @@ func (s *testcaseLocalStorageService) Read(testId, userId, sessionId string) (st
 	s.logger.Debug("testcase file read successfully",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 		slog.String("path", string(fileContent)),
 	)
 	return string(fileContent), nil
 }
 
-func (s *testcaseLocalStorageService) GetTestPath(testId, userId, sessionId string) (string, error) {
+func (s *testcaseLocalStorageService) GetTestPath(testId, userId, chatId string) (string, error) {
 	s.logger.Debug("getting testcase path",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 
-	path, err := s.repo.GetTestPath(testId, userId, sessionId)
+	path, err := s.repo.GetTestPath(testId, userId, chatId)
 	if err != nil {
 		s.logger.Error("failed to get testcase path",
 			slog.String("testId", testId),
 			slog.String("userId", userId),
-			slog.String("sessionId", sessionId),
+			slog.String("chatId", chatId),
 			slog.String("error", err.Error()),
 		)
 		return "", errors.ErrInternalServer
@@ -153,23 +153,23 @@ func (s *testcaseLocalStorageService) GetTestPath(testId, userId, sessionId stri
 	s.logger.Debug("testcase path retrieved successfully",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 		slog.String("path", path),
 	)
 	return path, nil
 }
 
-func (s *testcaseLocalStorageService) GetTestPathsBySession(userId, sessionId string) ([]string, error) {
-	s.logger.Debug("getting all testcase paths for session",
+func (s *testcaseLocalStorageService) GetTestPathsByChat(userId, chatId string) ([]string, error) {
+	s.logger.Debug("getting all testcase paths for chat",
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 
-	paths, err := s.repo.GetTestPathsBySession(userId, sessionId)
+	paths, err := s.repo.GetTestPathsByChat(userId, chatId)
 	if err != nil {
-		s.logger.Error("failed to get testcase paths by session",
+		s.logger.Error("failed to get testcase paths by chat",
 			slog.String("userId", userId),
-			slog.String("sessionId", sessionId),
+			slog.String("chatId", chatId),
 			slog.String("error", err.Error()),
 		)
 		return nil, errors.ErrInternalServer
@@ -177,7 +177,7 @@ func (s *testcaseLocalStorageService) GetTestPathsBySession(userId, sessionId st
 
 	s.logger.Debug("testcase paths retrieved successfully",
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 		slog.Int("count", len(paths)),
 	)
 	return paths, nil
@@ -198,24 +198,24 @@ func (s *testcaseLocalStorageService) GetTestPathsByUser(userId string) (map[str
 	}
 
 	totalCount := 0
-	for _, sessionPaths := range paths {
-		totalCount += len(sessionPaths)
+	for _, chatPaths := range paths {
+		totalCount += len(chatPaths)
 	}
 
 	s.logger.Debug("testcase paths retrieved successfully",
 		slog.String("userId", userId),
-		slog.Int("sessionCount", len(paths)),
+		slog.Int("chatCount", len(paths)),
 		slog.Int("totalPaths", totalCount),
 	)
 	return paths, nil
 }
 
-func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) error {
-	if err := s.repo.Delete(testId, userId, sessionId); err != nil {
+func (s *testcaseLocalStorageService) Delete(testId, userId, chatId string) error {
+	if err := s.repo.Delete(testId, userId, chatId); err != nil {
 		s.logger.Error("failed to delete testcase",
 			slog.String("testId", testId),
 			slog.String("userId", userId),
-			slog.String("sessionId", sessionId),
+			slog.String("chatId", chatId),
 			slog.String("error", err.Error()),
 		)
 		return errors.ErrInternalServer
@@ -224,7 +224,7 @@ func (s *testcaseLocalStorageService) Delete(testId, userId, sessionId string) e
 	s.logger.Debug("testcase deleted successfully",
 		slog.String("testId", testId),
 		slog.String("userId", userId),
-		slog.String("sessionId", sessionId),
+		slog.String("chatId", chatId),
 	)
 	return nil
 }

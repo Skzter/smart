@@ -81,8 +81,8 @@ func (_c *MockTestcaseLocalStorageService_CleanupOldTests_Call) RunAndReturn(run
 }
 
 // Delete provides a mock function for the type MockTestcaseLocalStorageService
-func (_mock *MockTestcaseLocalStorageService) Delete(testId string, userId string, sessionId string) error {
-	ret := _mock.Called(testId, userId, sessionId)
+func (_mock *MockTestcaseLocalStorageService) Delete(testId string, userId string, chatId string) error {
+	ret := _mock.Called(testId, userId, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
@@ -90,7 +90,7 @@ func (_mock *MockTestcaseLocalStorageService) Delete(testId string, userId strin
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = returnFunc(testId, userId, sessionId)
+		r0 = returnFunc(testId, userId, chatId)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -105,12 +105,12 @@ type MockTestcaseLocalStorageService_Delete_Call struct {
 // Delete is a helper method to define mock.On call
 //   - testId string
 //   - userId string
-//   - sessionId string
-func (_e *MockTestcaseLocalStorageService_Expecter) Delete(testId interface{}, userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageService_Delete_Call {
-	return &MockTestcaseLocalStorageService_Delete_Call{Call: _e.mock.On("Delete", testId, userId, sessionId)}
+//   - chatId string
+func (_e *MockTestcaseLocalStorageService_Expecter) Delete(testId interface{}, userId interface{}, chatId interface{}) *MockTestcaseLocalStorageService_Delete_Call {
+	return &MockTestcaseLocalStorageService_Delete_Call{Call: _e.mock.On("Delete", testId, userId, chatId)}
 }
 
-func (_c *MockTestcaseLocalStorageService_Delete_Call) Run(run func(testId string, userId string, sessionId string)) *MockTestcaseLocalStorageService_Delete_Call {
+func (_c *MockTestcaseLocalStorageService_Delete_Call) Run(run func(testId string, userId string, chatId string)) *MockTestcaseLocalStorageService_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -138,14 +138,14 @@ func (_c *MockTestcaseLocalStorageService_Delete_Call) Return(err error) *MockTe
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_Delete_Call) RunAndReturn(run func(testId string, userId string, sessionId string) error) *MockTestcaseLocalStorageService_Delete_Call {
+func (_c *MockTestcaseLocalStorageService_Delete_Call) RunAndReturn(run func(testId string, userId string, chatId string) error) *MockTestcaseLocalStorageService_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTestPath provides a mock function for the type MockTestcaseLocalStorageService
-func (_mock *MockTestcaseLocalStorageService) GetTestPath(testId string, userId string, sessionId string) (string, error) {
-	ret := _mock.Called(testId, userId, sessionId)
+func (_mock *MockTestcaseLocalStorageService) GetTestPath(testId string, userId string, chatId string) (string, error) {
+	ret := _mock.Called(testId, userId, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTestPath")
@@ -154,15 +154,15 @@ func (_mock *MockTestcaseLocalStorageService) GetTestPath(testId string, userId 
 	var r0 string
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string, string, string) (string, error)); ok {
-		return returnFunc(testId, userId, sessionId)
+		return returnFunc(testId, userId, chatId)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, string, string) string); ok {
-		r0 = returnFunc(testId, userId, sessionId)
+		r0 = returnFunc(testId, userId, chatId)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = returnFunc(testId, userId, sessionId)
+		r1 = returnFunc(testId, userId, chatId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -177,12 +177,12 @@ type MockTestcaseLocalStorageService_GetTestPath_Call struct {
 // GetTestPath is a helper method to define mock.On call
 //   - testId string
 //   - userId string
-//   - sessionId string
-func (_e *MockTestcaseLocalStorageService_Expecter) GetTestPath(testId interface{}, userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageService_GetTestPath_Call {
-	return &MockTestcaseLocalStorageService_GetTestPath_Call{Call: _e.mock.On("GetTestPath", testId, userId, sessionId)}
+//   - chatId string
+func (_e *MockTestcaseLocalStorageService_Expecter) GetTestPath(testId interface{}, userId interface{}, chatId interface{}) *MockTestcaseLocalStorageService_GetTestPath_Call {
+	return &MockTestcaseLocalStorageService_GetTestPath_Call{Call: _e.mock.On("GetTestPath", testId, userId, chatId)}
 }
 
-func (_c *MockTestcaseLocalStorageService_GetTestPath_Call) Run(run func(testId string, userId string, sessionId string)) *MockTestcaseLocalStorageService_GetTestPath_Call {
+func (_c *MockTestcaseLocalStorageService_GetTestPath_Call) Run(run func(testId string, userId string, chatId string)) *MockTestcaseLocalStorageService_GetTestPath_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -210,52 +210,52 @@ func (_c *MockTestcaseLocalStorageService_GetTestPath_Call) Return(s string, err
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_GetTestPath_Call) RunAndReturn(run func(testId string, userId string, sessionId string) (string, error)) *MockTestcaseLocalStorageService_GetTestPath_Call {
+func (_c *MockTestcaseLocalStorageService_GetTestPath_Call) RunAndReturn(run func(testId string, userId string, chatId string) (string, error)) *MockTestcaseLocalStorageService_GetTestPath_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// GetTestPathsBySession provides a mock function for the type MockTestcaseLocalStorageService
-func (_mock *MockTestcaseLocalStorageService) GetTestPathsBySession(userId string, sessionId string) ([]string, error) {
-	ret := _mock.Called(userId, sessionId)
+// GetTestPathsByChat provides a mock function for the type MockTestcaseLocalStorageService
+func (_mock *MockTestcaseLocalStorageService) GetTestPathsByChat(userId string, chatId string) ([]string, error) {
+	ret := _mock.Called(userId, chatId)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetTestPathsBySession")
+		panic("no return value specified for GetTestPathsByChat")
 	}
 
 	var r0 []string
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string, string) ([]string, error)); ok {
-		return returnFunc(userId, sessionId)
+		return returnFunc(userId, chatId)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, string) []string); ok {
-		r0 = returnFunc(userId, sessionId)
+		r0 = returnFunc(userId, chatId)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = returnFunc(userId, sessionId)
+		r1 = returnFunc(userId, chatId)
 	} else {
 		r1 = ret.Error(1)
 	}
 	return r0, r1
 }
 
-// MockTestcaseLocalStorageService_GetTestPathsBySession_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTestPathsBySession'
-type MockTestcaseLocalStorageService_GetTestPathsBySession_Call struct {
+// MockTestcaseLocalStorageService_GetTestPathsByChat_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTestPathsByChat'
+type MockTestcaseLocalStorageService_GetTestPathsByChat_Call struct {
 	*mock.Call
 }
 
-// GetTestPathsBySession is a helper method to define mock.On call
+// GetTestPathsByChat is a helper method to define mock.On call
 //   - userId string
-//   - sessionId string
-func (_e *MockTestcaseLocalStorageService_Expecter) GetTestPathsBySession(userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageService_GetTestPathsBySession_Call {
-	return &MockTestcaseLocalStorageService_GetTestPathsBySession_Call{Call: _e.mock.On("GetTestPathsBySession", userId, sessionId)}
+//   - chatId string
+func (_e *MockTestcaseLocalStorageService_Expecter) GetTestPathsByChat(userId interface{}, chatId interface{}) *MockTestcaseLocalStorageService_GetTestPathsByChat_Call {
+	return &MockTestcaseLocalStorageService_GetTestPathsByChat_Call{Call: _e.mock.On("GetTestPathsByChat", userId, chatId)}
 }
 
-func (_c *MockTestcaseLocalStorageService_GetTestPathsBySession_Call) Run(run func(userId string, sessionId string)) *MockTestcaseLocalStorageService_GetTestPathsBySession_Call {
+func (_c *MockTestcaseLocalStorageService_GetTestPathsByChat_Call) Run(run func(userId string, chatId string)) *MockTestcaseLocalStorageService_GetTestPathsByChat_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -273,12 +273,12 @@ func (_c *MockTestcaseLocalStorageService_GetTestPathsBySession_Call) Run(run fu
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_GetTestPathsBySession_Call) Return(strings []string, err error) *MockTestcaseLocalStorageService_GetTestPathsBySession_Call {
+func (_c *MockTestcaseLocalStorageService_GetTestPathsByChat_Call) Return(strings []string, err error) *MockTestcaseLocalStorageService_GetTestPathsByChat_Call {
 	_c.Call.Return(strings, err)
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_GetTestPathsBySession_Call) RunAndReturn(run func(userId string, sessionId string) ([]string, error)) *MockTestcaseLocalStorageService_GetTestPathsBySession_Call {
+func (_c *MockTestcaseLocalStorageService_GetTestPathsByChat_Call) RunAndReturn(run func(userId string, chatId string) ([]string, error)) *MockTestcaseLocalStorageService_GetTestPathsByChat_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -346,8 +346,8 @@ func (_c *MockTestcaseLocalStorageService_GetTestPathsByUser_Call) RunAndReturn(
 }
 
 // Read provides a mock function for the type MockTestcaseLocalStorageService
-func (_mock *MockTestcaseLocalStorageService) Read(testId string, userId string, sessionId string) (string, error) {
-	ret := _mock.Called(testId, userId, sessionId)
+func (_mock *MockTestcaseLocalStorageService) Read(testId string, userId string, chatId string) (string, error) {
+	ret := _mock.Called(testId, userId, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Read")
@@ -356,15 +356,15 @@ func (_mock *MockTestcaseLocalStorageService) Read(testId string, userId string,
 	var r0 string
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string, string, string) (string, error)); ok {
-		return returnFunc(testId, userId, sessionId)
+		return returnFunc(testId, userId, chatId)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, string, string) string); ok {
-		r0 = returnFunc(testId, userId, sessionId)
+		r0 = returnFunc(testId, userId, chatId)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, string, string) error); ok {
-		r1 = returnFunc(testId, userId, sessionId)
+		r1 = returnFunc(testId, userId, chatId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -379,12 +379,12 @@ type MockTestcaseLocalStorageService_Read_Call struct {
 // Read is a helper method to define mock.On call
 //   - testId string
 //   - userId string
-//   - sessionId string
-func (_e *MockTestcaseLocalStorageService_Expecter) Read(testId interface{}, userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageService_Read_Call {
-	return &MockTestcaseLocalStorageService_Read_Call{Call: _e.mock.On("Read", testId, userId, sessionId)}
+//   - chatId string
+func (_e *MockTestcaseLocalStorageService_Expecter) Read(testId interface{}, userId interface{}, chatId interface{}) *MockTestcaseLocalStorageService_Read_Call {
+	return &MockTestcaseLocalStorageService_Read_Call{Call: _e.mock.On("Read", testId, userId, chatId)}
 }
 
-func (_c *MockTestcaseLocalStorageService_Read_Call) Run(run func(testId string, userId string, sessionId string)) *MockTestcaseLocalStorageService_Read_Call {
+func (_c *MockTestcaseLocalStorageService_Read_Call) Run(run func(testId string, userId string, chatId string)) *MockTestcaseLocalStorageService_Read_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -412,14 +412,14 @@ func (_c *MockTestcaseLocalStorageService_Read_Call) Return(s string, err error)
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_Read_Call) RunAndReturn(run func(testId string, userId string, sessionId string) (string, error)) *MockTestcaseLocalStorageService_Read_Call {
+func (_c *MockTestcaseLocalStorageService_Read_Call) RunAndReturn(run func(testId string, userId string, chatId string) (string, error)) *MockTestcaseLocalStorageService_Read_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockTestcaseLocalStorageService
-func (_mock *MockTestcaseLocalStorageService) Save(testcase *entity.TestCase, userId string, sessionId string) error {
-	ret := _mock.Called(testcase, userId, sessionId)
+func (_mock *MockTestcaseLocalStorageService) Save(testcase *entity.TestCase, userId string, chatId string) error {
+	ret := _mock.Called(testcase, userId, chatId)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
@@ -427,7 +427,7 @@ func (_mock *MockTestcaseLocalStorageService) Save(testcase *entity.TestCase, us
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(*entity.TestCase, string, string) error); ok {
-		r0 = returnFunc(testcase, userId, sessionId)
+		r0 = returnFunc(testcase, userId, chatId)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -442,12 +442,12 @@ type MockTestcaseLocalStorageService_Save_Call struct {
 // Save is a helper method to define mock.On call
 //   - testcase *entity.TestCase
 //   - userId string
-//   - sessionId string
-func (_e *MockTestcaseLocalStorageService_Expecter) Save(testcase interface{}, userId interface{}, sessionId interface{}) *MockTestcaseLocalStorageService_Save_Call {
-	return &MockTestcaseLocalStorageService_Save_Call{Call: _e.mock.On("Save", testcase, userId, sessionId)}
+//   - chatId string
+func (_e *MockTestcaseLocalStorageService_Expecter) Save(testcase interface{}, userId interface{}, chatId interface{}) *MockTestcaseLocalStorageService_Save_Call {
+	return &MockTestcaseLocalStorageService_Save_Call{Call: _e.mock.On("Save", testcase, userId, chatId)}
 }
 
-func (_c *MockTestcaseLocalStorageService_Save_Call) Run(run func(testcase *entity.TestCase, userId string, sessionId string)) *MockTestcaseLocalStorageService_Save_Call {
+func (_c *MockTestcaseLocalStorageService_Save_Call) Run(run func(testcase *entity.TestCase, userId string, chatId string)) *MockTestcaseLocalStorageService_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *entity.TestCase
 		if args[0] != nil {
@@ -475,7 +475,7 @@ func (_c *MockTestcaseLocalStorageService_Save_Call) Return(err error) *MockTest
 	return _c
 }
 
-func (_c *MockTestcaseLocalStorageService_Save_Call) RunAndReturn(run func(testcase *entity.TestCase, userId string, sessionId string) error) *MockTestcaseLocalStorageService_Save_Call {
+func (_c *MockTestcaseLocalStorageService_Save_Call) RunAndReturn(run func(testcase *entity.TestCase, userId string, chatId string) error) *MockTestcaseLocalStorageService_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
