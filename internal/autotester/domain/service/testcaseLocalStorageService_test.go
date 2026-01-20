@@ -70,27 +70,27 @@ func TestSave(t *testing.T) {
 		name      string
 		testcase  *entity.TestCase
 		userId    string
-		sessionId string
+		chatId    string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
 	}{
 		{
-			name:      "successful save",
-			testcase:  testCase,
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:     "successful save",
+			testcase: testCase,
+			userId:   "user-1",
+			chatId:   "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Save(testCase, "user-1", "session-1").Return(nil)
+				m.EXPECT().Save(testCase, "user-1", "chat-1").Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name:      "repository error",
-			testcase:  testCase,
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:     "repository error",
+			testcase: testCase,
+			userId:   "user-1",
+			chatId:   "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Save(testCase, "user-1", "session-1").Return(errors.New("repository error"))
+				m.EXPECT().Save(testCase, "user-1", "chat-1").Return(errors.New("repository error"))
 			},
 			wantErr: true,
 		},
@@ -106,7 +106,7 @@ func TestSave(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			err = service.Save(test.testcase, test.userId, test.sessionId)
+			err = service.Save(test.testcase, test.userId, test.chatId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("Save() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -121,29 +121,29 @@ func TestRead(t *testing.T) {
 		name      string
 		testId    string
 		userId    string
-		sessionId string
+		chatId    string
 		setupMock func(m *mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
 		want      string
 	}{
 		{
-			name:      "successful read",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "successful read",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Read("test-1", "user-1", "session-1").Return([]byte("console.log('test');"), nil)
+				m.EXPECT().Read("test-1", "user-1", "chat-1").Return([]byte("console.log('test');"), nil)
 			},
 			wantErr: false,
 			want:    "console.log('test');",
 		},
 		{
-			name:      "repository error",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "repository error",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Read("test-1", "user-1", "session-1").Return(nil, errors.New("repository error"))
+				m.EXPECT().Read("test-1", "user-1", "chat-1").Return(nil, errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    "",
@@ -160,7 +160,7 @@ func TestRead(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.Read(test.testId, test.userId, test.sessionId)
+			got, err := service.Read(test.testId, test.userId, test.chatId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -178,29 +178,29 @@ func TestGetTestPath(t *testing.T) {
 		name      string
 		testId    string
 		userId    string
-		sessionId string
+		chatId    string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
 		want      string
 	}{
 		{
-			name:      "successful get path",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "successful get path",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPath("test-1", "user-1", "session-1").Return("user-1/session-1/test-1.ts", nil)
+				m.EXPECT().GetTestPath("test-1", "user-1", "chat-1").Return("user-1/chat-1/test-1.ts", nil)
 			},
 			wantErr: false,
-			want:    "user-1/session-1/test-1.ts",
+			want:    "user-1/chat-1/test-1.ts",
 		},
 		{
-			name:      "repository error",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "repository error",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPath("test-1", "user-1", "session-1").Return("", errors.New("repository error"))
+				m.EXPECT().GetTestPath("test-1", "user-1", "chat-1").Return("", errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    "",
@@ -217,7 +217,7 @@ func TestGetTestPath(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.GetTestPath(test.testId, test.userId, test.sessionId)
+			got, err := service.GetTestPath(test.testId, test.userId, test.chatId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("GetTestPath() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -228,49 +228,49 @@ func TestGetTestPath(t *testing.T) {
 	}
 }
 
-func TestGetTestPathsBySession(t *testing.T) {
+func TestGetTestPathsByChat(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
 		name      string
 		userId    string
-		sessionId string
+		chatId    string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
 		want      []string
 	}{
 		{
-			name:      "successful get paths with multiple files",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "successful get paths with multiple files",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return([]string{
-					"user-1/session-1/test-1",
-					"user-1/session-1/test-2",
+				m.EXPECT().GetTestPathsByChat("user-1", "chat-1").Return([]string{
+					"user-1/chat-1/test-1",
+					"user-1/chat-1/test-2",
 				}, nil)
 			},
 			wantErr: false,
 			want: []string{
-				"user-1/session-1/test-1",
-				"user-1/session-1/test-2",
+				"user-1/chat-1/test-1",
+				"user-1/chat-1/test-2",
 			},
 		},
 		{
-			name:      "successful get paths with empty result",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "successful get paths with empty result",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return([]string{}, nil)
+				m.EXPECT().GetTestPathsByChat("user-1", "chat-1").Return([]string{}, nil)
 			},
 			wantErr: false,
 			want:    []string{},
 		},
 		{
-			name:      "repository error",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "repository error",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().GetTestPathsBySession("user-1", "session-1").Return(nil, errors.New("repository error"))
+				m.EXPECT().GetTestPathsByChat("user-1", "chat-1").Return(nil, errors.New("repository error"))
 			},
 			wantErr: true,
 			want:    nil,
@@ -287,12 +287,12 @@ func TestGetTestPathsBySession(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			got, err := service.GetTestPathsBySession(test.userId, test.sessionId)
+			got, err := service.GetTestPathsByChat(test.userId, test.chatId)
 			if (err != nil) != test.wantErr {
-				t.Errorf("GetTestPathsBySession() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("GetTestPathsByChat() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if len(got) != len(test.want) {
-				t.Errorf("GetTestPathsBySession() got %d paths, want %d", len(got), len(test.want))
+				t.Errorf("GetTestPathsByChat() got %d paths, want %d", len(got), len(test.want))
 			}
 		})
 	}
@@ -309,19 +309,19 @@ func TestGetTestPathsByUser(t *testing.T) {
 		want      map[string][]string
 	}{
 		{
-			name:   "successful get paths with multiple sessions",
+			name:   "successful get paths with multiple chats",
 			userId: "user-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
 				result := map[string][]string{
-					"session-1": {"user-1/session-1/test-1"},
-					"session-2": {"user-1/session-2/test-2"},
+					"chat-1": {"user-1/chat-1/test-1"},
+					"chat-2": {"user-1/chat-2/test-2"},
 				}
 				m.EXPECT().GetTestPathsByUser("user-1").Return(result, nil)
 			},
 			wantErr: false,
 			want: map[string][]string{
-				"session-1": {"user-1/session-1/test-1"},
-				"session-2": {"user-1/session-2/test-2"},
+				"chat-1": {"user-1/chat-1/test-1"},
+				"chat-2": {"user-1/chat-2/test-2"},
 			},
 		},
 		{
@@ -359,7 +359,7 @@ func TestGetTestPathsByUser(t *testing.T) {
 				t.Errorf("GetTestPathsByUser() error = %v, wantErr %v", err, test.wantErr)
 			}
 			if len(got) != len(test.want) {
-				t.Errorf("GetTestPathsByUser() got %d sessions, want %d", len(got), len(test.want))
+				t.Errorf("GetTestPathsByUser() got %d chats, want %d", len(got), len(test.want))
 			}
 		})
 	}
@@ -372,27 +372,27 @@ func TestDelete(t *testing.T) {
 		name      string
 		testId    string
 		userId    string
-		sessionId string
+		chatId    string
 		setupMock func(*mocks.MockTestcaseLocalStorageRepository)
 		wantErr   bool
 	}{
 		{
-			name:      "successful delete",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "successful delete",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "user-1", "session-1").Return(nil)
+				m.EXPECT().Delete("test-1", "user-1", "chat-1").Return(nil)
 			},
 			wantErr: false,
 		},
 		{
-			name:      "repository error",
-			testId:    "test-1",
-			userId:    "user-1",
-			sessionId: "session-1",
+			name:   "repository error",
+			testId: "test-1",
+			userId: "user-1",
+			chatId: "chat-1",
 			setupMock: func(m *mocks.MockTestcaseLocalStorageRepository) {
-				m.EXPECT().Delete("test-1", "user-1", "session-1").Return(errors.New("repository error"))
+				m.EXPECT().Delete("test-1", "user-1", "chat-1").Return(errors.New("repository error"))
 			},
 			wantErr: true,
 		},
@@ -408,7 +408,7 @@ func TestDelete(t *testing.T) {
 				t.Fatalf("NewTestcaseLocalStorageService() failed: %v", err)
 			}
 
-			err = service.Delete(test.testId, test.userId, test.sessionId)
+			err = service.Delete(test.testId, test.userId, test.chatId)
 			if (err != nil) != test.wantErr {
 				t.Errorf("Delete() error = %v, wantErr %v", err, test.wantErr)
 			}

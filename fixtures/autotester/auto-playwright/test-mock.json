@@ -1,5 +1,5 @@
 {
   "userId": "9177b856-46a0-11f0-9fe2-0242ac120002",
-  "conversationId": "2f68cb52-47b0-11f0-bd5b-0242ac120002",
+  "chatId": "2f68cb52-47b0-11f0-bd5b-0242ac120002",
   "code": "import { test, expect } from \"@playwright/test\";\nimport { auto } from \"auto-playwright\";\n\nlet options = {\n  // If true, debugging information is printed in the console.\n  debug: true,\n  // The OpenAI model (https://platform.openai.com/docs/models/overview)\n  model: \"gpt-5-mini-2025-08-07\",\n};\n\ntest(\"Suche nach Flügen und Anzeige von Flugrouten: Mallorca ab Leipzig-Halle, 3 Wochen ab 01.12.2025\", async ({ page }) => {\n  await page.goto(\"http://localhost:8082/\");\n  await auto(\"Gib als Reiseziel 'Mallorca' ein\", { page, test }, options);\n  await auto(\"Wähle als Abflughafen 'Leipzig-Halle' aus\", { page, test }, options);\n  await auto(\"Setze die Reisedauer auf 3 Wochen\", { page, test }, options);\n  await auto(\"Wähle als Startdatum den 01.12.2025\", { page, test }, options);\n  await auto(\"Drücke auf 'Suchen'\", { page, test }, options);\n\n  const offerCount = await auto(\"Zähle die angezeigten Flugangebote\", { page, test }, options);\n  expect(offerCount).toBeGreaterThan(0);\n});"
 }
