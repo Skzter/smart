@@ -52,7 +52,7 @@ describe("Sidebar", () => {
     it("loads user chats successfully", async () => {
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Test chat",
                 createdAt: new Date().toISOString(),
@@ -91,7 +91,7 @@ describe("Sidebar", () => {
         const today = new Date();
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Today's chat",
                 createdAt: today.toISOString(),
@@ -113,7 +113,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-2",
+                chatId: "chat-2",
                 userId: "test-user-123",
                 title: "Yesterday's chat",
                 createdAt: yesterday.toISOString(),
@@ -135,7 +135,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-3",
+                chatId: "chat-3",
                 userId: "test-user-123",
                 title: "Last week's chat",
                 createdAt: lastWeek.toISOString(),
@@ -157,7 +157,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-4",
+                chatId: "chat-4",
                 userId: "test-user-123",
                 title: "This month's chat",
                 createdAt: thisMonth.toISOString(),
@@ -179,7 +179,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-5",
+                chatId: "chat-5",
                 userId: "test-user-123",
                 title: "Old chat",
                 createdAt: older.toISOString(),
@@ -217,7 +217,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date(
@@ -242,7 +242,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date().toISOString(),
@@ -274,14 +274,14 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-2",
+                chatId: "chat-2",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
@@ -314,21 +314,21 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Today 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-2",
+                chatId: "chat-2",
                 userId: "test-user-123",
                 title: "Today 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-3",
+                chatId: "chat-3",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
@@ -363,14 +363,14 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-2",
+                chatId: "chat-2",
                 userId: "test-user-123",
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
@@ -405,7 +405,7 @@ describe("Sidebar", () => {
     it("updates groups when ChatDate.Range changes", async () => {
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: new Date().toISOString(),
@@ -458,7 +458,7 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Chat",
                 createdAt: today.toISOString(),
@@ -489,21 +489,21 @@ describe("Sidebar", () => {
 
         const mockChats: ApiChatSummary[] = [
             {
-                chatId: "conv-1",
+                chatId: "chat-1",
                 userId: "test-user-123",
                 title: "Chat 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-2",
+                chatId: "chat-2",
                 userId: "test-user-123",
                 title: "Chat 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
             },
             {
-                chatId: "conv-3",
+                chatId: "chat-3",
                 userId: "test-user-123",
                 title: "Chat 3",
                 createdAt: today.toISOString(),

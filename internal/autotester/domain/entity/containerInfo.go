@@ -4,5 +4,5 @@ package entity
 type ContainerInfo struct {
 	ContainerID string
 	UserID      string
-	SessionID   string
+	ChatID      string
 }

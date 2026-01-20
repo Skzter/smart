@@ -95,7 +95,7 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 	return sharedService.NewOpenAI(repo, tracer)
 }
 
-// ChatParquetWrapperProvider provides a new session summary parquet wrapper.
+// ChatParquetWrapperProvider provides a new chat summary parquet wrapper.
 func ChatParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetConfig, tracer trace.Tracer) (wrapperService.ParquetFileWrapper[entity.Chat], error) {
 	return wrapperService.NewParquetWrapper[entity.Chat](logger, cfg, tracer)
 }

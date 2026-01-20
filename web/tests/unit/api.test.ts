@@ -205,20 +205,20 @@ describe("getUserChats", () => {
 
         const callArgs = mockedAxios.mock.calls[0][0];
 
-        expect(callArgs.data).toHaveProperty(
-            "userId",
-            mockValidateParams.userId,
-        );
-        expect(callArgs.data).toHaveProperty(
-            "conversationId",
-            mockValidateParams.chatId,
-        );
-        expect(callArgs.data).toHaveProperty(
-            "prompt",
-            mockValidateParams.prompt,
-        );
+            expect(callArgs.data).toHaveProperty(
+                "userId",
+                mockValidateParams.userId,
+            );
+            expect(callArgs.data).toHaveProperty(
+                "chatId",
+                mockValidateParams.chatId,
+            );
+            expect(callArgs.data).toHaveProperty(
+                "prompt",
+                mockValidateParams.prompt,
+            );
+        });
     });
-});
 
 describe("getTemplate", () => {
     const mockTemplate = "test template content";
@@ -300,13 +300,13 @@ describe("saveTestLocal", () => {
     });
 });
 
-describe.skip("runContainer", () => {
-    const mockParams = {
-        userId: mockUserId,
-        testId: "test123",
-        sessionId: "session456",
-    };
-    const mockResult = "Container executed successfully";
+    describe.skip("runContainer", () => {
+        const mockParams = {
+            userId: mockUserId,
+            testId: "test123",
+            chatId: "chat456",
+        };
+        const mockResult = "Container executed successfully";
 
     it("should make a POST request to /run and return data", async () => {
         const mockedAxios = axios as unknown as Mock;
@@ -340,14 +340,14 @@ describe.skip("runContainer", () => {
         );
     });
 
-    it("should pass the correct params as request body", async () => {
-        const mockedAxios = axios as unknown as Mock;
-        mockedAxios.mockResolvedValue({ data: { result: mockResult } });
-        const complexParams = {
-            userId: "user999",
-            testId: "test999",
-            sessionId: "session999",
-        };
+        it("should pass the correct params as request body", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: { result: mockResult } });
+            const complexParams = {
+                userId: "user999",
+                testId: "test999",
+                chatId: "chat999",
+            };
 
         await runContainer(complexParams, {});
 
@@ -442,18 +442,18 @@ describe("deleteLocalTest", () => {
 
         const result = await deleteLocalTest(mockTestcaseId);
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "delete",
-            baseURL: "http://localhost:8081/api/v1/",
-            url: "/deleteLocal",
-            params: {
-                testcaseId: mockTestcaseId,
-                conversationId: mockChatId,
-                userId: mockUserId,
-            },
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "delete",
+                baseURL: "http://localhost:8081/api/v1/",
+                url: "/deleteLocal",
+                params: {
+                    testcaseId: mockTestcaseId,
+                    chatId: mockChatId,
+                    userId: mockUserId,
+                },
+            });
+            expect(result).toEqual("Test deleted successfully");
         });
-        expect(result).toEqual("Test deleted successfully");
-    });
 
     it("should use the current user and chat ids from shared state", async () => {
         const mockedAxios = axios as unknown as Mock;
@@ -464,17 +464,17 @@ describe("deleteLocalTest", () => {
 
         await deleteLocalTest(mockTestcaseId);
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "delete",
-            baseURL: "http://localhost:8081/api/v1/",
-            url: "/deleteLocal",
-            params: {
-                testcaseId: mockTestcaseId,
-                conversationId: "chat999",
-                userId: "user999",
-            },
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "delete",
+                baseURL: "http://localhost:8081/api/v1/",
+                url: "/deleteLocal",
+                params: {
+                    testcaseId: mockTestcaseId,
+                    chatId: "chat999",
+                    userId: "user999",
+                },
+            });
         });
-    });
 
     it("should reject when the API call fails", async () => {
         const mockedAxios = axios as unknown as Mock;
