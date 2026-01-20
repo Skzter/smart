@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -45,6 +46,7 @@ type chatStorageService struct {
 	repo      repository.ChatStorageRepository
 	validator Validator
 	tracer    trace.Tracer
+	lock      sync.RWMutex
 
 	summaries []*entity.ChatSummary
 }
@@ -69,6 +71,7 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		validator: validator,
 		tracer:    tracer,
 		summaries: summaries,
+		lock:      sync.RWMutex{},
 	}, nil
 }
 
@@ -85,15 +88,17 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		return err
 	}
 
-	var summary *entity.ChatSummary
-	if index := slices.IndexFunc(s.summaries, func(existing *entity.ChatSummary) bool {
+	var summary entity.ChatSummary
+	s.lock.RLock()
+	index := slices.IndexFunc(s.summaries, func(existing *entity.ChatSummary) bool {
 		return existing.ChatId == chat.Id
-	}); index != -1 {
-		summary = s.summaries[index]
+	})
+	if index != -1 {
+		summary = *s.summaries[index]
 		summary.UpdatedAt = chat.UpdatedAt
 		summary.Groups = chat.Groups
 	} else {
-		summary = &entity.ChatSummary{
+		summary = entity.ChatSummary{
 			ChatId:         chat.Id,
 			Author:         chat.Author,
 			Groups:         chat.Groups,
@@ -102,15 +107,22 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 			CreatedAt:      chat.CreatedAt,
 			UpdatedAt:      chat.UpdatedAt,
 		}
-		s.summaries = append(s.summaries, summary)
-		sort(s.summaries)
 	}
+	s.lock.RUnlock()
 
-	if err := s.repo.Create(ctx, chat, summary); err != nil {
+	if err := s.repo.Create(ctx, chat, &summary); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
 	}
+	s.lock.Lock()
+	if index != -1 {
+		s.summaries[index] = &summary
+	} else {
+		s.summaries = append(s.summaries, &summary)
+		sort(s.summaries)
+	}
+	s.lock.Unlock()
 
 	return nil
 }
@@ -167,6 +179,9 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limi
 		return nil, false, err
 	}
 
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	if len(s.summaries) == 0 {
 		return s.summaries, false, nil
 	}
@@ -194,7 +209,7 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limi
 }
 
 func findFromGroups(summaries []*entity.ChatSummary, groupIds []string, maxResults int) []*entity.ChatSummary {
-	result := make([]*entity.ChatSummary, 0, len(summaries))
+	result := make([]*entity.ChatSummary, 0, maxResults)
 
 	for _, summary := range summaries {
 		if len(result) >= maxResults {
@@ -210,5 +225,5 @@ func findFromGroups(summaries []*entity.ChatSummary, groupIds []string, maxResul
 		}
 	}
 
-	return slices.Clip(result)
+	return result
 }

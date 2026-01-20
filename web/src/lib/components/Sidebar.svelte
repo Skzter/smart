@@ -223,10 +223,13 @@
             initialized = true;
             const el = container;
             (async () => {
+                let iterations = 0;
+                const maxIterations = 10;
                 while (
                     el.scrollHeight <= el.clientHeight &&
                     hasMore &&
-                    !loading
+                    !loading &&
+                    iterations++ < maxIterations
                 ) {
                     await loadMore();
                 }

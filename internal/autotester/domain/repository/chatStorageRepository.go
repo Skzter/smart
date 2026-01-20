@@ -27,7 +27,7 @@ type ChatStorageRepository interface {
 	// Delete removes linked Chat and ChatSummary objects from storage by their chatId and userId.
 	Delete(ctx context.Context, chatId string) error
 
-	// FindByUserId retrieves an slice of all ChatSummarys
+	// ListAll retrieves all ChatSummarys from storage
 	ListAll(ctx context.Context) ([]*entity.ChatSummary, error)
 }
 
