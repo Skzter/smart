@@ -75,8 +75,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
-                url: "chat",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/chat",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockChatRequest,
             });
             expect(result).toEqual({
@@ -149,7 +149,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats?page=0`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual({
                 summaries: mockChatSummaries,
@@ -240,8 +240,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: "template",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/template",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockTemplate);
         });
@@ -282,8 +282,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
-                url: "saveLocal",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/saveLocal",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockSaveLocalRequest,
             });
             expect(result).toEqual(mockSaveLocalResponse);
@@ -401,7 +401,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/${mockChatId}`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockChatResponse);
         });
@@ -418,7 +418,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/differentChat`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
         });
 
@@ -451,7 +451,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
@@ -473,7 +473,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,

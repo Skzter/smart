@@ -17,6 +17,9 @@
 
     let container = $state<HTMLElement | null>(null);
 
+    let timeout = 500;
+    const maxTimout = 10000;
+
     let hasMore = $state(true);
     let page = $state(0);
     let initialized = $state(false);
@@ -43,23 +46,25 @@
         loading = true;
         try {
             const response = await getChats({
-                page: page++,
+                page: page,
                 groupIds: [],
             });
             hasMore = response.hasMore;
             items = items.concat(response.summaries);
+            page++;
+            error = "";
         } catch (err) {
             if (err instanceof Error) {
                 error = err.message;
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
+                toast.error(err.message, {});
             } else {
                 error = "Unbekannter Fehler";
-                toast.error(error, {
-                    description: "Das war wohl nichts mit der Historie.",
-                });
+                toast.error("Unbekannter Fehler", {});
             }
+            if (timeout < maxTimout) {
+                timeout = Math.min(timeout * 2, maxTimout);
+            }
+            setTimeout(loadMore, timeout);
         } finally {
             loading = false;
         }
@@ -225,19 +230,17 @@
 <Sidebar.Root>
     <SidebarHeader />
     <Sidebar.Content bind:ref={container} onscroll={handleScroll}>
-        {#if error != ""}
+        {#each groupState, index (index)}
+            <Group group={groupState[index]} {updateChatSummary}></Group>
+        {/each}
+        {#if loading}
+            <Sidebar.Group class="mt-2 flex items-center justify-center">
+                <Spinner class="size-6"></Spinner>
+            </Sidebar.Group>
+        {:else if error != ""}
             <Sidebar.Group>
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
             </Sidebar.Group>
-        {:else}
-            {#each groupState, index (index)}
-                <Group group={groupState[index]} {updateChatSummary}></Group>
-            {/each}
-            {#if loading}
-                <Sidebar.Group class="mt-2 flex items-center justify-center">
-                    <Spinner class="size-6"></Spinner>
-                </Sidebar.Group>
-            {/if}
         {/if}
     </Sidebar.Content>
     <Sidebar.Footer>
