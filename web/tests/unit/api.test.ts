@@ -137,17 +137,25 @@ describe("API Functions", () => {
         it("should make a GET request to /chats", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
-                data: { chatSummarys: mockChatSummaries },
+                data: {
+                    chatSummarys: mockChatSummaries,
+                    hasMore: false,
+                    pageSize: 10,
+                },
             });
 
-            const result = await getChats();
+            const result = await getChats({ page: 0, groupIds: [] });
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/chats`,
+                url: `/chats?page=0`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
-            expect(result).toEqual(mockChatSummaries);
+            expect(result).toEqual({
+                summaries: mockChatSummaries,
+                hasMore: false,
+                pageSize: 10,
+            });
         });
 
         it("should reject when the API call fails", async () => {
@@ -162,7 +170,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(getChats()).rejects.toThrow(
+            await expect(getChats({ page: 0, groupIds: [] })).rejects.toThrow(
                 "Failed to fetch user chats",
             );
         });
