@@ -30,7 +30,7 @@ type ChatStorageService interface {
 
 func sort(ids []*entity.ChatSummary) {
 	// sort in descending order by UpdatedAt
-	slices.SortStableFunc(ids, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
+	slices.SortFunc(ids, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
 		if updated := -a.UpdatedAt.Compare(b.UpdatedAt); updated != 0 {
 			return updated
 		}
