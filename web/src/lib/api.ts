@@ -1,13 +1,14 @@
 import axios, { AxiosError } from "axios";
 import type {
     ApiMessage,
-    ApiChatSummary,
     ApiChatRequest,
     ApiChatResponse,
     ApiSaveTestLocal,
     ApiSaveTestLocalResponse,
     ApiRunContainer,
     ApiGetChatByIdResponse,
+    ApiChatsRequest,
+    ApiChatsResponse,
 } from "$types/api";
 import { chat, user } from "./shared.svelte";
 
@@ -66,14 +67,24 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChats(): Promise<ApiChatSummary[]> {
+export async function getChats(
+    request: ApiChatsRequest,
+): Promise<ApiChatsResponse> {
+    const groups =
+        request.groupIds.length > 0
+            ? `&groups=${request.groupIds.join(",")}`
+            : "";
     try {
         const response = await axios({
             method: "get",
-            url: `/chats`,
+            url: `/chats?page=${request.page}${groups}`,
             baseURL: baseURL,
         });
-        return response.data.chatSummarys;
+        return {
+            summaries: response.data.chatSummarys,
+            hasMore: response.data.hasMore,
+            pageSize: response.data.pageSize,
+        };
     } catch (error) {
         throw getErrorMessage(error);
     }

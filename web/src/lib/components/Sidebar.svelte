@@ -12,7 +12,14 @@
     import User from "./User.svelte";
 
     let error = $state<string>("");
-    let items = $state<ApiChatSummary[] | undefined>(undefined);
+    let items = $state<ApiChatSummary[]>([]);
+    let loading = $state<boolean>(false);
+
+    let container = $state<HTMLElement | null>(null);
+
+    let hasMore = $state(true);
+    let page = $state(0);
+    let initialized = $state(false);
 
     let groupState = $derived(
         updateGroupsWithDateRange(
@@ -23,26 +30,33 @@
         ),
     );
 
-    $effect(() => {
-        if (!user.id) return;
-        (async () => {
-            try {
-                items = (await getChats()) as ApiChatSummary[];
-            } catch (err) {
-                if (err instanceof Error) {
-                    error = err.message;
-                    toast.error(error, {
-                        description: "Das war wohl nichts mit der Historie.",
-                    });
-                } else {
-                    error = "Unbekannter Fehler";
-                    toast.error(error, {
-                        description: "Das war wohl nichts mit der Historie.",
-                    });
-                }
+    async function loadMore() {
+        if (!user.id || loading || !hasMore) return;
+
+        loading = true;
+        try {
+            const response = await getChats({
+                page: page++,
+                groupIds: [],
+            });
+            hasMore = response.hasMore;
+            items = items.concat(response.summaries);
+        } catch (err) {
+            if (err instanceof Error) {
+                error = err.message;
+                toast.error(error, {
+                    description: "Das war wohl nichts mit der Historie.",
+                });
+            } else {
+                error = "Unbekannter Fehler";
+                toast.error(error, {
+                    description: "Das war wohl nichts mit der Historie.",
+                });
             }
-        })();
-    });
+        } finally {
+            loading = false;
+        }
+    }
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
@@ -178,23 +192,45 @@
 
         return "früher";
     }
+
+    function handleScroll() {
+        if (!hasMore || loading || !container) return;
+
+        const el = container;
+        const scrollThreshold = 100; // Load more when within 100px of bottom
+
+        if (
+            el.scrollHeight - el.scrollTop - el.clientHeight <
+            scrollThreshold
+        ) {
+            loadMore();
+        }
+    }
+
+    $effect(() => {
+        if (container && user.id && !initialized) {
+            initialized = true;
+            loadMore();
+        }
+    });
 </script>
 
 <Sidebar.Root>
     <SidebarHeader />
-    <Sidebar.Content>
+    <Sidebar.Content bind:ref={container} onscroll={handleScroll}>
         {#if error != ""}
             <Sidebar.Group>
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
-            </Sidebar.Group>
-        {:else if items === undefined}
-            <Sidebar.Group class="mt-2 flex items-center justify-center">
-                <Spinner class="size-6"></Spinner>
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}
                 <Group bind:group={groupState[index]}></Group>
             {/each}
+            {#if loading}
+                <Sidebar.Group class="mt-2 flex items-center justify-center">
+                    <Spinner class="size-6"></Spinner>
+                </Sidebar.Group>
+            {/if}
         {/if}
     </Sidebar.Content>
     <Sidebar.Footer>
