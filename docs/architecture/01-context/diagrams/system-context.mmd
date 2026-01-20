@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph users[External Users]
+        Developer[Developer/Tester<br/>Check24 staff]
+        Admin[System Administrator<br/>Maintains and monitors system]
+    end
+
+    subgraph smart[S.M.A.R.T System]
+        SMART[S.M.A.R.T<br/>Software for Mockserver and<br/>Automated Resource Testing]
+    end
+
+    subgraph external[External Systems]
+        Auth0[Auth0<br/>Single Sign-On Provider]
+        LLM[LLM Service<br/>OpenAI]
+        Datadog[Datadog<br/>APM & Monitoring]
+        Doppler[Doppler<br/>Secrets Management]
+        Supplier[Supplier APIs<br/>Travel suppliers]
+        WebApp[Web Applications<br/>Frontends under test]
+    end
+
+    Developer -->|Creates tests, executes,<br/>views results HTTPS| SMART
+    Admin -->|Deploys, configures,<br/>monitors SSH/HTTPS| SMART
+
+    SMART -->|Authenticates users<br/>OAuth2/OIDC| Auth0
+    SMART -->|Generates tests<br/>HTTPS/REST| LLM
+    SMART -->|Sends traces, metrics, logs<br/>Agent API| Datadog
+    SMART -->|Fetches secrets<br/>HTTPS/REST| Doppler
+    SMART -->|Proxies and tests<br/>HTTPS/REST| Supplier
+    SMART -->|Executes tests<br/>Playwright| WebApp
+
+    WebApp -->|Uses as proxy<br/>HTTPS/REST| SMART
+
+    classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+
+    class SMART system
+    class Auth0,LLM,Datadog,Doppler,Supplier,WebApp external
+    class Developer,Admin person

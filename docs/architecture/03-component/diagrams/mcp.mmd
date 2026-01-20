@@ -1,0 +1,52 @@
+graph TB
+    subgraph Application["Application Layer"]
+        MCPServer["MCP Server<br/>(MCP SDK, tool registration)"]
+    end
+
+    subgraph Tools["Domain - Tools"]
+        GetTemplateTool["Get Template Tool<br/>(Retrieve test template)"]
+        GenerateTestTool["Generate Test Tool<br/>(Generate test from prompt)"]
+        RunTestTool["Run Test Tool<br/>(Execute test by ID)"]
+    end
+
+    subgraph Services["Domain - Service"]
+        AutotesterSvc["Autotester API Service<br/>(Business logic)"]
+    end
+
+    subgraph Repositories["Domain - Repository"]
+        AutotesterRepo["Autotester API Repository<br/>(HTTP client, net/http)"]
+    end
+
+    subgraph Config["Configuration"]
+        PklConfig["Pkl Configuration<br/>(MCP & HTTP settings)"]
+    end
+
+    subgraph External["External Systems"]
+        Autotester["⚙️ Autotester Service"]
+        LLM["🤖 LLM System<br/>(Claude/GPT via MCP)"]
+    end
+
+    MCPServer --> GetTemplateTool
+    MCPServer --> GenerateTestTool
+    MCPServer --> RunTestTool
+    MCPServer --> PklConfig
+
+    GetTemplateTool --> AutotesterSvc
+    GenerateTestTool --> AutotesterSvc
+    RunTestTool --> AutotesterSvc
+
+    AutotesterSvc --> AutotesterRepo
+
+    AutotesterRepo -->|"API calls (HTTPS/REST)"| Autotester
+    AutotesterRepo -.->|"Fetches token<br/>/auth/generate"| Autotester
+
+    LLM -->|"Tool calls<br/>(MCP Protocol)"| MCPServer
+    MCPServer -.->|"Tool responses<br/>(MCP Protocol)"| LLM
+
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+
+    class MCPServer,GetTemplateTool,GenerateTestTool,RunTestTool component
+    class AutotesterSvc,AutotesterRepo component
+    class PklConfig component
+    class Autotester,LLM external
