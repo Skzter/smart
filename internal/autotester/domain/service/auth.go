@@ -4,15 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
@@ -137,7 +134,7 @@ func convSqlNullTimeIntoTime(sqltime sql.NullTime) *time.Time {
 	}
 }
 
-// ValidateToken validates JWT signature + exp and checks DB revoke status
+// ValidateToken validates an opaque bearer token using DB state
 func (a *auth) ValidateToken(ctx context.Context, token string) (*entity.ValidationResult, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
@@ -146,37 +143,28 @@ func (a *auth) ValidateToken(ctx context.Context, token string) (*entity.Validat
 		return nil, err
 	}
 
-	// JWT validation (signature + exp)
-	secret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
-	if secret == "" {
-		return nil, errors.New("JWT_SECRET is not set")
-	}
-
-	claims := &jwt.RegisteredClaims{}
-	parsed, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
-		if t.Method != jwt.SigningMethodHS256 {
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-		}
-		return []byte(secret), nil
-	})
-
-	if err != nil || parsed == nil || !parsed.Valid {
-		return &entity.ValidationResult{Valid: false, Revoked: false}, nil
-	}
-
-	if claims.ExpiresAt == nil || time.Now().After(claims.ExpiresAt.Time) {
-		return &entity.ValidationResult{Valid: false, Revoked: false}, nil
-	}
-
-	// DB revoke check ---
-	dbToken, err := a.db.ReadTokenByToken(ctx, token)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &entity.ValidationResult{Valid: false, Revoked: false}, nil
-		}
+	token = strings.TrimSpace(token)
+	if err := assert.StringNotEmpty(token); err != nil {
 		return nil, err
 	}
 
+	// DB lookup
+	dbToken, err := a.db.ReadTokenByToken(ctx, token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// token unknown -> invalid
+			return &entity.ValidationResult{Valid: false, Revoked: false}, nil
+		}
+		// real db error -> bubble up
+		return nil, err
+	}
+
+	// expiry check (DB-based)
+	if dbToken.ExpiresAt.Before(time.Now().UTC()) {
+		return &entity.ValidationResult{Valid: false, Revoked: false}, nil
+	}
+
+	// revoke check (DB-based)
 	if dbToken.RevokedAt.Valid {
 		return &entity.ValidationResult{Valid: true, Revoked: true}, nil
 	}

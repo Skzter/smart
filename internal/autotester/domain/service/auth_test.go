@@ -6,13 +6,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
@@ -427,26 +426,7 @@ func TestValidateToken(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	tr := otel.Tracer("test")
 
-	makeJWTWithAlg := func(exp time.Time, secret string, alg jwt.SigningMethod) string {
-		t.Helper()
-		claims := jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(exp),
-		}
-		token := jwt.NewWithClaims(alg, claims)
-		s, err := token.SignedString([]byte(secret))
-		require.NoError(t, err)
-		return s
-	}
-
-	now := time.Now()
-
-	// default secret (will be overwritten per subtest)
-	secret := "test-secret"
-
-	validJWT := makeJWTWithAlg(now.Add(time.Hour), secret, jwt.SigningMethodHS256)
-	expiredJWT := makeJWTWithAlg(now.Add(-time.Hour), secret, jwt.SigningMethodHS256)
-	invalidSigJWT := makeJWTWithAlg(now.Add(time.Hour), "wrong-secret", jwt.SigningMethodHS256)
-	hs512JWT := makeJWTWithAlg(now.Add(time.Hour), secret, jwt.SigningMethodHS512)
+	now := time.Now().UTC()
 
 	tests := []struct {
 		name        string
@@ -456,30 +436,11 @@ func TestValidateToken(t *testing.T) {
 		wantRevoked bool
 		wantErr     bool
 
-		nilCtx      bool
-		unsetSecret bool
+		nilCtx bool
 	}{
 		{
-			name:  "invalid signature -> invalid (no db call)",
-			token: invalidSigJWT,
-		},
-		{
-			name:  "expired token -> invalid (no db call)",
-			token: expiredJWT,
-		},
-		{
-			name:      "unexpected signing method (HS512) -> invalid (no db call)",
-			token:     hs512JWT,
-			wantValid: false,
-		},
-		{
-			name:      "malformed token -> invalid (no db call)",
-			token:     "not-a-jwt",
-			wantValid: false,
-		},
-		{
 			name:    "nil ctx -> error",
-			token:   validJWT,
+			token:   "some-token",
 			wantErr: true,
 			nilCtx:  true,
 		},
@@ -489,42 +450,50 @@ func TestValidateToken(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:        "missing JWT_SECRET -> error",
-			token:       validJWT,
-			wantErr:     true,
-			unsetSecret: true,
-		},
-		{
-			name:   "valid jwt not in db -> invalid",
-			token:  validJWT,
+			name:   "token not in db -> invalid",
+			token:  "unknown-token",
 			dbResp: []any{database.RefreshToken{}, sql.ErrNoRows},
 		},
 		{
-			name:  "valid jwt and revoked in db -> valid + revoked",
-			token: validJWT,
+			name:  "token expired in db -> invalid",
+			token: "expired-token",
 			dbResp: []any{
 				database.RefreshToken{
-					RevokedAt: sql.NullTime{Valid: true, Time: now},
+					Token:     "expired-token",
+					ExpiresAt: now.Add(-time.Minute),
+					RevokedAt: sql.NullTime{Valid: false},
+				}, nil,
+			},
+			wantValid: false,
+		},
+		{
+			name:  "token revoked in db -> valid + revoked",
+			token: "revoked-token",
+			dbResp: []any{
+				database.RefreshToken{
+					Token:     "revoked-token",
 					ExpiresAt: now.Add(time.Hour),
+					RevokedAt: sql.NullTime{Valid: true, Time: now},
 				}, nil,
 			},
 			wantValid:   true,
 			wantRevoked: true,
 		},
 		{
-			name:  "valid jwt and not revoked in db -> valid",
-			token: validJWT,
+			name:  "token active in db -> valid",
+			token: "active-token",
 			dbResp: []any{
 				database.RefreshToken{
-					RevokedAt: sql.NullTime{Valid: false},
+					Token:     "active-token",
 					ExpiresAt: now.Add(time.Hour),
+					RevokedAt: sql.NullTime{Valid: false},
 				}, nil,
 			},
 			wantValid: true,
 		},
 		{
 			name:    "db error -> error",
-			token:   validJWT,
+			token:   "active-token",
 			dbResp:  []any{database.RefreshToken{}, errors.New("db down")},
 			wantErr: true,
 		},
@@ -532,15 +501,13 @@ func TestValidateToken(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.unsetSecret {
-				t.Setenv("JWT_SECRET", "")
-			} else {
-				t.Setenv("JWT_SECRET", secret)
-			}
-
 			mockDB := mockRepo.NewMockTokenDatabase(t)
-			if tc.dbResp != nil {
-				mockDB.On("ReadTokenByToken", mock.Anything, tc.token).Return(tc.dbResp...)
+
+			// Expect DB call only if ctx+token are valid enough to reach it
+			if !tc.nilCtx && strings.TrimSpace(tc.token) != "" {
+				if tc.dbResp != nil {
+					mockDB.On("ReadTokenByToken", mock.Anything, tc.token).Return(tc.dbResp...)
+				}
 			}
 
 			authSrv := &auth{
@@ -567,10 +534,6 @@ func TestValidateToken(t *testing.T) {
 			assert.NotNil(t, res)
 			assert.Equal(t, tc.wantValid, res.Valid)
 			assert.Equal(t, tc.wantRevoked, res.Revoked)
-
-			if tc.dbResp == nil {
-				mockDB.AssertNotCalled(t, "ReadTokenByToken", mock.Anything, tc.token)
-			}
 		})
 	}
 }
