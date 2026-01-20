@@ -84,6 +84,7 @@ describe("Sidebar", () => {
 
     it("does not load chats when user.id is undefined", async () => {
         (user as unknown as { id: undefined }).id = undefined;
+        vi.clearAllMocks(); // Clear any mocks from beforeEach
 
         render(SidebarTestWrapper);
         await tick();

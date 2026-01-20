@@ -19,6 +19,7 @@
 
     let timeout = 500;
     const maxTimout = 10000;
+    const scrollThreshold = 100; // Load more when within 100px of bottom
 
     let hasMore = $state(true);
     let page = $state(0);
@@ -209,8 +210,6 @@
         if (!hasMore || loading || !container) return;
 
         const el = container;
-        const scrollThreshold = 100; // Load more when within 100px of bottom
-
         if (
             el.scrollHeight - el.scrollTop - el.clientHeight <
             scrollThreshold
@@ -222,7 +221,16 @@
     $effect(() => {
         if (container && user.id && !initialized) {
             initialized = true;
-            loadMore();
+            const el = container;
+            (async () => {
+                while (
+                    el.scrollHeight <= el.clientHeight &&
+                    hasMore &&
+                    !loading
+                ) {
+                    await loadMore();
+                }
+            })();
         }
     });
 </script>
