@@ -81,6 +81,72 @@ func (_c *MockMetricsService_Close_Call) RunAndReturn(run func() error) *MockMet
 	return _c
 }
 
+// IncCacheHit provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) IncCacheHit() {
+	_mock.Called()
+	return
+}
+
+// MockMetricsService_IncCacheHit_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncCacheHit'
+type MockMetricsService_IncCacheHit_Call struct {
+	*mock.Call
+}
+
+// IncCacheHit is a helper method to define mock.On call
+func (_e *MockMetricsService_Expecter) IncCacheHit() *MockMetricsService_IncCacheHit_Call {
+	return &MockMetricsService_IncCacheHit_Call{Call: _e.mock.On("IncCacheHit")}
+}
+
+func (_c *MockMetricsService_IncCacheHit_Call) Run(run func()) *MockMetricsService_IncCacheHit_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_IncCacheHit_Call) Return() *MockMetricsService_IncCacheHit_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_IncCacheHit_Call) RunAndReturn(run func()) *MockMetricsService_IncCacheHit_Call {
+	_c.Run(run)
+	return _c
+}
+
+// IncCacheMiss provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) IncCacheMiss() {
+	_mock.Called()
+	return
+}
+
+// MockMetricsService_IncCacheMiss_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'IncCacheMiss'
+type MockMetricsService_IncCacheMiss_Call struct {
+	*mock.Call
+}
+
+// IncCacheMiss is a helper method to define mock.On call
+func (_e *MockMetricsService_Expecter) IncCacheMiss() *MockMetricsService_IncCacheMiss_Call {
+	return &MockMetricsService_IncCacheMiss_Call{Call: _e.mock.On("IncCacheMiss")}
+}
+
+func (_c *MockMetricsService_IncCacheMiss_Call) Run(run func()) *MockMetricsService_IncCacheMiss_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_IncCacheMiss_Call) Return() *MockMetricsService_IncCacheMiss_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_IncCacheMiss_Call) RunAndReturn(run func()) *MockMetricsService_IncCacheMiss_Call {
+	_c.Run(run)
+	return _c
+}
+
 // IncRequestError provides a mock function for the type MockMetricsService
 func (_mock *MockMetricsService) IncRequestError(errorType string) {
 	_mock.Called(errorType)
@@ -150,6 +216,52 @@ func (_c *MockMetricsService_IncRequestSuccess_Call) Return() *MockMetricsServic
 }
 
 func (_c *MockMetricsService_IncRequestSuccess_Call) RunAndReturn(run func()) *MockMetricsService_IncRequestSuccess_Call {
+	_c.Run(run)
+	return _c
+}
+
+// RecordCacheDuration provides a mock function for the type MockMetricsService
+func (_mock *MockMetricsService) RecordCacheDuration(duration time.Duration, result string) {
+	_mock.Called(duration, result)
+	return
+}
+
+// MockMetricsService_RecordCacheDuration_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RecordCacheDuration'
+type MockMetricsService_RecordCacheDuration_Call struct {
+	*mock.Call
+}
+
+// RecordCacheDuration is a helper method to define mock.On call
+//   - duration time.Duration
+//   - result string
+func (_e *MockMetricsService_Expecter) RecordCacheDuration(duration interface{}, result interface{}) *MockMetricsService_RecordCacheDuration_Call {
+	return &MockMetricsService_RecordCacheDuration_Call{Call: _e.mock.On("RecordCacheDuration", duration, result)}
+}
+
+func (_c *MockMetricsService_RecordCacheDuration_Call) Run(run func(duration time.Duration, result string)) *MockMetricsService_RecordCacheDuration_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 time.Duration
+		if args[0] != nil {
+			arg0 = args[0].(time.Duration)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMetricsService_RecordCacheDuration_Call) Return() *MockMetricsService_RecordCacheDuration_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *MockMetricsService_RecordCacheDuration_Call) RunAndReturn(run func(duration time.Duration, result string)) *MockMetricsService_RecordCacheDuration_Call {
 	_c.Run(run)
 	return _c
 }

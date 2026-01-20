@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 	servmocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
 )
 
 // nolint: dupl
@@ -24,6 +25,7 @@ func TestNewChatStorageService(t *testing.T) {
 	mockValidator := servmocks.NewMockValidator(t)
 	mockCache := servmocks.NewMockCache(t)
 	tracer := otel.Tracer("test")
+	mockMetrics := sharedMocks.NewMockMetricsService(t)
 
 	tests := []struct {
 		name    string
@@ -44,7 +46,7 @@ func TestNewChatStorageService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, mockCache, tracer)
+			svc, err := NewChatStorageService(test.logger, mockRepo, mockValidator, mockCache, tracer, mockMetrics)
 			if (err != nil) != test.wantErr {
 				t.Errorf("NewSessionSummaryStorageService() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -103,6 +105,11 @@ func TestChatStorageSaveChat(t *testing.T) {
 			chat:          &entity.Chat{},
 		},
 	}
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncCacheHit").Return().Maybe()
+	mockMetricsServ.On("IncCacheMiss").Return().Maybe()
+	mockMetricsServ.On("RecordCacheDuration", mock.Anything, mock.Anything).Return().Maybe()
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -121,7 +128,7 @@ func TestChatStorageSaveChat(t *testing.T) {
 				mockCache.On("Store", mock.Anything, test.chat).Return(test.mockCacheSetup...)
 			}
 
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer, mockMetricsServ)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -215,6 +222,12 @@ func TestChatStorageLoadChat(t *testing.T) {
 		},
 	}
 
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncCacheHit").Return().Maybe()
+	mockMetricsServ.On("IncCacheMiss").Return().Maybe()
+	mockMetricsServ.On("RecordCacheDuration", mock.Anything, mock.Anything).Return().Maybe()
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockChatStorageRepository(t)
@@ -235,7 +248,7 @@ func TestChatStorageLoadChat(t *testing.T) {
 			}
 
 			// mockCache.On("LookUp", mock.Anything, test.ChatId).Return(tt.setupCacheMock...)
-			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer)
+			svc, err := NewChatStorageService(logger, mockRepo, mockVal, mockCache, tracer, mockMetricsServ)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}
@@ -304,6 +317,11 @@ func TestLoadSummaries(t *testing.T) {
 		},
 	}
 
+	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	// Setup metrics mock to accept any calls
+	mockMetricsServ.On("IncCacheHit").Return().Maybe()
+	mockMetricsServ.On("IncCacheMiss").Return().Maybe()
+	mockMetricsServ.On("RecordCacheDuration", mock.Anything, mock.Anything).Return().Maybe()
 	mockCache := servmocks.NewMockCache(t)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -314,7 +332,7 @@ func TestLoadSummaries(t *testing.T) {
 
 			val := servmocks.NewMockValidator(t)
 
-			svc, err := NewChatStorageService(logger, mockRepo, val, mockCache, tracer)
+			svc, err := NewChatStorageService(logger, mockRepo, val, mockCache, tracer, mockMetricsServ)
 			if err != nil {
 				t.Fatalf("unexpected error creating service: %v", err)
 			}

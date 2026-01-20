@@ -12,6 +12,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -35,12 +36,20 @@ type chatStorageService struct {
 	validator Validator
 	cache     Cache
 	tracer    trace.Tracer
+	metrics   sharedService.MetricsService
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
 // Returns the service or an error if any of the arguments are nil.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, cache Cache, tracer trace.Tracer) (ChatStorageService, error) {
-	if err := assert.NotNil(logger, repo, validator, cache); err != nil {
+func NewChatStorageService(
+	logger *slog.Logger,
+	repo repository.ChatStorageRepository,
+	validator Validator,
+	cache Cache,
+	tracer trace.Tracer,
+	metrics sharedService.MetricsService,
+) (ChatStorageService, error) {
+	if err := assert.NotNil(logger, repo, validator, metrics, cache); err != nil {
 		return nil, err
 	}
 
@@ -50,6 +59,7 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		validator: validator,
 		cache:     cache,
 		tracer:    tracer,
+		metrics:   metrics,
 	}, nil
 }
 
@@ -110,7 +120,8 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "retrieved invalid chat from cache")
 		} else {
-			s.logger.Debug("cache hit", "elapsed time", time.Since(start))
+			s.metrics.IncCacheHit()
+			s.metrics.RecordCacheDuration(time.Since(start), "hit")
 			return cachedChat, nil
 		}
 	}
@@ -134,7 +145,8 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		span.SetStatus(codes.Error, "error while storing chat in cache")
 	}
 
-	s.logger.Debug("cache miss", "elapsed time", time.Since(start))
+	s.metrics.IncCacheMiss()
+	s.metrics.RecordCacheDuration(time.Since(start), "miss")
 	span.SetStatus(codes.Ok, "")
 	return chat, nil
 }
