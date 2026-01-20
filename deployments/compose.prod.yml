@@ -78,6 +78,18 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - autotester
+      - postgres
+
+  postgres:
+    image: postgres:17-alpine
+    depends_on:
+      - autotester
+    networks:
+      - default
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+      - POSTGRES_DB=smart
 
   datadog:
     image: datadog/agent:latest

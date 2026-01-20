@@ -50,6 +50,8 @@ func TestHandleTemplate(t *testing.T) {
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
+	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
 	mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
@@ -83,8 +85,10 @@ func TestHandleTemplate(t *testing.T) {
 				mockRemoteStorageServ,
 				mockMediaServ,
 				mockChatManager,
+				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			if err != nil {

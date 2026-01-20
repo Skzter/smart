@@ -302,6 +302,72 @@ func (_c *MockS3StorageWrapper_GetFileSize_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// GetMediaUrl provides a mock function for the type MockS3StorageWrapper
+func (_mock *MockS3StorageWrapper) GetMediaUrl(ctx context.Context, key string) (string, error) {
+	ret := _mock.Called(ctx, key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMediaUrl")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+		return returnFunc(ctx, key)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+		r0 = returnFunc(ctx, key)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, key)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockS3StorageWrapper_GetMediaUrl_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMediaUrl'
+type MockS3StorageWrapper_GetMediaUrl_Call struct {
+	*mock.Call
+}
+
+// GetMediaUrl is a helper method to define mock.On call
+//   - ctx context.Context
+//   - key string
+func (_e *MockS3StorageWrapper_Expecter) GetMediaUrl(ctx interface{}, key interface{}) *MockS3StorageWrapper_GetMediaUrl_Call {
+	return &MockS3StorageWrapper_GetMediaUrl_Call{Call: _e.mock.On("GetMediaUrl", ctx, key)}
+}
+
+func (_c *MockS3StorageWrapper_GetMediaUrl_Call) Run(run func(ctx context.Context, key string)) *MockS3StorageWrapper_GetMediaUrl_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockS3StorageWrapper_GetMediaUrl_Call) Return(s string, err error) *MockS3StorageWrapper_GetMediaUrl_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockS3StorageWrapper_GetMediaUrl_Call) RunAndReturn(run func(ctx context.Context, key string) (string, error)) *MockS3StorageWrapper_GetMediaUrl_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListParquetFiles provides a mock function for the type MockS3StorageWrapper
 func (_mock *MockS3StorageWrapper) ListParquetFiles(ctx context.Context, prefix string) ([]string, error) {
 	ret := _mock.Called(ctx, prefix)
@@ -366,75 +432,6 @@ func (_c *MockS3StorageWrapper_ListParquetFiles_Call) Return(strings []string, e
 }
 
 func (_c *MockS3StorageWrapper_ListParquetFiles_Call) RunAndReturn(run func(ctx context.Context, prefix string) ([]string, error)) *MockS3StorageWrapper_ListParquetFiles_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UploadParquetFile provides a mock function for the type MockS3StorageWrapper
-func (_mock *MockS3StorageWrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
-	ret := _mock.Called(ctx, key, data, metadata)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UploadParquetFile")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []byte, map[string]string) error); ok {
-		r0 = returnFunc(ctx, key, data, metadata)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// MockS3StorageWrapper_UploadParquetFile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadParquetFile'
-type MockS3StorageWrapper_UploadParquetFile_Call struct {
-	*mock.Call
-}
-
-// UploadParquetFile is a helper method to define mock.On call
-//   - ctx context.Context
-//   - key string
-//   - data []byte
-//   - metadata map[string]string
-func (_e *MockS3StorageWrapper_Expecter) UploadParquetFile(ctx interface{}, key interface{}, data interface{}, metadata interface{}) *MockS3StorageWrapper_UploadParquetFile_Call {
-	return &MockS3StorageWrapper_UploadParquetFile_Call{Call: _e.mock.On("UploadParquetFile", ctx, key, data, metadata)}
-}
-
-func (_c *MockS3StorageWrapper_UploadParquetFile_Call) Run(run func(ctx context.Context, key string, data []byte, metadata map[string]string)) *MockS3StorageWrapper_UploadParquetFile_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 []byte
-		if args[2] != nil {
-			arg2 = args[2].([]byte)
-		}
-		var arg3 map[string]string
-		if args[3] != nil {
-			arg3 = args[3].(map[string]string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-			arg3,
-		)
-	})
-	return _c
-}
-
-func (_c *MockS3StorageWrapper_UploadParquetFile_Call) Return(err error) *MockS3StorageWrapper_UploadParquetFile_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *MockS3StorageWrapper_UploadParquetFile_Call) RunAndReturn(run func(ctx context.Context, key string, data []byte, metadata map[string]string) error) *MockS3StorageWrapper_UploadParquetFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -508,45 +505,38 @@ func (_c *MockS3StorageWrapper_UploadMediaFile_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
-// GetMediaUrl provides a mock function for the type MockS3StorageWrapper
-func (_mock *MockS3StorageWrapper) GetMediaUrl(ctx context.Context, key string) (string, error) {
-	ret := _mock.Called(ctx, key)
+// UploadParquetFile provides a mock function for the type MockS3StorageWrapper
+func (_mock *MockS3StorageWrapper) UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
+	ret := _mock.Called(ctx, key, data, metadata)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetMediaUrl")
+		panic("no return value specified for UploadParquetFile")
 	}
 
-	var r0 string
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
-		return returnFunc(ctx, key)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
-		r0 = returnFunc(ctx, key)
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, []byte, map[string]string) error); ok {
+		r0 = returnFunc(ctx, key, data, metadata)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Error(0)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, key)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
 }
 
-// MockS3StorageWrapper_GetMediaUrl_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetMediaUrl'
-type MockS3StorageWrapper_GetMediaUrl_Call struct {
+// MockS3StorageWrapper_UploadParquetFile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadParquetFile'
+type MockS3StorageWrapper_UploadParquetFile_Call struct {
 	*mock.Call
 }
 
-// GetMediaUrl is a helper method to define mock.On call
+// UploadParquetFile is a helper method to define mock.On call
 //   - ctx context.Context
 //   - key string
-func (_e *MockS3StorageWrapper_Expecter) GetMediaUrl(ctx interface{}, key interface{}) *MockS3StorageWrapper_GetMediaUrl_Call {
-	return &MockS3StorageWrapper_GetMediaUrl_Call{Call: _e.mock.On("GetMediaUrl", ctx, key)}
+//   - data []byte
+//   - metadata map[string]string
+func (_e *MockS3StorageWrapper_Expecter) UploadParquetFile(ctx interface{}, key interface{}, data interface{}, metadata interface{}) *MockS3StorageWrapper_UploadParquetFile_Call {
+	return &MockS3StorageWrapper_UploadParquetFile_Call{Call: _e.mock.On("UploadParquetFile", ctx, key, data, metadata)}
 }
 
-func (_c *MockS3StorageWrapper_GetMediaUrl_Call) Run(run func(ctx context.Context, key string)) *MockS3StorageWrapper_GetMediaUrl_Call {
+func (_c *MockS3StorageWrapper_UploadParquetFile_Call) Run(run func(ctx context.Context, key string, data []byte, metadata map[string]string)) *MockS3StorageWrapper_UploadParquetFile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -556,20 +546,30 @@ func (_c *MockS3StorageWrapper_GetMediaUrl_Call) Run(run func(ctx context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
+		var arg2 []byte
+		if args[2] != nil {
+			arg2 = args[2].([]byte)
+		}
+		var arg3 map[string]string
+		if args[3] != nil {
+			arg3 = args[3].(map[string]string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
+			arg3,
 		)
 	})
 	return _c
 }
 
-func (_c *MockS3StorageWrapper_GetMediaUrl_Call) Return(url string, err error) *MockS3StorageWrapper_GetMediaUrl_Call {
-	_c.Call.Return(url, err)
+func (_c *MockS3StorageWrapper_UploadParquetFile_Call) Return(err error) *MockS3StorageWrapper_UploadParquetFile_Call {
+	_c.Call.Return(err)
 	return _c
 }
 
-func (_c *MockS3StorageWrapper_GetMediaUrl_Call) RunAndReturn(run func(ctx context.Context, key string) (string, error)) *MockS3StorageWrapper_GetMediaUrl_Call {
+func (_c *MockS3StorageWrapper_UploadParquetFile_Call) RunAndReturn(run func(ctx context.Context, key string, data []byte, metadata map[string]string) error) *MockS3StorageWrapper_UploadParquetFile_Call {
 	_c.Call.Return(run)
 	return _c
 }
