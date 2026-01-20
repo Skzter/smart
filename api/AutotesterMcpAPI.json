@@ -1,0 +1,147 @@
+{
+  "openrpc": "1.3.0",
+  "info": {
+    "title": "Autotester MCP API",
+    "description": "Documentation for MCP Tools used by the Autotester",
+    "version": "1.0.0"
+  },
+  "methods": [
+    {
+      "name": "get_template",
+      "description": "Retrieves the test generation from the autotester backend",
+      "params": [],
+      "result": {
+        "name": "TemplateResponse",
+        "description": "The template content",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "template": {
+              "type": "string",
+              "description": "The template content (code/structure)"
+            }
+          },
+          "required": ["template"]
+        }
+      }
+    },
+    {
+      "name": "generate_test",
+      "description": "takes prompt, sends it to backend and receives feedback to display in frontend",
+      "params": [
+        {
+          "name": "prompt",
+          "description": "The prompt/instruction to generate the test",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "userId",
+          "description": "Unique identifier of the user",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "chatId",
+          "description": "ID of the chat the test case belongs to",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "result": {
+        "name": "GenerateTestResponse",
+        "description": "Generated test result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "validateMessage": {
+              "type": "object",
+              "description": "The validation message containins feedback from the validation stage",
+              "properties": {
+                "body": {
+                  "type": "string",
+                  "description": "The validation message body"
+                }
+              }
+            },
+            "generateMessage": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string",
+                  "description": "The generated test code"
+                },
+                "createdAt": {
+                  "type": "time.Time",
+                  "format": "date-time",
+                  "description": "Timestamp when the message was created"
+                }
+              }
+            },
+            "userId": {
+              "type": "string"
+            },
+            "chatId": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "run_test",
+      "description": "Runs test based on testId, returns either success or failed",
+      "params": [
+        {
+          "name": "userId",
+          "description": "Unique identifier of the user",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "chatId",
+          "description": "ID of the chat the test case belongs to",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "test",
+          "description": "The test code to execute",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "result": {
+        "name": "RunTestResponse",
+        "description": "Test execution result",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "string",
+              "description": "Test execution result (PASSED/FAILED/ERROR)"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
