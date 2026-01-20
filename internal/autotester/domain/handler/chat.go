@@ -246,7 +246,10 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 }
 
 // HandleUpdateChatTitle allows a user to update the title of an existing chat.
+//
+//nolint:funlen
 func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
+	start := time.Now()
 	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
 	defer span.End()
 
@@ -265,18 +268,37 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 
 	chat, err := a.chatStorageService.LoadChat(ctx, uri.ChatId)
 	if err != nil {
-		a.logger.Error("LoadChat failed", "error", err, "chatId", uri.ChatId, "userId", uri.UserId)
+		if errors.Is(err, sharedErrors.ErrChatNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to find user chat")
+			a.metricsService.IncRequestError("find_user_chat_failed")
+			a.metricsService.RecordRequestDuration(time.Since(start))
+			a.logger.Info("chat not found", "chatId", uri.ChatId)
+			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
+			return
+		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to load user chat")
+		a.metricsService.IncRequestError("load_user_chat_failed")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		a.logger.Error("LoadChat failed", "error", err, "chatId", uri.ChatId)
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
 		return
 	}
 
 	if chat.Author != uri.UserId {
-		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Unauthorized"})
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "unauthorized to update chat title")
+		a.metricsService.IncRequestError("unauthorized_update_chat_title")
+		c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "Unauthorized"})
 		return
 	}
 
 	title := strings.TrimSpace(req.Title)
 	if len(title) == 0 || len(title) > 30 {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid chat title length")
+		a.metricsService.IncRequestError("invalid_chat_title_length")
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Title must be 1–30 characters"})
 		return
 	}
@@ -284,6 +306,9 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 	chat.Title = title
 
 	if err := a.chatManager.SaveChat(c.Request.Context(), chat, uri.UserId); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to save updated chat title")
+		a.metricsService.IncRequestError("save_updated_chat_title_failed")
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not save chat"})
 		return
 	}
