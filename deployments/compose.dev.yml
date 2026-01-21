@@ -97,6 +97,11 @@ services:
       - default
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   postgres:
     image: postgres:17-alpine

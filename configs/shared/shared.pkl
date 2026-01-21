@@ -13,7 +13,7 @@ class RedisConfig {
 redis: RedisConfig
 
 class TaglistConfig {
-    Bucket: String = "smart-taglist"
+    bucket: String = "smart-taglist"
     region: String = "eu-central-1"
     entryPrefix: String = "taglist/"
 }
