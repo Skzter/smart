@@ -46,3 +46,18 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 if (!document.queryCommandSupported) {
     document.queryCommandSupported = vi.fn(() => false);
 }
+
+// Mock localStorage for ApiTokenStore
+const localStorageMock: Storage = {
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    length: 0,
+    key: vi.fn(() => null),
+};
+
+Object.defineProperty(global, "localStorage", {
+    value: localStorageMock,
+    writable: true,
+});

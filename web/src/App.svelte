@@ -3,10 +3,14 @@
     import AppSidebar from "$lib/components/Sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
     import LoginButton from "$lib/components/LoginButton.svelte";
-    import { user } from "$lib/shared.svelte";
+    import { user, apiToken } from "$lib/shared.svelte";
     import { onMount } from "svelte";
     import { Toaster } from "$lib/components/ui/sonner";
     import { auth } from "$lib/authService";
+    import type { ApiToken } from "$types/api";
+    import { getApiToken } from "$lib/api";
+    import { toast } from "svelte-sonner";
+    import { AxiosError } from "axios";
 
     onMount(() => {
         const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -23,13 +27,37 @@
         await auth.initAuth();
     });
 
+    let tokenFetched = false;
+
     $effect(() => {
         if ($auth.isAuthenticated && $auth.user) {
             user.id = $auth.user.sub;
+            if (!tokenFetched) {
+                tokenFetched = true;
+                getToken();
+            }
         } else {
             user.id = undefined;
+            tokenFetched = false;
         }
     });
+
+    async function getToken(): Promise<ApiToken | null> {
+        try {
+            let token = (await getApiToken()) as ApiToken;
+            apiToken.token = token.token;
+            return token;
+        } catch (err) {
+            if (err instanceof AxiosError) {
+                let error = err.message;
+                toast.error(error, {
+                    description: "Das war wohl nichts mit der Historie.",
+                });
+            }
+            apiToken.token = null;
+            return null;
+        }
+    }
 </script>
 
 {#if $auth.isAuthenticated}

@@ -19,6 +19,7 @@ vi.mock("axios");
 vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
     chat: { id: "chat456", isLoading: false },
+    apiToken: { token: null },
 }));
 
 describe("API Functions", () => {
@@ -77,6 +78,7 @@ describe("API Functions", () => {
                 method: "post",
                 url: "chat",
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
                 data: mockChatRequest,
             });
             expect(result).toEqual({
@@ -146,6 +148,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: `/chats`,
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
             });
             expect(result).toEqual(mockChatSummaries);
         });
@@ -234,6 +237,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: "template",
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
             });
             expect(result).toEqual(mockTemplate);
         });
@@ -276,6 +280,7 @@ describe("API Functions", () => {
                 method: "post",
                 url: "saveLocal",
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
                 data: mockSaveLocalRequest,
             });
             expect(result).toEqual(mockSaveLocalResponse);
@@ -394,6 +399,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: `/chats/${mockChatId}`,
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
             });
             expect(result).toEqual(mockChatResponse);
         });
@@ -411,6 +417,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: `/chats/differentChat`,
                 baseURL: "http://localhost:8081/api/v1/",
+                headers: {},
             });
         });
 
@@ -445,6 +452,7 @@ describe("API Functions", () => {
                 method: "delete",
                 baseURL: "http://localhost:8081/api/v1/",
                 url: "/deleteLocal",
+                headers: {},
                 params: {
                     testcaseId: mockTestcaseId,
                     chatId: mockChatId,
@@ -467,6 +475,7 @@ describe("API Functions", () => {
                 method: "delete",
                 baseURL: "http://localhost:8081/api/v1/",
                 url: "/deleteLocal",
+                headers: {},
                 params: {
                     testcaseId: mockTestcaseId,
                     chatId: "chat999",
