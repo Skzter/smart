@@ -200,7 +200,7 @@ func TestHandleChatRequest(t *testing.T) {
 }
 
 // nolint:funlen
-func TestHandleChatRequestValIdity(t *testing.T) {
+func TestHandleChatRequestValidity(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")

@@ -99,6 +99,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 
 	if err != nil {
 		s.logger.Warn("Could not parse title from generated test code, using default title", "err", err)
+		chat.Title = "Neuer Chat"
 	} else {
 		chat.Title = title
 	}
@@ -123,11 +124,12 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	return tagList.Format()
 }
 
+var titleRegex = regexp.MustCompile(`test\s*\(\s*["']([^"']+)["']`)
+
 // parseTitleFromRequest extracts a chat title from the generated TypeScript test code.
 // If no valid title is found, returns a fallback "Neuer Chat".
 func (s *generatePrompt) parseTitleFromRequest(respBody string) (string, error) {
-	re := regexp.MustCompile(`test\s*\(\s*["']([^"']+)["']`)
-	matches := re.FindStringSubmatch(respBody)
+	matches := titleRegex.FindStringSubmatch(respBody)
 	if len(matches) > 1 {
 		title := strings.TrimSpace(matches[1])
 		if len(title) > 30 {

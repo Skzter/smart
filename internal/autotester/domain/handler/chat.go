@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -287,10 +288,11 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 	}
 
 	if chat.Author != uri.UserId {
-		span.RecordError(err)
+		authErr := fmt.Errorf("user %s not authorized to update chat %s", uri.UserId, uri.ChatId)
+		span.RecordError(authErr)
 		span.SetStatus(codes.Error, "unauthorized to update chat title")
 		a.metricsService.IncRequestError("unauthorized_update_chat_title")
-		c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "Unauthorized"})
+		c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "Forbidden"})
 		return
 	}
 

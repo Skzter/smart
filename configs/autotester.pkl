@@ -119,7 +119,7 @@ class Prompts {
        - No comments, explanations, or narrative—only code.
        - The string passed as the first argument to test("<Title>", ...) MUST be a short, human-readable, descriptive title that summarizes the overall test intent (e.g. "Login Flow Validation", "Checkout Process with Credit Card").
          - This title must:
-         - Be between 3 and 60 characters
+         - Be between 1 and 30 characters
          - Use plain words (no code, no quotes, no punctuation beyond spaces)
          - Describe the business scenario, not technical steps
          - Be suitable for use as a chat title
