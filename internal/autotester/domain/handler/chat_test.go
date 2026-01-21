@@ -759,7 +759,7 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			ExpectedStatus: http.StatusOK,
 		},
 		{
-			TestName:          "Invalid user Id",
+			TestName:          "Empty user Id",
 			UserId:            "",
 			ChatId:            validChatID,
 			RequestBody:       `{"title":"New Chat Title"}`,
@@ -779,10 +779,35 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			ExpectedErrorText: "could not load chat",
 		},
 		{
+			TestName:    "SaveChat fails",
+			UserId:      validUserID,
+			ChatId:      validChatID,
+			RequestBody: `{"title":"New Chat Title"}`,
+			MockResponseLoad: []*entity.Chat{
+				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			},
+			MockErrorLoad:     []error{nil},
+			MockErrorSave:     []error{errors.New("save failed")},
+			ExpectedStatus:    http.StatusInternalServerError,
+			ExpectedErrorText: "could not save chat",
+		},
+		{
 			TestName:    "Title too long",
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":"1234567890123456789012345678901"}`,
+			MockResponseLoad: []*entity.Chat{
+				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			},
+			MockErrorLoad:     []error{nil},
+			ExpectedStatus:    http.StatusBadRequest,
+			ExpectedErrorText: "Title must be 1–30 characters",
+		},
+		{
+			TestName:    "Empty title",
+			UserId:      validUserID,
+			ChatId:      validChatID,
+			RequestBody: `{"title":" "}`,
 			MockResponseLoad: []*entity.Chat{
 				{Id: validChatID, Author: validUserID, Title: "Old Title"},
 			},
@@ -852,6 +877,18 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 				_ = json.Unmarshal(rec.Body.Bytes(), &resp)
 				if resp.Error != test.ExpectedErrorText {
 					t.Errorf("Expected error '%s', got '%s'", test.ExpectedErrorText, resp.Error)
+				}
+			}
+
+			if test.ExpectedStatus == http.StatusOK {
+				var resp map[string]string
+				_ = json.Unmarshal(rec.Body.Bytes(), &resp)
+
+				if resp["chatId"] != validChatID {
+					t.Errorf("Expected chatId '%s', got '%s'", validChatID, resp["chatId"])
+				}
+				if resp["title"] != "New Chat Title" {
+					t.Errorf("Expected title 'New Chat Title', got '%s'", resp["title"])
 				}
 			}
 		})
