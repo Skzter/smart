@@ -24,6 +24,7 @@ type responseUpdateService struct {
 	tagSearchService TagSearchService
 	databaseRepo     repository.DatabaseRepository
 	validatorService Validator
+	cacheService     CacheService
 }
 
 // ResponseUpdateService defines the contract for updating stored responses based on a test request.
@@ -38,8 +39,9 @@ func NewResponseUpdateService(
 	tagSearchService TagSearchService,
 	databaseRepo repository.DatabaseRepository,
 	validatorService Validator,
+	cacheService CacheService,
 ) (*responseUpdateService, error) {
-	if err := assert.NotNil(logger, tracer, tagSearchService, databaseRepo); err != nil {
+	if err := assert.NotNil(logger, tracer, tagSearchService, databaseRepo, validatorService, cacheService); err != nil {
 		return nil, fmt.Errorf("dependency cannot be nil, %w", err)
 	}
 
@@ -49,10 +51,11 @@ func NewResponseUpdateService(
 		tagSearchService: tagSearchService,
 		databaseRepo:     databaseRepo,
 		validatorService: validatorService,
+		cacheService:     cacheService,
 	}, nil
 }
 
-// UpdateResponse selects, updates, validates, and persists a stored mock response deterministically.
+// UpdateResponse is the public entrypoint.
 func (s *responseUpdateService) UpdateResponse(
 	ctx context.Context,
 	mockRequest *entity.Request,
@@ -64,41 +67,114 @@ func (s *responseUpdateService) UpdateResponse(
 		return fmt.Errorf("mockRequest cannot be nil")
 	}
 
-	if mockRequest.Body == "" {
-		return fmt.Errorf("mockRequest body cannot be empty")
-	}
-
-	updateRequest := &entity.UpdateResponse{}
-	if err := json.Unmarshal([]byte(mockRequest.Body), updateRequest); err != nil {
-		return fmt.Errorf("failed to parse mockRequest body as UpdateResponse: %w", err)
-	}
-
-	if mockRequest.Tags == "" {
-		return fmt.Errorf("update response requires non-empty tags")
-	}
-
-	parquetFiles, err := s.tagSearchService.FindKeysByTags(ctx, mockRequest.Tags)
-	if err != nil {
-		return fmt.Errorf("tag-based search failed: %w", err)
-	}
-
-	if len(parquetFiles) == 0 {
-		return fmt.Errorf("no parquet files found for tags: %s", mockRequest.Tags)
-	}
-
-	requestTags := splitRequestTags(mockRequest.Tags)
-
-	dbEntry, err := s.selectBestMatchingResponse(ctx, parquetFiles, requestTags)
+	requestBody, err := parseRequestBody(mockRequest)
 	if err != nil {
 		return err
 	}
 
-	requestBody, err := parseRequestBody(mockRequest)
-	if err != nil {
-		return fmt.Errorf("failed to parse request body: %w", err)
+	if err := validateRequestBody(requestBody); err != nil {
+		return fmt.Errorf("invalid request body: %w", err)
 	}
 
-	updatedEntry, err := updateResponseFields(dbEntry, updateRequest, requestBody)
+	// 1) Mock cache → early return
+	done, err := s.handleMockCache(ctx, mockRequest)
+	if err != nil {
+		return err
+	}
+	if done {
+		return nil
+	}
+
+	// 2) Resolve base entry (supplier cache OR parquet)
+	baseEntry, err := s.resolveBaseEntry(ctx, mockRequest)
+	if err != nil {
+		return err
+	}
+
+	// 3) Run update pipeline
+	return s.runUpdatePipeline(ctx, baseEntry, requestBody, mockRequest)
+}
+
+// handleMockCache checks the mock cache and returns true if processing is finished.
+func (s *responseUpdateService) handleMockCache(
+	ctx context.Context,
+	mockRequest *entity.Request,
+) (bool, error) {
+	mockCached, mockHit, err := s.cacheService.Lookup(ctx, *mockRequest, true)
+	if err != nil {
+		return false, fmt.Errorf("mock cache lookup failed: %w", err)
+	}
+
+	if !mockHit {
+		return false, nil
+	}
+
+	s.logger.Debug("update-response: mock cache hit")
+
+	var items []json.RawMessage
+	if err := json.Unmarshal(mockCached, &items); err != nil {
+		return false, fmt.Errorf("failed to unmarshal mock cached response: %w", err)
+	}
+
+	if _, err := s.validatorService.Validate(
+		ctx,
+		&entity.SupplierResponse{
+			Data: entity.SupplierOfferList{Items: items},
+		},
+		nil,
+	); err != nil {
+		return false, fmt.Errorf("mock cached response validation failed: %w", err)
+	}
+
+	return true, nil
+}
+
+// resolveBaseEntry determines the base response source.
+func (s *responseUpdateService) resolveBaseEntry(
+	ctx context.Context,
+	mockRequest *entity.Request,
+) (*entity.DatabaseEntry, error) {
+	supplierCached, supplierHit, err := s.cacheService.Lookup(ctx, *mockRequest, false)
+	if err != nil {
+		return nil, fmt.Errorf("supplier cache lookup failed: %w", err)
+	}
+
+	if supplierHit {
+		s.logger.Debug("update-response: supplier cache hit")
+
+		return &entity.DatabaseEntry{
+			Response: entity.Response{
+				Response: string(supplierCached),
+			},
+			Tags: nil,
+		}, nil
+	}
+
+	if mockRequest.Tags == "" {
+		return nil, fmt.Errorf("update response requires non-empty tags")
+	}
+
+	parquetFiles, err := s.tagSearchService.FindKeysByTags(ctx, mockRequest.Tags)
+	if err != nil {
+		return nil, fmt.Errorf("tag-based search failed: %w", err)
+	}
+
+	if len(parquetFiles) == 0 {
+		return nil, fmt.Errorf("no parquet files found for tags: %s", mockRequest.Tags)
+	}
+
+	requestTags := splitRequestTags(mockRequest.Tags)
+	return s.selectBestMatchingResponse(ctx, parquetFiles, requestTags)
+}
+
+// runUpdatePipeline executes the update logic.
+func (s *responseUpdateService) runUpdatePipeline(
+	ctx context.Context,
+	baseEntry *entity.DatabaseEntry,
+	requestBody *entity.RequestBody,
+	mockRequest *entity.Request,
+) error {
+	updatedEntry, err := updateResponseFields(baseEntry, requestBody)
 	if err != nil {
 		return fmt.Errorf("failed to update response fields: %w", err)
 	}
@@ -110,8 +186,10 @@ func (s *responseUpdateService) UpdateResponse(
 
 	if _, err := s.validatorService.Validate(
 		ctx,
-		&entity.SupplierResponse{Data: entity.SupplierOfferList{Items: items}},
-		dbEntry.Tags,
+		&entity.SupplierResponse{
+			Data: entity.SupplierOfferList{Items: items},
+		},
+		baseEntry.Tags,
 	); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
@@ -120,6 +198,103 @@ func (s *responseUpdateService) UpdateResponse(
 		return fmt.Errorf("failed to save updated response: %w", err)
 	}
 
+	if err := s.cacheService.Store(
+		ctx,
+		*mockRequest,
+		[]byte(updatedEntry.Response.Response),
+		true,
+		false,
+	); err != nil {
+		return fmt.Errorf("failed to store in cache: %w", err)
+	}
+
+	return nil
+}
+
+// updateResponseFields updates only time-dependent fields on the ODT response.
+func updateResponseFields(
+	dbEntry *entity.DatabaseEntry,
+	requestBody *entity.RequestBody,
+) (*entity.DatabaseEntry, error) {
+	if dbEntry == nil || dbEntry.Response.Response == "" {
+		return nil, fmt.Errorf("invalid database entry")
+	}
+
+	var response entity.ODTResponse
+	if err := json.Unmarshal([]byte(dbEntry.Response.Response), &response); err != nil {
+		return nil, fmt.Errorf("failed to parse ODT response: %w", err)
+	}
+
+	for i := range response.Data.Items {
+		item := &response.Data.Items[i]
+
+		item.DepartureDate = requestBody.DepartureDate
+		item.ReturnDate = requestBody.ReturnDate
+		item.CheckInHotel = requestBody.DepartureDate
+		item.CheckOutHotel = requestBody.ReturnDate
+
+		item.OvernightDuration =
+			calculateOvernightDuration(
+				requestBody.DepartureDate,
+				requestBody.ReturnDate,
+			)
+
+		item.Availability = true
+
+		if item.OfferID == "" {
+			item.OfferID = uuid.NewString()
+		}
+	}
+
+	serialized, err := json.Marshal(response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize updated response: %w", err)
+	}
+
+	updated := *dbEntry
+	updated.Response.Response = string(serialized)
+	updated.Updated = true
+
+	return &updated, nil
+}
+
+// calculateOvernightDuration computes the number of nights between check-in and check-out dates.
+func calculateOvernightDuration(checkIn, checkOut string) int {
+	in, err1 := time.Parse("2006-01-02", checkIn)
+	out, err2 := time.Parse("2006-01-02", checkOut)
+
+	if err1 != nil || err2 != nil || !out.After(in) {
+		return 0
+	}
+
+	return int(out.Sub(in).Hours() / 24)
+}
+
+// parseRequestBody parses the request body.
+func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
+	if mockRequest == nil || mockRequest.Body == "" {
+		return nil, fmt.Errorf("mockRequest body cannot be empty")
+	}
+
+	var body entity.RequestBody
+	if err := json.Unmarshal([]byte(mockRequest.Body), &body); err != nil {
+		return nil, fmt.Errorf("failed to parse mockRequest body: %w", err)
+	}
+
+	return &body, nil
+}
+
+// validateRequestBody validates required request fields.
+func validateRequestBody(body *entity.RequestBody) error {
+	if body.DepartureDate == "" || body.ReturnDate == "" {
+		return fmt.Errorf("departureDate and returnDate are required")
+	}
+	if len(body.DepartureAirportList) == 0 {
+		return fmt.Errorf("at least one departure airport is required")
+	}
+	if len(body.Travelers) == 0 {
+		return fmt.Errorf("travelers must be provided")
+	}
 	return nil
 }
 
@@ -193,135 +368,4 @@ func tagScore(requestTags, responseTags []string) int {
 		}
 	}
 	return score
-}
-
-// updateResponseFields applies rule-based item updates and recomputes all ODT data-level aggregates.
-func updateResponseFields(
-	dbEntry *entity.DatabaseEntry,
-	updateRequest *entity.UpdateResponse,
-	requestBody *entity.RequestBody,
-) (*entity.DatabaseEntry, error) {
-	if dbEntry == nil || dbEntry.Response.Response == "" {
-		return nil, fmt.Errorf("invalid database entry")
-	}
-
-	var response entity.UpdateResponse
-	if err := json.Unmarshal([]byte(dbEntry.Response.Response), &response); err != nil {
-		return nil, fmt.Errorf("failed to parse stored response JSON: %w", err)
-	}
-
-	minPrice := 0.0
-	maxPrice := 0.0
-	availableOffers := 0
-
-	minLen := len(response.Data.Items)
-	if len(updateRequest.Data.Items) < minLen {
-		minLen = len(updateRequest.Data.Items)
-	}
-
-	for i := 0; i < minLen; i++ {
-		item := &response.Data.Items[i]
-		upd := &updateRequest.Data.Items[i]
-
-		if upd.DepartureDate != "" {
-			item.DepartureDate = upd.DepartureDate
-		} else {
-			item.DepartureDate = requestBody.DepartureDate
-		}
-
-		if upd.ReturnDate != "" {
-			item.ReturnDate = upd.ReturnDate
-		} else {
-			item.ReturnDate = requestBody.ReturnDate
-		}
-
-		if upd.CheckInHotel != "" {
-			item.CheckInHotel = upd.CheckInHotel
-		}
-
-		if upd.CheckOutHotel != "" {
-			item.CheckOutHotel = upd.CheckOutHotel
-		}
-
-		item.OvernightDuration = calculateOvernightDuration(
-			item.CheckInHotel,
-			item.CheckOutHotel,
-		)
-
-		item.Availability = true
-		availableOffers++
-
-		if upd.Price > 0 {
-			item.Price = upd.Price
-		} else if updateRequest.Data.MinPrice > 0 {
-			item.Price *= updateRequest.Data.MinPrice
-		}
-
-		if i == 0 || item.Price < minPrice {
-			minPrice = item.Price
-		}
-		if item.Price > maxPrice {
-			maxPrice = item.Price
-		}
-
-		if upd.Currency != "" {
-			item.Currency = upd.Currency
-		}
-		if upd.Description != "" {
-			item.Description = upd.Description
-		}
-
-		if upd.OfferID != "" {
-			item.OfferID = upd.OfferID
-		} else {
-			item.OfferID = uuid.NewString()
-		}
-	}
-
-	response.Data.ResultCount = len(response.Data.Items)
-	response.Data.CalculatedResultCount = len(response.Data.Items)
-	response.Data.AvailableOffers = availableOffers
-	response.Data.MinPrice = minPrice
-	response.Data.MaxPrice = maxPrice
-
-	serialized, err := json.Marshal(response)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize updated response: %w", err)
-	}
-
-	updated := *dbEntry
-	updated.Response.Response = string(serialized)
-	updated.Updated = true
-
-	return &updated, nil
-}
-
-// calculateOvernightDuration computes the number of nights between check-in and check-out dates.
-func calculateOvernightDuration(checkIn, checkOut string) int {
-	in, err1 := time.Parse("2006-01-02", checkIn)
-	out, err2 := time.Parse("2006-01-02", checkOut)
-
-	if err1 != nil || err2 != nil || !out.After(in) {
-		return 0
-	}
-
-	return int(out.Sub(in).Hours() / 24)
-}
-
-// parseRequestBody parses the raw request body into a typed RequestBody structure.
-func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
-	if mockRequest == nil {
-		return nil, fmt.Errorf("mockRequest cannot be nil")
-	}
-
-	if mockRequest.Body == "" {
-		return nil, fmt.Errorf("mockRequest body cannot be empty")
-	}
-
-	var body entity.RequestBody
-	if err := json.Unmarshal([]byte(mockRequest.Body), &body); err != nil {
-		return nil, fmt.Errorf("failed to parse mockRequest body: %w", err)
-	}
-
-	return &body, nil
 }
