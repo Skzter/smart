@@ -49,7 +49,7 @@ func (ls *TestLogStreamResource) ReadTestLogStream(ctx context.Context, req *mcp
 	const suffix = "/logs"
 	if !strings.HasPrefix(uri, prefix) || !strings.HasSuffix(uri, suffix) {
 		ls.logger.Warn("invalid test logs uri", "uri", uri)
-		return nil, nil
+		return nil, fmt.Errorf("invalid test logs uri: %s", uri)
 	}
 
 	testId := strings.TrimSuffix(strings.TrimPrefix(uri, prefix), suffix)
@@ -69,7 +69,7 @@ func (ls *TestLogStreamResource) ReadTestLogStream(ctx context.Context, req *mcp
 		},
 	}
 
-	b, err := json.Marshal(payload)
+	serializedPayload, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		ls.logger.Error("failed to marshal log events", "err", err)
 		return nil, err
@@ -78,7 +78,7 @@ func (ls *TestLogStreamResource) ReadTestLogStream(ctx context.Context, req *mcp
 	contents := &mcp.ResourceContents{
 		URI:      uri,
 		MIMEType: "application/json",
-		Text:     string(b),
+		Text:     string(serializedPayload),
 	}
 
 	return &mcp.ReadResourceResult{
