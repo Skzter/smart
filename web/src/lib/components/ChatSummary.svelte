@@ -97,6 +97,11 @@
             return;
         }
 
+        if (trimmed.length > 30) {
+            toast.error("Titel darf maximal 30 Zeichen lang sein");
+            return;
+        }
+
         try {
             const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
             updateChatTitleState?.(updated.chatId, updated.title);
@@ -115,14 +120,7 @@
         const newTitle = target.value.trim();
         if (!newTitle || newTitle === summary.title) return;
 
-        saveTitle(newTitle)
-            .then(() => {
-                updateChatTitleState?.(summary.chatId, newTitle);
-                toast.success("Chat title updated successfully");
-            })
-            .catch((err) => {
-                toast.error("Failed to save chat title: " + err.message);
-            });
+        saveTitle(newTitle);
     }
 
 </script>
