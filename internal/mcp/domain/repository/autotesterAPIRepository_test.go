@@ -124,14 +124,14 @@ func TestValidatePrompt(t *testing.T) {
 		{
 			name:         "success - valid prompt",
 			statusCode:   http.StatusOK,
-			responseBody: `{"message":{"body":""},"userId":"user-123","chatId":"conv-456"}`,
+			responseBody: `{"message":{"body":""},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
 			expectedMsg:  "",
 		},
 		{
 			name:         "success - invalid prompt with feedback",
 			statusCode:   http.StatusOK,
-			responseBody: `{"message":{"body":"Please provide more context"},"userId":"user-123","chatId":"conv-456"}`,
+			responseBody: `{"message":{"body":"Please provide more context"},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
 			expectedMsg:  "Please provide more context",
 		},
@@ -170,7 +170,7 @@ func TestValidatePrompt(t *testing.T) {
 			req := &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.ValidatePrompt(context.Background(), req)
@@ -183,7 +183,7 @@ func TestValidatePrompt(t *testing.T) {
 			require.NotNil(t, res)
 			require.Equal(t, test.expectedMsg, res.Result.Body)
 			require.Equal(t, "user-123", res.UserId)
-			require.Equal(t, "conv-456", res.ChatId)
+			require.Equal(t, "chat-456", res.ChatId)
 		})
 	}
 }
@@ -200,7 +200,7 @@ func TestGenerateTest(t *testing.T) {
 		{
 			name:         "success",
 			statusCode:   http.StatusOK,
-			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","conversationId":"conv-456"}`,
+			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
 			expectedTest: "generated test code",
 		},
@@ -239,7 +239,7 @@ func TestGenerateTest(t *testing.T) {
 			req := &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.GenerateTest(context.Background(), req)
@@ -306,7 +306,7 @@ func TestSaveTest(t *testing.T) {
 			req := &entity.SaveTestRequest{
 				Code:   "test code",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.SaveTest(context.Background(), req)
@@ -376,7 +376,7 @@ func TestRunTest(t *testing.T) {
 			req := &entity.RunTestRequest{
 				TestId: "test code",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			}
 
 			res, err := repo.RunTest(context.Background(), req)
