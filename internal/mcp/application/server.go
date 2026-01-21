@@ -72,7 +72,7 @@ func (m *McpServer) registerTools() error {
 	if err != nil {
 		return err
 	}
-	readTestLogStreamTool, err := tools.NewReadTestLogStreamTool(m.logger, m.store)
+	readTestLogsTool, err := tools.NewReadTestLogsTool(m.logger, m.store)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ func (m *McpServer) registerTools() error {
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "read_testLogStream",
 		Description: "Reads logstream based on testId",
-	}, readTestLogStreamTool.ReadTestLogStream)
+	}, readTestLogsTool.ReadTestLogStream)
 
 	m.logger.Debug("Registered tool: read_testLogStream")
 
