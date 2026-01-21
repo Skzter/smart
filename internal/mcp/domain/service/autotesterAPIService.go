@@ -143,6 +143,11 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 	return &entity.ExecuteTestResponse{Result: combined, TestId: saveResp.TestId}, nil
 }
 
+// ReadTestLogStream reads SSE events and stores them.
+//
+// Technical: producer–consumer using two goroutines — producer reads SSE into a
+// buffered channel, consumer drains the channel and writes to the store. Coordination
+// is via `errgroup` and a derived context.
 func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
 

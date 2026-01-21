@@ -143,8 +143,9 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 	return &result, nil
 }
 
-// ReadTestLogStream establishes an SSE connection to the backend stream.
-// It is a blocking call and follows the lifecycle of the provided context.
+// ReadTestLogStream establishes an SSE connection to the backend stream and
+// parses events in a line-oriented manner.
+// The method is blocking and follows the lifecycle of `ctx`
 func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
 	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
 	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
@@ -222,7 +223,6 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 
 // newJSONRequest creates an HTTP request with an optional JSON body and sets
 // the Content-Type header when a body is provided.
-// --- helpers bound to the repository struct ---
 func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {

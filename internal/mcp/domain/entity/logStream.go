@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// LogStream represents a stream of log events with thread-safe access and creation timestamp.
+// LogStream represents a stream of log events with thread-safe access, creation and last accessed timestamp.
 type LogStream struct {
 	events         []LogEvent
 	completed      bool

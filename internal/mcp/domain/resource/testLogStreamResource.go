@@ -1,4 +1,3 @@
-// Package resource provides MCP resource implementations for the autotester system.
 package resource
 
 import (
@@ -14,20 +13,17 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// TestLogStreamResource handles MCP resource requests for test execution logs.
-// It serves as the data provider for test logs that LLMs can access through a dedicated
-// read_test_logs tool. The resource supports signaling whether the test execution is still
-// running (final: false) or completed (final: true), allowing LLMs to make intelligent
-// decisions about polling for new logs.
+// TestLogStreamResource implements an MCP resource that provides test execution logs to
+// MCP clients. Clients receive a JSON payload containing the accumulated SSE events and
+// a `meta.final` boolean indicating whether the test run has completed.
 type TestLogStreamResource struct {
 	logger *slog.Logger
 	store  store.TestLogStreamStore
 }
 
 // NewTestLogStreamResource creates a new TestLogStreamResource instance.
-// It validates that all required dependencies (logger and autotesterAPIService) are provided.
-//
-// Returns an error if any dependency is nil.
+// It validates that required dependencies (logger and store) are provided and returns an
+// error if any dependency is nil.
 func NewTestLogStreamResource(logger *slog.Logger, store store.TestLogStreamStore) (*TestLogStreamResource, error) {
 	if err := assert.NotNil(logger, store); err != nil {
 		return nil, err
@@ -38,9 +34,9 @@ func NewTestLogStreamResource(logger *slog.Logger, store store.TestLogStreamStor
 	}, nil
 }
 
-// ReadTestLogStream reads test execution logs for a given testId from the MCP resource request.
-// It extracts the testId from the resource URI (format: mcp://tests/{testId}/logs) and fetches
-// the accumulated logs from the autotester service.
+// ReadTestLogStream handles MCP read requests for a test's log stream. The request URI must
+// use the format `mcp://tests/{testId}/logs`. The method extracts the `testId`, fetches the
+// accumulated events from the store and returns JSON with `events` and `meta.final`.
 func (ls *TestLogStreamResource) ReadTestLogStream(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
 	uri := req.Params.URI
 
