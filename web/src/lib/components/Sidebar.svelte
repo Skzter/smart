@@ -18,7 +18,7 @@
     let container = $state<HTMLElement | null>(null);
 
     let timeout = 500;
-    const maxTimout = 10000;
+    const maxTimeout = 10000;
     const scrollThreshold = 100; // Load more when within 100px of bottom
 
     let hasMore = $state(true);
@@ -62,8 +62,8 @@
                 error = "Unbekannter Fehler";
                 toast.error("Unbekannter Fehler", {});
             }
-            if (timeout < maxTimout) {
-                timeout = Math.min(timeout * 2, maxTimout);
+            if (timeout < maxTimeout) {
+                timeout = Math.min(timeout * 2, maxTimeout);
             }
             setTimeout(loadMore, timeout);
         } finally {

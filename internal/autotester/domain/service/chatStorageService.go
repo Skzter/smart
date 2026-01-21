@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
+	"sort"
 	"sync"
 
 	"go.opentelemetry.io/otel/codes"
@@ -27,16 +27,6 @@ type ChatStorageService interface {
 	// The resulting slice is ordered by updatedAt in descending order.
 	// Returns whether more summaries exist.
 	LoadSummaries(ctx context.Context, offset int, limit int, groupIds ...string) ([]*entity.ChatSummary, bool, error)
-}
-
-func sort(ids []*entity.ChatSummary) {
-	// sort in descending order by UpdatedAt
-	slices.SortFunc(ids, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
-		if updated := -a.UpdatedAt.Compare(b.UpdatedAt); updated != 0 {
-			return updated
-		}
-		return strings.Compare(a.ChatId, b.ChatId)
-	})
 }
 
 // chatStorageService implements the ChatStorageService interface
@@ -63,7 +53,9 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		return nil, err
 	}
 
-	sort(summaries)
+	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
+		return a.Cmp(b)
+	})
 
 	return &chatStorageService{
 		logger:    logger,
@@ -88,41 +80,37 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		return err
 	}
 
-	var summary entity.ChatSummary
-	s.lock.RLock()
-	index := slices.IndexFunc(s.summaries, func(existing *entity.ChatSummary) bool {
-		return existing.ChatId == chat.Id
-	})
-	if index != -1 {
-		summary = *s.summaries[index]
-		summary.UpdatedAt = chat.UpdatedAt
-		summary.Groups = chat.Groups
-	} else {
-		summary = entity.ChatSummary{
-			ChatId:         chat.Id,
-			Author:         chat.Author,
-			Groups:         chat.Groups,
-			LastModifiedBy: chat.LastModifiedBy,
-			Title:          chat.Title,
-			CreatedAt:      chat.CreatedAt,
-			UpdatedAt:      chat.UpdatedAt,
-		}
+	summary := &entity.ChatSummary{
+		ChatId:         chat.Id,
+		Author:         chat.Author,
+		Groups:         chat.Groups,
+		LastModifiedBy: chat.LastModifiedBy,
+		Title:          chat.Title,
+		CreatedAt:      chat.CreatedAt,
+		UpdatedAt:      chat.UpdatedAt,
 	}
-	s.lock.RUnlock()
 
-	if err := s.repo.Create(ctx, chat, &summary); err != nil {
+	if err := s.repo.Create(ctx, chat, summary); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
 	}
+
 	s.lock.Lock()
-	if index != -1 {
-		s.summaries[index] = &summary
+	defer s.lock.Unlock()
+
+	insertPos, _ := sort.Find(len(s.summaries), func(i int) int {
+		return summary.Cmp(s.summaries[i])
+	})
+
+	if index := slices.IndexFunc(s.summaries, func(existing *entity.ChatSummary) bool {
+		return existing.ChatId == chat.Id
+	}); index != -1 {
+		copy(s.summaries[insertPos+1:index+1], s.summaries[insertPos:index])
+		s.summaries[insertPos] = summary
 	} else {
-		s.summaries = append(s.summaries, &summary)
-		sort(s.summaries)
+		s.summaries = append(s.summaries[:insertPos], append([]*entity.ChatSummary{summary}, s.summaries[insertPos:]...)...)
 	}
-	s.lock.Unlock()
 
 	return nil
 }
