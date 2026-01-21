@@ -17,6 +17,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
+// responseUpdateService implements the orchestration logic for updating persisted mock responses.
 type responseUpdateService struct {
 	logger           *slog.Logger
 	tracer           trace.Tracer
@@ -25,12 +26,12 @@ type responseUpdateService struct {
 	validatorService Validator
 }
 
-// ResponseUpdateService defines the contract for updating persisted responses based on a given test request.
+// ResponseUpdateService defines the contract for updating stored responses based on a test request.
 type ResponseUpdateService interface {
 	UpdateResponse(ctx context.Context, mockRequest *entity.Request) error
 }
 
-// NewResponseUpdateService creates the service and ensures all required dependencies are provided.
+// NewResponseUpdateService constructs a ResponseUpdateService with all required dependencies.
 func NewResponseUpdateService(
 	logger *slog.Logger,
 	tracer trace.Tracer,
@@ -51,7 +52,7 @@ func NewResponseUpdateService(
 	}, nil
 }
 
-// UpdateResponse orchestrates the full workflow: select, update, validate and persist a mock response.
+// UpdateResponse selects, updates, validates, and persists a stored mock response deterministically.
 func (s *responseUpdateService) UpdateResponse(
 	ctx context.Context,
 	mockRequest *entity.Request,
@@ -67,7 +68,6 @@ func (s *responseUpdateService) UpdateResponse(
 		return fmt.Errorf("mockRequest body cannot be empty")
 	}
 
-	// Parse the request body as an update instruction for the response.
 	updateRequest := &entity.UpdateResponse{}
 	if err := json.Unmarshal([]byte(mockRequest.Body), updateRequest); err != nil {
 		return fmt.Errorf("failed to parse mockRequest body as UpdateResponse: %w", err)
@@ -77,7 +77,6 @@ func (s *responseUpdateService) UpdateResponse(
 		return fmt.Errorf("update response requires non-empty tags")
 	}
 
-	// Find stored responses matching the request tags.
 	parquetFiles, err := s.tagSearchService.FindKeysByTags(ctx, mockRequest.Tags)
 	if err != nil {
 		return fmt.Errorf("tag-based search failed: %w", err)
@@ -89,23 +88,21 @@ func (s *responseUpdateService) UpdateResponse(
 
 	requestTags := splitRequestTags(mockRequest.Tags)
 
-	// Select the best matching stored response based on tag overlap.
 	dbEntry, err := s.selectBestMatchingResponse(ctx, parquetFiles, requestTags)
 	if err != nil {
 		return err
 	}
 
-	// Parse the same request body as a test-request context (dates, travelers, etc.).
 	requestBody, err := parseRequestBody(mockRequest)
 	if err != nil {
 		return fmt.Errorf("failed to parse request body: %w", err)
 	}
 
-	// Apply rule-based transformations to the stored response.
 	updatedEntry, err := updateResponseFields(dbEntry, updateRequest, requestBody)
 	if err != nil {
 		return fmt.Errorf("failed to update response fields: %w", err)
 	}
+
 	var items []json.RawMessage
 	if err := json.Unmarshal([]byte(updatedEntry.Response.Response), &items); err != nil {
 		return fmt.Errorf("failed to unmarshal updated response: %w", err)
@@ -119,7 +116,6 @@ func (s *responseUpdateService) UpdateResponse(
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	// Persist the updated response back to storage.
 	if err := s.databaseRepo.CreateRequest(ctx, *updatedEntry); err != nil {
 		return fmt.Errorf("failed to save updated response: %w", err)
 	}
@@ -156,7 +152,7 @@ func (s *responseUpdateService) selectBestMatchingResponse(
 	return bestEntry, nil
 }
 
-// splitRequestTags normalizes a comma-separated tag string into a clean slice.
+// splitRequestTags normalizes a comma-separated request tag string into a slice.
 func splitRequestTags(tags string) []string {
 	raw := strings.Split(tags, ",")
 	out := make([]string, 0, len(raw))
@@ -183,7 +179,7 @@ func splitResponseTags(tags *sharedEntity.TagList) []string {
 	return out
 }
 
-// tagScore counts how many tags are shared between request and response.
+// tagScore computes the number of shared tags between request and response.
 func tagScore(requestTags, responseTags []string) int {
 	set := make(map[string]struct{}, len(responseTags))
 	for _, t := range responseTags {
@@ -199,7 +195,7 @@ func tagScore(requestTags, responseTags []string) int {
 	return score
 }
 
-// updateResponseFields applies deterministic, rule-based updates to a stored response.
+// updateResponseFields applies rule-based item updates and recomputes all ODT data-level aggregates.
 func updateResponseFields(
 	dbEntry *entity.DatabaseEntry,
 	updateRequest *entity.UpdateResponse,
@@ -209,13 +205,15 @@ func updateResponseFields(
 		return nil, fmt.Errorf("invalid database entry")
 	}
 
-	// Deserialize the stored response into an editable structure.
 	var response entity.UpdateResponse
 	if err := json.Unmarshal([]byte(dbEntry.Response.Response), &response); err != nil {
 		return nil, fmt.Errorf("failed to parse stored response JSON: %w", err)
 	}
 
-	// Iterate over items and apply transformation rules field by field.
+	minPrice := 0.0
+	maxPrice := 0.0
+	availableOffers := 0
+
 	minLen := len(response.Data.Items)
 	if len(updateRequest.Data.Items) < minLen {
 		minLen = len(updateRequest.Data.Items)
@@ -251,11 +249,19 @@ func updateResponseFields(
 		)
 
 		item.Availability = true
+		availableOffers++
 
 		if upd.Price > 0 {
 			item.Price = upd.Price
 		} else if updateRequest.Data.MinPrice > 0 {
 			item.Price *= updateRequest.Data.MinPrice
+		}
+
+		if i == 0 || item.Price < minPrice {
+			minPrice = item.Price
+		}
+		if item.Price > maxPrice {
+			maxPrice = item.Price
 		}
 
 		if upd.Currency != "" {
@@ -272,7 +278,12 @@ func updateResponseFields(
 		}
 	}
 
-	// Serialize the updated response back to JSON for persistence.
+	response.Data.ResultCount = len(response.Data.Items)
+	response.Data.CalculatedResultCount = len(response.Data.Items)
+	response.Data.AvailableOffers = availableOffers
+	response.Data.MinPrice = minPrice
+	response.Data.MaxPrice = maxPrice
+
 	serialized, err := json.Marshal(response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize updated response: %w", err)
@@ -285,7 +296,7 @@ func updateResponseFields(
 	return &updated, nil
 }
 
-// calculateOvernightDuration computes the number of nights between check-in and check-out.
+// calculateOvernightDuration computes the number of nights between check-in and check-out dates.
 func calculateOvernightDuration(checkIn, checkOut string) int {
 	in, err1 := time.Parse("2006-01-02", checkIn)
 	out, err2 := time.Parse("2006-01-02", checkOut)
@@ -297,7 +308,7 @@ func calculateOvernightDuration(checkIn, checkOut string) int {
 	return int(out.Sub(in).Hours() / 24)
 }
 
-// parseRequestBody parses the test-request payload into a typed RequestBody structure.
+// parseRequestBody parses the raw request body into a typed RequestBody structure.
 func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
 	if mockRequest == nil {
 		return nil, fmt.Errorf("mockRequest cannot be nil")
