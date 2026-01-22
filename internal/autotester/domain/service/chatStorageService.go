@@ -197,21 +197,23 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limi
 }
 
 func findFromGroups(summaries []*entity.ChatSummary, groupIds []string, maxResults int) []*entity.ChatSummary {
-	result := make([]*entity.ChatSummary, 0, maxResults)
+	groupMap := make(map[string]bool, len(groupIds))
+	for _, id := range groupIds {
+		groupMap[id] = true
+	}
 
+	result := make([]*entity.ChatSummary, 0, maxResults)
 	for _, summary := range summaries {
 		if len(result) >= maxResults {
 			break
 		}
 
-		belongsToGroup := slices.ContainsFunc(summary.Groups, func(groupId string) bool {
-			return slices.Contains(groupIds, groupId)
-		})
-
-		if belongsToGroup {
-			result = append(result, summary)
+		for _, groupId := range summary.Groups {
+			if groupMap[groupId] {
+				result = append(result, summary)
+				break
+			}
 		}
 	}
-
 	return result
 }
