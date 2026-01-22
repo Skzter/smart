@@ -241,6 +241,8 @@ tasks:
       - echo "Quality Gate checking test coverage is above threshold"
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
       - ./scripts/check-coverage.sh {{.TESTCOVERAGE_THRESHOLD}} coverage.out
+      - echo "Running race detector tests"
+      - go tool gotestsum -- -race -tags=racetest ./...
     silent: true
 
   test-integration:
