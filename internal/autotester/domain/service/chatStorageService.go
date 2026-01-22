@@ -83,10 +83,12 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	}
 
 	if err := s.cache.Store(ctx, chat); err != nil {
-		s.logger.Warn("cache store error", "error", err.Error())
+		s.logger.Debug("cache store error", "error", err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat in cache")
 	}
+
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -109,14 +111,14 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	// cache miss produces nil, nil
 	cachedChat, err := s.cache.LookUp(ctx, chatId)
 	if err != nil {
-		s.logger.Info("cache lookup error", "error", err)
+		s.logger.Debug("cache lookup error", "error", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "cache access error")
 	}
 
 	if cachedChat != nil {
 		if err := s.validator.ValidateChat(ctx, cachedChat); err != nil {
-			s.logger.Warn("retrieved invalid chat from cache", "error", err)
+			s.logger.Debug("retrieved invalid chat from cache", "error", err)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "retrieved invalid chat from cache")
 		} else {
@@ -140,7 +142,7 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	}
 
 	if err := s.cache.Store(ctx, chat); err != nil {
-		s.logger.Warn("cache store error", "error", err.Error())
+		s.logger.Debug("cache store error", "error", err.Error())
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat in cache")
 	}
