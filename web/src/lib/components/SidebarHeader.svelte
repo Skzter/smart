@@ -12,57 +12,72 @@
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
 
+    import { toast } from "svelte-sonner";
     import type { ApiGroup } from "$types/api";
 
     let groups: ApiGroup[] = [];
-    let open = false;
+    let groupsLoading = false;
+    let groupsError = "";
 
+    let open = false;
     let groupName = "";
     let description = "";
 
     async function loadGroups() {
+        groupsLoading = true;
+        groupsError = "";
         try {
             groups = await getGroups();
         } catch (e) {
             console.error("Failed to load groups", e);
             groups = [];
+            groupsError = "Failed to load groups";
+            toast.error("Gruppen konnten nicht geladen werden", {
+                description: "Bitte versuch es später nochmal.",
+            });
+        } finally {
+            groupsLoading = false;
         }
     }
 
-    function isSelected(id: string): boolean {
-        return GroupFilter.selectedIds.includes(id);
-    }
-
-    function toggleGroup(id: string) {
-        if (isSelected(id)) {
-            GroupFilter.selectedIds = GroupFilter.selectedIds.filter(
-                (x) => x !== id,
-            );
+    function toggleGroup(groupId: string) {
+        const selected = GroupFilter.selectedIds;
+        if (selected.includes(groupId)) {
+            GroupFilter.selectedIds = selected.filter((id) => id !== groupId);
         } else {
-            GroupFilter.selectedIds = [...GroupFilter.selectedIds, id];
+            GroupFilter.selectedIds = [...selected, groupId];
         }
     }
 
-    function clearGroupFilter() {
+    function resetGroupFilter() {
         GroupFilter.selectedIds = [];
     }
 
     async function submit() {
         const userId = user.id;
         if (!userId) return;
-        if (!groupName.trim()) return;
 
-        await createGroup({
-            groupName,
-            description,
-            userId,
-        });
+        const name = groupName.trim();
+        if (!name) return;
 
-        groupName = "";
-        description = "";
-        open = false;
+        try {
+            await createGroup({
+                groupName: name,
+                description: description.trim(),
+                userId,
+            });
 
-        await loadGroups();
+            toast.success("Gruppe erstellt");
+
+            groupName = "";
+            description = "";
+            open = false;
+
+            await loadGroups();
+        } catch (e) {
+            console.error("Failed to create group", e);
+            toast.error("Gruppe konnte nicht erstellt werden");
+        }
     }
 
     onMount(loadGroups);
@@ -79,15 +94,15 @@
             <div class="flex items-center justify-between text-sm font-medium">
                 <span>Groups</span>
 
-                <div class="flex items-center gap-1">
+                <div class="flex items-center gap-2">
                     <Button
                         size="sm"
                         variant="ghost"
+                        onclick={resetGroupFilter}
                         disabled={GroupFilter.selectedIds.length === 0}
-                        onclick={clearGroupFilter}
-                        aria-label="Clear group filter"
+                        aria-label="Gruppenfilter zurücksetzen"
                     >
-                        Clear
+                        Reset
                     </Button>
 
                     <Dialog.Root bind:open>
@@ -130,23 +145,36 @@
                 </div>
             </div>
 
-            {#if groups.length === 0}
+            {#if groupsLoading}
+                <p class="mt-1 text-xs text-muted-foreground">
+                    Loading groups…
+                </p>
+            {:else if groupsError}
+                <p class="mt-1 text-xs text-destructive">
+                    {groupsError}
+                </p>
+            {:else if groups.length === 0}
                 <p class="mt-1 text-xs text-muted-foreground">
                     Keine Gruppen vorhanden
                 </p>
             {:else}
-                <ul class="mt-1 space-y-1">
+                <ul class="mt-2 space-y-1">
                     {#each groups as group}
                         <li>
                             <button
                                 type="button"
-                                class="w-full rounded px-2 py-1 text-left text-xs hover:bg-muted"
-                                class:bg-muted={isSelected(group.id)}
-                                class:font-semibold={isSelected(group.id)}
+                                class="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs hover:bg-muted"
+                                aria-pressed={GroupFilter.selectedIds.includes(
+                                    group.id,
+                                )}
                                 onclick={() => toggleGroup(group.id)}
-                                aria-pressed={isSelected(group.id)}
                             >
-                                {group.name}
+                                <span class="truncate">{group.name}</span>
+                                {#if GroupFilter.selectedIds.includes(group.id)}
+                                    <span class="ml-2 text-muted-foreground">
+                                        ✓
+                                    </span>
+                                {/if}
                             </button>
                         </li>
                     {/each}

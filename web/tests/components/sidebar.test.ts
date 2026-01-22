@@ -523,15 +523,21 @@ describe("Sidebar", () => {
         });
     });
 
-    it("calls getChats with selected group ids", async () => {
-        GroupFilter.selectedIds = ["g1", "g2"];
+    it("resets group filter and loads all chats", async () => {
+        GroupFilter.selectedIds = ["g1"];
         vi.mocked(getChats).mockResolvedValue([]);
 
         render(SidebarTestWrapper);
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenCalledWith(["g1"]);
+        });
+
+        GroupFilter.selectedIds = [];
         await tick();
 
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalledWith(["g1", "g2"]);
+            expect(getChats).toHaveBeenCalledWith([]);
         });
     });
 });
