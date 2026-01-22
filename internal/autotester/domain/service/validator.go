@@ -25,6 +25,7 @@ type Validator interface {
 	ValidateRequest(ctx context.Context, req sharedEntity.Request) error
 	ValidateChat(ctx context.Context, chat *entity.Chat) error
 	ValidateMessage(ctx context.Context, msg *sharedEntity.Message) error
+	ValidateGroup(ctx context.Context, group *entity.Group) error
 }
 
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
@@ -87,7 +88,7 @@ func (s *validator) ValidatePrompt(ctx context.Context, chat *entity.Chat, reque
 	}
 
 	if llmResponse.Valid {
-		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeUser
+		chat.Messages[len(chat.Messages)-1].Type = entity.MessageTypeAny
 	}
 
 	chat.AddMessage(resp, entity.MessageTypeValidation)
@@ -108,11 +109,21 @@ func (s *validator) ValidateChat(ctx context.Context, chat *entity.Chat) error {
 
 	if err := assert.StringsNotEmpty(
 		chat.Id,
-		chat.UserId,
+		chat.Author,
+		chat.LastModifiedBy,
 	); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing fields")
 		return fmt.Errorf("missing fields %w", err)
+	}
+
+	// asserts that chat doesn't contain empty chatIds
+	if err := assert.StringsNotEmpty(
+		chat.Groups...,
+	); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid groups")
+		return fmt.Errorf("invalid groups %w", err)
 	}
 
 	if chat.UpdatedAt.IsZero() {
@@ -224,6 +235,37 @@ func (s *validator) ValidateMessage(ctx context.Context, msg *sharedEntity.Messa
 	}
 
 	if msg.CreatedAt.IsZero() {
+		err := fmt.Errorf("createdAt is Zero")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "createdAt zero")
+		return err
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+// ValidateGroup validates a Group entity.
+// Returns an error if any required field is empty or invalid.
+func (s *validator) ValidateGroup(ctx context.Context, group *entity.Group) error {
+	if err := assert.NotNil(ctx, group); err != nil {
+		return err
+	}
+
+	_, span := s.tracer.Start(ctx, "validator.ValidateGroup")
+	defer span.End()
+
+	if err := assert.StringsNotEmpty(
+		group.Id,
+		group.Name,
+		group.CreatedBy,
+	); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing fields")
+		return fmt.Errorf("missing fields %w", err)
+	}
+
+	if group.CreatedAt.IsZero() {
 		err := fmt.Errorf("createdAt is Zero")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "createdAt zero")

@@ -28,6 +28,19 @@ services:
       - DD_TRACE_AGENT_PORT=8126
       - DD_SITE=us5.datadoghq.com
 
+  autotester-mcp:
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester-mcp:latest
+    restart: always
+    ports:
+      - "8084:8084"
+    networks:
+      - default
+    environment:
+      - AUTOTESTER_BASE_URL=http://autotester:8081
+      - DD_AGENT_HOST=datadog
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SITE=us5.datadoghq.com
+
   frontend-mock:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/frontend-mock
     networks:
@@ -64,6 +77,18 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - autotester
+      - postgres
+
+  postgres:
+    image: postgres:17-alpine
+    depends_on:
+      - autotester
+    networks:
+      - default
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASS}
+      - POSTGRES_DB=smart
 
   datadog:
     image: datadog/agent:latest

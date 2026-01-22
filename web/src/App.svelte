@@ -1,28 +1,18 @@
 <script lang="ts">
-    import Prompt from "./components/Prompt.svelte";
-    import Box from "./components/Box.svelte";
-    import { Spinner } from "flowbite-svelte";
-    import { getChatResponse } from "./lib/Api.ts";
+    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import AppSidebar from "$lib/components/Sidebar.svelte";
+    import Main from "$lib/components/Main.svelte";
+    import LoginButton from "$lib/components/LoginButton.svelte";
+    import { user } from "$lib/shared.svelte";
     import { onMount } from "svelte";
-    import { auth } from "./lib/authService";
-    import LoginButton from "./components/LoginButton.svelte";
-    import LogoutButton from "./components/LogoutButton.svelte";
-
-    let prompt = $state("");
-    let convo = $state<{ id: number; question: string; answer: string }[]>([]);
-
-    // get ConversationId for api calls from cookies
-    // Note: We should ideally get this from a backend state associated with the user
-    var conversationId = $state("");
+    import { Toaster } from "$lib/components/ui/sonner";
+    import { auth } from "$lib/authService";
 
     onMount(() => {
         const media = window.matchMedia("(prefers-color-scheme: dark)");
 
         const updateTheme = () => {
-            document.documentElement.setAttribute(
-                "data-theme",
-                media.matches ? "dark" : "light",
-            );
+            document.documentElement.classList.toggle("dark", media.matches);
         };
 
         media.addEventListener("change", updateTheme);
@@ -33,102 +23,30 @@
         await auth.initAuth();
     });
 
-    let userId = $state<string | undefined>(undefined);
     $effect(() => {
         if ($auth.isAuthenticated && $auth.user) {
-            userId = $auth.user.sub;
+            user.id = $auth.user.sub;
         } else {
-            userId = undefined;
-        }
-    });
-
-    let paramsChatRequest = $derived({
-        prompt: "",
-        userId: userId,
-        conversationId: conversationId,
-    });
-    const chatUrl = "/chat";
-
-    let isLoading = $state(false);
-    async function onclick() {
-        if (!userId) {
-            console.error("User is not authenticated.");
-            return;
-        }
-
-        const userQuestion = prompt;
-        prompt = "";
-        convo.push({
-            question: userQuestion,
-            answer: "",
-        });
-        isLoading = true;
-        paramsChatRequest.prompt = userQuestion;
-        paramsChatRequest.userId = userId;
-        paramsChatRequest.conversationId = conversationId;
-
-        try {
-            const answer = await getChatResponse(paramsChatRequest, chatUrl);
-            convo[convo.length - 1].answer = answer.data.message.body;
-            conversationId = answer.data.conversationId ?? "";
-        } catch (err) {
-            if (err.isAxiosError) {
-                convo[convo.length - 1].answer = err.response.data.message;
-            } else {
-                convo[convo.length - 1].answer =
-                    "no axios error returned - something went horribly wrong";
-            }
-        } finally {
-            isLoading = false;
-        }
-    }
-
-    let container: HTMLElement | undefined = $state();
-    // Effect to trigger scrolling on relevant changes
-    $effect(() => {
-        if (container && (isLoading || convo.length > 0)) {
-            // Small timeout to ensure DOM updates are complete
-            setTimeout(() => {
-                container.scrollTo({
-                    top: container.scrollHeight,
-                    behavior: "smooth",
-                });
-            }, 50);
+            user.id = undefined;
         }
     });
 </script>
 
 {#if $auth.isAuthenticated}
-    <div class="fixed left-4 top-4">
-        <LogoutButton />
-    </div>
-    <main class="flex w-screen justify-center">
-        <div
-            class="flex flex-col h-[calc(100vh-132px)] overflow-y-auto w-8/10 gap-2 px-4 pt-4"
-            bind:this={container}
-        >
-            {#each convo as c}
-                <Box msg={c.question} name="User" {userId} {conversationId} />
-                {#if c.answer}
-                    <Box
-                        msg={c.answer}
-                        name="Bot"
-                        {userId}
-                        {conversationId}
-                        isCode={c.answer.startsWith("import")}
-                    />
-                {/if}
-            {/each}
-            {#if isLoading}
-                <div class="flex justify-start p-4">
-                    <Spinner color="blue" />
-                </div>
-            {/if}
-        </div>
-    </main>
-    <footer class="mt-[0px] mb-[-10px] pb-[5px] h-[100px]">
-        <Prompt bind:input={prompt} {onclick} />
-    </footer>
+    <Sidebar.Provider>
+        <AppSidebar />
+        <Sidebar.Inset>
+            <header
+                class="flex justify-between h-16 shrink-0 items-center gap-2 px-4"
+            >
+                <p>CHECK24</p>
+                <p>Playwright Test AI</p>
+            </header>
+            <Main />
+        </Sidebar.Inset>
+    </Sidebar.Provider>
+
+    <Toaster richColors position="top-right" />
 {:else}
     <main
         class="flex h-screen w-screen items-center justify-center bg-gray-100 dark:bg-gray-900"

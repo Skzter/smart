@@ -58,6 +58,8 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 	ctx, span := s.tracer.Start(ctx, "generatePrompt.GeneratePrompt")
 	defer span.End()
 
+	// Should check last validation message for validity
+
 	prompt := fmt.Sprintf(s.config.Prompts.AutoPlaywrightPromptT, s.formatTaglist(ctx))
 
 	req := sharedEntity.Request{

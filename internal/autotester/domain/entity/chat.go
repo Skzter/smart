@@ -9,18 +9,21 @@ import (
 )
 
 // MessageType represents a Type of Message stored in Chat entity
-// ENUM(Validation, Generation, User)
+// ENUM(Validation, Generation, Any)
 type MessageType uint
 
 //go:generate go tool go-enum -f=$GOFILE --marshal
 
 // Chat represents a single Chat, identified by a unique id and associated with a user.
 type Chat struct {
-	Id        string    `json:"id"`
-	UserId    string    `json:"userId"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Title     string    `json:"title"`
+	Id     string   `json:"id"`
+	Author string   `json:"author"`
+	Groups []string `json:"groups"`
+
+	LastModifiedBy string    `json:"lastModifiedBy"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+	Title          string    `json:"title"`
 
 	Messages []*Message `json:"messages"`
 	index    map[MessageType][]int
@@ -29,21 +32,22 @@ type Chat struct {
 	LastAutoPlaywrightPrompt string `json:"lastAutoPlaywrightPrompt"`
 }
 
-// NewChat creates a new chat with for the given user with the given messages
+// NewChat creates a new chat for the given user with the given messages
 func NewChat(userId string, messages []*Message) *Chat {
 	now := time.Now().UTC()
 	return &Chat{
-		Id:        uuid.NewString(),
-		UserId:    userId,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Messages:  messages,
+		Id:             uuid.NewString(),
+		Author:         userId,
+		LastModifiedBy: userId,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+		Messages:       messages,
 	}
 }
 
 // AddMessage adds a Message of the given type to the chats Messages
 func (m *Chat) AddMessage(message *shared.Message, ts ...MessageType) {
-	t := MessageTypeUser
+	t := MessageTypeAny
 	if len(ts) > 0 {
 		t = ts[0]
 	}
@@ -59,7 +63,7 @@ func (m *Chat) buildIndex() {
 	m.index = make(map[MessageType][]int)
 
 	for i, msg := range m.Messages {
-		if msg.Type == MessageTypeUser {
+		if msg.Type == MessageTypeAny {
 			for t := range _MessageTypeMap {
 				m.index[t] = append(m.index[t], i)
 			}

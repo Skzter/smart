@@ -7,6 +7,8 @@ env:
   GOPRIVATE: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
   LPATH: "{{.BIN_PATH}}:{{.PATH}}"
 
+dotenv: [".env"]
+
 vars:
   VERSION: '{{now | date "15-04-05"}}-debug'
   MODULE_NAME: "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart"
@@ -55,11 +57,17 @@ tasks:
       - echo "building autotester with version {{.VERSION}}"
       - cmd: go build -o build/autotester -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
         platforms: [linux, darwin]
+      - echo "building mcp with version {{.VERSION}}"
+      - cmd: go build -o build/mcp -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
+        platforms: [linux, darwin]
       - echo "building suproxy.exe with version {{.VERSION}}"
       - cmd: go build -o build/suproxy.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/suproxy/
         platforms: [windows/amd64]
       - echo "building autotester.exe with version {{.VERSION}}"
       - cmd: go build -o build/autotester.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/autotester/
+        platforms: [windows/amd64]
+      - echo "building mcp.exe with version {{.VERSION}}"
+      - cmd: go build -o build/mcp.exe -ldflags "{{.BASE_LDFLAGS}}" ./cmd/mcp/
         platforms: [windows/amd64]
     silent: true
 
@@ -116,6 +124,8 @@ tasks:
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/suproxy -ldflags "{{.PROD_LDFLAGS}}" ./cmd/suproxy/
       - echo "building autotester with version {{.VERSION}}"
       - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/autotester -ldflags "{{.PROD_LDFLAGS}}" ./cmd/autotester/
+      - echo "building mcp with version {{.VERSION}}"
+      - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v1 go build -o build/mcp -ldflags "{{.PROD_LDFLAGS}}" ./cmd/mcp/
     silent: true
 
   # --------------------------------------------------------------------------------
@@ -125,6 +135,7 @@ tasks:
     internal: true
     env:
       APP_CMD: "./cmd/{{.APP_NAME}}"
+      FLAGS: "{{.FLAGS}}"
       OPENAI_KEY_VAR: "{{.OPENAI_KEY_VAR}}"
       VERSION_VAR: "{{.VERSION_VAR}}"
       DD_AGENT_HOST: localhost
@@ -148,12 +159,20 @@ tasks:
         vars:
           APP_NAME: autotester
 
+  run-autotester-headless:
+    desc: "Run the autotester service in headless mode"
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: autotester
+          FLAGS: "--headless"
+          
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
     dir: "deployments"
     cmds:
       - docker login gitlab.dit.htwk-leipzig.de:5050
-      - "PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d"
+      - PATH=$LPATH; doppler run -- docker compose -f compose.dev.yml up -d
 
   compose-local-down:
     desc: "Stop all the containers in local environment"
@@ -174,6 +193,30 @@ tasks:
       # TEST_FILE wird bei runtime hinzugefügt
       - ./run-container.sh {{.TEST_FILE}}
 
+  postgres-up:
+    desc: Starts postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml up -d postgres
+
+  postgres-down:
+    desc: Stops postgres container
+    dir: "deployments"
+    cmds:
+      - docker compose -f compose.dev.yml stop postgres 
+
+  goose-up:
+    desc: Migrates postgres database up
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
+    cmds:
+      - go tool goose postgres {{.DB_URL}} up
+
+  goose-down:
+    desc: Migrates postgres database down
+    dir: "internal/autotester/infrastructure/database/sql/migrations"
+    cmds:
+      - go tool goose postgres {{.DB_URL}} down
+
   # --------------------------------------------------------------------------------
   # Testing
   # --------------------------------------------------------------------------------
@@ -191,7 +234,8 @@ tasks:
     desc: "Run the tests with coverage"
     cmds:
       - echo "Running unit tests with coverage"
-      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
+      - go tool gotestsum --junitfile junit.xml -- -tags=integration -coverprofile=coverage.out 
+        -covermode=count $(go list ./... | grep -Ev 'config|build|deployments|cmd|mocks')
       - go tool cover -func=coverage.out
       - go tool gocoverageplus --input=coverage.out -o go-cobertura-coverage.xml -v
       - echo "Quality Gate checking test coverage is above threshold"
@@ -207,7 +251,7 @@ tasks:
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
     cmds:
-      - go tool gotestsum -- -tags=integration -- -coverprofile=coverage.out ./...
+      - go tool gotestsum -- -tags=integration -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
 
   test-frontend:
@@ -222,6 +266,84 @@ tasks:
     dir: "scripts"
     cmds:
       - ./sysprompt-test.sh
+
+  k6-suproxy:
+    desc: "Run a k6 load test against suproxy (dockerized)"
+    dir: test/k6/suproxy
+    cmds:
+      - |
+        docker run --rm \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e SUPROXY_URL=http://suproxy:8080/api/v1/Offerlist \
+          -e SUPROXY_DESTINATION=http://supplier-mock:8083/api/v1/offers \
+          -e K6_VUS=10 \
+          -e K6_DURATION=1m \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary.json \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/loadtest.js
+
+  k6-suproxy-ramp:
+    desc: "Run a k6 ramp-up load test against suproxy (dockerized)"
+    dir: test/k6/suproxy
+    cmds:
+      - |
+        docker run --rm \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e SUPROXY_URL=http://suproxy:8080/api/v1/Offerlist \
+          -e SUPROXY_DESTINATION=http://supplier-mock:8083/api/v1/offers \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary-ramp.json \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/ramp_up_loadtest.js
+  
+  k6-autotester:
+    desc: "Run a k6 load test against autotester (dockerized)"
+    dir: test/k6/autotester
+    cmds:
+      - |
+        docker run --rm \
+          --user $(id -u):$(id -g) \
+          --network deployments_default \
+          -e AUTOTESTER_URL=http://autotester:8081/api/v1/chat \
+          -e K6_VUS=10 \
+          -e K6_DURATION=1m \
+          -e K6_SLEEP=1 \
+          -e K6_SUMMARY_EXPORT=/scripts/k6-summary.json \
+          -v $(pwd):/scripts \
+          grafana/k6:latest run /scripts/loadtest.js
+
+  k6-plot-install:
+    desc: "Install plotting deps via uv (matplotlib)"
+    dir: scripts/k6
+    cmds:
+      - uv sync
+
+  k6-suproxy-report:
+    desc: "Run k6 load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/suproxy/k6-summary.json --output k6-suproxy-report.png
+    silent: true
+
+  k6-autotester-report:
+    desc: "Run k6 load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/autotester/k6-summary.json --output k6-autotester-report.png
+    silent: true
+
+  k6-suproxy-ramp-report:
+    desc: "Run k6 ramp-up load test and generate PNG from summary"
+    deps: [k6-plot-install]
+    dir: scripts/k6
+    cmds:
+      - uv run plot_summary.py --input ../../test/k6/suproxy/k6-summary-ramp.json --output k6-suproxy-ramp-report.png
+    silent: true
 
   # --------------------------------------------------------------------------------
   # Code Quality & Linting
@@ -240,7 +362,7 @@ tasks:
       EXCLUDE_RULES: "G104,G107, G204, G304"
     cmds:
       - go tool staticcheck -tests=false ./cmd/... ./internal/...
-      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
+      - GOSECGOVERSION={{.GOVERSION}} go tool gosec -exclude-dir="cmd/internal"  -exclude-dir="internal/autotester/infrastructure/database" -exclude={{.EXCLUDE_RULES}} -confidence medium -severity medium -nosec -exclude-generated -sort ./cmd/... ./internal/...
 
   lint-frontend:
     desc: "Run the frontend lint"
@@ -265,6 +387,7 @@ tasks:
     cmds:
       - task: lint
       - task: test
+      - task: lint-frontend
 
   # --------------------------------------------------------------------------------
   # Code Generation
@@ -274,8 +397,10 @@ tasks:
     cmds:
       - task: generate-config-autotester
       - task: generate-config-suproxy
+      - task: generate-config-mcp
       - task: generate-config-embedded
       - task: di-generate-autotester
+      - task: di-generate-mcp
       - task: di-generate-suproxy
 
   generate-config-autotester:
@@ -285,6 +410,13 @@ tasks:
     sources:
       - configs/autotester.pkl
       - configs/shared/*
+
+  generate-config-mcp:
+    desc: "generate code for reading mcp config"
+    cmds:
+      - PATH=$LPATH; go tool pkl-gen-go configs/mcp.pkl
+    sources:
+      - configs/mcp.pkl
 
   generate-config-suproxy:
     desc: "generate code for reading suproxy config"
@@ -306,6 +438,7 @@ tasks:
     sources:
       - configs/suproxy.pkl
       - configs/autotester.pkl
+      - configs/mcp.pkl
 
   di-generate-autotester:
     desc: "generate dependency injection code for autotester"
@@ -314,6 +447,13 @@ tasks:
     sources:
       - cmd/autotester/wire.go
       - internal/shared/wire.go
+
+  di-generate-mcp:
+    desc: "generate dependency injection code for mcp"
+    cmds:
+      - go tool wire ./cmd/mcp
+    sources:
+      - cmd/mcp/wire.go
 
   di-generate-suproxy:
     desc: "generate dependency injection code for suproxy"

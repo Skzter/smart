@@ -8,6 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.opentelemetry.io/otel"
+
+	sharedMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/mock"
 
@@ -17,19 +21,22 @@ import (
 
 // nolint:funlen
 func TestHandleRunContainer(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	type mockSetupFunc func(
-		mockLocalStorageServ *mocks.MockTestcaseLocalStorageService,
-		mockRemoteStorageServ *mocks.MockTestcaseStorageService,
-		mockDockerServ *mocks.MockDocker,
+		local *mocks.MockTestcaseLocalStorageService,
+		docker *mocks.MockDocker,
 	)
 
 	tests := []struct {
 		TestName       string
 		RequestBody    string
 		ExpectedStatus int
+		ExpectedBody   string
 		MockSetup      mockSetupFunc
 	}{
 		{
@@ -37,142 +44,72 @@ func TestHandleRunContainer(t *testing.T) {
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusOK,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/session789.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
-				docker.EXPECT().ReadLog(mock.Anything).Return("successful test", nil)
+			ExpectedBody:   `{"result":"Test started"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/chat789.ts", nil)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/chat789.ts",
+					"test456",
+					"user123",
+					"chat789",
+				).Return("container-id", nil)
 			},
 		},
 		{
 			TestName:       "Invalid JSON",
 			RequestBody:    `{"invalid":json}`,
 			ExpectedStatus: http.StatusBadRequest,
+			ExpectedBody:   `{"message":"Bad Request"}`,
 		},
 		{
-			TestName: "Missing userId field",
+			TestName: "Missing required fields",
 			RequestBody: `{
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
+			ExpectedBody:   `{"message":"Missing required parameters"}`,
 		},
 		{
-			TestName: "Missing testId field",
-			RequestBody: `{
-				"userId": "user123",
-				"sessionId": "session789"
-			}`,
-			ExpectedStatus: http.StatusBadRequest,
-		},
-		{
-			TestName: "Missing sessionId field",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456"
-			}`,
-			ExpectedStatus: http.StatusBadRequest,
-		},
-		{
-			TestName:       "Empty request body",
-			RequestBody:    `{}`,
-			ExpectedStatus: http.StatusBadRequest,
-		},
-		{
-			TestName: "All fields empty strings",
-			RequestBody: `{
-				"userId": "",
-				"testId": "",
-				"sessionId": ""
-			}`,
-			ExpectedStatus: http.StatusBadRequest,
-		},
-		{
-			TestName: "GetTestPath fails - file not found",
+			TestName: "GetTestPath fails",
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("files not found"))
+			ExpectedBody:   `{"message":"files not found"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("", errors.New("files not found"))
 			},
 		},
 		{
-			TestName: "docker container execution fails",
+			TestName: "RunTest fails",
 			RequestBody: `{
 				"userId": "user123",
 				"testId": "test456",
-				"sessionId": "session789"
+				"chatId": "chat789"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(errors.New("running error"))
-			},
-		},
-		{
-			TestName: "Log file read fails",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
-				docker.EXPECT().ReadLog(mock.Anything).Return("no logs", errors.New("failed to read log"))
-			},
-		},
-		{
-			TestName: "Test passed, Read local testcode fails",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
-				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
-				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("read failed"))
-			},
-		},
-		{
-			TestName: "Test passed, SaveTestCase fails",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
-			ExpectedStatus: http.StatusInternalServerError,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
-				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
-				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
-				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("", errors.New("save failed"))
-			},
-		},
-		{
-			TestName: "Test passed, SaveTestCase succeeds",
-			RequestBody: `{
-				"userId": "user123",
-				"testId": "test456",
-				"sessionId": "session789"
-			}`,
-			ExpectedStatus: http.StatusOK,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, remote *mocks.MockTestcaseStorageService, docker *mocks.MockDocker) {
-				local.EXPECT().GetTestPath(mock.Anything, mock.Anything, mock.Anything).Return("/tmp/test.spec.ts", nil)
-				docker.EXPECT().RunTest(mock.Anything, mock.Anything).Return(nil)
-				docker.EXPECT().ReadLog(mock.Anything).Return("✓ 1 test.spec.ts:12:34", nil)
-				local.EXPECT().Read(mock.Anything, mock.Anything, mock.Anything).Return("testcode", nil)
-				remote.EXPECT().SaveTestcase(mock.Anything, mock.Anything, mock.Anything).Return("key", nil)
+			ExpectedBody:   `{"message":"running error"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/test.spec.ts", nil)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/test.spec.ts",
+					"test456",
+					"user123",
+					"chat789",
+				).Return("", errors.New("running error"))
 			},
 		},
 	}
@@ -182,36 +119,62 @@ func TestHandleRunContainer(t *testing.T) {
 			mockGenServ := mocks.NewMockGeneratePrompt(t)
 			mockValServ := mocks.NewMockValidator(t)
 			mockLocalStorageServ := mocks.NewMockTestcaseLocalStorageService(t)
-			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockDockerServ := mocks.NewMockDocker(t)
-			mockChatManger := mocks.NewMockChatManager(t)
+			mockChatManager := mocks.NewMockChatManager(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
+			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+			mockAuth := mocks.NewMockAuth(t)
+			mockGroupManager := mocks.NewMockGroupManager(t)
+
+			mockMetricsServ.On("IncRequestSuccess").Return().Maybe()
+			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
+			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 
 			if test.MockSetup != nil {
-				test.MockSetup(mockLocalStorageServ, mockRemoteStorageServ, mockDockerServ)
+				test.MockSetup(mockLocalStorageServ, mockDockerServ)
 			}
 
-			req, err := http.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
-			if err != nil {
-				t.Fatalf("Failed to create request: %v", err)
-			}
+			req := httptest.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
 			req.Header.Set("Content-Type", "application/json")
 
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller, err := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ, mockChatStorageServ, mockRemoteStorageServ, mockChatManger)
+			controller, err := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				mockGroupManager,
+				tracer,
+				mockMetricsServ,
+				mockAuth,
+			)
 			if err != nil {
 				t.Fatalf("Controller build failed: %v", err)
 			}
 
 			controller.HandleRunContainer(ctx)
-			t.Logf("TEST => %v\nRECORDER => %v", test, rec)
 
 			if rec.Code != test.ExpectedStatus {
-				t.Errorf("Expected status %d, got %d. Response: %s", test.ExpectedStatus, rec.Code, rec.Body.String())
+				t.Errorf("Expected status %d, got %d. Body: %s",
+					test.ExpectedStatus, rec.Code, rec.Body.String())
 			}
+
+			if rec.Body.String() != test.ExpectedBody {
+				t.Errorf("Expected body %s, got %s",
+					test.ExpectedBody, rec.Body.String())
+			}
+
+			mockLocalStorageServ.AssertExpectations(t)
+			mockDockerServ.AssertExpectations(t)
 		})
 	}
 }

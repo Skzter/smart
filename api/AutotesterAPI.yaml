@@ -3,8 +3,10 @@ info:
   title: "Autotester API"
   description: api for the connection from frontend to backend.
   version: 1.0.0
+servers:
+  - url: https://localhost:8081/api/v1
 paths:
-  /api/v1/chat:
+  /chat:
     post:
       summary: "Takes user message and returns LLMs message."
       requestBody:
@@ -12,28 +14,67 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: "#/components/schemas/ChatRequest"
       responses:
-        '200':
+        "200":
           description: Successful processing of the message
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
-        '400':
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
-  /api/v1/userInfo:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /validate:
+    post:
+      summary: "Validates a prompt with user/chat context"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Validation result wrapped in ResponseForUser
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: object
+                    properties:
+                      body:
+                        type: string
+                  userId:
+                    type: string
+                  chatId:
+                    type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /userInfo:
     post:
       summary: "Requests User Info from Backend on inital load"
       requestBody:
@@ -41,39 +82,39 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
-        
+              $ref: "#/components/schemas/UserRequest"
+
       responses:
-        '200':
+        "200":
           description: Successful Request for user info
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
-        '400':
+                $ref: "#/components/schemas/UserResponse"
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
- 
-  /api/v1/template:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /template:
     get:
       summary: "Gets Template from Autotester Config and returns it"
       responses:
-        '200':
+        "200":
           description: Template from config is not empty
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Template'
-        '500':
+                $ref: "#/components/schemas/Template"
+        "500":
           description: Template from config is empty
           content:
             text/plain:
@@ -81,7 +122,7 @@ paths:
                 type: string
                 example: ""
 
-  /api/v1/saveLocal:
+  /saveLocal:
     post:
       summary: "Takes a testcode and saves it locally"
       requestBody:
@@ -89,29 +130,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SavaLocalRequest'
+              $ref: "#/components/schemas/SavaLocalRequest"
 
       responses:
-        '200':
+        "200":
           description: The test case was successfully saved locally
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TestCaseActionResponse'
-        '400':
+                $ref: "#/components/schemas/TestCaseActionResponse"
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
-  /api/v1/deleteLocal:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deleteLocal:
     delete:
       summary: "Deletes a locally stored test case by its ID"
       parameters:
@@ -129,21 +170,21 @@ paths:
             type: string
           description: "ID of the user deleting the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        - name: conversationId
+        - name: chatId
           in: query
           required: true
           schema:
             type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
-        
+
       responses:
-        '200':
+        "200":
           description: Successfully deleted the locally stored test case
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TestCaseActionResponse'
+                $ref: "#/components/schemas/TestCaseActionResponse"
               examples:
                 deletedExample:
                   summary: "Deleted test case"
@@ -151,24 +192,23 @@ paths:
                     testcaseId: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
                     action: "deleted"
 
-        '400':
+        "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /api/v1/run:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /run:
     post:
       summary: Run automated Playwright test in container
       description: Executes a Playwright test file in a containerized environment and returns the test output logs
-      tags:
-        - Autotester
       requestBody:
         required: true
         content:
@@ -178,7 +218,7 @@ paths:
               required:
                 - userId
                 - testId
-                - sessionId
+                - chatId
               properties:
                 userId:
                   type: string
@@ -188,12 +228,12 @@ paths:
                   type: string
                   description: Unique identifier of the test to run
                   example: "test456"
-                sessionId:
+                chatId:
                   type: string
-                  description: Unique identifier of the session
-                  example: "session789"
+                  description: Unique identifier of the chat
+                  example: "chat789"
       responses:
-        '200':
+        "200":
           description: Test executed successfully
           content:
             application/json:
@@ -204,7 +244,7 @@ paths:
                     type: string
                     description: Test execution output logs
                     example: "Test passed: All assertions successful"
-        '400':
+        "400":
           description: Bad request - Invalid input or missing required parameters
           content:
             application/json:
@@ -215,7 +255,7 @@ paths:
                     type: string
                     description: Error message describing the issue
                     example: "Missing required parameters"
-        '500':
+        "500":
           description: Internal server error - Command execution or file reading failed
           content:
             application/json:
@@ -226,25 +266,85 @@ paths:
                     type: string
                     description: Error message describing the internal error
                     example: "Command execution error: exit status 1"
-  /api/v1/chats/{UserID}:
+
+  /test/{testId}/stream:
+    get:
+      summary: Stream test execution logs as JSON events
+      description: |
+        Streams live logs of a running Playwright test.
+        Each event contains a JSON payload.
+        Transport uses Server-Sent Events (SSE).
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the running test
+      responses:
+        "200":
+          description: JSON event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: log
+                data: {"type":"log","message":"Launching browser"}
+
+                event: error
+                data: {"type":"error","message":"Container crashed"}
+
+                event: done
+                data: {}
+        "404":
+          description: Test container not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/generate:
+    post:
+      summary: Generate authentication token for a user
+      description: |
+        Generates and returns a new authentication token for the specified user. Only accessible from internal networks.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        "200":
+          description: Token generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          description: Bad request (invalid userId or malformed JSON)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error (token generation failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chats:
     get:
       summary: "Returns the chat history for a specific user"
       description: |
-        Retrieves all chat summaries associated with the given `UserID`.
+        Retrieves all chat summaries associated with the given `userId`.
 
         An optional `limit` query parameter can be provided to restrict how many
         of the most recently updated chats are returned.  
         - If `limit` is omitted or set to `0`, all chats are returned.  
         - Chats are sorted by `updatedAt` descending.
       parameters:
-        - name: UserID
-          in: path
-          required: true
-          description: "Unique identifier of the user."
-          schema:
-            type: string
-          example: "auth0|687270280dca20b77cfdcf74"
-
         - name: limit
           in: query
           required: false
@@ -253,28 +353,292 @@ paths:
             type: integer
             minimum: 0
           example: 10
+        - name: groups
+          in: query
+          required: false
+          description: "List of groups to filter summaries by"
+          schema:
+            type: array
+            items:
+              type: string
 
       responses:
-        '200':
+        "200":
           description: "Successfully returned the chat summaries for the user."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatSummarys'
+                $ref: "#/components/schemas/ChatSummarys"
 
-        '400':
+        "400":
           description: "Bad request — invalid userId or invalid limit parameter."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
-        '500':
+        "500":
           description: "Internal server error — failed to load chat history."
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+  /chats/{chatId}:
+    get:
+      summary: Get full chat by ID
+      description: |
+        Returns a full chat for the given user, including all messages.
+      parameters:
+        - in: path
+          name: chatId
+          required: true
+          description: "Unique identifier of the chat to retrieve."
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full chat with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Chat"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tests:
+    get:
+      summary: Retrieve stored test cases with optional filters
+      description: >
+        Returns test cases belonging to the specified user. Additional optional
+        query parameters can be used to filter for specific test cases, chats,
+        or by creation timestamps.
+      parameters:
+        - name: author
+          in: query
+          schema:
+            type: string
+          description: >
+            Optional: Filters results by a specific user ID. 
+            Can be combined with other filters.
+          example: "687385280dca20b77cfdcf74"
+
+        - name: testcaseId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: >
+            Optional: Filters results by a specific test case ID. 
+            Can be combined with other filters.
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+
+        - name: createdAfter
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly after the provided
+            ISO 8601 timestamp. Can be combined with `createdBefore` to define
+            a date range.
+          example: "2025-01-01T00:00:00Z"
+
+        - name: createdBefore
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: >
+            Optional: Returns test cases created strictly before the provided
+            ISO 8601 timestamp. Can be combined with `createdAfter` to define
+            a date range.
+          example: "2025-12-31T23:59:59Z"
+
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 50
+          description: >
+            Optional: Limits the maximum number of returned test cases.
+            Default is 50.
+          example: 50
+
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: >
+            Optional: Number of results to skip before returning data.
+            Default is 0.
+          example: 0
+
+      responses:
+        "200":
+          description: Successfully returned the filtered testcase metadata.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TestcaseMetadata"
+
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /groups:
+    get:
+      summary: List all groups
+      operationId: getGroups
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      summary: Create a new group
+      operationId: createGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupName:
+                  type: string
+                description:
+                  type: string
+                userId:
+                  type: string
+              required:
+                - groupName
+                - userId
+      responses:
+        "200":
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groupId:
+                    type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /chats/{chatId}/groups:
+    post:
+      summary: Assign chat to groups
+      operationId: assignChatToGroups
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupId:
+                  type: string
+              required:
+                - groupId
+      responses:
+        "200":
+          description: Chat assigned to group successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /chats/{chatId}/groups/{groupId}:
+    delete:
+      summary: Remove chat from group
+      operationId: removeChatFromGroup
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Chat removed from group successfully
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
 components:
   schemas:
@@ -286,38 +650,83 @@ components:
         body:
           type: string
         role:
-          type: string 
+          type: string
           enum: [user, system]
         createdAt:
           type: "number"
-          
-    Conversation:
+
+    chat:
       type: object
       properties:
-        conversationId:
+        chatId:
           type: string
         Messages:
           type: array
           items:
-            $ref: '#/components/schemas/Message'
+            $ref: "#/components/schemas/Message"
 
     UserRequest:
       type: object
       properties:
         userId:
           type: string
-          
+
     UserResponse:
       type: object
       properties:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        allConversations:
+        allChats:
           type: array
           items:
-            $ref: '#/components/schemas/Conversation'
-          
+            $ref: "#/components/schemas/Chats"
+
+    Chat:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "Unique identifier of the chat."
+        userId:
+          type: string
+          description: "ID of the user who owns the chat."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the chat was created."
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the chat was last updated."
+        title:
+          type: string
+          description: "Human-readable title of the chat."
+        messages:
+          type: array
+          description: "List of all messages in this chat."
+          items:
+            $ref: "#/components/schemas/Message"
+        lastTest:
+          type: string
+          nullable: true
+          description: "Information about the last executed test (if any)."
+        systemPrompt:
+          type: string
+          nullable: true
+          description: "System prompt used for this chat (if any)."
+        initialPrompt:
+          type: string
+          nullable: true
+          description: "Initial prompt that started this chat (if any)."
+      required:
+        - id
+        - userId
+        - createdAt
+        - updatedAt
+        - title
+        - messages
+
     ChatRequest:
       type: object
       properties:
@@ -327,7 +736,7 @@ components:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
 
@@ -338,11 +747,11 @@ components:
           type: object
           properties:
             message:
-              $ref: '#/components/schemas/Message'
+              $ref: "#/components/schemas/Message"
             userId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            conversationId:
+            chatId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
@@ -355,21 +764,21 @@ components:
               arguments:
                 type: object
                 additionalProperties: true
-    
+
     SavaLocalRequest:
       type: object
       required:
         - userId
-        - conversationId
+        - chatId
         - code
       properties:
         userId:
           type: string
           description: "ID of the user saving the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
         code:
           type: string
@@ -385,22 +794,6 @@ components:
               await expect(page).toHaveURL('https://example.com/dashboard');
             });
 
-    DeleteLocalRequest:
-      type: object
-      properties:
-        testcaseId:
-          type: string
-          description: "Unique identifier of the test case to be deleted."
-          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
-        userId:
-          type: string
-          description: "ID of the user saving the test case."
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
-          type: string
-          description: "ID of the conversation the test case belongs to."
-          example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
-        
     TestCaseActionResponse:
       type: object
       properties:
@@ -432,7 +825,7 @@ components:
         chatSummarys:
           type: array
           items:
-            $ref: '#/components/schemas/ChatSummary'
+            $ref: "#/components/schemas/ChatSummary"
 
     ChatSummary:
       type: object
@@ -445,7 +838,7 @@ components:
           example: "auth0|687270280dca20b77cfdcf74"
         title:
           type: string
-          example: "Login Test Conversation"
+          example: "Login Test Chat"
         createdAt:
           type: string
           format: date-time
@@ -457,3 +850,84 @@ components:
         messageCount:
           type: integer
           example: 14
+
+    TestcaseMetadata:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "Unique key for loading the test case from storage. Format: testcase/<testcaseId>_<created>.parquet"
+          example: "testcase/bdf1e5b4-47c2-11f0-b8a3-0242ac120002_1701456000.parquet"
+        testcaseId:
+          type: string
+          format: uuid
+          description: "UUID of the testcase."
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+        author:
+          type: string
+          format: uuid
+          description: "UUID of the user who created the test case."
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        created:
+          type: string
+          description: "Creation timestamp as Unix time."
+          example: "1701456000"
+        updated:
+          type: string
+          description: "Last update timestamp as Unix time."
+          example: "1701460000"
+        name:
+          type: string
+          description: "Descriptive name of the test case."
+          example: "Login form test"
+    Token:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: "ID of the user for whom the token was generated."
+        token:
+          type: string
+          description: "authentication token string."
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token was created."
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token was last updated."
+        expiresAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the token will expire."
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "Timestamp when the token was revoked, if applicable."
+      required:
+        - userId
+        - token
+        - createdAt
+        - updatedAt
+        - expiresAt
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the group
+        name:
+          type: string
+          description: Name of the group
+        description:
+          type: string
+          description: Description of the group
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the group was created
+        createdBy:
+          type: string
+          description: ID of the user who created the group

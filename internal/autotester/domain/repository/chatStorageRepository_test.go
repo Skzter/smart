@@ -27,7 +27,7 @@ func TestCreateChatStorage(t *testing.T) {
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
 			if test.obj != nil {
-				test.obj.Filter(entity.MessageTypeUser)
+				test.obj.Filter(entity.MessageTypeAny)
 			}
 
 			if test.chatWriteRet != nil {
@@ -133,7 +133,7 @@ func TestReadChatStorage(t *testing.T) {
 			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
 
-			key, _ := generateKeys("user", "chat")
+			key, _ := generateKeys("chat")
 
 			if test.downloadRet != nil {
 				mockS3.On("DownloadParquetFile", mock.Anything, key).Return(test.downloadRet...)
@@ -145,7 +145,7 @@ func TestReadChatStorage(t *testing.T) {
 
 			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
-			result, err := repo.Read(test.ctx, "user", "chat")
+			result, err := repo.Read(test.ctx, "chat")
 			if test.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, result)
@@ -250,7 +250,7 @@ func TestDeleteChatStorage(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
 			mockParquet := mocks.NewMockParquetFileWrapper[entity.Chat](t)
 			mockSummaryParquet := mocks.NewMockParquetFileWrapper[entity.ChatSummary](t)
-			chatkey, summarykey := generateKeys("user", "chat")
+			chatkey, summarykey := generateKeys("chat")
 			if test.deleteChatRet != nil {
 				mockS3.On("DeleteParquetFile", mock.Anything, chatkey).
 					Return(test.deleteChatRet...)
@@ -262,7 +262,7 @@ func TestDeleteChatStorage(t *testing.T) {
 
 			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
-			err := repo.Delete(test.ctx, "user", "chat")
+			err := repo.Delete(test.ctx, "chat")
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Delete() expected error but got none")
@@ -290,7 +290,7 @@ func TestFindByUserID(t *testing.T) {
 
 			repo, _ := NewChatStorageRepository(logger, mockS3, mocks.NewMockParquetFileWrapper[entity.Chat](t), mockSummaryParquet, tracer)
 
-			result, err := repo.FindByUserID(test.ctx, "user")
+			result, err := repo.ListAll(test.ctx)
 			if (err != nil) != test.wantErr {
 				t.Errorf("ListAll() error = %v, wantErr %v", err, test.wantErr)
 			}

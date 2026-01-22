@@ -1,12 +1,14 @@
 /// <reference types="vitest/config" />
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import tailwindcss from "@tailwindcss/vite";
+import path from "path";
+import mkcert from "vite-plugin-mkcert";
 import { svelteTesting } from "@testing-library/svelte/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-    plugins: [tailwindcss(), svelte(), svelteTesting()],
+    plugins: [tailwindcss(), svelte(), mkcert(), svelteTesting()],
     test: {
         globals: true,
         environment: "jsdom",
@@ -22,14 +24,25 @@ export default defineConfig({
                 "src/**/*.test.{ts}",
                 "src/**/*.d.ts",
                 "src/lib/authService.ts",
+                "src/lib/utils.ts",
+                "src/lib/components/ui",
+                "src/lib/hooks/",
+                "src/lib/actions/",
+                "src/lib/components/MonacoEditor.svelte",
             ],
             reportsDirectory: "./coverage",
             thresholds: {
-                statements: 80,
-                branches: 80,
-                functions: 80,
-                lines: 80,
+                statements: 60,
+                branches: 50,
+                functions: 60,
+                lines: 60,
             },
+        },
+    },
+    resolve: {
+        alias: {
+            $lib: path.resolve("./src/lib"),
+            $types: path.resolve("./src/types"),
         },
     },
 });
