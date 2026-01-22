@@ -740,9 +740,8 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 		UserId            string
 		ChatId            string
 		RequestBody       string
-		MockResponseLoad  []*entity.Chat
-		MockErrorLoad     []error
-		MockErrorSave     []error
+		MockLoadReturn    []any
+		MockSaveReturn    []any
 		ExpectedStatus    int
 		ExpectedErrorText string
 	}{
@@ -751,30 +750,24 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":"New Chat Title"}`,
-			MockResponseLoad: []*entity.Chat{
-				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+
+			MockLoadReturn: []any{
+				&entity.Chat{Id: validChatID, Author: validUserID, Title: "Old Title"},
+				nil,
 			},
-			MockErrorLoad:  []error{nil},
-			MockErrorSave:  []error{nil},
+			MockSaveReturn: []any{nil},
 			ExpectedStatus: http.StatusOK,
-		},
-		{
-			TestName:          "Empty user Id",
-			UserId:            "",
-			ChatId:            validChatID,
-			RequestBody:       `{"title":"New Chat Title"}`,
-			ExpectedStatus:    http.StatusBadRequest,
-			ExpectedErrorText: "Bad Request",
 		},
 		{
 			TestName:    "LoadChat fails",
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":"New Chat Title"}`,
-			MockResponseLoad: []*entity.Chat{
-				{},
+			MockLoadReturn: []any{
+				nil,
+				errors.New("db error"),
 			},
-			MockErrorLoad:     []error{errors.New("db error")},
+			MockSaveReturn:    nil,
 			ExpectedStatus:    http.StatusInternalServerError,
 			ExpectedErrorText: "could not load chat",
 		},
@@ -783,11 +776,11 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":"New Chat Title"}`,
-			MockResponseLoad: []*entity.Chat{
-				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			MockLoadReturn: []any{
+				&entity.Chat{Id: validChatID, Author: validUserID, Title: "Old Title"},
+				nil,
 			},
-			MockErrorLoad:     []error{nil},
-			MockErrorSave:     []error{errors.New("save failed")},
+			MockSaveReturn:    []any{errors.New("db error")},
 			ExpectedStatus:    http.StatusInternalServerError,
 			ExpectedErrorText: "could not save chat",
 		},
@@ -796,10 +789,11 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":"1234567890123456789012345678901"}`,
-			MockResponseLoad: []*entity.Chat{
-				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			MockLoadReturn: []any{
+				&entity.Chat{Id: validChatID, Author: validUserID, Title: "Old Title"},
+				nil,
 			},
-			MockErrorLoad:     []error{nil},
+			MockSaveReturn:    []any{nil},
 			ExpectedStatus:    http.StatusBadRequest,
 			ExpectedErrorText: "Title must be 1–30 characters",
 		},
@@ -808,10 +802,11 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			UserId:      validUserID,
 			ChatId:      validChatID,
 			RequestBody: `{"title":" "}`,
-			MockResponseLoad: []*entity.Chat{
-				{Id: validChatID, Author: validUserID, Title: "Old Title"},
+			MockLoadReturn: []any{
+				&entity.Chat{Id: validChatID, Author: validUserID, Title: "Old Title"},
+				nil,
 			},
-			MockErrorLoad:     []error{nil},
+			MockSaveReturn:    []any{nil},
 			ExpectedStatus:    http.StatusBadRequest,
 			ExpectedErrorText: "Title must be 1–30 characters",
 		},
@@ -835,16 +830,16 @@ func TestHandleUpdateChatTitle(t *testing.T) {
 			mockGroupManager := mocks.NewMockGroupManager(t)
 			mockAuth := mocks.NewMockAuth(t)
 
-			if test.MockResponseLoad != nil {
+			if test.MockLoadReturn != nil {
 				mockChatStorageServ.
 					On("LoadChat", mock.Anything, mock.Anything).
-					Return(test.MockResponseLoad[0], test.MockErrorLoad[0])
+					Return(test.MockLoadReturn...)
 			}
 
-			if test.MockErrorSave != nil {
+			if test.MockSaveReturn != nil {
 				mockChatManager.
 					On("SaveChat", mock.Anything, mock.Anything, mock.Anything).
-					Return(test.MockErrorSave[0]).
+					Return(test.MockSaveReturn...).
 					Maybe()
 			}
 

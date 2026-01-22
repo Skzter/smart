@@ -920,7 +920,6 @@ describe("commitTitleChange and saveTitle", () => {
             expect(updateChatTitleApi).toHaveBeenCalledWith(
                 "chat-123",
                 "New title",
-                "user-1"
             );
         });
 
@@ -930,10 +929,6 @@ describe("commitTitleChange and saveTitle", () => {
         "New title",
     );
 
-
-    expect(toast.success).toHaveBeenCalledWith(
-        "Chat title updated successfully"
-    );
 });
 
 

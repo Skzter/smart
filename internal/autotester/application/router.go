@@ -28,7 +28,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/validate", controller.HandleChatRequestValidity)
 		apiV1.GET("/chats", controller.HandleGetChats)
 		apiV1.GET("/chats/:chatId", controller.GetChatById)
-		apiV1.PATCH("/users/:userId/chats/:chatId/title", controller.HandleUpdateChatTitle)
+		apiV1.PATCH("/chats/:chatId/title", controller.HandleUpdateChatTitle)
 		apiV1.GET("/template", controller.HandleGetTemplate)
 		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)

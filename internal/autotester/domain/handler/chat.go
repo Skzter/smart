@@ -287,15 +287,6 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 		return
 	}
 
-	if chat.Author != uri.UserId {
-		authErr := fmt.Errorf("user %s not authorized to update chat %s", uri.UserId, uri.ChatId)
-		span.RecordError(authErr)
-		span.SetStatus(codes.Error, "unauthorized to update chat title")
-		a.metricsService.IncRequestError("unauthorized_update_chat_title")
-		c.JSON(http.StatusForbidden, entity.ErrorMessage{Error: "Forbidden"})
-		return
-	}
-
 	title := strings.TrimSpace(req.Title)
 	if len(title) == 0 || len(title) > 30 {
 		err := fmt.Errorf("invalid chat title length: %d", len(title))
@@ -308,7 +299,7 @@ func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
 
 	chat.Title = title
 
-	if err := a.chatManager.SaveChat(ctx, chat, uri.UserId); err != nil {
+	if err := a.chatManager.SaveChat(ctx, chat, chat.Author); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to save updated chat title")
 		a.metricsService.IncRequestError("save_updated_chat_title_failed")

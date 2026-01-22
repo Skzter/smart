@@ -497,7 +497,6 @@ describe("deleteLocalTest", () => {
 
 describe("updateChatTitle", () => {
     const newTitle = "Updated Chat Title";
-    const mockUserId = "user123";
     const mockChatId = "chat456";
 
     it("should make a PATCH request to users/${userId}/chats/${chatId}/title with correct data", async () => {
@@ -506,19 +505,17 @@ describe("updateChatTitle", () => {
             data: {
                 chatId: mockChatId,
                 title: newTitle,
-                userId: mockUserId,
             },
         });
 
         const result = await updateChatTitle(
             mockChatId,
             newTitle,
-            mockUserId,
         );
 
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "patch",
-            url: `/users/${mockUserId}/chats/${mockChatId}/title`,
+            url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1/",
             data: {
                 title: newTitle,
@@ -527,7 +524,6 @@ describe("updateChatTitle", () => {
         expect(result).toEqual({
             chatId: mockChatId,
             title: newTitle,
-            userId: mockUserId,
         });
     });
 
@@ -537,17 +533,14 @@ describe("updateChatTitle", () => {
             data: {
                 chatId: mockChatId,
                 title: newTitle,
-                userId: mockUserId,
             },
         });
 
-        shared.user.id = "user999";
-
-        await updateChatTitle(mockChatId, newTitle, shared.user.id);
+        await updateChatTitle(mockChatId, newTitle);
 
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "patch",
-            url: `/users/user999/chats/${mockChatId}/title`,
+            url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1/",
             data: {
                 title: newTitle,
@@ -568,7 +561,7 @@ describe("updateChatTitle", () => {
         mockedAxios.mockRejectedValue(err);
 
         await expect(
-            updateChatTitle(mockChatId, newTitle, mockUserId),
+            updateChatTitle(mockChatId, newTitle),
         ).rejects.toThrow("Failed to update chat title");
     }  
     );

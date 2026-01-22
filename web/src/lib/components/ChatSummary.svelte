@@ -103,7 +103,7 @@
         }
 
         try {
-            const updated = await updateChatTitleApi(summary.chatId, trimmed, summary.userId);
+            const updated = await updateChatTitleApi(summary.chatId, trimmed);
             updateChatTitleState?.(updated.chatId, updated.title);
 
         } catch (error) {

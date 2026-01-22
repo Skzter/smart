@@ -2,10 +2,9 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
-	"regexp"
-	"strings"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -86,6 +85,18 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.SetStatus(codes.Error, "OpenAI service request failed")
 		return "", errors.ErrInternalServer
 	}
+
+	var parsedMsg entity.ModelAnswerText
+
+	if err := json.Unmarshal([]byte(resp.Body), &parsedMsg); err != nil {
+		s.logger.Error("Failed to unmarshal model JSON", "err", err, "body", resp.Body)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "JSON unmarshal failed")
+		return "", errors.ErrGeneration
+	}
+
+	resp.Body = parsedMsg.Code
+
 	chat.AddMessage(resp, entity.MessageTypeGeneration)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
@@ -95,13 +106,11 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		return "", errors.ErrGeneration
 	}
 
-	title, err := s.parseTitleFromRequest(resp.Body)
-
-	if err != nil {
-		s.logger.Warn("Could not parse title from generated test code, using default title", "err", err)
-		chat.Title = "Neuer Chat"
+	if parsedMsg.Title != "" {
+		chat.Title = parsedMsg.Title
 	} else {
-		chat.Title = title
+		s.logger.Warn("Model did not return a title, using default title")
+		chat.Title = "Neuer Chat"
 	}
 
 	span.SetStatus(codes.Ok, "")
@@ -122,20 +131,4 @@ func (s *generatePrompt) formatTaglist(ctx context.Context) string {
 	}
 
 	return tagList.Format()
-}
-
-var titleRegex = regexp.MustCompile(`test\s*\(\s*["']([^"']+)["']`)
-
-// parseTitleFromRequest extracts a chat title from the generated TypeScript test code.
-// If no valid title is found, returns a fallback "Neuer Chat".
-func (s *generatePrompt) parseTitleFromRequest(respBody string) (string, error) {
-	matches := titleRegex.FindStringSubmatch(respBody)
-	if len(matches) > 1 {
-		title := strings.TrimSpace(matches[1])
-		if len(title) > 30 {
-			title = title[:30]
-		}
-		return title, nil
-	}
-	return "", errors.ErrGeneration
 }

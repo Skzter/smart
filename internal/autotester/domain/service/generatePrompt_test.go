@@ -98,6 +98,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 	}
 }
 
+// nolint: funlen
 func TestGeneratePrompt(t *testing.T) {
 	logger := slog.Default()
 	cfg := &config.Config{
@@ -106,7 +107,6 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 	}
 	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
-	code := "some code"
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -119,19 +119,25 @@ func TestGeneratePrompt(t *testing.T) {
 		ctx               context.Context
 	}{
 		{
-			name:              "success",
-			expectedResult:    code,
-			validateReturns:   []any{nil},
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			name:            "success",
+			expectedResult:  "some code",
+			validateReturns: []any{nil},
+			requestReturns: []any{
+				&sharedEntity.Message{
+					Role: "assistant",
+					Body: `{"Code": "some code", "Title": ""}`, // valid JSON now
+				},
+				nil,
+			},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         false,
 			ctx:               context.Background(),
 		},
 		{
 			name:              "getTaglist error",
-			expectedResult:    code,
+			expectedResult:    "some code",
 			validateReturns:   []any{nil},
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: `{"Code": "some code", "Title": ""}`}, nil},
 			getTaglistReturns: []any{nil, errors.New("err")},
 			expectErr:         false,
 			ctx:               context.Background(),
@@ -143,7 +149,7 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "validate error",
-			expectedResult:    code,
+			expectedResult:    "some code",
 			validateReturns:   []any{errors.New("err")},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
@@ -194,66 +200,6 @@ func TestGeneratePrompt(t *testing.T) {
 			} else {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expectedResult, got)
-			}
-		})
-	}
-}
-
-func Test_parseTitleFromRequest(t *testing.T) {
-	s := &generatePrompt{}
-
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "empty string",
-			input:    "",
-			expected: "",
-		},
-		{
-			name:     "whitespace only",
-			input:    "   ",
-			expected: "",
-		},
-		{
-			name:     "simple test title",
-			input:    `test("My First Test")`,
-			expected: "My First Test",
-		},
-		{
-			name:     "title with leading/trailing spaces",
-			input:    `test("   Trim This Title   ")`,
-			expected: "Trim This Title",
-		},
-		{
-			name:     "long title truncated",
-			input:    `test("This title is definitely longer than thirty characters")`,
-			expected: "This title is definitely longe",
-		},
-		{
-			name:     "no test call in string",
-			input:    `console.log("Nothing here")`,
-			expected: "",
-		},
-		{
-			name:     "empty title in test",
-			input:    `test("")`,
-			expected: "",
-		},
-		{
-			name:     "multiple test calls, take first",
-			input:    `test("First Title"); test("Second Title")`,
-			expected: "First Title",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, _ := s.parseTitleFromRequest(tt.input)
-			if got != tt.expected {
-				t.Errorf("ParseTitleFromRequest(%q) = %q; want %q", tt.input, got, tt.expected)
 			}
 		})
 	}

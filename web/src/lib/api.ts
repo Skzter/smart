@@ -155,12 +155,12 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
 export async function updateChatTitle(
     chatId: string,
     title: string,
-    userId: string,
+
 ): Promise<ApiChatSummary> {
     try {
         const response = await axios({
             method: "patch",
-            url: `/users/${userId}/chats/${chatId}/title`,
+            url: `/chats/${chatId}/title`,
             baseURL,
             data: { title },
         });

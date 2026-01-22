@@ -107,31 +107,22 @@ class Prompts {
        - Objective: Generate immediately runnable TypeScript test code from user input.
 
     2. Response Constraints
-       - Output **only** valid TypeScript code:
-         - import { test, expect } from "@playwright/test";
-         - import { auto } from "auto-playwright";
-         - Options looking like 
-         let options = {
-             debug: true,
-             model: "\(model)",
-         };
-         - One or more test() functions with await auto() where you pass the options as the third argument and expect().
-       - No comments, explanations, or narrative—only code.
-       - The string passed as the first argument to test("<Title>", ...) MUST be a short, human-readable, descriptive title that summarizes the overall test intent (e.g. "Login Flow Validation", "Checkout Process with Credit Card").
-         - This title must:
-         - Be between 1 and 30 characters
-         - Use plain words (no code, no quotes, no punctuation beyond spaces)
-         - Describe the business scenario, not technical steps
-         - Be suitable for use as a chat title
+       - Output **only** a JSON object with a following structure:
+       
+       {
+         "title": "<short human readable concise test title>"
+         "valid TypeScript code": "<valid Typescript code>"
+       }
 
+    3. Title Rules
 
-    3. Taglist
+    4. Taglist
        - Tags may only be picked from this list. Creation of new Tags is strictly prohibited
        - Tags are required only if the testcase requires specialized testing data, in which case the tags must describe this data. Otherwise no tags may be picked.
        - Picked Tags are transmitted via HTTP URL parameters. 
        - Tags: %s
 
-    4. Code Structure Requirements Ensure each generated test includes:
+    5. Code Structure Requirements Ensure each generated test includes:
        1. **Imports & Setup**
 
           import { test, expect } from "@playwright/test";
@@ -172,75 +163,44 @@ class Prompts {
 
        6. **Teardown (optional)** Any cleanup steps like logout.
 
-    5. Generation Logic
+    6. Generation Logic
        - Add any missing pieces from user input without changing their words.
        - Maintain consistency and use the user’s UI terminology.
        - Each test() must form a complete scenario.
 
-    6. Ethical Boundaries
+    7. Ethical Boundaries
        - Focus strictly on UI test relevance.
        - Do not include hypothetical features or unrelated content.
-       - Generate only the test code.
+       - Generate only the JSON object with title and test code.
 
-    **Repeat:** Your response may contain only the valid TypeScript test code. No other text.
+    **Repeat:** Your response must be a **single JSON object** with fields "title" and "code". No other text is allowed.
 
     
     ## Example Outputs
 
     ### Example 1: Price Filter ≤ 100€ per night
 
-    import { test, expect } from "@playwright/test";
-    import { auto } from "auto-playwright";
-     let options = {
-         debug: \(autoplaywright_debug),
-         model: "\(model)",
-     };
-    test("Filter: Price ≤ 100€ per night", async ({ page }) => {
-      await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Set price filter to a maximum of 100€ per night", { page, test }, options);
-      await auto("Click apply on the price filter", { page, test }, options);
-
-      const priceOk = await auto("Are all displayed prices ≤ 100€?", { page, test }, options);
-      expect(priceOk).toBe(true);
-    });
+   {
+      "title": "Price Filter",
+      "code": "import { test, expect } from \"@playwright/test\";\nimport { auto } from \"auto-playwright\";\n let options = {\n     debug: \\(autoplaywright_debug),\n     model: \"\\(model)\",\n };\ntest(\"Filter: Price ≤ 100€ per night\", async ({ page }) => {\n  await page.goto(\"https://urlaub.check24.de/suche/hotel\");\n  await auto(\"Set price filter to a maximum of 100€ per night\", { page, test }, options);\n  await auto(\"Click apply on the price filter\", { page, test }, options);\n\n  const priceOk = await auto(\"Are all displayed prices ≤ 100€?\", { page, test }, options);\n  expect(priceOk).toBe(true);\n});"
+   }
 
     
     ### Example 2: Sort by Lowest Price First
 
-    import { test, expect } from "@playwright/test";
-    import { auto } from "auto-playwright";
+   {
+      "title": "Sort Lowest Price",
+      "code": "import { test, expect } from \"@playwright/test\";\nimport { auto } from \"auto-playwright\";\n\n let options = {\n     debug: \\(autoplaywright_debug),\n     model: \"\\(model)\",\n };\ntest(\"Sort by lowest price first\", async ({ page }) => {\n  await page.goto(\"https://urlaub.check24.de/suche/hotel\");\n  await auto(\"Sort by \\\"Lowest Price\\\"\", { page, test }, options);\n\n  const sortOk = await auto(\"Is the first price ≤ the second price?\", { page, test }, options);\n  expect(sortOk).toBe(true);\n});"
+   }
 
-     let options = {
-         debug: \(autoplaywright_debug),
-         model: "\(model)",
-     };
-    test("Sort by lowest price first", async ({ page }) => {
-      await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Sort by \"Lowest Price\"", { page, test }, options);
-
-      const sortOk = await auto("Is the first price ≤ the second price?", { page, test }, options);
-      expect(sortOk).toBe(true);
-    });
 
     ### Example 3: Combo Filter: Price ≤100€, Apartment, Balcony & Pet-Friendly
 
-    import { test, expect } from "@playwright/test";
-    import { auto } from "auto-playwright";
-
-     let options = {
-         debug: \(autoplaywright_debug),
-         model: "\(model)",
-     };
-    test("Combo filter: Price ≤100€, apartment, balcony & pet-friendly", async ({ page }) => {
-      await page.goto("https://urlaub.check24.de/suche/hotel");
-      await auto("Set price filter to maximum 100€", { page, test }, options);
-      await auto("Select accommodation type \"Apartment\"", { page, test }, options);
-      await auto("Enable filters \"Balcony\" and \"Pet-friendly\"", { page, test }, options);
-
-      const comboOk = await auto("Do all results satisfy this filter combination?", { page, test }, options);
-      expect(comboOk).toBe(true);
-    });
-    """
+   {
+      "title": "Combo Filter",
+      "code": "import { test, expect } from \"@playwright/test\";\nimport { auto } from \"auto-playwright\";\n\n let options = {\n     debug: \\(autoplaywright_debug),\n     model: \"\\(model)\",\n };\ntest(\"Combo filter: Price ≤100€, apartment, balcony & pet-friendly\", async ({ page }) => {\n  await page.goto(\"https://urlaub.check24.de/suche/hotel\");\n  await auto(\"Set price filter to maximum 100€\", { page, test }, options);\n  await auto(\"Select accommodation type \\\"Apartment\\\"\", { page, test }, options);\n  await auto(\"Enable filters \\\"Balcony\\\" and \\\"Pet-friendly\\\"\", { page, test }, options);\n\n  const comboOk = await auto(\"Do all results satisfy this filter combination?\", { page, test }, options);\n  expect(comboOk).toBe(true);\n});"
+   }
+   """
 }
 prompts : Prompts
 
