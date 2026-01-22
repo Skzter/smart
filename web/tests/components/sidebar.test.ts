@@ -528,6 +528,7 @@ describe("Sidebar", () => {
         vi.mocked(getChats).mockResolvedValue([]);
 
         render(SidebarTestWrapper);
+        await tick();
 
         await waitFor(() => {
             expect(getChats).toHaveBeenCalledWith(["g1", "g2"]);

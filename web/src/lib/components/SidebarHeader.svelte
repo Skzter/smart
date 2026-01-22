@@ -6,7 +6,7 @@
 
     import { onMount } from "svelte";
     import { getGroups, createGroup } from "$lib/api";
-    import { user } from "$lib/shared.svelte";
+    import { user, GroupFilter } from "$lib/shared.svelte";
 
     import * as Dialog from "$lib/components/ui/dialog";
     import { Button } from "$lib/components/ui/button";
@@ -27,6 +27,24 @@
             console.error("Failed to load groups", e);
             groups = [];
         }
+    }
+
+    function isSelected(id: string): boolean {
+        return GroupFilter.selectedIds.includes(id);
+    }
+
+    function toggleGroup(id: string) {
+        if (isSelected(id)) {
+            GroupFilter.selectedIds = GroupFilter.selectedIds.filter(
+                (x) => x !== id,
+            );
+        } else {
+            GroupFilter.selectedIds = [...GroupFilter.selectedIds, id];
+        }
+    }
+
+    function clearGroupFilter() {
+        GroupFilter.selectedIds = [];
     }
 
     async function submit() {
@@ -61,43 +79,55 @@
             <div class="flex items-center justify-between text-sm font-medium">
                 <span>Groups</span>
 
-                <Dialog.Root bind:open>
-                    <Dialog.Trigger>
-                        <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label="Neue Gruppe"
-                        >
-                            +
-                        </Button>
-                    </Dialog.Trigger>
+                <div class="flex items-center gap-1">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={GroupFilter.selectedIds.length === 0}
+                        onclick={clearGroupFilter}
+                        aria-label="Clear group filter"
+                    >
+                        Clear
+                    </Button>
 
-                    <Dialog.Content class="sm:max-w-md">
-                        <Dialog.Header>
-                            <Dialog.Title>Neue Gruppe</Dialog.Title>
-                        </Dialog.Header>
-
-                        <div class="flex flex-col gap-2 py-2">
-                            <Input
-                                placeholder="Gruppenname"
-                                bind:value={groupName}
-                            />
-                            <Input
-                                placeholder="Beschreibung (optional)"
-                                bind:value={description}
-                            />
-                        </div>
-
-                        <Dialog.Footer>
+                    <Dialog.Root bind:open>
+                        <Dialog.Trigger>
                             <Button
-                                disabled={!groupName.trim() || !user.id}
-                                onclick={submit}
+                                size="icon"
+                                variant="ghost"
+                                aria-label="Neue Gruppe"
                             >
-                                Erstellen
+                                +
                             </Button>
-                        </Dialog.Footer>
-                    </Dialog.Content>
-                </Dialog.Root>
+                        </Dialog.Trigger>
+
+                        <Dialog.Content class="sm:max-w-md">
+                            <Dialog.Header>
+                                <Dialog.Title>Neue Gruppe</Dialog.Title>
+                            </Dialog.Header>
+
+                            <div class="flex flex-col gap-2 py-2">
+                                <Input
+                                    placeholder="Gruppenname"
+                                    bind:value={groupName}
+                                />
+                                <Input
+                                    placeholder="Beschreibung (optional)"
+                                    bind:value={description}
+                                />
+                            </div>
+
+                            <Dialog.Footer>
+                                <Button
+                                    disabled={!groupName.trim() || !user.id}
+                                    onclick={submit}
+                                >
+                                    Erstellen
+                                </Button>
+                            </Dialog.Footer>
+                        </Dialog.Content>
+                    </Dialog.Root>
+                </div>
             </div>
 
             {#if groups.length === 0}
@@ -107,7 +137,18 @@
             {:else}
                 <ul class="mt-1 space-y-1">
                     {#each groups as group}
-                        <li class="text-xs truncate">{group.name}</li>
+                        <li>
+                            <button
+                                type="button"
+                                class="w-full rounded px-2 py-1 text-left text-xs hover:bg-muted"
+                                class:bg-muted={isSelected(group.id)}
+                                class:font-semibold={isSelected(group.id)}
+                                onclick={() => toggleGroup(group.id)}
+                                aria-pressed={isSelected(group.id)}
+                            >
+                                {group.name}
+                            </button>
+                        </li>
                     {/each}
                 </ul>
             {/if}
