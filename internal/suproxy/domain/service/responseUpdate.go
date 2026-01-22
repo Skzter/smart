@@ -61,12 +61,13 @@ func (s *responseUpdateService) UpdateResponse(
 	ctx context.Context,
 	mockRequest *entity.Request,
 ) error {
+	err := assert.NotNil(ctx, mockRequest)
+	if err != nil {
+		return fmt.Errorf("mockRequest and context cannot be nil, %w", err)
+	}
+
 	ctx, span := s.tracer.Start(ctx, "ResponseUpdateService.UpdateResponse")
 	defer span.End()
-
-	if mockRequest == nil {
-		return fmt.Errorf("mockRequest cannot be nil")
-	}
 
 	requestBody, err := parseRequestBody(mockRequest)
 	if err != nil {
