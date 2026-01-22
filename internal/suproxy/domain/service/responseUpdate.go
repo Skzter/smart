@@ -24,7 +24,6 @@ type responseUpdateService struct {
 	tracer           trace.Tracer
 	tagSearchService TagSearchService
 	databaseRepo     repository.DatabaseRepository
-	validatorService Validator
 	cacheService     CacheService
 }
 
@@ -39,10 +38,9 @@ func NewResponseUpdateService(
 	tracer trace.Tracer,
 	tagSearchService TagSearchService,
 	databaseRepo repository.DatabaseRepository,
-	validatorService Validator,
 	cacheService CacheService,
 ) (*responseUpdateService, error) {
-	if err := assert.NotNil(logger, tracer, tagSearchService, databaseRepo, validatorService, cacheService); err != nil {
+	if err := assert.NotNil(logger, tracer, tagSearchService, databaseRepo, cacheService); err != nil {
 		return nil, fmt.Errorf("dependency cannot be nil, %w", err)
 	}
 
@@ -51,7 +49,6 @@ func NewResponseUpdateService(
 		tracer:           tracer,
 		tagSearchService: tagSearchService,
 		databaseRepo:     databaseRepo,
-		validatorService: validatorService,
 		cacheService:     cacheService,
 	}, nil
 }
@@ -81,9 +78,11 @@ func (s *responseUpdateService) UpdateResponse(
 	// 1) Mock cache → early return
 	done, err := s.handleMockCache(ctx, mockRequest)
 	if err != nil {
-		return fmt.Errorf("failed to handleMockCache, %w", err)
-	}
-	if done {
+		s.logger.Warn(
+			"mock cache error, treating as cache miss",
+			"error", err,
+		)
+	} else if done {
 		return nil
 	}
 
@@ -114,16 +113,6 @@ func (s *responseUpdateService) handleMockCache(
 	var items []json.RawMessage
 	if err := json.Unmarshal(mockCached, &items); err != nil {
 		return false, fmt.Errorf("failed to unmarshal mock cached response: %w", err)
-	}
-
-	if _, err := s.validatorService.Validate(
-		ctx,
-		&entity.SupplierResponse{
-			Data: entity.SupplierOfferList{Items: items},
-		},
-		nil,
-	); err != nil {
-		return false, fmt.Errorf("mock cached response validation failed: %w", err)
 	}
 
 	return true, nil
@@ -181,21 +170,9 @@ func (s *responseUpdateService) runUpdatePipeline(
 		return fmt.Errorf("deterministic validation failed: %w", err)
 	}
 
-	validationItems, err := marshalOffersForValidation(relevantItems)
-	if err != nil {
-		return fmt.Errorf("failed to marshal offers for validation: %w", err)
-	}
-
 	statusCode := extractHTTPStatusCode(updatedEntry.Response.Response)
-	if _, err := s.validatorService.Validate(
-		ctx,
-		&entity.SupplierResponse{
-			HTTPStatusCode: statusCode,
-			Data:           entity.SupplierOfferList{Items: validationItems},
-		},
-		baseEntry.Tags,
-	); err != nil {
-		return fmt.Errorf("validation failed: %w", err)
+	if statusCode != http.StatusOK {
+		return fmt.Errorf("unexpected HTTP status code: %d", statusCode)
 	}
 
 	if err := s.databaseRepo.CreateRequest(ctx, *updatedEntry); err != nil {
@@ -307,27 +284,36 @@ func selectRelevantOffers(response *entity.ODTResponse, body *entity.RequestBody
 	}
 
 	airportSet := buildAirportSet(body.DepartureAirportList)
-	filtered := make([]*entity.ODTItem, 0, len(response.Data.Items))
+	hasFilters := len(airportSet) > 0 || body.TravelType != ""
 
+	if !hasFilters {
+		result := make([]*entity.ODTItem, 0, len(response.Data.Items))
+		for i := range response.Data.Items {
+			result = append(result, &response.Data.Items[i])
+		}
+		return result, nil
+	}
+
+	filtered := make([]*entity.ODTItem, 0, len(response.Data.Items))
 	for i := range response.Data.Items {
 		item := &response.Data.Items[i]
+
 		if !matchesTravelType(item, body) {
 			continue
 		}
 		if len(airportSet) > 0 && !offersAirportMatch(item, airportSet) {
 			continue
 		}
+
 		filtered = append(filtered, item)
 	}
 
 	if len(filtered) == 0 {
-		if len(airportSet) > 0 || body.TravelType != "" {
-			return nil, fmt.Errorf("no offers match the requested filters (airports=%v travelType=%s)", body.DepartureAirportList, body.TravelType)
-		}
-		filtered = make([]*entity.ODTItem, 0, len(response.Data.Items))
-		for i := range response.Data.Items {
-			filtered = append(filtered, &response.Data.Items[i])
-		}
+		return nil, fmt.Errorf(
+			"no offers match the requested filters (airports=%v travelType=%s)",
+			body.DepartureAirportList,
+			body.TravelType,
+		)
 	}
 
 	return filtered, nil
@@ -383,33 +369,12 @@ func runDeterministicValidation(items []*entity.ODTItem, body *entity.RequestBod
 		return fmt.Errorf("no offers to validate")
 	}
 
-	var errs []string
 	for _, item := range items {
-		if err := validateMandatoryFields(item); err != nil {
-			errs = append(errs, fmt.Sprintf("offer %s: %v", item.OfferID, err))
-			continue
+		if err := validateODTItem(item, body); err != nil {
+			return fmt.Errorf("validation error: %w", err)
 		}
-		if err := validateDateConsistency(item, body); err != nil {
-			errs = append(errs, fmt.Sprintf("offer %s: %v", item.OfferID, err))
-		}
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("validation errors: %s", strings.Join(errs, "; "))
 	}
 	return nil
-}
-
-func marshalOffersForValidation(items []*entity.ODTItem) ([]json.RawMessage, error) {
-	out := make([]json.RawMessage, 0, len(items))
-	for _, item := range items {
-		raw, err := json.Marshal(item)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, raw)
-	}
-	return out, nil
 }
 
 func extractHTTPStatusCode(payload string) int {
@@ -422,10 +387,11 @@ func extractHTTPStatusCode(payload string) int {
 	return http.StatusOK
 }
 
-func validateMandatoryFields(item *entity.ODTItem) error {
+func validateODTItem(item *entity.ODTItem, body *entity.RequestBody) error {
 	if item == nil {
 		return fmt.Errorf("offer is nil")
 	}
+
 	switch {
 	case item.OfferID == "":
 		return fmt.Errorf("offerid is missing")
@@ -444,45 +410,61 @@ func validateMandatoryFields(item *entity.ODTItem) error {
 	case item.Flight.InboundDepartureAirport.Code == "":
 		return fmt.Errorf("inbound departure airport is missing")
 	}
-	return nil
-}
 
-func validateDateConsistency(item *entity.ODTItem, body *entity.RequestBody) error {
 	dep, err := parseFlexibleTimestamp(item.DepartureDate)
 	if err != nil {
 		return fmt.Errorf("departureDate invalid: %w", err)
 	}
+
 	ret, err := parseFlexibleTimestamp(item.ReturnDate)
 	if err != nil {
 		return fmt.Errorf("returnDate invalid: %w", err)
 	}
+
 	checkIn, err := parseFlexibleTimestamp(item.Accommodation.CheckInDate)
 	if err != nil {
 		return fmt.Errorf("accommodation.checkInDate invalid: %w", err)
 	}
+
 	checkOut, err := parseFlexibleTimestamp(item.Accommodation.CheckOutDate)
 	if err != nil {
 		return fmt.Errorf("accommodation.checkOutDate invalid: %w", err)
 	}
+
 	if !ret.After(dep) {
 		return fmt.Errorf("returnDate must be after departureDate")
 	}
+
 	if !checkOut.After(checkIn) {
 		return fmt.Errorf("accommodation checkout must be after checkin")
 	}
+
 	nights := calculateOvernightDuration(checkIn, checkOut)
 	if item.OvernightDuration.NightsInHotel != nights {
-		return fmt.Errorf("overnight duration %d does not match stay length %d", item.OvernightDuration.NightsInHotel, nights)
+		return fmt.Errorf(
+			"overnight duration %d does not match stay length %d",
+			item.OvernightDuration.NightsInHotel,
+			nights,
+		)
 	}
+
 	if !checkIn.Equal(dep) {
 		return fmt.Errorf("accommodation.checkInDate and departureDate diverged")
 	}
+
 	if !checkOut.Equal(ret) {
 		return fmt.Errorf("accommodation.checkOutDate and returnDate diverged")
 	}
-	if body != nil && body.TravelType != "" && !strings.EqualFold(body.TravelType, item.TravelType) {
-		return fmt.Errorf("offer travelType %q differs from request %q", item.TravelType, body.TravelType)
+
+	if body != nil && body.TravelType != "" &&
+		!strings.EqualFold(body.TravelType, item.TravelType) {
+		return fmt.Errorf(
+			"offer travelType %q differs from request %q",
+			item.TravelType,
+			body.TravelType,
+		)
 	}
+
 	return nil
 }
 

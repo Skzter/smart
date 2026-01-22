@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
@@ -26,24 +25,22 @@ func TestNewResponseUpdateService(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name      string
-		logger    *slog.Logger
-		tracer    trace.Tracer
-		cache     CacheService
-		tags      TagSearchService
-		repo      repository.DatabaseRepository
-		validator Validator
-		wantErr   bool
+		name    string
+		logger  *slog.Logger
+		tracer  trace.Tracer
+		cache   CacheService
+		tags    TagSearchService
+		repo    repository.DatabaseRepository
+		wantErr bool
 	}{
 		{
-			name:      "all dependencies provided",
-			logger:    logger,
-			tracer:    tracer,
-			cache:     mocks.NewMockCacheService(t),
-			tags:      mocks.NewMockTagSearchService(t),
-			repo:      mockRepo.NewMockDatabaseRepository(t),
-			validator: mocks.NewMockValidator(t),
-			wantErr:   false,
+			name:    "all dependencies provided",
+			logger:  logger,
+			tracer:  tracer,
+			cache:   mocks.NewMockCacheService(t),
+			tags:    mocks.NewMockTagSearchService(t),
+			repo:    mockRepo.NewMockDatabaseRepository(t),
+			wantErr: false,
 		},
 		{
 			name:    "nil logger",
@@ -65,7 +62,6 @@ func TestNewResponseUpdateService(t *testing.T) {
 				tt.tracer,
 				tt.tags,
 				tt.repo,
-				tt.validator,
 				tt.cache,
 			)
 
@@ -160,7 +156,6 @@ func TestUpdateResponse(t *testing.T) {
 			*mocks.MockCacheService,
 			*mocks.MockTagSearchService,
 			*mockRepo.MockDatabaseRepository,
-			*mocks.MockValidator,
 		)
 		wantErr bool
 	}{
@@ -171,7 +166,6 @@ func TestUpdateResponse(t *testing.T) {
 				cache *mocks.MockCacheService,
 				_ *mocks.MockTagSearchService,
 				_ *mockRepo.MockDatabaseRepository,
-				val *mocks.MockValidator,
 			) {
 				// 1) mock cache HIT
 				cache.On(
@@ -188,14 +182,6 @@ func TestUpdateResponse(t *testing.T) {
 					mock.Anything,
 					false,
 				).Return(nil, false, nil).Maybe()
-
-				// 3) validator is called with tags = nil
-				val.On(
-					"Validate",
-					mock.Anything,
-					mock.Anything,
-					(*sharedEntity.TagList)(nil),
-				).Return(&sharedEntity.TagList{}, nil).Once()
 			},
 			wantErr: false,
 		},
@@ -207,7 +193,6 @@ func TestUpdateResponse(t *testing.T) {
 				cache *mocks.MockCacheService,
 				tags *mocks.MockTagSearchService,
 				repo *mockRepo.MockDatabaseRepository,
-				val *mocks.MockValidator,
 			) {
 				cache.On("Lookup", mock.Anything, mock.Anything, true).
 					Return(nil, false, nil).Once()
@@ -221,13 +206,6 @@ func TestUpdateResponse(t *testing.T) {
 					Return(buildDatabaseEntry(
 						sampleFullODTItem("1", "package", "FRA", "BER"),
 					), nil).Once()
-
-				val.On(
-					"Validate",
-					mock.Anything,
-					mock.Anything,
-					mock.Anything,
-				).Return(&sharedEntity.TagList{}, nil).Once()
 
 				repo.On("CreateRequest", mock.Anything, mock.Anything).
 					Return(nil).Once()
@@ -251,7 +229,6 @@ func TestUpdateResponse(t *testing.T) {
 				cache *mocks.MockCacheService,
 				tags *mocks.MockTagSearchService,
 				repo *mockRepo.MockDatabaseRepository,
-				_ *mocks.MockValidator,
 			) {
 				cache.On("Lookup", mock.Anything, mock.Anything, true).
 					Return(nil, false, nil).Once()
@@ -275,10 +252,9 @@ func TestUpdateResponse(t *testing.T) {
 			cache := mocks.NewMockCacheService(t)
 			tagSvc := mocks.NewMockTagSearchService(t)
 			repo := mockRepo.NewMockDatabaseRepository(t)
-			validator := mocks.NewMockValidator(t)
 
 			if tt.setupMock != nil {
-				tt.setupMock(cache, tagSvc, repo, validator)
+				tt.setupMock(cache, tagSvc, repo)
 			}
 
 			svc, err := NewResponseUpdateService(
@@ -286,7 +262,6 @@ func TestUpdateResponse(t *testing.T) {
 				tracer,
 				tagSvc,
 				repo,
-				validator,
 				cache,
 			)
 			assert.NoError(t, err)
@@ -434,7 +409,6 @@ func TestUpdateResponse_InputValidation(t *testing.T) {
 				tracer,
 				mocks.NewMockTagSearchService(t),
 				mockRepo.NewMockDatabaseRepository(t),
-				mocks.NewMockValidator(t),
 				mocks.NewMockCacheService(t),
 			)
 
@@ -449,26 +423,35 @@ func TestUpdateResponse_InputValidation(t *testing.T) {
 	}
 }
 
-// TestValidateMandatoryFields verifies all required-field validations.
-func TestValidateMandatoryFields(t *testing.T) {
+// nolint: funlen
+// TestValidateODTItem tests the validation of an item
+func TestValidateODTItem(t *testing.T) {
 	validItem := sampleFullODTItem("offer-1", "package", "FRA", "BER")
 	validItem.DepartureDate = "2025-07-01T00:00:00Z"
 	validItem.ReturnDate = "2025-07-08T00:00:00Z"
 	validItem.Accommodation.CheckInDate = validItem.DepartureDate
 	validItem.Accommodation.CheckOutDate = validItem.ReturnDate
+	validItem.OvernightDuration.NightsInHotel = 7
+	validItem.TravelType = "package"
+
+	body := &entity.RequestBody{TravelType: "package"}
 
 	tests := []struct {
 		name    string
+		item    *entity.ODTItem
 		mutate  func(*entity.ODTItem)
 		wantErr bool
 	}{
 		{
 			name:    "nil item",
-			mutate:  nil,
+			item:    nil,
 			wantErr: true,
 		},
+
+		// --- Mandatory field checks ---
 		{
 			name: "missing offer id",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.OfferID = ""
 			},
@@ -476,6 +459,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing departure date",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.DepartureDate = ""
 			},
@@ -483,6 +467,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing return date",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.ReturnDate = ""
 			},
@@ -490,6 +475,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing accommodation check-in",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Accommodation.CheckInDate = ""
 			},
@@ -497,6 +483,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing accommodation check-out",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Accommodation.CheckOutDate = ""
 			},
@@ -504,6 +491,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "empty rooms",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Accommodation.Rooms = nil
 			},
@@ -511,6 +499,7 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing outbound airport",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Flight.OutboundDepartureAirport.Code = ""
 			},
@@ -518,56 +507,17 @@ func TestValidateMandatoryFields(t *testing.T) {
 		},
 		{
 			name: "missing inbound airport",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Flight.InboundDepartureAirport.Code = ""
 			},
 			wantErr: true,
 		},
-		{
-			name:    "all mandatory fields present",
-			mutate:  func(i *entity.ODTItem) {},
-			wantErr: false,
-		},
-	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var item *entity.ODTItem
-			if tt.mutate != nil {
-				copy := validItem
-				item = &copy
-				tt.mutate(item)
-			}
-
-			err := validateMandatoryFields(item)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
-// TestValidateDateConsistency verifies date relationships and consistency rules.
-func TestValidateDateConsistency(t *testing.T) {
-	validItem := sampleFullODTItem("offer-1", "package", "FRA", "BER")
-	validItem.DepartureDate = "2025-07-01T00:00:00Z"
-	validItem.ReturnDate = "2025-07-08T00:00:00Z"
-	validItem.Accommodation.CheckInDate = validItem.DepartureDate
-	validItem.Accommodation.CheckOutDate = validItem.ReturnDate
-	validItem.OvernightDuration.NightsInHotel = 7
-
-	body := &entity.RequestBody{TravelType: "package"}
-
-	tests := []struct {
-		name    string
-		mutate  func(*entity.ODTItem)
-		wantErr bool
-	}{
+		// --- Date & consistency checks ---
 		{
 			name: "invalid departure date format",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.DepartureDate = "invalid"
 			},
@@ -575,6 +525,7 @@ func TestValidateDateConsistency(t *testing.T) {
 		},
 		{
 			name: "return before departure",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.ReturnDate = "2025-06-01T00:00:00Z"
 			},
@@ -582,6 +533,7 @@ func TestValidateDateConsistency(t *testing.T) {
 		},
 		{
 			name: "checkout before checkin",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.Accommodation.CheckOutDate = "2025-06-30T00:00:00Z"
 			},
@@ -589,6 +541,7 @@ func TestValidateDateConsistency(t *testing.T) {
 		},
 		{
 			name: "overnight duration mismatch",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.OvernightDuration.NightsInHotel = 3
 			},
@@ -596,13 +549,17 @@ func TestValidateDateConsistency(t *testing.T) {
 		},
 		{
 			name: "travel type mismatch",
+			item: &validItem,
 			mutate: func(i *entity.ODTItem) {
 				i.TravelType = "flight"
 			},
 			wantErr: true,
 		},
+
+		// --- Happy path ---
 		{
-			name:    "valid dates",
+			name:    "all validations pass",
+			item:    &validItem,
 			mutate:  func(i *entity.ODTItem) {},
 			wantErr: false,
 		},
@@ -610,10 +567,18 @@ func TestValidateDateConsistency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			copy := validItem
-			tt.mutate(&copy)
+			if tt.item == nil {
+				err := validateODTItem(nil, body)
+				assert.Error(t, err)
+				return
+			}
 
-			err := validateDateConsistency(&copy, body)
+			copy := *tt.item
+			if tt.mutate != nil {
+				tt.mutate(&copy)
+			}
+
+			err := validateODTItem(&copy, body)
 
 			if tt.wantErr {
 				assert.Error(t, err)
