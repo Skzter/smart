@@ -63,7 +63,11 @@
 
                 <Dialog.Root bind:open>
                     <Dialog.Trigger>
-                        <Button size="icon" variant="ghost" aria-label="Neue Gruppe">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Neue Gruppe"
+                        >
                             +
                         </Button>
                     </Dialog.Trigger>
@@ -74,8 +78,14 @@
                         </Dialog.Header>
 
                         <div class="flex flex-col gap-2 py-2">
-                            <Input placeholder="Gruppenname" bind:value={groupName} />
-                            <Input placeholder="Beschreibung (optional)" bind:value={description} />
+                            <Input
+                                placeholder="Gruppenname"
+                                bind:value={groupName}
+                            />
+                            <Input
+                                placeholder="Beschreibung (optional)"
+                                bind:value={description}
+                            />
                         </div>
 
                         <Dialog.Footer>

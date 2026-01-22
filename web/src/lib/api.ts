@@ -69,9 +69,7 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChats(
-    groupIds?: string[],
-): Promise<ApiChatSummary[]> {
+export async function getChats(groupIds?: string[]): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
@@ -131,7 +129,9 @@ export async function runContainer(request: ApiRunContainer): Promise<void> {
     });
 }
 
-export async function getChatById(chatId?: string, ): Promise<ApiGetChatByIdResponse> {
+export async function getChatById(
+    chatId?: string,
+): Promise<ApiGetChatByIdResponse> {
     try {
         const id = chatId ?? chat.id;
         if (!id) {
@@ -176,46 +176,63 @@ function getErrorMessage(error: unknown): Error {
         );
     }
 }
-  
+
 export async function getGroups(): Promise<ApiGroup[]> {
     try {
-        const response = await axios({ method: "get", url: "/groups", baseURL });
+        const response = await axios({
+            method: "get",
+            url: "/groups",
+            baseURL,
+        });
         return response.data as ApiGroup[];
     } catch (error) {
         throw getErrorMessage(error);
     }
 }
 
-export async function createGroup(request: ApiCreateGroupRequest,): Promise<ApiCreateGroupResponse> {
+export async function createGroup(
+    request: ApiCreateGroupRequest,
+): Promise<ApiCreateGroupResponse> {
     try {
-        const response = await axios({ method: "post", url: "/groups", baseURL, data: request });
+        const response = await axios({
+            method: "post",
+            url: "/groups",
+            baseURL,
+            data: request,
+        });
         return response.data as ApiCreateGroupResponse;
     } catch (error) {
         throw getErrorMessage(error);
     }
 }
 
-export async function assignChatToGroups(chatId: string, groupIds: string[]): Promise<void> {
+export async function assignChatToGroups(
+    chatId: string,
+    groupIds: string[],
+): Promise<void> {
     try {
         await axios({
-        method: "post",
-        url: `/chats/${chatId}/groups`,
-        baseURL,
-        data: { groupIds }, 
+            method: "post",
+            url: `/chats/${chatId}/groups`,
+            baseURL,
+            data: { groupIds },
         });
     } catch (error) {
         throw getErrorMessage(error);
     }
 }
 
-export async function removeChatFromGroup(chatId: string, groupId: string): Promise<void> {
+export async function removeChatFromGroup(
+    chatId: string,
+    groupId: string,
+): Promise<void> {
     try {
         await axios({
-        method: "delete",
-        url: `/chats/${chatId}/groups/${groupId}`,
-        baseURL,
+            method: "delete",
+            url: `/chats/${chatId}/groups/${groupId}`,
+            baseURL,
         });
     } catch (error) {
         throw getErrorMessage(error);
     }
-}  
+}

@@ -23,10 +23,11 @@ vi.mock("$lib/shared.svelte", () => ({
     user: { id: "test-user-123" },
     ChatDate: { Range: undefined },
     ChatFilter: { sortBy: "recent", timeFilter: "all" },
+    GroupFilter: { selectedIds: [] as string[] },
 }));
 
 import { getChats } from "$lib/api";
-import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
+import { user, ChatDate, ChatFilter, GroupFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 
 describe("Sidebar", () => {
@@ -36,6 +37,7 @@ describe("Sidebar", () => {
         ChatDate.Range = undefined;
         ChatFilter.sortBy = "recent";
         ChatFilter.timeFilter = "all";
+        GroupFilter.selectedIds = [];
     });
 
     it("renders the sidebar with loading state initially", async () => {
@@ -80,12 +82,12 @@ describe("Sidebar", () => {
 
     it("loads chats even when user.id is undefined", async () => {
         (user as unknown as { id: undefined }).id = undefined;
-    
+
         vi.mocked(getChats).mockResolvedValue([]);
-    
+
         render(SidebarTestWrapper);
         await tick();
-    
+
         expect(getChats).toHaveBeenCalledTimes(1);
     });
 
@@ -518,6 +520,17 @@ describe("Sidebar", () => {
 
         await waitFor(() => {
             expect(getChats).toHaveBeenCalled();
+        });
+    });
+
+    it("calls getChats with selected group ids", async () => {
+        GroupFilter.selectedIds = ["g1", "g2"];
+        vi.mocked(getChats).mockResolvedValue([]);
+
+        render(SidebarTestWrapper);
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenCalledWith(["g1", "g2"]);
         });
     });
 });

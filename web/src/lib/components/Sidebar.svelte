@@ -10,9 +10,15 @@
     import { toast } from "svelte-sonner";
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
+    import { GroupFilter } from "$lib/shared.svelte";
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[] | undefined>(undefined);
+
+    $effect(() => {
+        GroupFilter.selectedIds.join(",");
+        void loadChats();
+    });
 
     let groupState = $derived(
         updateGroupsWithDateRange(
@@ -23,25 +29,25 @@
         ),
     );
 
-    $effect(() => {
-        (async () => {
-            try {
-                items = (await getChats()) as ApiChatSummary[];
-            } catch (err) {
-                if (err instanceof Error) {
-                    error = err.message;
-                    toast.error(error, {
-                        description: "Das war wohl nichts mit der Historie.",
-                    });
-                } else {
-                    error = "Unbekannter Fehler";
-                    toast.error(error, {
-                        description: "Das war wohl nichts mit der Historie.",
-                    });
-                }
+    async function loadChats() {
+        error = "";
+        items = undefined;
+
+        try {
+            items = (await getChats(
+                GroupFilter.selectedIds,
+            )) as ApiChatSummary[];
+        } catch (err) {
+            if (err instanceof Error) {
+                error = err.message;
+            } else {
+                error = "Unbekannter Fehler";
             }
-        })();
-    });
+            toast.error(error, {
+                description: "Das war wohl nichts mit der Historie.",
+            });
+        }
+    }
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,

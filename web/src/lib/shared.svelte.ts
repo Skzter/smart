@@ -1,4 +1,5 @@
 import type { DateRange } from "bits-ui";
+import type { ApiGroup } from "$types/api";
 
 export type MessageType = "user" | "validation" | "generation" | "error";
 export type Message = { t: MessageType; Message: string };
@@ -21,4 +22,14 @@ export const ChatDate = $state({
 export const ChatFilter = $state({
     sortBy: "recent" as "recent" | "created",
     timeFilter: "all" as "all" | "today" | "week" | "month",
+});
+
+export const GroupsState = $state({
+    items: [] as ApiGroup[],
+    isLoading: false,
+    error: "" as string,
+});
+
+export const GroupFilter = $state({
+    selectedIds: [] as string[],
 });

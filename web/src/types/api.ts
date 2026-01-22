@@ -60,18 +60,18 @@ export type ApiGroup = {
     description: string;
     createdAt: string;
     createdBy: string;
-  };
-  
-  export type ApiCreateGroupRequest = {
+};
+
+export type ApiCreateGroupRequest = {
     groupName: string;
     description: string;
     userId: string;
-  };
-  
-  export type ApiCreateGroupResponse = {
+};
+
+export type ApiCreateGroupResponse = {
     groupId: string;
-  };
-  
-  export type ApiAssignChatToGroupsRequest = {
+};
+
+export type ApiAssignChatToGroupsRequest = {
     groupIds: string[];
-  };  
+};
