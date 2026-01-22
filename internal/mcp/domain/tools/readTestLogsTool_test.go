@@ -12,7 +12,7 @@ import (
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/mocks/store"
 )
 
-func TestNewReadTestLogStreamTool(t *testing.T) {
+func TestNewReadTestLogsTool(t *testing.T) {
 	logger := slog.Default()
 
 	tests := []struct {
