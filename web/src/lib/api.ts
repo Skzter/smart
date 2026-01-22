@@ -69,13 +69,20 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChats(): Promise<ApiChatSummary[]> {
+export async function getChats(
+    groupIds?: string[],
+): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `/chats`,
-            baseURL: baseURL,
+            url: "/chats",
+            baseURL,
+            params:
+                groupIds && groupIds.length > 0
+                    ? { groups: groupIds.join(",") }
+                    : undefined,
         });
+
         return response.data.chatSummarys;
     } catch (error) {
         throw getErrorMessage(error);

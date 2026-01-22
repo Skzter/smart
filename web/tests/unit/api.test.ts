@@ -170,6 +170,24 @@ describe("API Functions", () => {
                 "Failed to fetch user chats",
             );
         });
+
+        it("should make a GET request to /chats with group filter", async () => {
+            const mockedAxios = axios as unknown as Mock;
+        
+            mockedAxios.mockResolvedValue({
+                data: { chatSummarys: [] },
+            });
+        
+            await getChats(["g1", "g2"]);
+        
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/chats",
+                baseURL: "http://localhost:8081/api/v1/",
+                params: { groups: "g1,g2" },
+            });
+        });
+        
     });
     describe.skip("validatePrompt TOOD: fix this test", () => {
         it("should make a POST request to /validate with proper params", async () => {
