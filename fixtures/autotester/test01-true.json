@@ -1,8 +1,8 @@
 {
     "message": {
-        "data": "Erzeuge Playwright-Tests via Autoplaywright für Check24. Base-URL: https://staging.check24.de. Szenario: Nutzer-Login. Ablauf: Der Nutzer klickt auf 'Anmelden', sieht das Eingabefeld für E-Mail mit Platzhalter 'E-Mail-Adresse' und ein Passwortfeld, gibt gültige Zugangsdaten ein (ENV-Variablen TEST_USER/TEST_PASS) und klickt auf 'Login'. Assertions: Nach erfolgreichem Login wird die Dashboard-Seite geladen, die URL enthält '/dashboard' und der Text 'Willkommen' erscheint. Testdaten/Setup: Stelle sicher, dass der Testuser existiert; Teardown: Logout und Session-Bereinigung.",
+        "data": "Erzeuge Playwright-Tests via Autoplaywright für Check24. Base-URL: https://staging.check24.de. Szenario: Nutzer-Login. Ablauf: Der Nutzer klickt auf 'Anmelden', sieht das Eingabefeld für E-Mail mit Platzhalter 'E-Mail-Adresse' und ein Passwortfeld, gibt gültige Zugangsdaten ein (ENV-Variablen TEST_USER/TEST_PASS) und klickt auf 'Login'. Assertions: Nach erfolgreichem Login wird die Dashboard-Seite geladen, die URL enthält '/dashboard' und der Text 'Willkommen' erscheint. Testdaten/Setup: Stelle sicher, dass der Testuser existiert; Teardown: Logout und Chat-Bereinigung.",
         "agent": "user"
     },
     "userId": "testuser",
-    "conversationId": ""
+    "chatId": ""
 }

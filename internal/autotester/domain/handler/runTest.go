@@ -32,7 +32,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	if params.UserID == "" || params.TestId == "" || params.SessionID == "" {
+	if params.UserID == "" || params.TestId == "" || params.ChatID == "" {
 		span.RecordError(errors.New("missing required parameter"))
 		span.SetStatus(codes.Error, "missing required parameter")
 		a.metricsService.IncRequestError("missing_parameters")
@@ -42,7 +42,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	testfile, err := a.localTestcaseStorageService.GetTestPath(params.TestId, params.UserID, params.SessionID)
+	testfile, err := a.localTestcaseStorageService.GetTestPath(params.TestId, params.UserID, params.ChatID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to get test file")
@@ -53,7 +53,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	_, err = a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.SessionID)
+	_, err = a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.ChatID)
 	if err != nil {
 		span.SetStatus(codes.Error, "unable to run container")
 		a.metricsService.IncRequestError("run_container_failed")

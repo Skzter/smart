@@ -125,7 +125,7 @@ describe("Runner", () => {
             // Verify API was called with sanitized user ID
             expect(saveTestLocalMock).toHaveBeenCalledWith({
                 userId: "user123", // sanitized from "auth0|user123"
-                conversationId: mockChatId,
+                chatId: mockChatId,
                 code: mockTestCode,
             });
 
@@ -154,7 +154,7 @@ describe("Runner", () => {
 
             expect(saveTestLocalMock).toHaveBeenCalledWith({
                 userId: "simpleUserId", // no sanitization needed
-                conversationId: mockChatId,
+                chatId: mockChatId,
                 code: mockTestCode,
             });
         });
@@ -522,7 +522,7 @@ describe("Runner", () => {
             // split() takes only the second part after first pipe
             expect(saveTestLocalMock).toHaveBeenCalledWith({
                 userId: "sub",
-                conversationId: mockChatId,
+                chatId: mockChatId,
                 code: "test",
             });
         });

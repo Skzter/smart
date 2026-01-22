@@ -8,6 +8,7 @@ import (
 	"os"
 
 	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
@@ -50,6 +51,9 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
 	}
 
+	debugGroup := router.Group("/debug", pprofAuthMiddleware())
+	pprof.RouteRegister(debugGroup, "pprof")
+
 	if !isHeadless {
 		router.GET("/auth_config.json", func(c *gin.Context) {
 			c.FileFromFS("/auth_config.json", http.FS(web.Auth0Config))
@@ -74,6 +78,17 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 
 	logger.Info("Router initialized", "isHeadless", isHeadless)
 	return router, nil
+}
+
+func pprofAuthMiddleware() gin.HandlerFunc {
+	password := os.Getenv("PPROF_AUTH_PASSWORD")
+	if password == "" {
+		password = "smart-qa"
+	}
+
+	return gin.BasicAuth(gin.Accounts{
+		"admin": password,
+	})
 }
 
 func sseHeaderMiddleWare() gin.HandlerFunc {
