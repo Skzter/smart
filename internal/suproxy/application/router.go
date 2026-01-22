@@ -5,6 +5,7 @@ import (
 	"os"
 
 	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
@@ -23,7 +24,21 @@ func NewRouter(h *handler.SuproxyController) *gin.Engine {
 		api.POST("/Offerlist", h.PostOfferlist)
 	}
 
+	debugGroup := router.Group("/debug", pprofAuthMiddleware())
+	pprof.RouteRegister(debugGroup, "pprof")
+
 	return router
+}
+
+func pprofAuthMiddleware() gin.HandlerFunc {
+	password := os.Getenv("PPROF_AUTH_PASSWORD")
+	if password == "" {
+		password = "smart-qa"
+	}
+
+	return gin.BasicAuth(gin.Accounts{
+		"admin": password,
+	})
 }
 
 // corsMiddleware handles CORS headers
