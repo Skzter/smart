@@ -45,11 +45,11 @@ func NewLogger(logLevel string, logFilePath string) *slog.Logger {
 
 	switch {
 	case actualLogPath != "":
-		logger.Info("Logging to file", slog.String("path", actualLogPath))
+		logger.Info("Logging to file", "path", actualLogPath)
 	case setupError != nil:
 		logger.Warn("Failed to setup file logging, using stdout",
-			slog.String("requestedPath", logFilePath),
-			slog.String("error", setupError.Error()),
+			"requestedPath", logFilePath,
+			"error", setupError.Error(),
 		)
 	default:
 		logger.Info("No log file path configured, using stdout")
