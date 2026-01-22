@@ -110,8 +110,6 @@ func (s *responseUpdateService) handleMockCache(
 		return false, nil
 	}
 
-	s.logger.Debug("update-response: mock cache hit")
-
 	var items []json.RawMessage
 	if err := json.Unmarshal(mockCached, &items); err != nil {
 		return false, fmt.Errorf("failed to unmarshal mock cached response: %w", err)
@@ -141,8 +139,6 @@ func (s *responseUpdateService) resolveBaseEntry(
 	}
 
 	if supplierHit {
-		s.logger.Debug("update-response: supplier cache hit")
-
 		return &entity.DatabaseEntry{
 			Response: entity.Response{
 				Response: string(supplierCached),
