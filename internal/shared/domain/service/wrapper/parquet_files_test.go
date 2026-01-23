@@ -5,7 +5,6 @@ package service
 import (
 	"context"
 	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -57,7 +56,7 @@ func TestNewParquetWrapper(t *testing.T) {
 	}{
 		{
 			name:        "Valid logger and config",
-			logger:      slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:      slog.New(slog.DiscardHandler),
 			config:      entity.ParquetConfig{},
 			expectError: false,
 		},
@@ -112,7 +111,7 @@ func runWriteReadTest[T any](t *testing.T, ctx context.Context, logger *slog.Log
 }
 
 func TestParquetWrapper_WriteAndRead(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 
@@ -225,7 +224,7 @@ func TestParquetWrapper_WriteAndRead(t *testing.T) {
 }
 
 func TestWriteStructToParquetSingleStruct(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 
@@ -269,7 +268,7 @@ func TestWriteStructToParquetSingleStruct(t *testing.T) {
 }
 
 func TestGetParquetSchemaUserEvents(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
@@ -289,7 +288,7 @@ func TestGetParquetSchemaUserEvents(t *testing.T) {
 }
 
 func TestValidateStructUserEvents(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
@@ -306,7 +305,7 @@ func TestValidateStructUserEvents(t *testing.T) {
 }
 
 func TestParquetWrapperErrorHandling(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
@@ -378,7 +377,7 @@ func TestParquetWrapperErrorHandling(t *testing.T) {
 }
 
 func TestGetParquetFileInfoUserEvents(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 	wrapper, err := NewParquetWrapper[UserEvent](logger, entity.ParquetConfig{}, tracer)
@@ -413,7 +412,7 @@ func TestGetParquetFileInfoUserEvents(t *testing.T) {
 // Example usage function demonstrating different struct types
 func ExampleParquetWrapper() {
 	// Initialize logger
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	ctx := context.Background()
 

@@ -7,8 +7,8 @@ import (
 )
 
 // LoadAppConfig loads application config
-func LoadAppConfig() (*Config, error) {
-	var cfg Config
+func LoadAppConfig() (*Suproxy, error) {
+	var cfg Suproxy
 	bytes, err := build.SuproxyEmbedConfigs.ReadFile("configs/suproxy.msgpack")
 	if err != nil {
 		return nil, err

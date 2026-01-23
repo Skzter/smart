@@ -34,9 +34,11 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool) (*gin.Engine, error) {
 	wire.Build(
 		shared.SharedProviderSet,
+		TaglistConfigProvider,
+		RedisConfigProvider,
 		LoggerProvider,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
@@ -46,21 +48,21 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 		repository.NewTestcaseLocalStorageRepository,
 		TestCaseStorageRepositoryProvider,
 		service.NewValidatorService,
+		MetricsServiceProvider,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
 		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
-		TaglistConfigProvider,
 		DockerClientProvider,
 		service.NewDocker,
+		service.NewCacheService,
 		service.NewChatManager,
 		service.NewChatStorageService,
 		repository.NewChatStorageRepository,
 		ChatParquetConfigProvider,
 		ChatParquetWrapperProvider,
 		ChatSummaryParquetWrapperProvider,
-		MetricsServiceProvider,
 		DatabaseRepositoryProvider,
 		service.NewAuthService,
 		service.NewGroupStorage,
@@ -72,21 +74,28 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer, isHeadless bool) (*g
 	return nil, nil
 }
 
+// RouterProvider provides a new Router
 func RouterProvider(logger *slog.Logger, controller *handler.AutotesterController, isHeadless bool) (*gin.Engine, error) {
 	return application.NewRouter(logger, controller, isHeadless)
 }
 
-func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
+// TaglistConfigProvider provides a new Taglist Config
+func TaglistConfigProvider(cfg *config.Autotester) *sharedConfig.TaglistConfig {
 	return cfg.TaglistConfig
 }
 
+// RedisConfigProvider provides a new Redis Config
+func RedisConfigProvider(cfg *config.Autotester) *sharedConfig.RedisConfig {
+	return cfg.RedisConfig
+}
+
 // LoggerProvider provides a new logger.
-func LoggerProvider(cfg *config.Config) *slog.Logger {
+func LoggerProvider(cfg *config.Autotester) *slog.Logger {
 	return logger.NewLogger(cfg.LogLevel)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
+func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Autotester, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
@@ -115,7 +124,8 @@ func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetC
 	return wrapperService.NewParquetWrapper[entity.Group](logger, cfg, tracer)
 }
 
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
+// S3WrapperProvider provides a new S3Wrapper
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
@@ -126,23 +136,26 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tra
 }
 
 // FileSystemProvider provides a new filesystem.
-func FileSystemProvider(cfg *config.Config) (repository.FileSystem, error) {
+func FileSystemProvider(cfg *config.Autotester) (repository.FileSystem, error) {
 	return repository.NewOSFileSystem(cfg.TestsRootDir)
 }
 
+// DockerClientProvider provides a new Docker Client
 func DockerClientProvider() (service.DockerClient, error) {
 	return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 }
 
-func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Config, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
+// TestcaseLocalStorageServiceProvider provides a new TestcaseLocalStorageService
+func TestcaseLocalStorageServiceProvider(logger *slog.Logger, cfg *config.Autotester, repo repository.TestcaseLocalStorageRepository) (service.TestcaseLocalStorageService, error) {
 	return service.NewTestcaseLocalStorageService(logger, repo, cfg.EnableCleanUp)
 }
 
+// TestCaseStorageRepositoryProvider provides a new TestCaseStorageRepository
 func TestCaseStorageRepositoryProvider(
 	logger *slog.Logger,
 	s3Wrapper wrapperService.S3StorageWrapper,
 	parquetWrapper wrapperService.ParquetFileWrapper[entity.TestCase],
-	cfg *config.Config,
+	cfg *config.Autotester,
 	tracer trace.Tracer,
 ) (repository.TestcaseStorageRepository, error) {
 	return repository.NewTestcaseStorageRepository(logger, s3Wrapper, parquetWrapper, cfg.S3TestcasePrefix, tracer)
@@ -153,10 +166,12 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 	return wrapperService.DefaultParquetConfig()
 }
 
+// MetricsServiceProvider provides a new MetricsService
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
 }
 
+// DatabaseRepositoryProvider provides a new DatabaseRepository
 func DatabaseRepositoryProvider() (repository.TokenDatabase, error) {
 	err := godotenv.Load()
 	if err != nil {

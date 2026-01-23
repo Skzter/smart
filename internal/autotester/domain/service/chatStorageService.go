@@ -7,12 +7,14 @@ import (
 	"slices"
 	"sort"
 	"sync"
+	"time"
 
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -35,16 +37,25 @@ type chatStorageService struct {
 	logger    *slog.Logger
 	repo      repository.ChatStorageRepository
 	validator Validator
+	cache     Cache
 	tracer    trace.Tracer
-	lock      sync.RWMutex
+	metrics   sharedService.MetricsService
 
+	lock      sync.RWMutex
 	summaries []*entity.ChatSummary
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
-// Returns an error if required arguments are nil or if loading existing summaries fails.
-func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepository, validator Validator, tracer trace.Tracer) (ChatStorageService, error) {
-	if err := assert.NotNil(logger, repo, validator); err != nil {
+// Returns the service or an error if any of the arguments are nil.
+func NewChatStorageService(
+	logger *slog.Logger,
+	repo repository.ChatStorageRepository,
+	validator Validator,
+	cache Cache,
+	tracer trace.Tracer,
+	metrics sharedService.MetricsService,
+) (ChatStorageService, error) {
+	if err := assert.NotNil(logger, repo, validator, metrics, cache); err != nil {
 		return nil, err
 	}
 
@@ -61,9 +72,11 @@ func NewChatStorageService(logger *slog.Logger, repo repository.ChatStorageRepos
 		logger:    logger,
 		repo:      repo,
 		validator: validator,
+		cache:     cache,
 		tracer:    tracer,
 		summaries: summaries,
 		lock:      sync.RWMutex{},
+		metrics:   metrics,
 	}, nil
 }
 
@@ -96,6 +109,12 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		return err
 	}
 
+	if err := s.cache.Store(ctx, chat); err != nil {
+		s.logger.Debug("cache store error", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat in cache")
+	}
+
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -112,6 +131,7 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		s.summaries = append(s.summaries[:insertPos], append([]*entity.ChatSummary{summary}, s.summaries[insertPos:]...)...)
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -128,6 +148,28 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		return nil, fmt.Errorf("chatId must not be empty")
 	}
 
+	start := time.Now()
+
+	// cache miss produces nil, nil
+	cachedChat, err := s.cache.LookUp(ctx, chatId)
+	if err != nil {
+		s.logger.Debug("cache lookup error", "error", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "cache access error")
+	}
+
+	if cachedChat != nil {
+		if err := s.validator.ValidateChat(ctx, cachedChat); err != nil {
+			s.logger.Debug("retrieved invalid chat from cache", "error", err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "retrieved invalid chat from cache")
+		} else {
+			s.metrics.IncCacheHit()
+			s.metrics.RecordCacheDuration(time.Since(start), "hit")
+			return cachedChat, nil
+		}
+	}
+
 	chat, err := s.repo.Read(ctx, chatId)
 	if err != nil {
 		span.RecordError(err)
@@ -141,6 +183,14 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
 	}
 
+	if err := s.cache.Store(ctx, chat); err != nil {
+		s.logger.Debug("cache store error", "error", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "error while storing chat in cache")
+	}
+
+	s.metrics.IncCacheMiss()
+	s.metrics.RecordCacheDuration(time.Since(start), "miss")
 	span.SetStatus(codes.Ok, "")
 	return chat, nil
 }

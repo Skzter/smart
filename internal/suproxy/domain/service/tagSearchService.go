@@ -18,12 +18,12 @@ type TagSearchService interface {
 
 // tagSearchService is the concrete implementation of TagSearchService
 type tagSearchService struct {
-	config *config.Config
+	config *config.Suproxy
 	s3     wrapper.S3StorageWrapper
 }
 
 // NewTagSearchService creates a new TagSearchService instance with S3 wrapper
-func NewTagSearchService(cfg *config.Config, s3 wrapper.S3StorageWrapper) (TagSearchService, error) {
+func NewTagSearchService(cfg *config.Suproxy, s3 wrapper.S3StorageWrapper) (TagSearchService, error) {
 	if err := assert.NotNil(cfg, s3); err != nil {
 		return nil, err
 	}
