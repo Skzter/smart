@@ -93,6 +93,19 @@ services:
     networks:
       - default
 
+  postgres:
+    image: postgres:17-alpine
+    #depends_on:
+    #  - autotester
+    networks:
+      - default
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres-pass
+      - POSTGRES_DB=smart
+
   datadog:
     image: datadog/agent:latest
     networks:

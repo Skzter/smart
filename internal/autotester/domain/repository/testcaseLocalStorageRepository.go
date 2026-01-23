@@ -15,39 +15,39 @@ import (
 
 // TestcaseLocalStorageRepository provides low-level file operations for managing TestCase files
 // in local storage. The repository handles both data persistence (Save, Delete) and
-// path provisioning for the test runner (GetTestPath*). All operations are user- and session-scoped.
+// path provisioning for the test runner (GetTestPath*). All operations are user- and chat-scoped.
 type TestcaseLocalStorageRepository interface {
-	// Save persists the given TestCase for the specified user and session.
+	// Save persists the given TestCase for the specified user and chat.
 	// Implementations may create directories or files as required.
-	Save(testcase *entity.TestCase, userId, sessionId string) error
+	Save(testcase *entity.TestCase, userId, chatId string) error
 
 	// Read retrieves the content of a TestCase file from local storage.
-	// The file is uniquely identified and validated using testId, userId, and sessionId.
+	// The file is uniquely identified and validated using testId, userId, and chatId.
 	// Returns the file content as a byte slice, or an error if the file does not exist or parameters are invalid.
-	Read(testId, userId, sessionId string) ([]byte, error)
+	Read(testId, userId, chatId string) ([]byte, error)
 
 	// GetTestPath returns the validated relative file path to a specific TestCase file,
 	// starting from the root of the local test storage directory.
 	// The path is ready for the test runner to execute the test without
 	// needing to know the internal storage structure.
-	GetTestPath(testId, userId, sessionId string) (string, error)
+	GetTestPath(testId, userId, chatId string) (string, error)
 
-	// GetTestPathsBySession returns all validated relative file paths to TestCase files for a session,
+	// GetTestPathsByChat returns all validated relative file paths to TestCase files for a chat,
 	// starting from the root of the local test storage directory.
-	// The paths are ready for the test runner to execute all tests within the session
+	// The paths are ready for the test runner to execute all tests within the chat
 	// without needing to know the internal storage structure.
-	GetTestPathsBySession(userId, sessionId string) ([]string, error)
+	GetTestPathsByChat(userId, chatId string) ([]string, error)
 
 	// GetTestPathsByUser returns all validated relative file paths to TestCase files for a user,
-	// grouped by sessionId. The paths start from the root of the local test storage directory
-	// and are ready for the test runner to execute all tests across sessions
+	// grouped by chatId. The paths start from the root of the local test storage directory
+	// and are ready for the test runner to execute all tests across chats
 	// without needing to know the internal storage structure.
 	GetTestPathsByUser(userId string) (map[string][]string, error)
 
 	// Delete removes the TestCase with the given testId for the provided
-	// user and session. Implementations should return nil when the file did
+	// user and chat. Implementations should return nil when the file did
 	// not exist (idempotent delete) or an error for IO failures.
-	Delete(testId, userId, sessionId string) error
+	Delete(testId, userId, chatId string) error
 
 	// DeleteOlderThan removes all TestCases that are older than the specified duration.
 	// Returns the number of deleted files and any error that occurred.
@@ -74,8 +74,8 @@ func NewTestcaseLocalStorageRepository(logger *slog.Logger, filesystem FileSyste
 	}, nil
 }
 
-func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId, sessionId string) error {
-	if err := validatePathNameElements(userId, sessionId); err != nil {
+func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId, chatId string) error {
+	if err := validatePathNameElements(userId, chatId); err != nil {
 		return fmt.Errorf("validate path elements: %w", err)
 	}
 	if err := validateTestcase(testcase); err != nil {
@@ -87,7 +87,7 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
 	}
 
-	dir := filepath.Join(userId, sessionId)
+	dir := filepath.Join(userId, chatId)
 	if err := r.filesystem.MkdirAll(dir); err != nil {
 		r.logger.Error("create directory failed", "dir", dir, "err", err)
 		return fmt.Errorf("create directory %s: %w", dir, err)
@@ -103,12 +103,12 @@ func (r *testcaseLocalStorageRepository) Save(testcase *entity.TestCase, userId,
 	return nil
 }
 
-func (r *testcaseLocalStorageRepository) Read(testId, userId, sessionId string) ([]byte, error) {
-	if err := validatePathNameElements(userId, sessionId); err != nil {
+func (r *testcaseLocalStorageRepository) Read(testId, userId, chatId string) ([]byte, error) {
+	if err := validatePathNameElements(userId, chatId); err != nil {
 		return nil, fmt.Errorf("validate path elements: %w", err)
 	}
 
-	dir := filepath.Join(userId, sessionId)
+	dir := filepath.Join(userId, chatId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
 		return nil, fmt.Errorf("invalid testcase filename %s: %w", filename, err)
@@ -124,12 +124,12 @@ func (r *testcaseLocalStorageRepository) Read(testId, userId, sessionId string) 
 	return fileContent, nil
 }
 
-func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId string) (string, error) {
-	if err := validatePathNameElements(userId, sessionId); err != nil {
+func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, chatId string) (string, error) {
+	if err := validatePathNameElements(userId, chatId); err != nil {
 		return "", fmt.Errorf("validate path elements: %w", err)
 	}
 
-	dir := filepath.Join(userId, sessionId)
+	dir := filepath.Join(userId, chatId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
 		return "", fmt.Errorf("invalid testcase filename %s: %w", filename, err)
@@ -150,12 +150,12 @@ func (r *testcaseLocalStorageRepository) GetTestPath(testId, userId, sessionId s
 	return validatedPath, nil
 }
 
-func (r *testcaseLocalStorageRepository) GetTestPathsBySession(userId, sessionId string) ([]string, error) {
-	if err := validatePathNameElements(userId, sessionId); err != nil {
+func (r *testcaseLocalStorageRepository) GetTestPathsByChat(userId, chatId string) ([]string, error) {
+	if err := validatePathNameElements(userId, chatId); err != nil {
 		return nil, fmt.Errorf("validate path elements: %w", err)
 	}
 
-	dir := filepath.Join(userId, sessionId)
+	dir := filepath.Join(userId, chatId)
 	filenames, err := r.filesystem.ReadDir(dir)
 	if err != nil {
 		r.logger.Error("read directory failed", "dir", dir, "err", err)
@@ -187,7 +187,7 @@ func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[
 		return nil, fmt.Errorf("validate path elements: %w", err)
 	}
 
-	sessions, err := r.filesystem.ReadDir(userId)
+	chats, err := r.filesystem.ReadDir(userId)
 	if err != nil {
 		r.logger.Error("read user directory failed", "dir", userId, "err", err)
 		return nil, fmt.Errorf("read user directory %s: %w", userId, err)
@@ -195,23 +195,23 @@ func (r *testcaseLocalStorageRepository) GetTestPathsByUser(userId string) (map[
 
 	results := make(map[string][]string)
 
-	for _, sessionId := range sessions {
-		testPaths, err := r.GetTestPathsBySession(userId, sessionId)
+	for _, chatId := range chats {
+		testPaths, err := r.GetTestPathsByChat(userId, chatId)
 		if err != nil {
-			return nil, fmt.Errorf("read session %s for user %s: %w", sessionId, userId, err)
+			return nil, fmt.Errorf("read chat %s for user %s: %w", chatId, userId, err)
 		}
 
-		results[sessionId] = testPaths
+		results[chatId] = testPaths
 	}
 	return results, nil
 }
 
-func (r *testcaseLocalStorageRepository) Delete(testId, userId, sessionId string) error {
-	if err := validatePathNameElements(testId, userId, sessionId); err != nil {
+func (r *testcaseLocalStorageRepository) Delete(testId, userId, chatId string) error {
+	if err := validatePathNameElements(testId, userId, chatId); err != nil {
 		return fmt.Errorf("validate path elements: %w", err)
 	}
 
-	dir := filepath.Join(userId, sessionId)
+	dir := filepath.Join(userId, chatId)
 	filename := testId + "." + testcaseLanguageDefault
 	if err := validateFilename(filename); err != nil {
 		return fmt.Errorf("invalid testcase filename %s: %w", filename, err)
@@ -235,22 +235,22 @@ func (r *testcaseLocalStorageRepository) DeleteOlderThan(maxAge time.Duration) (
 	}
 
 	for _, userId := range userIds {
-		sessions, err := r.filesystem.ReadDir(userId)
+		chats, err := r.filesystem.ReadDir(userId)
 		if err != nil {
 			r.logger.Warn("failed to read user directory", "userId", userId, "err", err)
 			continue
 		}
 
-		for _, sessionId := range sessions {
-			sessionPath := filepath.Join(userId, sessionId)
-			files, err := r.filesystem.ReadDir(sessionPath)
+		for _, chatId := range chats {
+			chatPath := filepath.Join(userId, chatId)
+			files, err := r.filesystem.ReadDir(chatPath)
 			if err != nil {
-				r.logger.Warn("failed to read session directory", "sessionPath", sessionPath, "err", err)
+				r.logger.Warn("failed to read chat directory", "chatPath", chatPath, "err", err)
 				continue
 			}
 
 			for _, filename := range files {
-				filePath := filepath.Join(sessionPath, filename)
+				filePath := filepath.Join(chatPath, filename)
 				fileInfo, err := r.filesystem.GetFileStats(filePath)
 				if err != nil || !fileInfo.ModTime().Before(cutoffTime) {
 					continue
