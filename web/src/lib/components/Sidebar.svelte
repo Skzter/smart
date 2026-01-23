@@ -182,10 +182,9 @@
 
     function updateChatTitleState(chatId: string, title: string) {
         if (!items) return;
-
         const chat = items.find((c) => c.chatId === chatId);
         if (chat) {
-            chat.title = title;
+            chat.title = title || "Neuer Chat";
             chat.updatedAt = new Date().toISOString();
             items = [...items];
     }

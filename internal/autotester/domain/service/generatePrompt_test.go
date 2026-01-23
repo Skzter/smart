@@ -192,7 +192,7 @@ func TestGeneratePrompt(t *testing.T) {
 			}
 
 			svc, _ := NewGeneratePromptService(openai, taglist, cfg, logger, validator, tracer)
-			got, err := svc.GeneratePrompt(tt.ctx, &entity.Chat{}, &entity.UserRequest{})
+			got, _, err := svc.GeneratePrompt(tt.ctx, &entity.Chat{}, &entity.UserRequest{})
 
 			if tt.expectErr {
 				assert.NotNil(t, err)

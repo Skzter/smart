@@ -77,6 +77,12 @@
             const response = await getChatById();
             messages.length = 0;
             messages.push(...convertApiMessagesToMessages(response.messages));
+
+            if (response.title && response.title !== summary.title) {
+                summary.title = response.title;
+                updateChatTitleState?.(summary.chatId, response.title);
+            }
+
         } catch (error) {
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof Error) {
@@ -104,7 +110,8 @@
 
         try {
             const updated = await updateChatTitleApi(summary.chatId, trimmed);
-            updateChatTitleState?.(updated.chatId, updated.title);
+            summary.title = updated.title;
+            updateChatTitleState?.(summary.chatId, summary.title);
 
         } catch (error) {
             toast.error("Umbenennen fehlgeschlagen", {

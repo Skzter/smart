@@ -61,7 +61,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 		}
 	}()
 
-	generatedCode, err := a.generationService.GeneratePrompt(ctx, chat, &userRequest)
+	generatedCode, chatTitle, err := a.generationService.GeneratePrompt(ctx, chat, &userRequest)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to generate prompt")
@@ -80,6 +80,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			Message: sharedEntity.Message{Body: generatedCode},
 			UserId:  userRequest.UserId,
 			ChatId:  chat.Id,
+			Title:   chatTitle,
 		})
 }
 

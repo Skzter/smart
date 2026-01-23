@@ -110,11 +110,16 @@ class Prompts {
        - Output **only** a JSON object with a following structure:
        
        {
-         "title": "<short human readable concise test title>"
-         "valid TypeScript code": "<valid Typescript code>"
+         "Title": "<short human readable concise test title>"
+         "Code": "<valid Typescript code>"
        }
 
     3. Title Rules
+      - The string in "title" must: 
+         - Be 1–30 characters long 
+         - Contain only plain words and spaces 
+         - Describe the business scenario, not technical steps 
+         - Be suitable as a chat title 
 
     4. Taglist
        - Tags may only be picked from this list. Creation of new Tags is strictly prohibited

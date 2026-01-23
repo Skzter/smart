@@ -32,6 +32,7 @@ export async function generatePrompt(
             message: response.data.message as ApiMessage,
             chatId: response.data.chatId,
             userId: response.data.userId,
+            title: response.data.title,
         };
     } catch (error) {
         throw getErrorMessage(error);

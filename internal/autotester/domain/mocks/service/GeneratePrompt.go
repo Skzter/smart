@@ -39,7 +39,7 @@ func (_m *MockGeneratePrompt) EXPECT() *MockGeneratePrompt_Expecter {
 }
 
 // GeneratePrompt provides a mock function for the type MockGeneratePrompt
-func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error) {
+func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, string, error) {
 	ret := _mock.Called(ctx, chat, request)
 
 	if len(ret) == 0 {
@@ -47,8 +47,9 @@ func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, chat *entit
 	}
 
 	var r0 string
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) (string, error)); ok {
+	var r1 string
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) (string, string, error)); ok {
 		return returnFunc(ctx, chat, request)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.UserRequest) string); ok {
@@ -56,12 +57,17 @@ func (_mock *MockGeneratePrompt) GeneratePrompt(ctx context.Context, chat *entit
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.Chat, *entity.UserRequest) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.Chat, *entity.UserRequest) string); ok {
 		r1 = returnFunc(ctx, chat, request)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(string)
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(context.Context, *entity.Chat, *entity.UserRequest) error); ok {
+		r2 = returnFunc(ctx, chat, request)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockGeneratePrompt_GeneratePrompt_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GeneratePrompt'
@@ -100,61 +106,12 @@ func (_c *MockGeneratePrompt_GeneratePrompt_Call) Run(run func(ctx context.Conte
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(s string, err error) *MockGeneratePrompt_GeneratePrompt_Call {
-	_c.Call.Return(s, err)
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) Return(s string, s1 string, err error) *MockGeneratePrompt_GeneratePrompt_Call {
+	_c.Call.Return(s, s1, err)
 	return _c
 }
 
-func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// GenerateTitleFromRequest provides a mock function for the type MockGeneratePrompt
-func (_mock *MockGeneratePrompt) GenerateTitleFromRequest(respBody string) string {
-	ret := _mock.Called(respBody)
-
-	if len(ret) == 0 {
-		return ""
-	}
-
-	if returnFunc, ok := ret.Get(0).(func(string) string); ok {
-		return returnFunc(respBody)
-	}
-
-	return ret.Get(0).(string)
-}
-
-// MockGeneratePrompt_GenerateTitleFromRequest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GenerateTitleFromRequest'
-type MockGeneratePrompt_GenerateTitleFromRequest_Call struct {
-	*mock.Call
-}
-
-// GenerateTitleFromRequest is a helper method to define mock.On call
-//   - respBody string
-func (_e *MockGeneratePrompt_Expecter) GenerateTitleFromRequest(respBody interface{}) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
-	return &MockGeneratePrompt_GenerateTitleFromRequest_Call{Call: _e.mock.On("GenerateTitleFromRequest", respBody)}
-}
-
-func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) Run(run func(respBody string)) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
-		if args[0] != nil {
-			arg0 = args[0].(string)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) Return(s string) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
-	_c.Call.Return(s)
-	return _c
-}
-
-func (_c *MockGeneratePrompt_GenerateTitleFromRequest_Call) RunAndReturn(run func(respBody string) string) *MockGeneratePrompt_GenerateTitleFromRequest_Call {
+func (_c *MockGeneratePrompt_GeneratePrompt_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, string, error)) *MockGeneratePrompt_GeneratePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

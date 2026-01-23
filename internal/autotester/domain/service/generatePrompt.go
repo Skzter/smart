@@ -19,7 +19,7 @@ import (
 
 // GeneratePrompt defines the interface for prompt generation
 type GeneratePrompt interface {
-	GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error)
+	GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, string, error)
 }
 
 // generatePrompt provides functionality to generate test prompts using OpenAI.
@@ -51,10 +51,10 @@ func NewGeneratePromptService(
 
 // GeneratePrompt sends a request to OpenAI API with the provided user prompt and returns the generated response.
 // It uses the AutoPlaywrightPrompt template as system prompt, filling it with tags fetched from storage.
-func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, error) {
+func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, request *entity.UserRequest) (string, string, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		s.logger.Error(err.Error())
-		return "", errors.ErrInternalServer
+		return "", "", errors.ErrInternalServer
 	}
 
 	ctx, span := s.tracer.Start(ctx, "generatePrompt.GeneratePrompt")
@@ -75,7 +75,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		s.logger.Error("Request validation failed", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "request validation failed")
-		return "", err
+		return "", "", err
 	}
 
 	resp, err := s.openAIService.Request(ctx, req)
@@ -83,7 +83,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		s.logger.Error("OpenAI request failed", "err", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "OpenAI service request failed")
-		return "", errors.ErrInternalServer
+		return "", "", errors.ErrInternalServer
 	}
 
 	var parsedMsg entity.ModelAnswerText
@@ -92,7 +92,7 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		s.logger.Error("Failed to unmarshal model JSON", "err", err, "body", resp.Body)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "JSON unmarshal failed")
-		return "", errors.ErrGeneration
+		return "", "", errors.ErrGeneration
 	}
 
 	resp.Body = parsedMsg.Code
@@ -103,18 +103,18 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "Empty response body")
 		s.logger.Error(err.Error())
-		return "", errors.ErrGeneration
+		return "", "", errors.ErrGeneration
 	}
 
 	if parsedMsg.Title != "" {
 		chat.Title = parsedMsg.Title
 	} else {
-		s.logger.Warn("Model did not return a title, using default title")
+		s.logger.Error("Model did not return a title, using default title")
 		chat.Title = "Neuer Chat"
 	}
 
 	span.SetStatus(codes.Ok, "")
-	return resp.Body, nil
+	return resp.Body, chat.Title, nil
 }
 
 // formatTaglist fetches the current Taglist and formats it for the AutoPlaywrightPrompt template
