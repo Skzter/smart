@@ -47,6 +47,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		MetricsServiceProvider,
 		RedisCacheProvider,
 		CacheServiceProvider,
+		service.NewResponseUpdateService,
 	)
 
 	return nil, nil

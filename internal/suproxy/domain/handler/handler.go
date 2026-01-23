@@ -24,16 +24,16 @@ import (
 
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
-	logger    *slog.Logger
-	config    *config.Config
-	client    *http.Client
-	validator service.Validator
-	db        service.DatabaseService
-	tracer    trace.Tracer
-	syncer    service.TaglistSync
-	tagSearch service.TagSearchService
-	metrics   sharedService.MetricsService
-	cache     service.CacheService
+	logger          *slog.Logger
+	config          *config.Config
+	client          *http.Client
+	validator       service.Validator
+	db              service.DatabaseService
+	tracer          trace.Tracer
+	syncer          service.TaglistSync
+	metrics         sharedService.MetricsService
+	cache           service.CacheService
+	responseUpdater service.ResponseUpdateService
 }
 
 // NewSuproxyController creates a new instance of SuproxyController
@@ -45,25 +45,25 @@ func NewSuproxyController(
 	db service.DatabaseService,
 	tracer trace.Tracer,
 	syncer service.TaglistSync,
-	tagSearch service.TagSearchService,
 	metrics sharedService.MetricsService,
 	cache service.CacheService,
+	responseUpdater service.ResponseUpdateService,
 ) (*SuproxyController, error) {
-	if err := assert.NotNil(logger, config, val, client, db, tracer, syncer, tagSearch, metrics, cache); err != nil {
+	if err := assert.NotNil(logger, config, val, client, db, tracer, syncer, metrics, cache, responseUpdater); err != nil {
 		return nil, err
 	}
 
 	return &SuproxyController{
-		logger:    logger,
-		config:    config,
-		client:    client,
-		validator: val,
-		db:        db,
-		tracer:    tracer,
-		syncer:    syncer,
-		tagSearch: tagSearch,
-		metrics:   metrics,
-		cache:     cache,
+		logger:          logger,
+		config:          config,
+		client:          client,
+		validator:       val,
+		db:              db,
+		tracer:          tracer,
+		syncer:          syncer,
+		metrics:         metrics,
+		cache:           cache,
+		responseUpdater: responseUpdater,
 	}, nil
 }
 
@@ -87,16 +87,9 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 	}
 
 	if request.Tags != "" {
-		matchingKeys, err := s.tagSearch.FindKeysByTags(c, request.Tags)
-		switch {
-		case err != nil:
+		if err := s.responseUpdater.UpdateResponse(ctx, &request); err != nil {
 			span.RecordError(err)
-			span.SetStatus(codes.Error, "tag-based search failed")
-			s.logger.Error("Tag-based search failed", "error", err)
-		case len(matchingKeys) == 0:
-			s.logger.Info("No keys found in tags")
-		default:
-			s.logger.Info("Matching keys found", "keys", matchingKeys)
+			s.logger.Error("response update failed", "error", err)
 		}
 	}
 
