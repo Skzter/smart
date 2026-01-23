@@ -18,7 +18,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
-		config        *config.Config
+		config        *config.Autotester
 		expectedError bool
 	}{
 		{

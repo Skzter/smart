@@ -28,13 +28,13 @@ type Auth interface {
 
 type auth struct {
 	logger *slog.Logger
-	config *config.Config
+	config *config.Autotester
 	db     repository.TokenDatabase
 	tracer trace.Tracer
 }
 
 // NewAuthService return the AuthService or error
-func NewAuthService(logger *slog.Logger, config *config.Config, db repository.TokenDatabase, tracer trace.Tracer) (Auth, error) {
+func NewAuthService(logger *slog.Logger, config *config.Autotester, db repository.TokenDatabase, tracer trace.Tracer) (Auth, error) {
 	if err := assert.NotNil(logger, config, db, tracer); err != nil {
 		return nil, err
 	}
