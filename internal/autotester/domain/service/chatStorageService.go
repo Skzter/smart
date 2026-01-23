@@ -128,7 +128,7 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		copy(s.summaries[insertPos+1:index+1], s.summaries[insertPos:index])
 		s.summaries[insertPos] = summary
 	} else {
-		s.summaries = append(s.summaries[:insertPos], append([]*entity.ChatSummary{summary}, s.summaries[insertPos:]...)...)
+		s.summaries = slices.Insert(s.summaries, insertPos, summary)
 	}
 
 	span.SetStatus(codes.Ok, "")
