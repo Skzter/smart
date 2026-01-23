@@ -220,7 +220,7 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				Return(&sharedEntity.TagList{}, nil).
 				Maybe()
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Config{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Suproxy{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
