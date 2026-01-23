@@ -10,6 +10,7 @@
     import { toast } from "svelte-sonner";
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
+    import { Mutex } from "async-ts";
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[]>([]);
@@ -41,10 +42,13 @@
         }
     }
 
+    let mu = new Mutex();
     async function loadMore() {
+        let release = await mu.obtain();
         if (!user.id || loading || !hasMore) return;
-
         loading = true;
+        release();
+
         try {
             const response = await getChats({
                 page: page,

@@ -197,6 +197,10 @@ func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limi
 }
 
 func findFromGroups(summaries []*entity.ChatSummary, groupIds []string, maxResults int) []*entity.ChatSummary {
+	if maxResults <= 0 {
+		return []*entity.ChatSummary{}
+	}
+
 	groupMap := make(map[string]bool, len(groupIds))
 	for _, id := range groupIds {
 		groupMap[id] = true
