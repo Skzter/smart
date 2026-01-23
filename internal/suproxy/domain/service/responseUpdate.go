@@ -39,7 +39,7 @@ func NewResponseUpdateService(
 	tagSearchService TagSearchService,
 	databaseRepo repository.DatabaseRepository,
 	cacheService CacheService,
-) (*responseUpdateService, error) {
+) (ResponseUpdateService, error) {
 	if err := assert.NotNil(logger, tracer, tagSearchService, databaseRepo, cacheService); err != nil {
 		return nil, fmt.Errorf("dependency cannot be nil, %w", err)
 	}
@@ -82,7 +82,8 @@ func (s *responseUpdateService) UpdateResponse(
 			"mock cache error, treating as cache miss",
 			"error", err,
 		)
-	} else if done {
+	}
+	if done {
 		return nil
 	}
 
@@ -483,7 +484,7 @@ func parseFlexibleTimestamp(value string) (time.Time, error) {
 
 // parseRequestBody parses the request body.
 func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
-	if mockRequest == nil || mockRequest.Body == "" {
+	if mockRequest.Body == "" {
 		return nil, fmt.Errorf("mockRequest body cannot be empty")
 	}
 
@@ -515,6 +516,8 @@ func (s *responseUpdateService) selectBestMatchingResponse(
 	keys []string,
 	requestTags []string,
 ) (*entity.DatabaseEntry, error) {
+	requestTagSet := buildTagSet(requestTags)
+
 	var bestEntry *entity.DatabaseEntry
 	bestScore := -1
 
@@ -524,7 +527,7 @@ func (s *responseUpdateService) selectBestMatchingResponse(
 			return nil, fmt.Errorf("failed to read parquet file %s: %w", key, err)
 		}
 
-		score := tagScore(requestTags, splitResponseTags(entry.Tags))
+		score := tagScore(requestTagSet, splitResponseTags(entry.Tags))
 		if score > bestScore {
 			bestScore = score
 			bestEntry = entry
@@ -565,16 +568,19 @@ func splitResponseTags(tags *sharedEntity.TagList) []string {
 	return out
 }
 
-// tagScore computes the number of shared tags between request and response.
-func tagScore(requestTags, responseTags []string) int {
-	set := make(map[string]struct{}, len(responseTags))
-	for _, t := range responseTags {
+func buildTagSet(tags []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(tags))
+	for _, t := range tags {
 		set[t] = struct{}{}
 	}
+	return set
+}
 
+// tagScore computes the number of shared tags between request and response.
+func tagScore(requestTagSet map[string]struct{}, responseTags []string) int {
 	score := 0
-	for _, t := range requestTags {
-		if _, ok := set[t]; ok {
+	for _, t := range responseTags {
+		if _, ok := requestTagSet[t]; ok {
 			score++
 		}
 	}
