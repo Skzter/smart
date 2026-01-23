@@ -11,19 +11,19 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
+	sharedRepoMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	repoMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository/mocks"
 )
 
 func newTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug}))
 }
 
-func newTestCacheService(mockRepo *repoMocks.MockCache) *cacheService {
+func newTestCacheService(mockRepo *sharedRepoMocks.MockCache) *cacheService {
 	return &cacheService{
 		log:  newTestLogger(),
-		cfg:  &config.Config{},
+		cfg:  &config.Suproxy{},
 		repo: mockRepo,
 		ttls: entity.CacheTTLPolicy{
 			SupplierOK:   10 * time.Minute,
@@ -34,7 +34,7 @@ func newTestCacheService(mockRepo *repoMocks.MockCache) *cacheService {
 }
 
 func TestCacheService_Lookup_Miss(t *testing.T) {
-	mockRepo := repoMocks.NewMockCache(t)
+	mockRepo := sharedRepoMocks.NewMockCache(t)
 	svc := newTestCacheService(mockRepo)
 
 	req := entity.Request{
@@ -64,7 +64,7 @@ func TestCacheService_Lookup_Miss(t *testing.T) {
 }
 
 func TestCacheService_Lookup_Hit(t *testing.T) {
-	mockRepo := repoMocks.NewMockCache(t)
+	mockRepo := sharedRepoMocks.NewMockCache(t)
 	svc := newTestCacheService(mockRepo)
 
 	req := entity.Request{
@@ -107,7 +107,7 @@ func TestCacheService_Lookup_Hit(t *testing.T) {
 }
 
 func TestCacheService_Lookup_RepoErrorDegradesToMiss(t *testing.T) {
-	mockRepo := repoMocks.NewMockCache(t)
+	mockRepo := sharedRepoMocks.NewMockCache(t)
 	svc := newTestCacheService(mockRepo)
 
 	req := entity.Request{
@@ -159,7 +159,7 @@ func TestCacheService_Store_UsesCorrectTTL(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockRepo := repoMocks.NewMockCache(t)
+			mockRepo := sharedRepoMocks.NewMockCache(t)
 			svc := newTestCacheService(mockRepo)
 
 			req := entity.Request{
@@ -211,7 +211,7 @@ func TestCacheService_Store_UsesCorrectTTL_ForErrorOrEmpty(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			mockRepo := repoMocks.NewMockCache(t)
+			mockRepo := sharedRepoMocks.NewMockCache(t)
 			svc := newTestCacheService(mockRepo)
 
 			req := entity.Request{
@@ -248,7 +248,7 @@ func TestCacheService_Store_UsesCorrectTTL_ForErrorOrEmpty(t *testing.T) {
 }
 
 func TestCacheService_Invalidate_UsesCorrectKey(t *testing.T) {
-	mockRepo := repoMocks.NewMockCache(t)
+	mockRepo := sharedRepoMocks.NewMockCache(t)
 	svc := newTestCacheService(mockRepo)
 
 	req := entity.Request{
@@ -272,7 +272,7 @@ func TestCacheService_Invalidate_UsesCorrectKey(t *testing.T) {
 }
 
 func TestBuildKey_IsDeterministicAndHeaderOrderIndependent(t *testing.T) {
-	mockRepo := repoMocks.NewMockCache(t)
+	mockRepo := sharedRepoMocks.NewMockCache(t)
 	svc := newTestCacheService(mockRepo)
 
 	req1 := entity.Request{

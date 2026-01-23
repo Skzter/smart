@@ -27,7 +27,7 @@ func TestNewAuthService(t *testing.T) {
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		config  *config.Config
+		config  *config.Autotester
 		db      *mockRepo.MockTokenDatabase
 		tracer  trace.Tracer
 		wantErr bool

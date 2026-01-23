@@ -4,7 +4,6 @@ package service
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"strings"
 	"testing"
@@ -13,14 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 	tcRedis "github.com/testcontainers/testcontainers-go/modules/redis"
 
+	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
+	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
 // newIntegrationLogger returns a logger that discards all output
 func newIntegrationLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 // TestCacheService_Integration_WithRedis verifies end-to-end cache behavior using a Redis Testcontainers module instance
@@ -42,24 +42,25 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 
 	// Create Redis config pointing to the test container
 	logger := newIntegrationLogger()
-	cfg := &config.Config{
-		Redis: &config.RedisConfig{
-			Addr:     addr,
-			Password: "",
-			Db:       0,
-			Protocol: 2,
-		},
+	suproxyCfg, err := config.LoadAppConfig()
+	require.NoError(t, err)
+
+	suproxyCfg.RedisConfig = &sharedConfig.RedisConfig{
+		Addr:     addr,
+		Password: "",
+		Db:       0,
+		Protocol: 2,
 	}
 
 	// Initialize real Redis cache repository
-	cacheRepo, err := repository.NewRedisCache(logger, cfg)
+	cacheRepo, err := sharedRepository.NewRedisCache(logger, suproxyCfg.RedisConfig)
 	require.NoError(t, err)
 	defer func() {
 		_ = cacheRepo.Close() // ignore close error intentionally
 	}()
 
 	// Create CacheService instance using the real repository
-	cacheSvc, err := NewCacheService(logger, cfg, cacheRepo)
+	cacheSvc, err := NewCacheService(logger, suproxyCfg, cacheRepo)
 	require.NoError(t, err)
 
 	// Build example request used as cache key input

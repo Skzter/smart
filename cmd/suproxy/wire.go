@@ -27,13 +27,15 @@ import (
 )
 
 // InitializeApp initializes the application.
-func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error) {
+func InitializeApp(cfg *config.Suproxy, tracer trace.Tracer) (*gin.Engine, error) {
 	wire.Build(
 		LoggerProvider,
 		application.NewRouter,
 		handler.NewSuproxyController,
 		service.NewValidator,
 		HTTPClientProvider,
+		TaglistConfigProvider,
+		RedisConfigProvider,
 		shared.SharedProviderSet,
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
@@ -43,9 +45,7 @@ func InitializeApp(cfg *config.Config, tracer trace.Tracer) (*gin.Engine, error)
 		DatabaseParquetWrapperProvider,
 		S3WrapperProvider,
 		TagsearchServiceProvider,
-		TaglistConfigProvider,
 		MetricsServiceProvider,
-		RedisCacheProvider,
 		CacheServiceProvider,
 		service.NewResponseUpdateService,
 	)
@@ -59,17 +59,22 @@ func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, 
 }
 
 // TaglistConfigProvider provides a new TaglistConfig.
-func TaglistConfigProvider(cfg *config.Config) *sharedConfig.Taglist {
+func TaglistConfigProvider(cfg *config.Suproxy) *sharedConfig.TaglistConfig {
 	return cfg.TaglistConfig
 }
 
+// RedisConfigProvider provides a new RedisConfig.
+func RedisConfigProvider(cfg *config.Suproxy) *sharedConfig.RedisConfig {
+	return cfg.RedisConfig
+}
+
 // LoggerProvider provides a new logger.
-func LoggerProvider(cfg *config.Config) *slog.Logger {
+func LoggerProvider(cfg *config.Suproxy) *slog.Logger {
 	return logger.NewLogger(cfg.LogLevel)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
-func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Config, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
+func OpenAiRepositoryProvider(client sharedRepo.OpenAIClient, cfg *config.Suproxy, tracer trace.Tracer) (sharedRepo.OpenAI, error) {
 	return sharedRepo.NewOpenAiRepository(client, cfg.Timeout, tracer)
 }
 
@@ -78,15 +83,18 @@ func OpenAiServiceProvider(repo sharedRepo.OpenAI, tracer trace.Tracer) (sharedS
 	return sharedService.NewOpenAI(repo, tracer)
 }
 
+// HTTPClientProvider provides a new HTTPClient
 func HTTPClientProvider() *http.Client {
 	return &http.Client{}
 }
 
+// DatabaseParquetWrapperProvider provides a new DatabaseParquetWrapper
 func DatabaseParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapper.ParquetFileWrapper[entity.DatabaseEntry], error) {
 	return wrapper.NewParquetWrapper[entity.DatabaseEntry](logger, wrapper.DefaultParquetConfig(), tracer)
 }
 
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
+// S3WrapperProvider provides a new S3Wrapper
+func S3WrapperProvider(logger *slog.Logger, cfg *config.Suproxy, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
 	config := wconfig.S3Config{
 		Region:    cfg.Region,
 		Bucket:    cfg.Bucket,
@@ -99,7 +107,7 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Config, tracer trace.Tra
 // DatabaseRepositoryProvider provides a new DatabaseRepository.
 func DatabaseRepositoryProvider(
 	logger *slog.Logger,
-	cfg *config.Config,
+	cfg *config.Suproxy,
 	s3wrapper wrapper.S3StorageWrapper,
 	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
 	tracer trace.Tracer,
@@ -113,16 +121,12 @@ func DatabaseRepositoryProvider(
 	)
 }
 
-func TagsearchServiceProvider(cfg *config.Config, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
+// TagsearchServiceProvider provides a new TagsearchService
+func TagsearchServiceProvider(cfg *config.Suproxy, s3 wrapper.S3StorageWrapper) (service.TagSearchService, error) {
 	return service.NewTagSearchService(cfg, s3)
 }
 
-// RedisCacheProvider provides a new RedisCache
-func RedisCacheProvider(log *slog.Logger, cfg *config.Config) (repository.Cache, error) {
-	return repository.NewRedisCache(log, cfg)
-}
-
 // CacheServiceProvider provides a new CacheService
-func CacheServiceProvider(log *slog.Logger, cfg *config.Config, repo repository.Cache) (service.CacheService, error) {
+func CacheServiceProvider(log *slog.Logger, cfg *config.Suproxy, repo sharedRepo.Cache) (service.CacheService, error) {
 	return service.NewCacheService(log, cfg, repo)
 }

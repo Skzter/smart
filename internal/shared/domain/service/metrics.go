@@ -14,6 +14,9 @@ const (
 	MetricRequestError    = "request.error"
 	MetricRequestDuration = "request.duration"
 	MetricStatusCode      = "status_code"
+	MetricsCacheHit       = "cache.hit"
+	MetricsCacheMiss      = "cache.miss"
+	MetricsCacheDuration  = "cache.duration"
 )
 
 // MetricsService provides methods to track application metrics via DogStatsD.
@@ -26,6 +29,12 @@ type MetricsService interface {
 	RecordRequestDuration(duration time.Duration)
 	// RecordStatusCode records an HTTP status code.
 	RecordStatusCode(statusCode int)
+	// IncCacheHit increments the cache hit counter.
+	IncCacheHit()
+	// IncCacheMiss increments the cache hit counter.
+	IncCacheMiss()
+	// RecordCacheDuration records the duration of a Data Access through Cache (Cache Hit) or S3 (Cache Miss)
+	RecordCacheDuration(duration time.Duration, result string)
 	// Close closes the StatsD client connection.
 	Close() error
 }
@@ -88,6 +97,27 @@ func (m *metricsService) RecordStatusCode(statusCode int) {
 	err := m.client.Histogram(MetricStatusCode, float64(statusCode), nil, 1)
 	if err != nil {
 		m.logger.Error("failed to record status code", "error", err)
+	}
+}
+
+func (m *metricsService) IncCacheHit() {
+	err := m.client.Incr(MetricsCacheHit, nil, 1)
+	if err != nil {
+		m.logger.Error("failed to increment cache hit", "error", err)
+	}
+}
+
+func (m *metricsService) IncCacheMiss() {
+	err := m.client.Incr(MetricsCacheMiss, nil, 1)
+	if err != nil {
+		m.logger.Error("failed to increment cache miss", "error", err)
+	}
+}
+
+func (m *metricsService) RecordCacheDuration(duration time.Duration, result string) {
+	err := m.client.Timing(MetricsCacheDuration, duration, []string{result}, 1)
+	if err != nil {
+		m.logger.Error("failed to record request duration", "error", err)
 	}
 }
 

@@ -90,8 +90,18 @@ services:
 
   redis:
     image: valkey/valkey:alpine
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    volumes:
+      - ./valkey.conf:/etc/valkey/valkey.conf
     networks:
       - default
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   postgres:
     image: postgres:17-alpine

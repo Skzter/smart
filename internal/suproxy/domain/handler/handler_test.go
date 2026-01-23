@@ -59,7 +59,7 @@ func TestNewSuproxyController(t *testing.T) {
 	tests := []struct {
 		name    string
 		log     *slog.Logger
-		cfg     *config.Config
+		cfg     *config.Suproxy
 		val     service.Validator
 		clt     *http.Client
 		db      service.DatabaseService
@@ -71,8 +71,8 @@ func TestNewSuproxyController(t *testing.T) {
 	}{
 		{
 			name:    "valid",
-			cfg:     &config.Config{},
-			log:     slog.Default(),
+			cfg:     &config.Suproxy{},
+			log:     slog.New(slog.DiscardHandler),
 			val:     RejectValidator(t),
 			clt:     &http.Client{},
 			db:      mocks.NewMockDatabaseService(t),
@@ -355,7 +355,7 @@ func TestHandlerHandleRequest(t *testing.T) {
 
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Config{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Suproxy{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -451,7 +451,7 @@ func BenchmarkPostOfferList(b *testing.B) {
 
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
-		&config.Config{},
+		&config.Suproxy{},
 		RejectValidator(b),
 		&http.Client{},
 		mockDB,
