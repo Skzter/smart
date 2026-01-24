@@ -51,9 +51,9 @@ func (ls *LogStream) SetComplete() {
 // Once the stream is completed, it returns a direct reference to the events slice to avoid
 // expensive allocations and copying.
 func (ls *LogStream) GetEvents() []LogEvent {
-	ls.UpdateLastAccess()
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
+	ls.lastAccessedAt = time.Now()
 	if len(ls.events) == 0 {
 		return nil
 	}

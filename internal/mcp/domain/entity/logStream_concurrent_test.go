@@ -211,11 +211,10 @@ func TestMixedConcurrentOperations(t *testing.T) {
 
 			wg.Wait()
 
-			// Verify no panics occurred and stream is in valid state
-			assert.True(t, stream.IsCompleted() || !stream.IsCompleted(),
-				"operation should complete without panic")
 			events := stream.GetEvents()
-			assert.NotNil(t, events, "GetEvents should not panic")
+			assert.NotNil(t, events, "GetEvents should not return panic")
+			assert.True(t, stream.IsCompleted(),
+				"stream should be marked as completed after concurrent SetComplete() calls")
 		})
 	}
 }
