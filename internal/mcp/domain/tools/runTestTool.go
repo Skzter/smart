@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -41,8 +42,11 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 	tt.logger.Debug("Test started successfully", "result", testResult)
 
 	go func() {
-		if err := tt.autotesterAPIService.ReadTestLogStream(context.Background(), testResult.TestId); err != nil {
-			tt.logger.Error("Backgroud log streaming failed",
+		streamCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+
+		if err := tt.autotesterAPIService.ReadTestLogStream(streamCtx, testResult.TestId); err != nil {
+			tt.logger.Error("Background log streaming failed",
 				"testId", testResult.TestId,
 				"error", err,
 			)

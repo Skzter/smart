@@ -145,13 +145,21 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 
 // ReadTestLogStream reads SSE events and stores them.
 //
+// IMPORTANT: This method must be called at most once concurrently per testId.
+// Calling this method multiple times simultaneously for the same testId can lead to race conditions
+// when both streams write to the same store, resulting in data loss or inconsistency.
+//
+// The current architecture ensures this constraint at the call site, but callers must guarantee
+// that a new ReadTestLogStream call for the same testId only happens after the previous stream
+// has completed (indicated by calling store.CompleteStream).
+//
 // Technical: producer–consumer using two goroutines — producer reads SSE into a
 // buffered channel, consumer drains the channel and writes to the store. Coordination
 // is via `errgroup` and a derived context.
 func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
-
-	rawEventsCh := make(chan *entity.LogEvent, 512)
+	const rawEventsCapacity = 2048
+	rawEventsCh := make(chan *entity.LogEvent, rawEventsCapacity)
 	wg, groupCtx := errgroup.WithContext(ctx)
 
 	// PRODUCER: reads logstream
@@ -178,7 +186,6 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 			case event, ok := <-rawEventsCh:
 				if !ok {
 					s.logger.Info("Stream read and processed", "testId", testId)
-
 					return nil
 				}
 				if event != nil {
@@ -192,7 +199,36 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 		}
 	})
 
+	// MONITOR: check channel capacity while waiting for goroutines to complete
+	monitorDone := make(chan struct{})
+	go func() {
+		const capacityThreshold = rawEventsCapacity * 9 / 10
+		lastWarned := false
+
+		for {
+			select {
+			case <-monitorDone:
+				return
+			case <-groupCtx.Done():
+				return
+			default:
+				currentLoad := len(rawEventsCh)
+				if currentLoad >= capacityThreshold && !lastWarned {
+					s.logger.Warn("Event channel at 90% capacity",
+						"testId", testId,
+						"currentLoad", currentLoad,
+						"capacity", rawEventsCapacity,
+					)
+					lastWarned = true
+				} else if currentLoad < capacityThreshold {
+					lastWarned = false
+				}
+			}
+		}
+	}()
+
 	err := wg.Wait()
+	close(monitorDone)
 
 	s.store.CompleteStream(testId)
 

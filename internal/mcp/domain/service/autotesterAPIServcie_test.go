@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"log/slog"
@@ -414,14 +415,13 @@ func TestExecuteTest(t *testing.T) {
 
 // nolint:funlen
 func TestReadTestLogStream(t *testing.T) {
-	logger := slog.Default()
-
 	tests := []struct {
 		name                 string
 		testId               string
 		expectedStoreContent []entity.LogEvent
 		excpectError         bool
 		cancelContextDuring  bool
+		readLogs             bool
 		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, *[]entity.LogEvent)
 	}{
 		{
@@ -511,6 +511,43 @@ func TestReadTestLogStream(t *testing.T) {
 				ms.EXPECT().CompleteStream("test-cancel").Once()
 			},
 		},
+		{
+			name:   "channel fills to 90% capacity - monitor logs warning",
+			testId: "test-full",
+			expectedStoreContent: func() []entity.LogEvent {
+				events := make([]entity.LogEvent, 1900)
+				for i := range 1900 {
+					events[i] = entity.LogEvent{Event: "log", Data: "event"}
+				}
+				return events
+			}(),
+			excpectError: false,
+			readLogs:     true,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+				mr.EXPECT().
+					ReadTestLogStream(mock.Anything, "test-full", mock.Anything).
+					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+						// Send many events rapidly to fill channel to ~90% capacity
+						for range 1900 {
+							ch <- &entity.LogEvent{Event: "log", Data: "event"}
+						}
+					}).
+					Return(nil).
+					Once()
+
+				ms.EXPECT().
+					AddEvent("test-full", mock.Anything).
+					Run(func(id string, ev entity.LogEvent) {
+						*captured = append(*captured, ev)
+						// Slow down consumer to allow channel to fill up
+						time.Sleep(100 * time.Microsecond)
+					}).
+					Return().
+					Times(1900)
+
+				ms.EXPECT().CompleteStream("test-full").Once()
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -520,8 +557,10 @@ func TestReadTestLogStream(t *testing.T) {
 			capturedEvents := []entity.LogEvent{}
 
 			test.setupMock(mockRepo, mockStore, &capturedEvents)
-
+			logBuffer := &bytes.Buffer{}
+			logger := slog.New(slog.NewTextHandler(logBuffer, nil))
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
+
 			require.NoError(t, err)
 
 			var ctx context.Context
@@ -545,6 +584,12 @@ func TestReadTestLogStream(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, test.expectedStoreContent, capturedEvents)
+
+				if test.readLogs {
+					logOutput := logBuffer.String()
+					require.Contains(t, logOutput, "Event channel at 90% capacity",
+						"expected warning log for channel capacity")
+				}
 			}
 		})
 	}
