@@ -88,6 +88,7 @@ func (s *SuproxyController) PostOfferlist(c *gin.Context) {
 
 	if request.Tags != "" {
 		if err := s.responseUpdater.UpdateResponse(ctx, &request); err != nil {
+			// Failure to update the response is logged but not returned as an error, since it is non-critical and should not block request processing.
 			span.RecordError(err)
 			s.logger.Error("response update failed", "error", err)
 		}
