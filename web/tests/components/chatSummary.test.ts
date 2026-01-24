@@ -18,38 +18,32 @@ import ChatSummary from "../../src/lib/components/ChatSummary.svelte";
 import { getChatById } from "$lib/api";
 import { toast } from "svelte-sonner";
 import { chat, messages, user as sharedUser } from "$lib/shared.svelte";
-import type {
-    ApiChatSummary,
-    ApiMessage,
-    ApiGetChatByIdResponse,
-} from "$types/api";
+import type { ApiChatSummary, ApiMessage, ApiGetChatByIdResponse } from "$types/api";
 
 // Helper to create a complete mock response
-const createMockResponse = (
-    messagesArray: ApiMessage[],
-): ApiGetChatByIdResponse => ({
-    id: "test-chat-id",
-    userId: "test-user-id",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-    title: "Test Chat",
-    lastTest: "",
-    lastAutoPlaywrightPrompt: "",
-    messages: messagesArray,
+const createMockResponse = (messagesArray: ApiMessage[]): ApiGetChatByIdResponse => ({
+	id: 'test-chat-id',
+	userId: 'test-user-id',
+	createdAt: '2024-01-15T10:30:00Z',
+	updatedAt: '2024-01-15T10:30:00Z',
+	title: 'Test Chat',
+	lastTest: '',
+	lastAutoPlaywrightPrompt: '',
+	messages: messagesArray
 });
 
-describe.skip("ChatSummary.svelte TODO: fix this test", () => {
-    let mockSummary: ApiChatSummary;
+describe('ChatSummary.svelte', () => {
+	let mockSummary: ApiChatSummary;
 
-    beforeEach(() => {
-        // Initialize mockSummary
-        mockSummary = {
-            chatId: "test-chat-id",
-            userId: "test-user-id",
-            title: "Test Chat",
-            createdAt: "2024-01-15T10:30:00Z",
-            updatedAt: "2024-01-15T10:30:00Z",
-        };
+	beforeEach(() => {
+		// Initialize mockSummary
+		mockSummary = {
+			chatId: 'test-chat-id',
+			userId: 'test-user-id',
+			title: 'Test Chat',
+			createdAt: '2024-01-15T10:30:00Z',
+			updatedAt: '2024-01-15T10:30:00Z'
+		};
 
         // Reset shared state
         sharedUser.id = "";
@@ -69,7 +63,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
 
         it("renders 'Neuer Chat' when title is empty", () => {
             mockSummary.title = "";
-
+            
             render(ChatSummary, {
                 props: { summary: mockSummary },
             });
@@ -82,7 +76,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const icon = container.querySelector("svg.lucide-message-square");
+            const icon = container.querySelector('svg.lucide-message-square');
             expect(icon).toBeInTheDocument();
         });
 
@@ -91,7 +85,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const icon = container.querySelector("svg.lucide-pencil");
+            const icon = container.querySelector('svg.lucide-pencil');
             expect(icon).toBeInTheDocument();
         });
 
@@ -101,7 +95,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             });
 
             // Should format "2024-12-11T14:45:00Z" to CET time
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement).toBeInTheDocument();
             expect(timeElement?.textContent).toMatch(/\d{2}:\d{2}/);
         });
@@ -113,51 +107,51 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement?.textContent).toBeTruthy();
         });
 
         it("handles empty date string", () => {
             mockSummary.updatedAt = "";
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement?.textContent).toBe("");
         });
 
         it("handles undefined date", () => {
-            mockSummary.updatedAt = "" as string;
-
+            mockSummary.updatedAt = '' as string;
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement?.textContent).toBe("");
         });
 
         it("handles invalid date format with fallback", () => {
             mockSummary.updatedAt = "2024-12-11T14:45:30.123Z";
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement).toBeInTheDocument();
         });
 
         it("handles date without substring method", () => {
             mockSummary.updatedAt = null as unknown as string;
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const timeElement = container.querySelector(".font-mono.text-xs");
+            const timeElement = container.querySelector('.font-mono.text-xs');
             expect(timeElement?.textContent).toBe("");
         });
     });
@@ -170,14 +164,14 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             });
 
             // Find the pencil icon's parent button
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
             expect(pencilIcon).toBeInTheDocument();
-            const editButton = pencilIcon?.closest("button");
+            const editButton = pencilIcon?.closest('button');
             expect(editButton).toBeInTheDocument();
 
             await user.click(editButton!);
 
-            const input = container.querySelector("input");
+            const input = container.querySelector('input');
             expect(input).toBeInTheDocument();
         });
 
@@ -187,27 +181,27 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             expect(input?.value).toBe("Test Chat");
         });
 
         it("shows 'Neuer Chat' in input when title is empty", async () => {
             const user = userEvent.setup();
             mockSummary.title = "";
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             expect(input?.value).toBe("Neuer Chat");
         });
 
@@ -217,11 +211,11 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             await user.clear(input);
             await user.type(input, "Updated Title{Enter}");
 
@@ -234,20 +228,20 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            let input = container.querySelector("input");
+            let input = container.querySelector('input');
             expect(input).toBeInTheDocument();
 
             await user.type(input!, "{Escape}");
 
             // Wait for state update
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Input should be gone
-            input = container.querySelector("input");
+            input = container.querySelector('input');
             expect(input).not.toBeInTheDocument();
         });
 
@@ -257,17 +251,17 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             await user.clear(input);
             await user.type(input, "New Title");
-
+            
             // Trigger focusout
             input.blur();
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(mockSummary.title).toBe("New Title");
         });
@@ -275,32 +269,32 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("focuses input when entering edit mode with empty title", async () => {
             const user = userEvent.setup();
             mockSummary.title = "";
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             expect(input).toBeInTheDocument();
             // Input should be focused via focusAction
         });
 
         it("focuses input when entering edit mode with existing title", async () => {
             const user = userEvent.setup();
-
+            
             const { container } = render(ChatSummary, {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input") as HTMLInputElement;
+            const input = container.querySelector('input') as HTMLInputElement;
             expect(input).toBeInTheDocument();
         });
     });
@@ -309,18 +303,8 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("calls invokeSwitchChat when menu button is clicked", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Hello",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: "Hi there",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Hello", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: "Hi there", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -350,7 +334,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(sharedUser.id).toBe("test-user-id");
             expect(chat.id).toBe("test-chat-id");
@@ -370,7 +354,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(chat.isLoading).toBe(false);
         });
@@ -388,14 +372,11 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            expect(toast.error).toHaveBeenCalledWith(
-                "Speichern fehlgeschlagen",
-                {
-                    description: "API Error",
-                },
-            );
+            expect(toast.error).toHaveBeenCalledWith("Speichern fehlgeschlagen", {
+                description: "API Error",
+            });
         });
 
         it("handles unknown error type", async () => {
@@ -410,14 +391,11 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
-            expect(toast.error).toHaveBeenCalledWith(
-                "Speichern fehlgeschlagen",
-                {
-                    description: "Unbekannter Fehler",
-                },
-            );
+            expect(toast.error).toHaveBeenCalledWith("Speichern fehlgeschlagen", {
+                description: "Unbekannter Fehler",
+            });
         });
     });
 
@@ -425,30 +403,10 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("converts API messages correctly", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Question 1",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: "Answer 1",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg3",
-                    role: "user",
-                    body: "Question 2",
-                    createdAt: "2024-01-15T10:32:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg4",
-                    role: "assistant",
-                    body: "Answer 2",
-                    createdAt: "2024-01-15T10:33:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Question 1", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: "Answer 1", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
+                { id: 'msg3', role: "user", body: "Question 2", createdAt: '2024-01-15T10:32:00Z' } as ApiMessage,
+                { id: 'msg4', role: "assistant", body: "Answer 2", createdAt: '2024-01-15T10:33:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -460,7 +418,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(2);
             expect(messages[0].question).toBe("Question 1");
@@ -472,24 +430,9 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("skips user messages without assistant response", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Question 1",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "user",
-                    body: "Question 2",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg3",
-                    role: "assistant",
-                    body: "Answer 2",
-                    createdAt: "2024-01-15T10:32:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Question 1", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "user", body: "Question 2", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
+                { id: 'msg3', role: "assistant", body: "Answer 2", createdAt: '2024-01-15T10:32:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -501,7 +444,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].question).toBe("Question 2");
@@ -511,21 +454,8 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("handles validation message with valid=false", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Invalid input",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: JSON.stringify({
-                        valid: false,
-                        message: "Validation failed",
-                    }),
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Invalid input", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: JSON.stringify({ valid: false, message: "Validation failed" }), createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -537,7 +467,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].answer).toBe("Validation failed");
@@ -546,24 +476,9 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("skips validation message with valid=true and finds next answer", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Valid input",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: JSON.stringify({ valid: true }),
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg3",
-                    role: "assistant",
-                    body: "Actual answer",
-                    createdAt: "2024-01-15T10:32:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Valid input", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: JSON.stringify({ valid: true }), createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
+                { id: 'msg3', role: "assistant", body: "Actual answer", createdAt: '2024-01-15T10:32:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -575,7 +490,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].answer).toBe("Actual answer");
@@ -584,18 +499,8 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("handles JSON parsing error and uses as regular answer", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Question",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: "Not JSON",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Question", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: "Not JSON", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -607,7 +512,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].answer).toBe("Not JSON");
@@ -616,18 +521,8 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("handles JSON without valid property", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Question",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: JSON.stringify({ data: "some data" }),
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Question", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: JSON.stringify({ data: "some data" }), createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -639,41 +534,19 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
-            expect(messages[0].answer).toBe(
-                JSON.stringify({ data: "some data" }),
-            );
+            expect(messages[0].answer).toBe(JSON.stringify({ data: "some data" }));
         });
 
         it("stops at next user message when looking for answer", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "Q1",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: JSON.stringify({ valid: true }),
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg3",
-                    role: "user",
-                    body: "Q2",
-                    createdAt: "2024-01-15T10:32:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg4",
-                    role: "assistant",
-                    body: "A2",
-                    createdAt: "2024-01-15T10:33:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "Q1", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: JSON.stringify({ valid: true }), createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
+                { id: 'msg3', role: "user", body: "Q2", createdAt: '2024-01-15T10:32:00Z' } as ApiMessage,
+                { id: 'msg4', role: "assistant", body: "A2", createdAt: '2024-01-15T10:33:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -685,7 +558,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             // Q1 has no answer (validation passed but next is user message)
             expect(messages.length).toBe(1);
@@ -697,18 +570,8 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             messages.push({ question: "Old Q", answer: "Old A" });
 
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "user",
-                    body: "New Q",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "assistant",
-                    body: "New A",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "user", body: "New Q", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "assistant", body: "New A", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -720,7 +583,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].question).toBe("New Q");
@@ -739,7 +602,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(0);
         });
@@ -747,24 +610,9 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
         it("skips non-user, non-assistant messages", async () => {
             const user = userEvent.setup();
             const mockResponse = createMockResponse([
-                {
-                    id: "msg1",
-                    role: "system",
-                    body: "System message",
-                    createdAt: "2024-01-15T10:30:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg2",
-                    role: "user",
-                    body: "Question",
-                    createdAt: "2024-01-15T10:31:00Z",
-                } as ApiMessage,
-                {
-                    id: "msg3",
-                    role: "assistant",
-                    body: "Answer",
-                    createdAt: "2024-01-15T10:32:00Z",
-                } as ApiMessage,
+                { id: 'msg1', role: "system", body: "System message", createdAt: '2024-01-15T10:30:00Z' } as ApiMessage,
+                { id: 'msg2', role: "user", body: "Question", createdAt: '2024-01-15T10:31:00Z' } as ApiMessage,
+                { id: 'msg3', role: "assistant", body: "Answer", createdAt: '2024-01-15T10:32:00Z' } as ApiMessage,
             ]);
 
             vi.mocked(getChatById).mockResolvedValue(mockResponse);
@@ -776,7 +624,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             const menuButton = container.querySelector('[role="button"]');
             await user.click(menuButton!);
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 100));
 
             expect(messages.length).toBe(1);
             expect(messages[0].question).toBe("Question");
@@ -799,7 +647,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             });
 
             const button = container.querySelector('[role="button"]');
-            expect(button).toHaveAttribute("tabindex", "0");
+            expect(button).toHaveAttribute('tabindex', '0');
         });
 
         it("input has correct id based on chatId", async () => {
@@ -808,12 +656,12 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const pencilIcon = container.querySelector("svg.lucide-pencil");
-            const editButton = pencilIcon?.closest("button");
+            const pencilIcon = container.querySelector('svg.lucide-pencil');
+            const editButton = pencilIcon?.closest('button');
             await user.click(editButton!);
 
-            const input = container.querySelector("input");
-            expect(input).toHaveAttribute("id", "titletest-chat-id");
+            const input = container.querySelector('input');
+            expect(input).toHaveAttribute('id', 'titletest-chat-id');
         });
     });
 
@@ -841,7 +689,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 props: { summary: mockSummary },
             });
 
-            const paragraph = container.querySelector("p.truncate");
+            const paragraph = container.querySelector('p.truncate');
             expect(paragraph).toBeInTheDocument();
         });
 
@@ -853,9 +701,7 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
             });
 
             // Should be safely rendered
-            expect(container.textContent).toContain(
-                "<script>alert('xss')</script>",
-            );
+            expect(container.textContent).toContain("<script>alert('xss')</script>");
         });
     });
 });

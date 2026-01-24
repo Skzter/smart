@@ -72,17 +72,6 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	return router, nil
 }
 
-func pprofAuthMiddleware() gin.HandlerFunc {
-	password := os.Getenv("PPROF_AUTH_PASSWORD")
-	if password == "" {
-		password = "smart-qa"
-	}
-
-	return gin.BasicAuth(gin.Accounts{
-		"admin": password,
-	})
-}
-
 func sseHeaderMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Content-Type", "text/event-stream")

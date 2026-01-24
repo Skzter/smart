@@ -1,7 +1,5 @@
+import type { Message } from "$types/message";
 import type { DateRange } from "bits-ui";
-
-export type MessageType = "user" | "validation" | "generation" | "error";
-export type Message = { t: MessageType; Message: string };
 
 export const messages: Message[] = $state([]);
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+    import * as Sidebar from "$lib/components/ui/sidebar/sidebar.svelte";
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
@@ -27,7 +27,7 @@
         if (!user.id) return;
         (async () => {
             try {
-                items = (await getChats()) as ApiChatSummary[];
+                items = (await getUserChats()) as ApiChatSummary[];
             } catch (err) {
                 if (err instanceof Error) {
                     error = err.message;
@@ -54,11 +54,11 @@
 
         let filteredItems = items.filter((item) => {
             const time = new Date(Date.parse(item.updatedAt));
-
+            
             if (!applyTimeFilter(time, timeFilter)) {
                 return false;
             }
-
+            
             return isWithinDateRange(time, dateRange);
         });
 
@@ -84,6 +84,7 @@
         groups.forEach((value, key) => {
             result.push({ label: key, summaries: value });
         });
+        $inspect(result);
 
         return result;
     }
@@ -112,11 +113,7 @@
         if (timeFilter === "all") return true;
 
         const now = new Date();
-        const today = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-        );
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const chatDate = new Date(
             chatTime.getFullYear(),
             chatTime.getMonth(),
@@ -183,13 +180,13 @@
 <Sidebar.Root>
     <SidebarHeader />
     <Sidebar.Content>
-        {#if error != ""}
-            <Sidebar.Group>
-                <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
-            </Sidebar.Group>
-        {:else if items === undefined}
+        {#if items === undefined}
             <Sidebar.Group class="mt-2 flex items-center justify-center">
                 <Spinner class="size-6"></Spinner>
+            </Sidebar.Group>
+        {:else if error != ""}
+            <Sidebar.Group>
+                <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
             </Sidebar.Group>
         {:else}
             {#each groupState, index (index)}

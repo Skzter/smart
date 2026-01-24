@@ -40,7 +40,7 @@ export type ApiSaveTestLocalResponse = {
 export type ApiRunContainer = {
     userId: string;
     testId: string;
-    chatId: string;
+    sessionId: string;
 };
 
 export type ApiGetChatByIdResponse = {

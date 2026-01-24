@@ -6,7 +6,7 @@
   "scripts": {
     "fl": "pnpm prettier . --write && pnpm eslint .",
     "dev": "vite",
-    "build": "vite build && touch dist/assets/.gitkeep",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:watch": "vitest --watch",

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import CloseButton from "../../src/lib/components/CloseButton.svelte";
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
 describe("CloseButton", () => {
     beforeEach(() => {
@@ -15,16 +15,16 @@ describe("CloseButton", () => {
         const button = screen.getByRole("button");
         expect(button).toBeInTheDocument();
 
-        const svg = container.querySelector("svg");
+        const svg = container.querySelector('svg');
         expect(svg).toBeInTheDocument();
-        expect(svg).toHaveClass("h-4", "w-4");
+        expect(svg).toHaveClass('h-4', 'w-4');
     });
 
     it("applies correct styling classes", () => {
         const { container } = render(CloseButton);
 
-        const button = container.querySelector("button");
-        expect(button).toHaveClass("h-6", "w-6", "p-0", "cursor-pointer");
+        const button = container.querySelector('button');
+        expect(button).toHaveClass('h-6', 'w-6', 'p-0', 'cursor-pointer');
     });
 
     it("calls onCloseClick when clicked", async () => {
@@ -72,7 +72,7 @@ describe("CloseButton", () => {
         const button = screen.getByRole("button");
         button.focus();
 
-        await user.keyboard("{Enter}");
+        await user.keyboard('{Enter}');
 
         expect(onCloseClick).toHaveBeenCalledTimes(1);
     });

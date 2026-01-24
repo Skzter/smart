@@ -1,10 +1,10 @@
 <script lang="ts">
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import type { ApiChatSummary } from "$types/api";
-    import ChatSummary from "./ChatSummary.svelte";
+    import SwitchChatButton from "./SwitchChatButton.svelte";
 
     let {
-        group = $bindable(),
+        group,
     }: {
         group: {
             label: string;
@@ -17,8 +17,10 @@
     <Sidebar.GroupLabel class="uppercase">{group.label}</Sidebar.GroupLabel>
     <Sidebar.GroupContent>
         <Sidebar.Menu>
-            {#each group.summaries as chat, key (chat.chatId)}
-                <ChatSummary bind:summary={group.summaries[key]}></ChatSummary>
+            {#each group.summaries as chat}
+                <Sidebar.MenuItem>
+                    <SwitchChatButton currChat={chat} />
+                </Sidebar.MenuItem>
             {/each}
         </Sidebar.Menu>
     </Sidebar.GroupContent>

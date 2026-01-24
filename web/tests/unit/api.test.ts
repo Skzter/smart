@@ -1,14 +1,13 @@
 import { describe, expect, it, vi, beforeEach, type Mock } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import {
-    generatePrompt,
-    getChats,
+    getChatResponse,
+    getUserChats,
     getTemplate,
     saveTestLocal,
     runContainer,
     getChatById,
     deleteLocalTest,
-    validatePrompt,
 } from "../../src/lib/api";
 import * as shared from "../../src/lib/shared.svelte";
 
@@ -23,20 +22,8 @@ vi.mock("../../src/lib/shared.svelte", () => ({
 
 describe("API Functions", () => {
     const mockUserId = "user123";
+    const mockConversationId = "conv456";
     const mockChatId = "chat456";
-
-    const mockValidateParams = {
-        userId: mockUserId,
-        chatId: mockChatId,
-        prompt: "Validate this prompt",
-    };
-
-    const mockValidateResponse = {
-        chatId: mockChatId,
-        message: {
-            body: "Prompt validated successfully!",
-        },
-    };
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -49,7 +36,7 @@ describe("API Functions", () => {
         const mockChatRequest = {
             prompt: "test prompt",
             userId: mockUserId,
-            chatId: mockChatId,
+            conversationId: mockConversationId,
         };
 
         const mockMessage = {
@@ -62,7 +49,7 @@ describe("API Functions", () => {
         const mockApiResponse = {
             data: {
                 message: mockMessage,
-                chatId: mockChatId,
+                conversationId: mockConversationId,
                 userId: mockUserId,
             },
         };
@@ -71,7 +58,7 @@ describe("API Functions", () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue(mockApiResponse);
 
-            const result = await generatePrompt(mockChatRequest);
+            const result = await getChatResponse(mockChatRequest);
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
@@ -81,7 +68,7 @@ describe("API Functions", () => {
             });
             expect(result).toEqual({
                 message: mockMessage,
-                chatId: mockChatId,
+                conversationId: mockConversationId,
                 userId: mockUserId,
             });
         });
@@ -90,12 +77,15 @@ describe("API Functions", () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue(mockApiResponse);
 
-            await generatePrompt(mockChatRequest);
+            await getChatResponse(mockChatRequest);
 
             const callArgs = mockedAxios.mock.calls[0][0];
             expect(callArgs.data).toHaveProperty("prompt", "test prompt");
             expect(callArgs.data).toHaveProperty("userId", mockUserId);
-            expect(callArgs.data).toHaveProperty("chatId", mockChatId);
+            expect(callArgs.data).toHaveProperty(
+                "conversationId",
+                mockConversationId,
+            );
         });
 
         it("should reject when the API call fails", async () => {
@@ -110,7 +100,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(generatePrompt(mockChatRequest)).rejects.toThrow(
+            await expect(getChatResponse(mockChatRequest)).rejects.toThrow(
                 "Chat service unavailable",
             );
         });
@@ -134,7 +124,7 @@ describe("API Functions", () => {
             },
         ];
 
-        it("should make a GET request to /chats", async () => {
+        it("should make a GET request to /chats/:userId", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
                 data: { chatSummarys: mockChatSummaries },
@@ -144,7 +134,7 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/chats`,
+                url: `/users/${mockUserId}/chats`,
                 baseURL: "http://localhost:8081/api/v1/",
             });
             expect(result).toEqual(mockChatSummaries);
@@ -164,57 +154,6 @@ describe("API Functions", () => {
 
             await expect(getChats()).rejects.toThrow(
                 "Failed to fetch user chats",
-            );
-        });
-    });
-    describe.skip("validatePrompt TOOD: fix this test", () => {
-        it("should make a POST request to /validate with proper params", async () => {
-            const mockedAxios = axios as unknown as Mock;
-            mockedAxios.mockResolvedValue({ data: mockValidateResponse });
-
-            await validatePrompt(mockValidateParams);
-
-            expect(mockedAxios).toHaveBeenCalledWith({
-                method: "post",
-                url: "/validate",
-                baseURL: "/api/v1/",
-                data: mockValidateParams,
-            });
-        });
-
-        it("should return the API response data", async () => {
-            const mockedAxios = axios as unknown as Mock;
-            mockedAxios.mockResolvedValue({ data: mockValidateResponse });
-
-            const result = await validatePrompt(mockValidateParams);
-
-            expect(result).toEqual({
-                chatId: mockChatId,
-                message: {
-                    body: "Prompt validated successfully!",
-                },
-            });
-        });
-
-        it("should include all required parameters", async () => {
-            const mockedAxios = axios as unknown as Mock;
-            mockedAxios.mockResolvedValue({ data: mockValidateResponse });
-
-            await validatePrompt(mockValidateParams);
-
-            const callArgs = mockedAxios.mock.calls[0][0];
-
-            expect(callArgs.data).toHaveProperty(
-                "userId",
-                mockValidateParams.userId,
-            );
-            expect(callArgs.data).toHaveProperty(
-                "chatId",
-                mockValidateParams.chatId,
-            );
-            expect(callArgs.data).toHaveProperty(
-                "prompt",
-                mockValidateParams.prompt,
             );
         });
     });
@@ -258,7 +197,7 @@ describe("API Functions", () => {
         const mockSaveLocalRequest = {
             code: "fantastic code",
             userId: mockUserId,
-            chatId: mockChatId,
+            conversationId: mockConversationId,
         };
 
         const mockSaveLocalResponse = {
@@ -299,7 +238,7 @@ describe("API Functions", () => {
         });
     });
 
-    describe.skip("runContainer", () => {
+    describe("runContainer", () => {
         const mockParams = {
             userId: mockUserId,
             testId: "test123",
@@ -311,7 +250,7 @@ describe("API Functions", () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: { result: mockResult } });
 
-            const result = await runContainer(mockParams, {});
+            const result = await runContainer(mockParams);
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
@@ -334,7 +273,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(runContainer(mockParams, {})).rejects.toThrow(
+            await expect(runContainer(mockParams)).rejects.toThrow(
                 "Failed to run container",
             );
         });
@@ -348,7 +287,7 @@ describe("API Functions", () => {
                 chatId: "chat999",
             };
 
-            await runContainer(complexParams, {});
+            await runContainer(complexParams);
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
@@ -384,7 +323,7 @@ describe("API Functions", () => {
             lastAutoPlaywrightPrompt: "last prompt here",
         };
 
-        it("should make a GET request to /chats/:chatId", async () => {
+        it("should make a GET request to /users/:userId/chats/:chatId", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 
@@ -398,7 +337,7 @@ describe("API Functions", () => {
             expect(result).toEqual(mockChatResponse);
         });
 
-        it("should use the current chat id from shared state", async () => {
+        it("should use the current user and chat ids from shared state", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: mockChatResponse });
 

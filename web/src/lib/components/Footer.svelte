@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { generatePrompt, validatePrompt } from "$lib/api";
+    import { getChatResponse } from "$lib/api";
     import * as ButtonGroup from "$lib/components/ui/button-group";
     import { chat, messages, user } from "$lib/shared.svelte";
     import type { ApiChatRequest } from "$types/api";
@@ -16,38 +16,23 @@
 
         const userQuestion = input.trim();
         input = "";
-        messages.push({ t: "user", Message: userQuestion });
+        messages.push({
+            question: userQuestion,
+            answer: "",
+        });
         chat.isLoading = true;
         let paramsChatRequest: ApiChatRequest = {
             prompt: userQuestion,
             userId: user.id,
-            chatId: chat.id,
+            conversationId: chat.id,
         };
 
-        let valid: boolean;
-
         try {
-            const validationAnswer = await validatePrompt(paramsChatRequest);
-            valid = validationAnswer.message.body == "";
-            messages.push({
-                t: "validation",
-                Message: valid
-                    ? "Prompt ist Valide"
-                    : validationAnswer.message.body,
-            });
-            chat.id = validationAnswer.chatId;
-            paramsChatRequest.chatId = chat.id;
-
-            if (valid) {
-                const generationAnswer =
-                    await generatePrompt(paramsChatRequest);
-                messages.push({
-                    t: "generation",
-                    Message: generationAnswer.message.body,
-                });
-            }
+            const answer = await getChatResponse(paramsChatRequest);
+            messages[messages.length - 1].answer = answer.message.body;
+            chat.id = answer.conversationId;
         } catch (err: unknown) {
-            messages.push({ t: "error", Message: (err as Error).message });
+            messages[messages.length - 1].answer = (err as Error).message;
         } finally {
             chat.isLoading = false;
         }

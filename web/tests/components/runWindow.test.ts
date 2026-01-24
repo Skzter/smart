@@ -1,6 +1,6 @@
 import { render, fireEvent } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
 // Mock Monaco Editor
 vi.mock("monaco-editor", () => ({
@@ -9,18 +9,18 @@ vi.mock("monaco-editor", () => ({
             getValue: vi.fn(() => ""),
             setValue: vi.fn(),
             getModel: vi.fn(() => ({
-                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() })),
+                onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() }))
             })),
             getPosition: vi.fn(),
             setPosition: vi.fn(),
-            dispose: vi.fn(),
-        })),
-    },
+            dispose: vi.fn()
+        }))
+    }
 }));
 
 // Mock the worker
 vi.mock("monaco-editor/esm/vs/language/typescript/ts.worker?worker", () => ({
-    default: class MockWorker {},
+    default: class MockWorker {}
 }));
 
 import { Runner } from "../../src/lib/runner.svelte";
@@ -42,9 +42,7 @@ describe("RunWindow", () => {
             },
         });
 
-        const dialogContent = document.body.querySelector(
-            ".sm\\:max-w-\\[90vw\\]",
-        );
+        const dialogContent = document.body.querySelector('.sm\\:max-w-\\[90vw\\]');
         expect(dialogContent).toBeInTheDocument();
     });
 
@@ -56,7 +54,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const title = document.body.querySelector(".text-lg.font-semibold");
+        const title = document.body.querySelector('.text-lg.font-semibold');
         expect(title).toBeInTheDocument();
         expect(title?.textContent).toBe("Button Click Test");
     });
@@ -69,9 +67,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const header = document.body.querySelector(
-            ".flex.flex-row.items-center.justify-between.border-b",
-        );
+        const header = document.body.querySelector('.flex.flex-row.items-center.justify-between.border-b');
         expect(header).toBeInTheDocument();
     });
 
@@ -83,10 +79,8 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const closeButtons = document.body.querySelectorAll("button");
-        const hasCloseButton = Array.from(closeButtons).some((btn: Element) =>
-            btn.querySelector("svg"),
-        );
+        const closeButtons = document.body.querySelectorAll('button');
+        const hasCloseButton = Array.from(closeButtons).some((btn: Element) => btn.querySelector('svg'));
         expect(hasCloseButton).toBe(true);
     });
 
@@ -98,7 +92,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const buttons = document.body.querySelectorAll("button");
+        const buttons = document.body.querySelectorAll('button');
         expect(buttons.length).toBeGreaterThan(0);
     });
 
@@ -110,10 +104,8 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const closeButtons = document.body.querySelectorAll("button");
-        const hasCloseButton = Array.from(closeButtons).some((btn: Element) =>
-            btn.querySelector("svg"),
-        );
+        const closeButtons = document.body.querySelectorAll('button');
+        const hasCloseButton = Array.from(closeButtons).some((btn: Element) => btn.querySelector('svg'));
         expect(hasCloseButton).toBe(true);
     });
 
@@ -125,7 +117,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const tabsContainer = document.body.querySelector(".px-6");
+        const tabsContainer = document.body.querySelector('.px-6');
         expect(tabsContainer).toBeInTheDocument();
     });
 
@@ -137,7 +129,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const gridLayout = document.body.querySelector(".flex-1.grid");
+        const gridLayout = document.body.querySelector('.flex-1.grid');
         expect(gridLayout).toBeInTheDocument();
     });
 
@@ -149,7 +141,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const splitLayout = document.body.querySelector(".grid.grid-cols-2");
+        const splitLayout = document.body.querySelector('.grid.grid-cols-2');
         expect(splitLayout).toBeInTheDocument();
     });
 
@@ -161,9 +153,8 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const outputHeader = Array.from(
-            document.body.querySelectorAll(".px-4.py-2.bg-muted\\/50"),
-        ).find((el: Element) => el.textContent?.includes("Test Output"));
+        const outputHeader = Array.from(document.body.querySelectorAll('.px-4.py-2.bg-muted\\/50'))
+            .find((el: Element) => el.textContent?.includes('Test Output'));
         expect(outputHeader).toBeInTheDocument();
     });
 
@@ -175,9 +166,8 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const browserPreview = Array.from(
-            document.body.querySelectorAll(".px-4.py-2.border-b"),
-        ).find((el: Element) => el.textContent?.includes("Vorschau"));
+        const browserPreview = Array.from(document.body.querySelectorAll('.px-4.py-2.border-b'))
+            .find((el: Element) => el.textContent?.includes('Vorschau'));
         expect(browserPreview).toBeInTheDocument();
     });
 
@@ -189,7 +179,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const resultPlaceholder = document.body.querySelector(".text-center");
+        const resultPlaceholder = document.body.querySelector('.text-center');
         expect(resultPlaceholder).toBeInTheDocument();
     });
 
@@ -201,7 +191,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const hiddenClose = document.body.querySelector("[data-dialog-close]");
+        const hiddenClose = document.body.querySelector('[data-dialog-close]');
         expect(hiddenClose).toBeInTheDocument();
     });
 
@@ -226,13 +216,11 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const dialogContent = document.body.querySelector(
-            ".sm\\:max-w-\\[90vw\\]",
-        );
+        const dialogContent = document.body.querySelector('.sm\\:max-w-\\[90vw\\]');
         expect(dialogContent).toBeInTheDocument();
-        const title = document.body.querySelector(".text-lg.font-semibold");
+        const title = document.body.querySelector('.text-lg.font-semibold');
         expect(title).toBeInTheDocument();
-        const tabs = document.body.querySelector(".px-6");
+        const tabs = document.body.querySelector('.px-6');
         expect(tabs).toBeInTheDocument();
     });
 
@@ -261,7 +249,7 @@ describe("RunWindow", () => {
 
     it("renders with all three activeTab options", () => {
         const tabs = ["edit", "run", "result"];
-        tabs.forEach((tab) => {
+        tabs.forEach(tab => {
             const { container } = render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
@@ -281,9 +269,9 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const dialogContent = document.body.querySelector(".flex.flex-col");
+        const dialogContent = document.body.querySelector('.flex.flex-col');
         expect(dialogContent).toBeInTheDocument();
-        const header = document.body.querySelector(".border-b");
+        const header = document.body.querySelector('.border-b');
         expect(header).toBeInTheDocument();
     });
 
@@ -295,14 +283,13 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const overflowContainer =
-            document.body.querySelector(".overflow-hidden");
+        const overflowContainer = document.body.querySelector('.overflow-hidden');
         expect(overflowContainer).toBeInTheDocument();
     });
 
     it("handles all conditional rendering branches for header controls", () => {
         const tabs = ["edit", "run", "result"];
-        tabs.forEach((tab) => {
+        tabs.forEach(tab => {
             render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
@@ -310,9 +297,7 @@ describe("RunWindow", () => {
                     testRunner,
                 },
             });
-            const controlsContainer = document.body.querySelector(
-                ".flex.items-center.gap-2",
-            );
+            const controlsContainer = document.body.querySelector('.flex.items-center.gap-2');
             expect(controlsContainer).toBeInTheDocument();
         });
     });
@@ -325,9 +310,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        expect(
-            document.body.querySelector(".flex-1.overflow-visible"),
-        ).toBeInTheDocument();
+        expect(document.body.querySelector('.flex-1.overflow-visible')).toBeInTheDocument();
 
         render(RunWindowTestWrapper, {
             props: {
@@ -336,7 +319,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        expect(document.body.querySelector(".flex-1")).toBeInTheDocument();
+        expect(document.body.querySelector('.flex-1')).toBeInTheDocument();
 
         render(RunWindowTestWrapper, {
             props: {
@@ -345,9 +328,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        expect(
-            document.body.querySelector(".flex-1.overflow-auto"),
-        ).toBeInTheDocument();
+        expect(document.body.querySelector('.flex-1.overflow-auto')).toBeInTheDocument();
     });
 
     it("integrates all child components properly", () => {
@@ -358,13 +339,13 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const splitLayout = document.body.querySelector(".grid.grid-cols-2");
+        const splitLayout = document.body.querySelector('.grid.grid-cols-2');
         expect(splitLayout).toBeInTheDocument();
         const children = splitLayout?.children;
         expect(children?.length).toBe(2);
     });
 
-    it.skip("passes testRunner prop correctly to child components", () => {
+    it("passes testRunner prop correctly to child components", () => {
         testRunner.result = "Test result from runner";
         render(RunWindowTestWrapper, {
             props: {
@@ -373,11 +354,8 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const outputHeader = Array.from(
-            document.body.querySelectorAll(".px-4.py-2"),
-        ).find((el: Element) =>
-            el.textContent?.includes("Test result from runner"),
-        );
+        const outputHeader = Array.from(document.body.querySelectorAll('.px-4.py-2'))
+            .find((el: Element) => el.textContent?.includes('Test result from runner'));
         expect(outputHeader).toBeDefined();
     });
 
@@ -389,9 +367,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const dialogContent = document.body.querySelector(
-            ".sm\\:max-w-\\[90vw\\].md\\:max-w-\\[80vw\\].lg\\:max-w-\\[1170px\\]",
-        );
+        const dialogContent = document.body.querySelector('.sm\\:max-w-\\[90vw\\].md\\:max-w-\\[80vw\\].lg\\:max-w-\\[1170px\\]');
         expect(dialogContent).toBeInTheDocument();
     });
 
@@ -403,7 +379,7 @@ describe("RunWindow", () => {
                 testRunner,
             },
         });
-        const dialogContent = document.body.querySelector(".h-\\[85vh\\]");
+        const dialogContent = document.body.querySelector('.h-\\[85vh\\]');
         expect(dialogContent).toBeInTheDocument();
     });
 
@@ -416,12 +392,12 @@ describe("RunWindow", () => {
             },
         });
         // Default should be split view
-        const splitLayout = document.body.querySelector(".grid.grid-cols-2");
+        const splitLayout = document.body.querySelector('.grid.grid-cols-2');
         expect(splitLayout).toBeInTheDocument();
     });
 
     it("renders all conditional branches", () => {
-        ["edit", "run", "result"].forEach((tab) => {
+        ["edit", "run", "result"].forEach(tab => {
             render(RunWindowTestWrapper, {
                 props: {
                     code: "test",
@@ -429,9 +405,7 @@ describe("RunWindow", () => {
                     testRunner,
                 },
             });
-            expect(
-                document.body.querySelector(".flex.flex-col"),
-            ).toBeInTheDocument();
+            expect(document.body.querySelector('.flex.flex-col')).toBeInTheDocument();
         });
     });
 
@@ -445,17 +419,14 @@ describe("RunWindow", () => {
         });
 
         // Find and click the Run tab
-        const runTab = Array.from(
-            document.body.querySelectorAll('button[role="tab"]'),
-        ).find((btn: Element) =>
-            btn.textContent?.includes("Run"),
-        ) as HTMLElement;
-
+        const runTab = Array.from(document.body.querySelectorAll('button[role="tab"]'))
+            .find((btn: Element) => btn.textContent?.includes('Run')) as HTMLElement;
+        
         expect(runTab).toBeTruthy();
         await fireEvent.click(runTab);
-
+        
         // Verify the run view is displayed
-        const splitLayout = document.body.querySelector(".grid.grid-cols-2");
+        const splitLayout = document.body.querySelector('.grid.grid-cols-2');
         expect(splitLayout).toBeInTheDocument();
     });
 
@@ -469,19 +440,16 @@ describe("RunWindow", () => {
         });
 
         // Find close button
-        const closeButton = Array.from(
-            document.body.querySelectorAll("button"),
-        ).find((btn: Element) => btn.querySelector("svg")) as HTMLElement;
-
+        const closeButton = Array.from(document.body.querySelectorAll('button'))
+            .find((btn: Element) => btn.querySelector('svg')) as HTMLElement;
+        
         expect(closeButton).toBeTruthy();
-
+        
         // Mock the dialog close button click
-        const dialogCloseBtn = document.body.querySelector(
-            "[data-dialog-close]",
-        ) as HTMLElement;
+        const dialogCloseBtn = document.body.querySelector('[data-dialog-close]') as HTMLElement;
         const clickSpy = vi.fn();
         if (dialogCloseBtn) {
-            dialogCloseBtn.addEventListener("click", clickSpy);
+            dialogCloseBtn.addEventListener('click', clickSpy);
             await fireEvent.click(closeButton);
         }
     });
@@ -496,17 +464,14 @@ describe("RunWindow", () => {
         });
 
         // Click Result tab
-        const resultTab = Array.from(
-            document.body.querySelectorAll('button[role="tab"]'),
-        ).find((btn: Element) =>
-            btn.textContent?.includes("Result"),
-        ) as HTMLElement;
-
+        const resultTab = Array.from(document.body.querySelectorAll('button[role="tab"]'))
+            .find((btn: Element) => btn.textContent?.includes('Result')) as HTMLElement;
+        
         expect(resultTab).toBeTruthy();
         await fireEvent.click(resultTab);
-
+        
         // Verify result view is displayed
-        const resultView = document.body.querySelector(".text-center");
+        const resultView = document.body.querySelector('.text-center');
         expect(resultView).toBeInTheDocument();
     });
 
@@ -519,25 +484,17 @@ describe("RunWindow", () => {
             },
         });
 
-        const editTab = Array.from(
-            document.body.querySelectorAll('button[role="tab"]'),
-        ).find((btn: Element) =>
-            btn.textContent?.includes("Edit"),
-        ) as HTMLElement;
-        const runTab = Array.from(
-            document.body.querySelectorAll('button[role="tab"]'),
-        ).find((btn: Element) =>
-            btn.textContent?.includes("Run"),
-        ) as HTMLElement;
-
+        const editTab = Array.from(document.body.querySelectorAll('button[role="tab"]'))
+            .find((btn: Element) => btn.textContent?.includes('Edit')) as HTMLElement;
+        const runTab = Array.from(document.body.querySelectorAll('button[role="tab"]'))
+            .find((btn: Element) => btn.textContent?.includes('Run')) as HTMLElement;
+        
         // Switch to Run
         await fireEvent.click(runTab);
-        expect(
-            document.body.querySelector(".grid.grid-cols-2"),
-        ).toBeInTheDocument();
-
+        expect(document.body.querySelector('.grid.grid-cols-2')).toBeInTheDocument();
+        
         // Switch back to Edit
         await fireEvent.click(editTab);
-        expect(document.body.querySelector(".flex-1.grid")).toBeInTheDocument();
+        expect(document.body.querySelector('.flex-1.grid')).toBeInTheDocument();
     });
 });

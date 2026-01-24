@@ -18,7 +18,7 @@ const baseURL = "http://localhost:8081/api/v1/";
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function generatePrompt(
+export async function getChatResponse(
     request: ApiChatRequest,
 ): Promise<ApiChatResponse> {
     try {
@@ -30,30 +30,7 @@ export async function generatePrompt(
         });
         return {
             message: response.data.message as ApiMessage,
-            chatId: response.data.chatId,
-            userId: response.data.userId,
-        };
-    } catch (error) {
-        throw getErrorMessage(error);
-    }
-}
-
-/** Validates the prompt by sending it to the /validationRes endpoint
- * @param body: object containing userId, chatId, and prompt
- */
-export async function validatePrompt(
-    request: ApiChatRequest,
-): Promise<ApiChatResponse> {
-    try {
-        const response = await axios({
-            method: "post",
-            url: "/validate",
-            baseURL: "/api/v1/",
-            data: request,
-        });
-        return {
-            message: response.data.message as ApiMessage,
-            chatId: response.data.chatId,
+            conversationId: response.data.conversationId,
             userId: response.data.userId,
         };
     } catch (error) {
@@ -65,12 +42,12 @@ export async function validatePrompt(
  * Fetches data from the api and returns the data for the user
  * @param params: parameters for api
  * @param url: url for api
- */
-export async function getChats(): Promise<ApiChatSummary[]> {
+ */ // schön mit Rechtschreibfehler vom main
+export async function getUserChats(): Promise<ApiChatSummary[]> {
     try {
         const response = await axios({
             method: "get",
-            url: `/chats`,
+            url: `/users/${user.id}/chats`,
             baseURL: baseURL,
         });
         return response.data.chatSummarys;
@@ -111,21 +88,25 @@ export async function saveTestLocal(
     }
 }
 
-// must block exectution until test is done
-export async function runContainer(request: ApiRunContainer): Promise<void> {
-    await axios({
-        method: "post",
-        url: "run",
-        baseURL,
-        data: request,
-    });
+export async function runContainer(request: ApiRunContainer): Promise<string> {
+    try {
+        const response = await axios({
+            method: "post",
+            url: "run",
+            baseURL: baseURL,
+            data: request,
+        });
+        return response.data.result;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
 }
 
 export async function getChatById(): Promise<ApiGetChatByIdResponse> {
     try {
         const response = await axios({
             method: "get",
-            url: `/chats/${chat.id}`,
+            url: `/users/${user.id}/chats/${chat.id}`,
             baseURL: baseURL,
         });
         return response.data;
@@ -142,7 +123,7 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
             url: "/deleteLocal",
             params: {
                 testcaseId,
-                chatId: chat.id,
+                conversationId: chat.id,
                 userId: user.id,
             },
         });

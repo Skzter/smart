@@ -4,17 +4,13 @@
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import { ChatFilter } from "$lib/shared.svelte";
-
+    
     let sortBy = $state("recent");
     let timeFilter = $state("all");
 
     $effect(() => {
         ChatFilter.sortBy = sortBy as "recent" | "created";
-        ChatFilter.timeFilter = timeFilter as
-            | "all"
-            | "today"
-            | "week"
-            | "month";
+        ChatFilter.timeFilter = timeFilter as "all" | "today" | "week" | "month";
     });
 </script>
 
@@ -51,7 +47,7 @@
                 <DropdownMenu.RadioItem value="all">
                     Alle Chats
                 </DropdownMenu.RadioItem>
-                <DropdownMenu.RadioItem value="today">
+                 <DropdownMenu.RadioItem value="today">
                     Heute
                 </DropdownMenu.RadioItem>
                 <DropdownMenu.RadioItem value="week">
@@ -64,3 +60,6 @@
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+
+

@@ -37,6 +37,62 @@
     --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
     --sidebar-border: oklch(0.929 0.013 255.508);
     --sidebar-ring: oklch(0.704 0.04 256.788);
+
+    /* ===== Ocean Modern Light Theme – Semantic Colors ===== */
+
+    /* Primary */
+    --color-primary-button: oklch(0.4460 0.1686 259.60);       
+    --color-primary-button-hover: oklch(0.3814 0.1376 258.92);
+    --color-primary-active: oklch(0.3158 0.1078 258.12);       
+    --color-primary-active-hover: oklch(0.3814 0.1376 258.92); 
+
+    /* Secondary */
+    --color-secondary-field-passive:  oklch(0.9232 0.0251 263.33);
+    --color-secondary-field-passive2: oklch(0.8936 0.0565 233.75); 
+
+    /* Neutral (Light) */
+    --color-neutral-bg-side:  oklch(0.9840 0.0062 255.47); 
+    --color-neutral-bg-side2: oklch(1.0000 0.0000 89.88);  
+    --color-neutral-bg-side3: oklch(0.9292 0.0109 256.70); 
+    --color-neutral-bg-side4: oklch(0.8608 0.0135 251.57); 
+    --color-neutral-bg-side5: oklch(0.8379 0.0160 248.02); 
+
+    /* Accent */
+    --color-accent:  oklch(0.7054 0.1120 212.50); 
+    --color-accent2: oklch(0.9445 0.0396 204.31); 
+
+    /* Text */
+    --color-text-on-primary: oklch(1.0000 0.0000 89.88);  
+    --color-text-primary:    oklch(0.2077 0.0398 265.75); 
+    --color-text-secondary:  oklch(0.3729 0.0306 259.73);
+    --color-text-tertiary:   oklch(0.5510 0.0234 264.36); 
+    --color-text-dark:       oklch(0.2077 0.0398 265.75); 
+    --color-text-muted:      oklch(0.7137 0.0192 261.32); 
+    --color-text-hover:      oklch(0.4461 0.0263 256.80); 
+
+    /* Error (Red) */
+    --color-error-50:  oklch(0.9705 0.0129 17.38); 
+    --color-error-100: oklch(0.9356 0.0309 17.72); 
+    --color-error-200: oklch(0.8845 0.0593 18.33); 
+    --color-error-600: oklch(0.5771 0.2152 27.33); 
+    --color-error-700: oklch(0.5054 0.1905 27.52);
+    --color-error-800: oklch(0.4437 0.1613 26.90);
+    --color-error-900: oklch(0.3958 0.1331 25.72); 
+
+    /* Warning (Light) */
+    --color-warning-50:  oklch(0.9873 0.0262 102.21);
+    --color-warning-100: oklch(0.9729 0.0693 103.19);
+    --color-warning-200: oklch(0.9451 0.1243 101.54); 
+    --color-warning-600: oklch(0.6806 0.1423 75.83); 
+    --color-warning-800: oklch(0.4762 0.1034 61.91); 
+    --color-warning-900: oklch(0.4210 0.0897 57.71); 
+
+    /* Success (Green) */
+    --color-success-50:  oklch(0.9819 0.0181 155.83); 
+    --color-success-100: oklch(0.9624 0.0434 156.74); 
+    --color-success-600: oklch(0.6271 0.1699 149.21); 
+    --color-success-700: oklch(0.5273 0.1371 150.07); 
+
 }
 
 .dark {

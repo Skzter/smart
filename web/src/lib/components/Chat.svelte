@@ -29,16 +29,15 @@
                 <div
                     class="flex items-center justify-center flex-1 text-muted-foreground"
                 >
-                    <p>Start a chat...</p>
+                    <p>Start a conversation...</p>
                 </div>
             {:else}
                 <div class="flex-1"></div>
                 <div class="flex flex-col gap-4">
                     {#each messages as message}
-                        {#if message.t == "user"}
-                            <UserMessage message={message.Message} />
-                        {:else}
-                            <BotMessage msg={message} />
+                        <UserMessage message={message.question} />
+                        {#if message.answer}
+                            <BotMessage msg={message.answer} />
                         {/if}
                     {/each}
                     <!-- Loading indicator, auch eigener component und vllt auf vorgefertigte component zurück greifen -->

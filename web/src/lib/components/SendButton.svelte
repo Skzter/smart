@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Send } from "@lucide/svelte";
     import Button from "./ui/button/button.svelte";
-    import { chat } from "$lib/shared.svelte";
+    import { chat} from "$lib/shared.svelte";
 
     let {
         input = $bindable(),

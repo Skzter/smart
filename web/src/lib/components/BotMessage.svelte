@@ -3,22 +3,18 @@
     import TestButtons from "./TestButtons.svelte";
     import { Runner } from "$lib/runner.svelte";
     import MonacoEditor from "./MonacoEditor.svelte";
-    import { type Message, chat, user } from "$lib/shared.svelte";
 
     let {
         msg,
     }: {
-        msg: Message;
+        msg: string;
     } = $props();
 
-    function isCode(msg: Message): boolean {
-        console.log(msg);
-        return msg.t == "generation";
-    }
-
     // treat message as code when it looks like code or contains Playwright imports/markers
-    let message = $derived(msg.Message);
-    let runner: Runner = $derived(new Runner(chat.id, user.id ?? ""));
+    const messageIsCode = $derived((msg || "").includes("@playwright"));
+    let message = $derived(msg);
+
+    const runner = new Runner();
 </script>
 
 <div class="flex justify-start gap-2 items-start">
@@ -29,9 +25,10 @@
     </div>
 
     <div class="bg-muted rounded-2xl rounded-tl-sm w-[80%] overflow-hidden">
-        <TestButtons iscode={isCode(msg)} bind:message testRunner={runner}
+        <TestButtons iscode={messageIsCode} bind:message testRunner={runner}
         ></TestButtons>
-        {#if isCode(msg)}
+
+        {#if messageIsCode}
             <MonacoEditor
                 bind:value={message}
                 class="w-full h-full min-h-[200px]"

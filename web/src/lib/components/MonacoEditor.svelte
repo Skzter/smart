@@ -71,6 +71,7 @@
         } else {
             height = container.clientHeight;
         }
+        console.log(Math.min(height, options?.maxHeight ?? 10000));
         codeEditor.layout({
             height: Math.min(height, options?.maxHeight ?? 10000),
             width: container.clientWidth,
