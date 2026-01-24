@@ -107,7 +107,9 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 	}
 
 	if parsedMsg.Title != "" {
-		chat.Title = parsedMsg.Title
+		if chat.Title == "" || chat.Title == "Neuer Chat" {
+			chat.Title = parsedMsg.Title
+		}
 	} else {
 		s.logger.Error("Model did not return a title, using default title")
 		chat.Title = "Neuer Chat"

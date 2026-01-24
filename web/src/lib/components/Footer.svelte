@@ -55,12 +55,13 @@
                     Message: generationAnswer.message.body,
                 });
 
-                //const newTitle = generationAnswer?.title || "Neuer Chat";
-                if (generationAnswer?.title && generationAnswer.title !== summary?.title) {
-                    summary.title = generationAnswer.title || "Neuer Chat";
-                    updateChatTitleState(chat.id, summary.title);
+                if (
+                    generationAnswer?.title &&
+                    isDefaultTitle(summary?.title)
+                ) {
+                    summary.title = generationAnswer.title;
+                    updateChatTitleState?.(chat.id, summary.title);
                 }
-
             }
         } catch (err: unknown) {
             messages.push({ t: "error", Message: (err as Error).message });
@@ -68,6 +69,11 @@
             chat.isLoading = false;
         }
     }
+
+    function isDefaultTitle(title?: string) {
+        return !title || title === "Neuer Chat";
+    }
+
 </script>
 
 <div class="p-4 pt-0 sticky bottom-0 bg-background z-10">
