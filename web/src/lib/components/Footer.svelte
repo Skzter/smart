@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getChatResponse } from "$lib/Api";
+    import { getChatResponse } from "$lib/api";
     import * as ButtonGroup from "$lib/components/ui/button-group";
     import { chat, messages, user } from "$lib/shared.svelte";
     import type { ApiChatRequest } from "$types/api";
