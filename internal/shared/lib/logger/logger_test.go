@@ -86,7 +86,7 @@ func TestNewLoggerWithNestedDirectory(t *testing.T) {
 
 func TestNewLoggerWithInvalidPath(t *testing.T) {
 	// Try to create log file in non-writable location (should fallback to stdout)
-	invalidPath := "/root/cannot-write-here/test.log"
+	invalidPath := "/proc/test.log"
 
 	logger := NewLogger("info", invalidPath)
 	assert.NotNil(t, logger, "logger should still be created with stdout fallback")
