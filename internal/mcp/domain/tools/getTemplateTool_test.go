@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestNewGetTemplateTool(t *testing.T) {
 	}{
 		{
 			name:              "successful creation",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: mocks.NewMockAutotesterAPIService(t),
 			expectedError:     false,
 		},
@@ -38,7 +37,7 @@ func TestNewGetTemplateTool(t *testing.T) {
 		},
 		{
 			name:              "nil autotester service",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: nil,
 			expectedError:     true,
 			expectedErrorMsg:  "nil",
@@ -145,7 +144,7 @@ func TestGetTemplateTool_GetTemplate(t *testing.T) {
 			mockService := mocks.NewMockAutotesterAPIService(t)
 			test.mockSetup(mockService)
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			logger := slog.New(slog.DiscardHandler)
 			tool, err := NewGetTemplateTool(logger, mockService)
 			assert.NoError(t, err)
 

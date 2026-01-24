@@ -18,7 +18,7 @@ import (
 )
 
 func TestNewGroupManager(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	chatStorage := mocks.NewMockChatStorageService(t)
 	groupStorage := mocks.NewMockGroupStorage(t)
@@ -88,7 +88,7 @@ func TestNewGroupManager(t *testing.T) {
 }
 
 func TestGroupManager_List(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -162,7 +162,7 @@ func TestGroupManager_List(t *testing.T) {
 }
 
 func TestGroupManager_Create(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -255,7 +255,7 @@ func TestGroupManager_Create(t *testing.T) {
 
 // nolint:funlen
 func TestGroupManager_AddChatToGroup(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	chatId := "chat1"
 	userId := "user1"
@@ -409,7 +409,7 @@ func TestGroupManager_AddChatToGroup(t *testing.T) {
 
 // nolint:funlen
 func TestGroupManager_RemoveChatFromGroup(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	chatId := "chat1"
 	userId := "user1"
