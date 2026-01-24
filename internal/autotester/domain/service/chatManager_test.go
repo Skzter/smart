@@ -17,9 +17,9 @@ import (
 )
 
 func TestNewChat(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	storage := mocks.NewMockChatStorageService(t)
-	cfg := &config.Config{}
+	cfg := &config.Autotester{}
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -54,8 +54,8 @@ func TestNewChat(t *testing.T) {
 }
 
 func TestLoadChat(t *testing.T) {
-	logger := slog.Default()
-	cfg := &config.Config{
+	logger := slog.New(slog.DiscardHandler)
+	cfg := &config.Autotester{
 		Prompts: &config.Prompts{
 			AutoPlaywrightPromptT: "ap %s",
 			ValidationPrompt:      "val",
@@ -158,8 +158,8 @@ func TestLoadChat(t *testing.T) {
 }
 
 func TestSaveChat(t *testing.T) {
-	logger := slog.Default()
-	cfg := &config.Config{
+	logger := slog.New(slog.DiscardHandler)
+	cfg := &config.Autotester{
 		Prompts: &config.Prompts{
 			AutoPlaywrightPromptT: "auto-prompt",
 			ValidationPrompt:      "validation-prompt",

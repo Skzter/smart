@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"testing"
 	"time"
@@ -12,14 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository/mocks"
 )
 
 const testRedisKey = "test-key"
 
 func newCacheTestLogger() *slog.Logger {
-	return slog.New(slog.NewTextHandler(io.Discard, nil))
+	return slog.New(slog.DiscardHandler)
 }
 
 func setupCacheMocks(t *testing.T) (*redisCache, *mocks.MockRedisClient) {
@@ -38,7 +37,7 @@ func TestNewRedisCache(t *testing.T) {
 	tests := []struct {
 		name     string
 		logger   *slog.Logger
-		cfg      *config.Config
+		cfg      *config.RedisConfig
 		wantErr  bool
 		wantAddr string
 	}{
@@ -49,28 +48,19 @@ func TestNewRedisCache(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:     "nil cfg.Redis → default options",
-			logger:   newCacheTestLogger(),
-			cfg:      &config.Config{Redis: nil},
-			wantErr:  false,
-			wantAddr: "localhost:6379",
-		},
-		{
 			name:    "nil logger → error",
 			logger:  nil,
-			cfg:     &config.Config{},
+			cfg:     &config.RedisConfig{},
 			wantErr: true,
 		},
 		{
 			name:   "full valid redis config",
 			logger: newCacheTestLogger(),
-			cfg: &config.Config{
-				Redis: &config.RedisConfig{
-					Addr:     "localhost:9999",
-					Password: "pw",
-					Db:       2,
-					Protocol: 3,
-				},
+			cfg: &config.RedisConfig{
+				Addr:     "localhost:9999",
+				Password: "pw",
+				Db:       2,
+				Protocol: 3,
 			},
 			wantErr:  false,
 			wantAddr: "localhost:9999",

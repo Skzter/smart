@@ -7,8 +7,8 @@ import (
 )
 
 // LoadConfig loads the configuration for the autotester from an embedded file.
-func LoadConfig() (*Config, error) {
-	var cfg Config
+func LoadConfig() (*Autotester, error) {
+	var cfg Autotester
 	bytes, err := build.AutotesterEmbedConfigs.ReadFile("configs/autotester.msgpack")
 	if err != nil {
 		return nil, err

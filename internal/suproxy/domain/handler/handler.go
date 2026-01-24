@@ -25,7 +25,7 @@ import (
 // SuproxyController handles the HTTP requests for the Suproxy service
 type SuproxyController struct {
 	logger    *slog.Logger
-	config    *config.Config
+	config    *config.Suproxy
 	client    *http.Client
 	validator service.Validator
 	db        service.DatabaseService
@@ -39,7 +39,7 @@ type SuproxyController struct {
 // NewSuproxyController creates a new instance of SuproxyController
 func NewSuproxyController(
 	logger *slog.Logger,
-	config *config.Config,
+	config *config.Suproxy,
 	val service.Validator,
 	client *http.Client,
 	db service.DatabaseService,
