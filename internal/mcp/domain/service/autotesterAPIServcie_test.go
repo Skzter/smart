@@ -515,8 +515,8 @@ func TestReadTestLogStream(t *testing.T) {
 			name:   "channel fills to 90% capacity - monitor logs warning",
 			testId: "test-full",
 			expectedStoreContent: func() []entity.LogEvent {
-				events := make([]entity.LogEvent, 1900)
-				for i := range 1900 {
+				events := make([]entity.LogEvent, 2150)
+				for i := range 2150 {
 					events[i] = entity.LogEvent{Event: "log", Data: "event"}
 				}
 				return events
@@ -524,11 +524,16 @@ func TestReadTestLogStream(t *testing.T) {
 			excpectError: false,
 			readLogs:     true,
 			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+				release := make(chan struct{})
 				mr.EXPECT().
 					ReadTestLogStream(mock.Anything, "test-full", mock.Anything).
 					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
 						// Send many events rapidly to fill channel to ~90% capacity
-						for range 1900 {
+						for range 1850 {
+							ch <- &entity.LogEvent{Event: "log", Data: "event"}
+						}
+						close(release)
+						for range 300 {
 							ch <- &entity.LogEvent{Event: "log", Data: "event"}
 						}
 					}).
@@ -539,11 +544,10 @@ func TestReadTestLogStream(t *testing.T) {
 					AddEvent("test-full", mock.Anything).
 					Run(func(id string, ev entity.LogEvent) {
 						*captured = append(*captured, ev)
-						// Slow down consumer to allow channel to fill up
-						time.Sleep(100 * time.Microsecond)
+						<-release // simulates blocked consumer
 					}).
 					Return().
-					Times(1900)
+					Times(2150)
 
 				ms.EXPECT().CompleteStream("test-full").Once()
 			},
