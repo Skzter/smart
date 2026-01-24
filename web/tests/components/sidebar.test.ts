@@ -43,10 +43,11 @@ describe("Sidebar", () => {
 
         const { container } = render(SidebarTestWrapper);
 
-        await tick();
-
-        const spinner = container.querySelector(".size-6");
-        expect(spinner).toBeInTheDocument();
+        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
+        await waitFor(() => {
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
+        });
     });
 
     it("loads user chats successfully", async () => {
@@ -539,10 +540,12 @@ describe("Sidebar", () => {
         vi.mocked(getChats).mockImplementation(() => new Promise(() => {}));
 
         const { container } = render(SidebarTestWrapper);
-        await tick();
 
-        const spinner = container.querySelector(".size-6");
-        expect(spinner).toBeInTheDocument();
+        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
+        await waitFor(() => {
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
+        });
     });
 
     it("adds items to existing group category", async () => {
