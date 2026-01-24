@@ -48,7 +48,7 @@ export async function validatePrompt(
         const response = await axios({
             method: "post",
             url: "/validate",
-            baseURL: "/api/v1/",
+            baseURL: baseURL,
             data: request,
         });
         return {

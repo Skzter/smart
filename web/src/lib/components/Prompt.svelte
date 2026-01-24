@@ -26,7 +26,6 @@
     function handleKeyPress(e: KeyboardEvent) {
         if (e.key === "Enter" && input.trim() && !e.shiftKey) {
             onclick();
-            input = "";
             e.preventDefault();
         }
     }
