@@ -140,7 +140,7 @@ func TestGetEvents(t *testing.T) {
 		name           string
 		setup          func(stream *LogStream)
 		expectedEvents int
-		expectNil      bool
+		expectedReturn []LogEvent
 	}{
 		{
 			name: "get events from active stream returns copy",
@@ -149,7 +149,10 @@ func TestGetEvents(t *testing.T) {
 				stream.AddEvent(LogEvent{Event: "log", Data: "Event 2"})
 			},
 			expectedEvents: 2,
-			expectNil:      false,
+			expectedReturn: []LogEvent{
+				{Event: "log", Data: "Event 1"},
+				{Event: "log", Data: "Event 2"},
+			},
 		},
 		{
 			name: "get events from completed stream returns direct reference",
@@ -158,13 +161,16 @@ func TestGetEvents(t *testing.T) {
 				stream.SetComplete()
 			},
 			expectedEvents: 1,
-			expectNil:      false,
+			expectedReturn: []LogEvent{
+				{Event: "log", Data: "Event 1"},
+			},
 		},
 		{
-			name:           "get events from empty stream returns nil",
-			setup:          func(stream *LogStream) {},
+			name: "get events from empty stream returns empty slice",
+			setup: func(stream *LogStream) {
+			},
 			expectedEvents: 0,
-			expectNil:      true,
+			expectedReturn: []LogEvent{},
 		},
 		{
 			name: "get events updates last access time",
@@ -173,7 +179,9 @@ func TestGetEvents(t *testing.T) {
 				time.Sleep(10 * time.Millisecond)
 			},
 			expectedEvents: 1,
-			expectNil:      false,
+			expectedReturn: []LogEvent{
+				{Event: "log", Data: "Event"},
+			},
 		},
 	}
 
@@ -186,15 +194,12 @@ func TestGetEvents(t *testing.T) {
 
 			events := stream.GetEvents()
 
-			if test.expectNil {
-				assert.Nil(t, events)
-			} else {
-				require.NotNil(t, events)
-				assert.Len(t, events, test.expectedEvents)
+			require.NotNil(t, events)
+			assert.Len(t, events, test.expectedEvents)
+			assert.Equal(t, test.expectedReturn, events)
 
-				if test.name == "get events updates last access time" {
-					assert.True(t, stream.GetLastAccessedAt().After(initialTime))
-				}
+			if test.name == "get events updates last access time" {
+				assert.True(t, stream.GetLastAccessedAt().After(initialTime))
 			}
 		})
 	}

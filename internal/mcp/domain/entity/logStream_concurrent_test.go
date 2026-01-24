@@ -1,4 +1,4 @@
-//go:build racetest
+//go:build concurrent
 
 package entity
 

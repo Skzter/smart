@@ -2,6 +2,7 @@ package entity
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -10,19 +11,20 @@ type LogStream struct {
 	events         []LogEvent
 	completed      bool
 	createdAt      time.Time
-	lastAccessedAt time.Time
+	lastAccessedAt atomic.Pointer[time.Time]
 	mu             sync.RWMutex
 }
 
 // NewLogStream creates a new LogStream with an empty events list and current creation timestamp.
 func NewLogStream() *LogStream {
 	now := time.Now()
-	return &LogStream{
-		events:         make([]LogEvent, 0, 5),
-		completed:      false,
-		createdAt:      now,
-		lastAccessedAt: now,
+	ls := &LogStream{
+		events:    make([]LogEvent, 0, 5),
+		completed: false,
+		createdAt: now,
 	}
+	ls.lastAccessedAt.Store(&now)
+	return ls
 }
 
 // AddEvent appends a log event to the stream in a thread-safe manner.
@@ -40,10 +42,11 @@ func (ls *LogStream) AddEvent(event LogEvent) {
 // SetComplete marks the log stream as completed and updates the last access timestamp.
 // Once completed, no more events can be added, and GetEvents will return direct references.
 func (ls *LogStream) SetComplete() {
+	now := time.Now()
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 	ls.completed = true
-	ls.lastAccessedAt = time.Now()
+	ls.lastAccessedAt.Store(&now)
 }
 
 // GetEvents returns the log events in a thread-safe manner.
@@ -51,11 +54,11 @@ func (ls *LogStream) SetComplete() {
 // Once the stream is completed, it returns a direct reference to the events slice to avoid
 // expensive allocations and copying.
 func (ls *LogStream) GetEvents() []LogEvent {
+	ls.UpdateLastAccess()
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
-	ls.lastAccessedAt = time.Now()
 	if len(ls.events) == 0 {
-		return nil
+		return []LogEvent{}
 	}
 
 	if !ls.completed {
@@ -76,15 +79,17 @@ func (ls *LogStream) IsCompleted() bool {
 
 // UpdateLastAccess updates the last access timestamp to the current time.
 // This is used to track activity for the automatic cleanup mechanism.
+// This operation is lock-free using atomic operations.
 func (ls *LogStream) UpdateLastAccess() {
-	ls.mu.Lock()
-	ls.lastAccessedAt = time.Now()
-	ls.mu.Unlock()
+	now := time.Now()
+	ls.lastAccessedAt.Store(&now)
 }
 
 // GetLastAccessedAt returns the timestamp of the last access or modification in a thread-safe manner.
 func (ls *LogStream) GetLastAccessedAt() time.Time {
-	ls.mu.RLock()
-	defer ls.mu.RUnlock()
-	return ls.lastAccessedAt
+	ptr := ls.lastAccessedAt.Load()
+	if ptr == nil {
+		return time.Time{}
+	}
+	return *ptr
 }

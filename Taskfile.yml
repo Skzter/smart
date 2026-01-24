@@ -242,7 +242,8 @@ tasks:
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
       - ./scripts/check-coverage.sh {{.TESTCOVERAGE_THRESHOLD}} coverage.out
       - echo "Running race detector tests"
-      - go tool gotestsum -- -race -tags=racetest ./...
+      - go clean -testcache
+      - go tool gotestsum -- -race -tags=concurrent -run "Concurrent" ./...
     silent: true
 
   test-integration:
@@ -253,7 +254,7 @@ tasks:
   test-race:
     desc: "Run concurrent tests with race detector"
     cmds:
-      - go tool gotestsum -- -race -tags=racetest ./...
+      - go tool gotestsum -- -race -tags=concurrent -run "Concurrent" ./...
 
   test-integration-coverage:
     desc: "Run the integration tests with coverage"
