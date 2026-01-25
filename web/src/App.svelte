@@ -32,7 +32,7 @@
     });
 </script>
 
-{#if true}
+{#if $auth.isAuthenticated}
     <Sidebar.Provider>
         <AppSidebar />
         <Sidebar.Inset>
