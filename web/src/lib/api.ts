@@ -95,8 +95,8 @@ export async function validatePrompt(
         const response = await axios({
             method: "post",
             url: "/validate",
-            baseURL: "/api/v1/",
             headers: getAuthHeaders(),
+            baseURL: baseURL,
             data: request,
         });
         return {

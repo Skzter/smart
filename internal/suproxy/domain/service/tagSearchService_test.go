@@ -19,7 +19,7 @@ func TestNewTagSearchService(t *testing.T) {
 	tests := []struct {
 		name    string
 		s3      service.S3StorageWrapper
-		cfg     *config.Config
+		cfg     *config.Suproxy
 		wantErr bool
 	}{
 		{
