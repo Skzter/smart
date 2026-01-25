@@ -63,7 +63,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{}, nil}},
-				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", "title", nil}},
+				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", nil}},
 				{Function: "SaveChat", ExpectedResponse: []any{nil}},
 			},
 		},
@@ -107,7 +107,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", Author: "2", LastModifiedBy: "2"}, nil}},
-				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", "title", nil}},
+				{Function: "GeneratePrompt", ExpectedResponse: []any{"some code", nil}},
 				{Function: "SaveChat", ExpectedResponse: []any{errors.New("err")}},
 			},
 		},
@@ -124,7 +124,7 @@ func TestHandleChatRequest(t *testing.T) {
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
 				{Function: "LoadChat", ExpectedResponse: []any{&entity.Chat{Id: "2", Author: "2", LastModifiedBy: "2"}, nil}},
-				{Function: "GeneratePrompt", ExpectedResponse: []any{"", "", errors.New("err")}},
+				{Function: "GeneratePrompt", ExpectedResponse: []any{"", errors.New("err")}},
 			},
 		},
 	}

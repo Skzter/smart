@@ -113,7 +113,17 @@ class Prompts {
          "Title": "<short human readable concise test title>"
          "Code": "<valid Typescript code>"
        }
+      2.1 Code Constraints- import { test, expect } from "@playwright/test";
+         - import { auto } from "auto-playwright";
+         - Options looking like 
+         let options = {
+             debug: true,
+             model: "\(model)",
+         };
+         - One or more test() functions with await auto() where you pass the options as the third argument and expect().
+       - No comments, explanations, or narrative—only code.
 
+   
     3. Title Rules
       - The string in "title" must: 
          - Be 1–30 characters long 
