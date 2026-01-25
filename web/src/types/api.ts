@@ -53,3 +53,14 @@ export type ApiGetChatByIdResponse = {
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
 };
+
+export type ApiChatsRequest = {
+    page: number;
+    groupIds: string[];
+};
+
+export type ApiChatsResponse = {
+    summaries: ApiChatSummary[];
+    pageSize: number;
+    hasMore: boolean;
+};

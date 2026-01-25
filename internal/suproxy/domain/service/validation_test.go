@@ -19,7 +19,7 @@ import (
 )
 
 func TestNewValidator(t *testing.T) {
-	cfg := config.Config{
+	cfg := config.Suproxy{
 		Timeout: 10,
 		Prompts: &config.Prompts{
 			ValidationPrompt: "validate this",
@@ -27,13 +27,13 @@ func TestNewValidator(t *testing.T) {
 		Model:                 "gpt-4",
 		MaxItemsPerValidation: 5,
 	}
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	serv := sharedMocks.NewMockOpenAI(t)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
-		cfg         *config.Config
+		cfg         *config.Suproxy
 		logger      *slog.Logger
 		service     sharedService.OpenAI
 		expectError bool
@@ -234,7 +234,7 @@ func TestValidatorValidate(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
-	cfg := config.Config{
+	cfg := config.Suproxy{
 		Timeout:               5,
 		MaxItemsPerValidation: 5,
 		Prompts: &config.Prompts{

@@ -62,6 +62,9 @@ services:
   redis:
     image: valkey/valkey:alpine
     restart: always
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    volumes:
+      - ./valkey.conf:/etc/valkey/valkey.conf
     networks:
       - default
 
