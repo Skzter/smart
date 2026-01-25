@@ -78,7 +78,7 @@
         filteredItems.forEach((item) => {
             const time = new Date(Date.parse(item.updatedAt));
             const category = categorizeByDate(time);
-            add(category, item);
+            add(category, { ...item });
         });
 
         const result: { label: string; summaries: ApiChatSummary[] }[] = [];
@@ -182,14 +182,18 @@
 
     function updateChatTitleState(chatId: string, title: string) {
         if (!items) return;
-        const chat = items.find((c) => c.chatId === chatId);
-        if (chat) {
-            chat.title = title || "Neuer Chat";
-            chat.updatedAt = new Date().toISOString();
-            items = [...items];
-    }
+        items = items.map(chat =>
+        chat.chatId === chatId
+            ? {
+                  ...chat,
+                  title: title || "Neuer Chat",
+                  updatedAt: new Date().toISOString(),
+              }
+            : chat
+    );
 }
 </script>
+
 
 <Sidebar.Root>
     <SidebarHeader />
@@ -203,8 +207,8 @@
                 <Spinner class="size-6"></Spinner>
             </Sidebar.Group>
         {:else}
-            {#each groupState, index (index)}
-                <Group bind:group={groupState[index]} {updateChatTitleState}></Group>
+            {#each groupState as group (group.label)}
+                <Group {group} updateChatTitleState={updateChatTitleState} />
             {/each}
         {/if}
     </Sidebar.Content>

@@ -8,7 +8,7 @@
     import { updateChatTitle as updateChatTitleApi } from "$lib/api";
     
     let {
-        summary = $bindable(),
+        summary,
         updateChatTitleState,
     }: {
         summary: ApiChatSummary;
@@ -79,7 +79,6 @@
             messages.push(...convertApiMessagesToMessages(response.messages));
 
             if (response.title && response.title !== summary.title) {
-                summary.title = response.title;
                 updateChatTitleState?.(summary.chatId, response.title);
             }
 
@@ -110,8 +109,7 @@
 
         try {
             const updated = await updateChatTitleApi(summary.chatId, trimmed);
-            summary.title = updated.title;
-            updateChatTitleState?.(summary.chatId, summary.title);
+            updateChatTitleState?.(summary.chatId, updated.title);
 
         } catch (error) {
             toast.error("Umbenennen fehlgeschlagen", {

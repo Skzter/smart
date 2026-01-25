@@ -5,7 +5,7 @@
 
 
     let {
-        group = $bindable(),
+        group,
         updateChatTitleState,
     }: {
         group: {
@@ -20,8 +20,8 @@
     <Sidebar.GroupLabel class="uppercase">{group.label}</Sidebar.GroupLabel>
     <Sidebar.GroupContent>
         <Sidebar.Menu>
-            {#each group.summaries as chat, key (chat.chatId)}
-                <ChatSummary bind:summary={group.summaries[key]} {updateChatTitleState}></ChatSummary>
+            {#each group.summaries as summary (summary.chatId)}
+                <ChatSummary {summary} {updateChatTitleState}></ChatSummary>
             {/each}
         </Sidebar.Menu>
     </Sidebar.GroupContent>
