@@ -261,6 +261,8 @@ defaultLimitChats: String = "10"
 
 defaultLimitTests: Int = 50
 
+pageSize: Int = 10
+
 taglistConfig: shared.TaglistConfig = shared.taglist
 
 redisConfig: shared.RedisConfig = shared.redis
