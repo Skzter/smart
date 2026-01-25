@@ -524,7 +524,7 @@ describe("updateChatTitle", () => {
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "patch",
             url: `/chats/${mockChatId}/title`,
-            baseURL: "http://localhost:8081/api/v1/",
+            baseURL: "http://localhost:8081/api/v1",
             data: {
                 title: newTitle,
             },
@@ -549,7 +549,7 @@ describe("updateChatTitle", () => {
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "patch",
             url: `/chats/${mockChatId}/title`,
-            baseURL: "http://localhost:8081/api/v1/",
+            baseURL: "http://localhost:8081/api/v1",
             data: {
                 title: newTitle,
             },
