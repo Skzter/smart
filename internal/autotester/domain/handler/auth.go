@@ -60,10 +60,10 @@ func (a *AutotesterController) HandleGenerateToken(c *gin.Context) {
 	c.JSON(http.StatusOK, token)
 }
 
-// HandleValidateJWT validates a JWT and returns whether it is valid.
-func (a *AutotesterController) HandleValidateJWT(c *gin.Context) {
+// HandleValidateToken validates an opaque bearer token (DB-backed) and returns whether it is valid.
+func (a *AutotesterController) HandleValidateToken(c *gin.Context) {
 	start := time.Now()
-	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleValidateJWT")
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleValidateToken")
 	defer span.End()
 
 	token, err := a.authService.GetBearerToken(c.Request.Header)

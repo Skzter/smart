@@ -155,7 +155,7 @@ func mustMarshal(v interface{}) string {
 }
 
 //nolint:funlen
-func TestHandleValidateJWT(t *testing.T) {
+func TestHandleValidateToken(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cfg, _ := config.LoadConfig()
@@ -229,19 +229,26 @@ func TestHandleValidateJWT(t *testing.T) {
 			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
-			// Setup Auth expectations only when header looks like Bearer <token>
 			if strings.HasPrefix(tc.authHeader, "Bearer ") && strings.TrimSpace(strings.TrimPrefix(tc.authHeader, "Bearer ")) != "" {
-				// GetBearerToken wird im Code direkt aus Header geparsed, wird nicht gemockt (ist echte Funktion im authService),
-				// aber hier mocken wir den AuthService selbst, daher müssen wir ValidateToken erwarten.
-				mockAuth.On("GetBearerToken", mock.Anything).Return(strings.TrimSpace(strings.TrimPrefix(tc.authHeader, "Bearer ")), nil).Maybe()
+				tok := strings.TrimSpace(strings.TrimPrefix(tc.authHeader, "Bearer "))
+
+				mockAuth.On("GetBearerToken", mock.Anything).
+					Return(tok, nil).
+					Maybe()
+
 				if tc.validateResult != nil || tc.validateErr != nil {
-					mockAuth.On("ValidateToken", mock.Anything, "abc").Return(tc.validateResult, tc.validateErr).Maybe()
+					mockAuth.On("ValidateToken", mock.Anything, tok).
+						Return(tc.validateResult, tc.validateErr).
+						Maybe()
 				} else {
-					mockAuth.On("ValidateToken", mock.Anything, "abc").Return(&entity.ValidationResult{Valid: false, Revoked: false}, nil).Maybe()
+					mockAuth.On("ValidateToken", mock.Anything, tok).
+						Return(&entity.ValidationResult{Valid: false, Revoked: false}, nil).
+						Maybe()
 				}
 			} else {
-				// For invalid/missing headers, GetBearerToken should error
-				mockAuth.On("GetBearerToken", mock.Anything).Return("", errors.New("missing/invalid header")).Maybe()
+				mockAuth.On("GetBearerToken", mock.Anything).
+					Return("", errors.New("missing/invalid header")).
+					Maybe()
 			}
 
 			controller, err := NewAutotesterController(
@@ -272,7 +279,7 @@ func TestHandleValidateJWT(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
-			controller.HandleValidateJWT(ctx)
+			controller.HandleValidateToken(ctx)
 
 			if rec.Code != tc.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tc.expectedStatus, rec.Code)

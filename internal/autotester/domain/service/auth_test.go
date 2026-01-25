@@ -467,7 +467,7 @@ func TestValidateToken(t *testing.T) {
 			wantValid: false,
 		},
 		{
-			name:  "token revoked in db -> valid + revoked",
+			name:  "token revoked in db -> invalid + revoked",
 			token: "revoked-token",
 			dbResp: []any{
 				database.RefreshToken{
@@ -476,7 +476,7 @@ func TestValidateToken(t *testing.T) {
 					RevokedAt: sql.NullTime{Valid: true, Time: now},
 				}, nil,
 			},
-			wantValid:   true,
+			wantValid:   false,
 			wantRevoked: true,
 		},
 		{
@@ -503,10 +503,13 @@ func TestValidateToken(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockDB := mockRepo.NewMockTokenDatabase(t)
 
-			// Expect DB call only if ctx+token are valid enough to reach it
+			// DB is only called if ctx != nil AND token after TrimSpace is non-empty
 			if !tc.nilCtx && strings.TrimSpace(tc.token) != "" {
 				if tc.dbResp != nil {
-					mockDB.On("ReadTokenByToken", mock.Anything, tc.token).Return(tc.dbResp...)
+					tok := strings.TrimSpace(tc.token)
+					mockDB.
+						On("ReadTokenByToken", mock.Anything, tok).
+						Return(tc.dbResp...)
 				}
 			}
 

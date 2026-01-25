@@ -27,7 +27,7 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	publicV1 := router.Group("/api/v1")
 	{
 		publicV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
-		publicV1.POST("/auth/validate", controller.HandleValidateJWT)
+		publicV1.POST("/auth/validate", controller.HandleValidateToken)
 	}
 
 	// Protected routes (auth middleware for all endpoints here)

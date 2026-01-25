@@ -139,12 +139,14 @@ func (a *auth) ValidateToken(ctx context.Context, token string) (*entity.Validat
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
 	}
-	if err := assert.StringNotEmpty(token); err != nil {
-		return nil, err
-	}
+
+	ctx, span := a.tracer.Start(ctx, "autotesterController.ValidateToken")
+	defer span.End()
 
 	token = strings.TrimSpace(token)
 	if err := assert.StringNotEmpty(token); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing token")
 		return nil, err
 	}
 
@@ -152,22 +154,26 @@ func (a *auth) ValidateToken(ctx context.Context, token string) (*entity.Validat
 	dbToken, err := a.db.ReadTokenByToken(ctx, token)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// token unknown -> invalid
+			span.SetStatus(codes.Ok, "token unknown")
 			return &entity.ValidationResult{Valid: false, Revoked: false}, nil
 		}
-		// real db error -> bubble up
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "read database error")
 		return nil, err
 	}
 
 	// expiry check (DB-based)
 	if dbToken.ExpiresAt.Before(time.Now().UTC()) {
+		span.SetStatus(codes.Ok, "token expired")
 		return &entity.ValidationResult{Valid: false, Revoked: false}, nil
 	}
 
 	// revoke check (DB-based)
 	if dbToken.RevokedAt.Valid {
-		return &entity.ValidationResult{Valid: true, Revoked: true}, nil
+		span.SetStatus(codes.Ok, "token revoked")
+		return &entity.ValidationResult{Valid: false, Revoked: true}, nil
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return &entity.ValidationResult{Valid: true, Revoked: false}, nil
 }
