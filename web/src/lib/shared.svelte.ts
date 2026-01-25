@@ -1,4 +1,8 @@
 import type { DateRange } from "bits-ui";
+import { getApiToken } from "$lib/api";
+import { toast } from "svelte-sonner";
+import { AxiosError } from "axios";
+import type { ApiToken } from "$types/api";
 
 export type MessageType = "user" | "validation" | "generation" | "error";
 export type Message = { t: MessageType; Message: string };
@@ -49,3 +53,18 @@ export const ChatFilter = $state({
     sortBy: "recent" as "recent" | "created",
     timeFilter: "all" as "all" | "today" | "week" | "month",
 });
+
+export async function getToken() {
+    try {
+        const token = (await getApiToken()) as ApiToken;
+        apiToken.token = token.token;
+    } catch (err) {
+        if (err instanceof AxiosError) {
+            const error = err.message;
+            toast.error(error, {
+                description: "Das war wohl nichts mit der Historie.",
+            });
+        }
+        apiToken.token = null;
+    }
+}
