@@ -56,10 +56,11 @@ describe("Sidebar", () => {
 
         const { container } = render(SidebarTestWrapper);
 
-        await tick();
-
-        const spinner = container.querySelector(".size-6");
-        expect(spinner).toBeInTheDocument();
+        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
+        await waitFor(() => {
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
+        });
     });
 
     it("loads user chats successfully", async () => {
@@ -72,7 +73,11 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -93,6 +98,7 @@ describe("Sidebar", () => {
 
     it("does not load chats when user.id is undefined", async () => {
         (user as unknown as { id: undefined }).id = undefined;
+        vi.clearAllMocks(); // Clear any mocks from beforeEach
 
         render(SidebarTestWrapper);
         await tick();
@@ -111,7 +117,11 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -133,7 +143,11 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -155,7 +169,11 @@ describe("Sidebar", () => {
                 updatedAt: lastWeek.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -177,7 +195,11 @@ describe("Sidebar", () => {
                 updatedAt: thisMonth.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -199,7 +221,11 @@ describe("Sidebar", () => {
                 updatedAt: older.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -241,7 +267,11 @@ describe("Sidebar", () => {
                 ).toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -262,7 +292,11 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -301,7 +335,11 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -311,7 +349,11 @@ describe("Sidebar", () => {
     });
 
     it("handles empty chat list", async () => {
-        vi.mocked(getChats).mockResolvedValue([]);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: [],
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -348,7 +390,11 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -358,7 +404,11 @@ describe("Sidebar", () => {
     });
 
     it("renders SidebarHeader component", async () => {
-        vi.mocked(getChats).mockResolvedValue([]);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: [],
+            hasMore: false,
+            pageSize: 10,
+        });
 
         const { container } = render(SidebarTestWrapper);
 
@@ -390,7 +440,11 @@ describe("Sidebar", () => {
                 updatedAt: yesterday.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -425,7 +479,11 @@ describe("Sidebar", () => {
                 updatedAt: new Date().toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -478,7 +536,11 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
@@ -491,10 +553,12 @@ describe("Sidebar", () => {
         vi.mocked(getChats).mockImplementation(() => new Promise(() => {}));
 
         const { container } = render(SidebarTestWrapper);
-        await tick();
 
-        const spinner = container.querySelector(".size-6");
-        expect(spinner).toBeInTheDocument();
+        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
+        await waitFor(() => {
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
+        });
     });
 
     it("adds items to existing group category", async () => {
@@ -523,7 +587,11 @@ describe("Sidebar", () => {
                 updatedAt: today.toISOString(),
             },
         ];
-        vi.mocked(getChats).mockResolvedValue(mockChats);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: mockChats,
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 

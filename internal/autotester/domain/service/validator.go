@@ -31,14 +31,14 @@ type Validator interface {
 // validatePrompt provides functionality to validate outcoming requests and user prompts using OpenAI.
 type validator struct {
 	openAIservice sharedService.OpenAI
-	config        *config.Config
+	config        *config.Autotester
 	logger        *slog.Logger
 	tracer        trace.Tracer
 }
 
 // NewValidatorService creates a new instance of Validator.
 // Returns an error if any required dependencies are nil.
-func NewValidatorService(openAIservice sharedService.OpenAI, config *config.Config, logger *slog.Logger, tracer trace.Tracer) (Validator, error) {
+func NewValidatorService(openAIservice sharedService.OpenAI, config *config.Autotester, logger *slog.Logger, tracer trace.Tracer) (Validator, error) {
 	if err := assert.NotNil(openAIservice, config, logger, tracer); err != nil {
 		return nil, err
 	}

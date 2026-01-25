@@ -458,35 +458,26 @@ func TestGetUserChats(t *testing.T) {
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
-		limit            string
+		queryParams      string
 		mockResponseLoad []any
 		expectedStatus   int
+		checkPageSize    bool
 	}{
 		{
-			name:           "error - limit is not a number",
-			limit:          "hallo",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "error - limit is a negative number",
-			limit:          "-131",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
 			name:             "error - no chat history for given user found",
-			limit:            "123",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			queryParams:      "",
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "error - empty limit but no history found",
-			limit:            "",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			queryParams:      "",
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:  "success",
-			limit: "5",
+			name:        "success",
+			queryParams: "",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
 				{
 					ChatId:    "1",
@@ -496,8 +487,90 @@ func TestGetUserChats(t *testing.T) {
 					ChatId:    "2",
 					UpdatedAt: time.Now().Add(-10 * time.Hour),
 				},
-			}, nil},
+			}, false, nil},
 			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:        "success with hasMore true",
+			queryParams: "",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:             "success with empty result",
+			queryParams:      "",
+			mockResponseLoad: []any{[]*entity.ChatSummary{}, false, nil},
+			expectedStatus:   http.StatusOK,
+			checkPageSize:    true,
+		},
+		{
+			name:        "success with page 0",
+			queryParams: "?page=0",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+			}, false, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:        "success with page 1",
+			queryParams: "?page=1",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "3",
+					UpdatedAt: time.Now(),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:           "error - invalid page parameter (negative)",
+			queryParams:    "?page=-1",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "success with valid groups",
+			queryParams: "?groups=group1&groups=group2",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+			}, false, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:           "error - invalid groups parameter (empty string)",
+			queryParams:    "?groups=",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "success with page and groups combined",
+			queryParams: "?page=2&groups=group1&groups=group2",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "5",
+					UpdatedAt: time.Now(),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
 		},
 	}
 
@@ -521,7 +594,7 @@ func TestGetUserChats(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			if tc.mockResponseLoad != nil {
-				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
@@ -543,7 +616,7 @@ func TestGetUserChats(t *testing.T) {
 			)
 			router.GET("/api/v1/chats/", controller.HandleGetChats)
 
-			endpoint := "/api/v1/chats/?limit=" + tc.limit
+			endpoint := "/api/v1/chats/" + tc.queryParams
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
@@ -551,6 +624,17 @@ func TestGetUserChats(t *testing.T) {
 
 			if rec.Code != tc.expectedStatus {
 				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+
+			// Check that PageSize is included in successful responses
+			if tc.checkPageSize && rec.Code == http.StatusOK {
+				var response entity.ChatSummarys
+				if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+					t.Errorf("Failed to unmarshal response: %v", err)
+				}
+				if response.PageSize != cfg.PageSize {
+					t.Errorf("Expected PageSize %d, got %d", cfg.PageSize, response.PageSize)
+				}
 			}
 		})
 	}

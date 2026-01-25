@@ -18,7 +18,7 @@ import (
 
 // nolint: dupl
 func TestNewTestcaseStorageService(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockTestcaseStorageRepository(t)
 	tracer := otel.Tracer("test")
 
@@ -66,7 +66,7 @@ func TestNewTestcaseStorageService(t *testing.T) {
 // nolint: dupl
 func TestSaveTestcase(t *testing.T) {
 	ctx := context.Background()
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -131,7 +131,7 @@ func TestSaveTestcase(t *testing.T) {
 // nolint:funlen
 func TestReadAllMetadataWithFilter(t *testing.T) {
 	ctx := context.Background()
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	defaultLimit := 50
@@ -246,7 +246,7 @@ func TestReadAllMetadataWithFilter(t *testing.T) {
 
 // nolint:funlen
 func TestPassesAllFilters(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	mockRepo := mocks.NewMockTestcaseStorageRepository(t)
 
@@ -357,7 +357,7 @@ func TestPassesAllFilters(t *testing.T) {
 }
 
 func TestStringToInt64(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	mockRepo := mocks.NewMockTestcaseStorageRepository(t)
 
@@ -398,7 +398,7 @@ func TestStringToInt64(t *testing.T) {
 }
 
 func TestISO8601ToUnix(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	mockRepo := mocks.NewMockTestcaseStorageRepository(t)
 

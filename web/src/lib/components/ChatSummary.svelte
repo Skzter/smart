@@ -7,12 +7,15 @@
     import { type Message, chat, messages, user } from "$lib/shared.svelte";
     import { updateChatTitle as updateChatTitleApi } from "$lib/api";
     
-    let {
+    let {   
         summary,
         updateChatTitleState,
-    }: {
+        onUpdate,
+    }:{
+       
         summary: ApiChatSummary;
         updateChatTitleState?: (chatId: string, title: string) => void;
+        onUpdate?: (updated: ApiChatSummary) => void;
     } = $props();
     let edit = $state(false);
 
@@ -150,6 +153,7 @@
                             if (newTitle && newTitle !== summary.title) {
                                 commitTitleChange(e.target as HTMLInputElement);
                             }
+                        onUpdate?.(summary);
                             edit = false;
                         }}
                     onkeydown={(e) => {

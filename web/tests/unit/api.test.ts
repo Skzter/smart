@@ -76,8 +76,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
-                url: "chat",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/chat",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockChatRequest,
             });
             expect(result).toEqual({
@@ -138,17 +138,25 @@ describe("getUserChats", () => {
         it("should make a GET request to /chats", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
-                data: { chatSummarys: mockChatSummaries },
+                data: {
+                    chatSummarys: mockChatSummaries,
+                    hasMore: false,
+                    pageSize: 10,
+                },
             });
 
-            const result = await getChats();
+            const result = await getChats({ page: 0, groupIds: [] });
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/chats`,
-                baseURL: "http://localhost:8081/api/v1/",
+                url: `/chats?page=0`,
+                baseURL: "http://localhost:8081/api/v1",
             });
-            expect(result).toEqual(mockChatSummaries);
+            expect(result).toEqual({
+                summaries: mockChatSummaries,
+                hasMore: false,
+                pageSize: 10,
+            });
         });
 
     it("should reject when the API call fails", async () => {
@@ -163,7 +171,7 @@ describe("getUserChats", () => {
         };
         mockedAxios.mockRejectedValue(err);
 
-            await expect(getChats()).rejects.toThrow(
+            await expect(getChats({ page: 0, groupIds: [] })).rejects.toThrow(
                 "Failed to fetch user chats",
             );
         });
@@ -231,13 +239,13 @@ describe("getTemplate", () => {
 
         const result = await getTemplate();
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "get",
-            url: "template",
-            baseURL: "http://localhost:8081/api/v1/",
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/template",
+                baseURL: "http://localhost:8081/api/v1",
+            });
+            expect(result).toEqual(mockTemplate);
         });
-        expect(result).toEqual(mockTemplate);
-    });
 
     it("should reject when the API call fails", async () => {
         const mockedAxios = axios as unknown as Mock;
@@ -273,14 +281,14 @@ describe("saveTestLocal", () => {
 
         const result = await saveTestLocal(mockSaveLocalRequest);
 
-        expect(mockedAxios).toHaveBeenCalledWith({
-            method: "post",
-            url: "saveLocal",
-            baseURL: "http://localhost:8081/api/v1/",
-            data: mockSaveLocalRequest,
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/saveLocal",
+                baseURL: "http://localhost:8081/api/v1",
+                data: mockSaveLocalRequest,
+            });
+            expect(result).toEqual(mockSaveLocalResponse);
         });
-        expect(result).toEqual(mockSaveLocalResponse);
-    });
 
     it("should reject when the API call fails", async () => {
         const mockedAxios = axios as unknown as Mock;
@@ -312,7 +320,7 @@ describe("saveTestLocal", () => {
         const mockedAxios = axios as unknown as Mock;
         mockedAxios.mockResolvedValue({ data: { result: mockResult } });
 
-        const result = await runContainer(mockParams, {});
+        const result = await runContainer(mockParams);
 
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "post",
@@ -335,7 +343,7 @@ describe("saveTestLocal", () => {
         };
         mockedAxios.mockRejectedValue(err);
 
-        await expect(runContainer(mockParams, {})).rejects.toThrow(
+        await expect(runContainer(mockParams)).rejects.toThrow(
             "Failed to run container",
         );
     });
@@ -349,7 +357,7 @@ describe("saveTestLocal", () => {
                 chatId: "chat999",
             };
 
-        await runContainer(complexParams, {});
+        await runContainer(complexParams);
 
         expect(mockedAxios).toHaveBeenCalledWith({
             method: "post",
@@ -394,7 +402,7 @@ describe("getChatById", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/${mockChatId}`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockChatResponse);
         });
@@ -411,7 +419,7 @@ describe("getChatById", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/differentChat`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
         });
 
@@ -444,7 +452,7 @@ describe("deleteLocalTest", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
@@ -466,7 +474,7 @@ describe("deleteLocalTest", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,

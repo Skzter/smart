@@ -15,7 +15,6 @@
         }
 
         const userQuestion = input.trim();
-        input = "";
         messages.push({ t: "user", Message: userQuestion });
         chat.isLoading = true;
         let paramsChatRequest: ApiChatRequest = {
@@ -49,6 +48,7 @@
                 if (generationAnswer?.title) {
                     updateChatTitle(chat.id, generationAnswer.title);
                 }
+                input = "";
             }
         } catch (err: unknown) {
             messages.push({ t: "error", Message: (err as Error).message });

@@ -7,8 +7,8 @@ import (
 )
 
 // LoadMCPConfig loads application config
-func LoadMCPConfig() (*Config, error) {
-	var cfg Config
+func LoadMCPConfig() (*Mcp, error) {
+	var cfg Mcp
 	bytes, err := build.MCPEmbedConfigs.ReadFile("configs/mcp.msgpack")
 	if err != nil {
 		return nil, err
