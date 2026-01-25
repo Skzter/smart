@@ -166,6 +166,12 @@ tasks:
         vars:
           APP_NAME: autotester
           FLAGS: "--headless"
+  run-mcp:
+    desc: "Run the autotester mcp"
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: mcp
           
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
