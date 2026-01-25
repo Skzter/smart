@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sort"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/codes"
@@ -20,12 +22,13 @@ import (
 type ChatStorageService interface {
 	// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 	// Returns an error if the operation fails.
-	SaveChat(ctx context.Context, summary *entity.Chat) error
-	// LoadChat retrieves a Chat object from storage by a key generated from the provided userId and chatId.
+	SaveChat(ctx context.Context, chat *entity.Chat) error
+	// LoadChat retrieves a Chat object from storage by a key generated from the provided chatId.
 	LoadChat(ctx context.Context, chatId string) (*entity.Chat, error)
-	// FindByUserId retrieves an all ChatSummarys associated with the given userId
-	// The resulting slice is ordered by updatedAt in descending order
-	LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error)
+	// LoadSummaries retrieves all ChatSummarys associated with any of the given groupIds.
+	// The resulting slice is ordered by updatedAt in descending order.
+	// Returns whether more summaries exist.
+	LoadSummaries(ctx context.Context, offset int, limit int, groupIds ...string) ([]*entity.ChatSummary, bool, error)
 }
 
 // chatStorageService implements the ChatStorageService interface
@@ -37,6 +40,9 @@ type chatStorageService struct {
 	cache     Cache
 	tracer    trace.Tracer
 	metrics   sharedService.MetricsService
+
+	lock      sync.RWMutex
+	summaries []*entity.ChatSummary
 }
 
 // NewChatStorageService creates a new ChatStorageService instance.
@@ -53,17 +59,27 @@ func NewChatStorageService(
 		return nil, err
 	}
 
+	summaries, err := repo.ListAll(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
+		return a.Cmp(b)
+	})
+
 	return &chatStorageService{
 		logger:    logger,
 		repo:      repo,
 		validator: validator,
 		cache:     cache,
 		tracer:    tracer,
+		summaries: summaries,
+		lock:      sync.RWMutex{},
 		metrics:   metrics,
 	}, nil
 }
 
-// SaveChat persists the provided Chat entity, as well as a generated ChatSummary entity into the storage.
 func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
 	if err := assert.NotNil(ctx, chat); err != nil {
 		return err
@@ -76,7 +92,18 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		span.SetStatus(codes.Error, "error during validation")
 		return err
 	}
-	if err := s.repo.Create(ctx, chat); err != nil {
+
+	summary := &entity.ChatSummary{
+		ChatId:         chat.Id,
+		Author:         chat.Author,
+		Groups:         chat.Groups,
+		LastModifiedBy: chat.LastModifiedBy,
+		Title:          chat.Title,
+		CreatedAt:      chat.CreatedAt,
+		UpdatedAt:      chat.UpdatedAt,
+	}
+
+	if err := s.repo.Create(ctx, chat, summary); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
 		return err
@@ -88,11 +115,26 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 		span.SetStatus(codes.Error, "error while storing chat in cache")
 	}
 
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	insertPos, _ := sort.Find(len(s.summaries), func(i int) int {
+		return summary.Cmp(s.summaries[i])
+	})
+
+	if index := slices.IndexFunc(s.summaries, func(existing *entity.ChatSummary) bool {
+		return existing.ChatId == chat.Id
+	}); index != -1 {
+		copy(s.summaries[insertPos+1:index+1], s.summaries[insertPos:index])
+		s.summaries[insertPos] = summary
+	} else {
+		s.summaries = slices.Insert(s.summaries, insertPos, summary)
+	}
+
 	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
-// LoadChat retrieves a Chat object from storage by a key generated from the provided chatId.
 func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*entity.Chat, error) {
 	if err := assert.NotNil(ctx); err != nil {
 		return nil, err
@@ -153,39 +195,79 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	return chat, nil
 }
 
-// LoadSummaries retrieves an all ChatSummarys associated with any of the given groupIds
-// The resulting slice is ordered by updatedAt in descending order
-func (s *chatStorageService) LoadSummaries(ctx context.Context, groupIds ...string) ([]*entity.ChatSummary, error) {
+func (s *chatStorageService) LoadSummaries(ctx context.Context, offset int, limit int, groupIds ...string) ([]*entity.ChatSummary, bool, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	ctx, span := s.tracer.Start(ctx, "chatStorageService.LoadSummaries")
+
+	_, span := s.tracer.Start(ctx, "chatStorageService.LoadSummaries")
 	defer span.End()
 
 	if err := assert.StringsNotEmpty(groupIds...); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "invalid groupId")
-		return nil, fmt.Errorf("groupId must not be empty string")
-	}
-	summaries, err := s.repo.ListAll(ctx)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "error while retrieving chatSummaries")
-		return nil, err
+		return nil, false, fmt.Errorf("groupId must not be empty string")
 	}
 
+	if err := assert.NumberGreaterThan(limit, 0); err != nil {
+		return nil, false, err
+	}
+
+	if err := assert.NumberGreaterOrEqualThan(offset, 0); err != nil {
+		return nil, false, err
+	}
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if len(s.summaries) == 0 {
+		return s.summaries, false, nil
+	}
+
+	filteredSummaries := s.summaries
 	if len(groupIds) > 0 {
-		summaries = slices.DeleteFunc(summaries, func(s *entity.ChatSummary) bool {
-			return !slices.ContainsFunc(s.Groups, func(id string) bool {
-				return slices.Contains(groupIds, id)
-			})
-		})
+		maxNeeded := offset + limit + 1
+		filteredSummaries = findFromGroups(s.summaries, groupIds, maxNeeded)
 	}
 
-	// sort in descending order by UpdatedAt
-	slices.SortFunc(summaries, func(a *entity.ChatSummary, b *entity.ChatSummary) int {
-		return -a.UpdatedAt.Compare(b.UpdatedAt)
-	})
+	if err := assert.NumberLessThan(offset, len(filteredSummaries)); err != nil {
+		return nil, false, err
+	}
+
+	paginatedSummaries := filteredSummaries[offset:]
+
+	// Apply limit and determine if more results exist
+	hasMore := len(paginatedSummaries) > limit
+	if hasMore {
+		paginatedSummaries = paginatedSummaries[:limit]
+	}
+
 	span.SetStatus(codes.Ok, "")
-	return summaries, nil
+	return paginatedSummaries, hasMore, nil
+}
+
+func findFromGroups(summaries []*entity.ChatSummary, groupIds []string, maxResults int) []*entity.ChatSummary {
+	if maxResults <= 0 {
+		return []*entity.ChatSummary{}
+	}
+
+	groupMap := make(map[string]bool, len(groupIds))
+	for _, id := range groupIds {
+		groupMap[id] = true
+	}
+
+	result := make([]*entity.ChatSummary, 0, maxResults)
+	for _, summary := range summaries {
+		if len(result) >= maxResults {
+			break
+		}
+
+		for _, groupId := range summary.Groups {
+			if groupMap[groupId] {
+				result = append(result, summary)
+				break
+			}
+		}
+	}
+	return result
 }

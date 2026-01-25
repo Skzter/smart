@@ -12,7 +12,6 @@
     } = $props();
 
     function isCode(msg: Message): boolean {
-        console.log(msg);
         return msg.t == "generation";
     }
 
