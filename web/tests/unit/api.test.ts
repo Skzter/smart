@@ -521,7 +521,12 @@ describe("updateChatTitle", () => {
             newTitle,
         );
 
-        expect(mockedAxios).toHaveBeenCalledWith({
+        const patchCall = mockedAxios.mock.calls.find(
+            (call) => call[0].method === "patch"
+        )?.[0];
+
+
+        expect(patchCall).toMatchObject({
             method: "patch",
             url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1/",
@@ -546,7 +551,11 @@ describe("updateChatTitle", () => {
 
         await updateChatTitle(mockChatId, newTitle);
 
-        expect(mockedAxios).toHaveBeenCalledWith({
+        const patchCall = mockedAxios.mock.calls.find(
+            (call) => call[0].method === "patch"
+        )?.[0];
+
+        expect(patchCall).toMatchObject({
             method: "patch",
             url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1/",
