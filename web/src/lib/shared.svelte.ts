@@ -13,6 +13,7 @@ export const user = $state({
 export const chat = $state({
     id: "",
     isLoading: false,
+    groups: [] as string[],
 });
 
 export const ChatDate = $state({

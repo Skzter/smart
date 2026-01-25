@@ -16,6 +16,8 @@ vi.mock("svelte-sonner", () => ({
 // Mock API
 vi.mock("$lib/api", () => ({
     getChats: vi.fn(),
+    getGroups: vi.fn().mockResolvedValue([]),
+    createGroup: vi.fn(),
 }));
 
 // Mock shared state
@@ -24,6 +26,12 @@ vi.mock("$lib/shared.svelte", () => ({
     ChatDate: { Range: undefined },
     ChatFilter: { sortBy: "recent", timeFilter: "all" },
     GroupFilter: { selectedIds: [] as string[] },
+
+    GroupsState: {
+        items: [],
+        isLoading: false,
+        error: "",
+    },
 }));
 
 import { getChats } from "$lib/api";
@@ -37,7 +45,7 @@ describe("Sidebar", () => {
         ChatDate.Range = undefined;
         ChatFilter.sortBy = "recent";
         ChatFilter.timeFilter = "all";
-        GroupFilter.selectedIds = [];
+        GroupFilter.selectedIds.length = 0;
     });
 
     it("renders the sidebar with loading state initially", async () => {
@@ -59,6 +67,7 @@ describe("Sidebar", () => {
                 title: "Test chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -100,6 +109,7 @@ describe("Sidebar", () => {
                 title: "Today's chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -122,6 +132,7 @@ describe("Sidebar", () => {
                 title: "Yesterday's chat",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -144,6 +155,7 @@ describe("Sidebar", () => {
                 title: "Last week's chat",
                 createdAt: lastWeek.toISOString(),
                 updatedAt: lastWeek.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -166,6 +178,7 @@ describe("Sidebar", () => {
                 title: "This month's chat",
                 createdAt: thisMonth.toISOString(),
                 updatedAt: thisMonth.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -188,6 +201,7 @@ describe("Sidebar", () => {
                 title: "Old chat",
                 createdAt: older.toISOString(),
                 updatedAt: older.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -230,6 +244,7 @@ describe("Sidebar", () => {
                 updatedAt: new Date(
                     today.getTime() - 30 * 24 * 60 * 60 * 1000,
                 ).toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -251,6 +266,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -283,6 +299,7 @@ describe("Sidebar", () => {
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-2",
@@ -290,6 +307,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -323,6 +341,7 @@ describe("Sidebar", () => {
                 title: "Today 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-2",
@@ -330,6 +349,7 @@ describe("Sidebar", () => {
                 title: "Today 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-3",
@@ -337,6 +357,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -372,6 +393,7 @@ describe("Sidebar", () => {
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-2",
@@ -379,6 +401,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -414,6 +437,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -467,6 +491,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -498,6 +523,7 @@ describe("Sidebar", () => {
                 title: "Chat 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-2",
@@ -505,6 +531,7 @@ describe("Sidebar", () => {
                 title: "Chat 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "conv-3",
@@ -512,6 +539,7 @@ describe("Sidebar", () => {
                 title: "Chat 3",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue(mockChats);
@@ -533,7 +561,7 @@ describe("Sidebar", () => {
             expect(getChats).toHaveBeenCalledWith(["g1"]);
         });
 
-        GroupFilter.selectedIds = [];
+        GroupFilter.selectedIds.length = 0;
         await tick();
 
         await waitFor(() => {

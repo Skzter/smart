@@ -6,37 +6,33 @@
 
     import { onMount } from "svelte";
     import { getGroups, createGroup } from "$lib/api";
-    import { user, GroupFilter } from "$lib/shared.svelte";
+    import { user, GroupFilter, GroupsState } from "$lib/shared.svelte";
 
     import * as Dialog from "$lib/components/ui/dialog";
     import { Button } from "$lib/components/ui/button";
     import { Input } from "$lib/components/ui/input";
 
     import { toast } from "svelte-sonner";
-    import type { ApiGroup } from "$types/api";
 
-    let groups: ApiGroup[] = [];
-    let groupsLoading = false;
-    let groupsError = "";
 
     let open = false;
     let groupName = "";
     let description = "";
 
     async function loadGroups() {
-        groupsLoading = true;
-        groupsError = "";
+        GroupsState.isLoading = true;
+        GroupsState.error = "";
         try {
-            groups = await getGroups();
+            GroupsState.items = await getGroups();
         } catch (e) {
             console.error("Failed to load groups", e);
-            groups = [];
-            groupsError = "Failed to load groups";
+            GroupsState.items = [];
+            GroupsState.error = "Failed to load groups";
             toast.error("Gruppen konnten nicht geladen werden", {
                 description: "Bitte versuch es später nochmal.",
             });
         } finally {
-            groupsLoading = false;
+            GroupsState.isLoading = false;
         }
     }
 
@@ -145,21 +141,21 @@
                 </div>
             </div>
 
-            {#if groupsLoading}
+            {#if GroupsState.isLoading}
                 <p class="mt-1 text-xs text-muted-foreground">
                     Loading groups…
                 </p>
-            {:else if groupsError}
+            {:else if GroupsState.error}
                 <p class="mt-1 text-xs text-destructive">
-                    {groupsError}
+                    {GroupsState.error}
                 </p>
-            {:else if groups.length === 0}
+            {:else if GroupsState.items.length === 0}
                 <p class="mt-1 text-xs text-muted-foreground">
                     Keine Gruppen vorhanden
                 </p>
             {:else}
                 <ul class="mt-2 space-y-1">
-                    {#each groups as group}
+                    {#each GroupsState.items as group}
                         <li>
                             <button
                                 type="button"

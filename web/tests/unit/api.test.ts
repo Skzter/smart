@@ -22,7 +22,7 @@ vi.mock("axios");
 // Mock the shared module
 vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
-    chat: { id: "chat456", isLoading: false },
+    chat: { id: "chat456", isLoading: false, groups: [] },
 }));
 
 describe("API Functions", () => {
@@ -128,6 +128,7 @@ describe("API Functions", () => {
                 title: "Test Chat 1",
                 createdAt: "2024-01-01T00:00:00Z",
                 updatedAt: "2024-01-01T00:00:00Z",
+                groups: [],
             },
             {
                 chatId: "chat2",
@@ -135,6 +136,7 @@ describe("API Functions", () => {
                 title: "Test Chat 2",
                 createdAt: "2024-01-02T00:00:00Z",
                 updatedAt: "2024-01-02T00:00:00Z",
+                groups: ["g1"],
             },
         ];
 
@@ -387,6 +389,7 @@ describe("API Functions", () => {
             createdAt: "2024-01-01T00:00:00Z",
             updatedAt: "2024-01-01T00:00:00Z",
             title: "Test Chat",
+            groups: ["g1", "g2"],
             messages: [
                 {
                     id: "msg1",

@@ -12,6 +12,7 @@ export type ApiChatSummary = {
     title: string;
     createdAt: string;
     updatedAt: string;
+    groups: string[];
 };
 
 export type ApiChatRequest = {
@@ -52,6 +53,7 @@ export type ApiGetChatByIdResponse = {
     messages: ApiMessage[];
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
+    groups: string[];
 };
 
 export type ApiGroup = {
