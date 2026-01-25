@@ -3,7 +3,7 @@
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
-    import { ChatDate, ChatFilter, user } from "$lib/shared.svelte";
+    import { ChatDate, ChatFilter, user, registerChatTitleUpdater } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
@@ -11,7 +11,8 @@
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
     
-
+    registerChatTitleUpdater(updateChatTitleState);
+    
     let error = $state<string>("");
     let items = $state<ApiChatSummary[] | undefined>(undefined);
 

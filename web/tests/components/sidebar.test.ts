@@ -19,11 +19,20 @@ vi.mock("$lib/api", () => ({
 }));
 
 // Mock shared state
-vi.mock("$lib/shared.svelte", () => ({
-    user: { id: "test-user-123" },
-    ChatDate: { Range: undefined },
-    ChatFilter: { sortBy: "recent", timeFilter: "all" },
-}));
+vi.mock("$lib/shared.svelte", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("$lib/shared.svelte")>();
+
+    return {
+        ...actual,
+
+        user: { id: "test-user-123" },
+        ChatDate: { Range: undefined },
+        ChatFilter: { sortBy: "recent", timeFilter: "all" },
+
+        registerChatTitleUpdater: vi.fn(),
+        updateChatTitle: vi.fn(),
+    };
+});
 
 vi.mock("$lib/components/Group.svelte", () => ({
     default: vi.fn(),

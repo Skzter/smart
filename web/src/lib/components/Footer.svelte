@@ -1,19 +1,10 @@
 <script lang="ts">
     import { generatePrompt,  validatePrompt } from "$lib/api";
     import * as ButtonGroup from "$lib/components/ui/button-group";
-    import { chat, messages, user } from "$lib/shared.svelte";
+    import { chat, messages, user, updateChatTitle } from "$lib/shared.svelte";
     import type { ApiChatRequest } from "$types/api";
     import Prompt from "./Prompt.svelte";
     import SendButton from "./SendButton.svelte";
-    import type { ApiChatSummary } from "$types/api";
-    import updateChatTitleState from "./Sidebar.svelte";
-    
-     let {
-        summary = $bindable(),
-    }: {
-        summary: ApiChatSummary;
-        
-    } = $props();
 
     let input = $state("");
 
@@ -55,12 +46,8 @@
                     Message: generationAnswer.message.body,
                 });
 
-                if (
-                    generationAnswer?.title &&
-                    isDefaultTitle(summary?.title)
-                ) {
-                    summary.title = generationAnswer.title;
-                    updateChatTitleState?.(chat.id, summary.title);
+                if (generationAnswer?.title) {
+                    updateChatTitle(chat.id, generationAnswer.title);
                 }
             }
         } catch (err: unknown) {
@@ -68,10 +55,6 @@
         } finally {
             chat.isLoading = false;
         }
-    }
-
-    function isDefaultTitle(title?: string) {
-        return !title || title === "Neuer Chat";
     }
 
 </script>
