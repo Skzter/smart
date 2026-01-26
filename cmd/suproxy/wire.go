@@ -47,6 +47,7 @@ func InitializeApp(cfg *config.Suproxy, tracer trace.Tracer) (*gin.Engine, error
 		TagsearchServiceProvider,
 		MetricsServiceProvider,
 		CacheServiceProvider,
+		service.NewResponseUpdateService,
 	)
 
 	return nil, nil
