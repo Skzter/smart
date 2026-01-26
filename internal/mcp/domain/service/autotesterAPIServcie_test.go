@@ -529,11 +529,11 @@ func TestReadTestLogStream(t *testing.T) {
 					ReadTestLogStream(mock.Anything, "test-full", mock.Anything).
 					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
 						// Send many events rapidly to fill channel to ~90% capacity
-						for range 1850 {
+						for range 1900 {
 							ch <- &entity.LogEvent{Event: "log", Data: "event"}
 						}
 						close(release)
-						for range 300 {
+						for range 250 {
 							ch <- &entity.LogEvent{Event: "log", Data: "event"}
 						}
 					}).
