@@ -103,7 +103,7 @@ replace_api_paths:
     paths:
       - internal/autotester/application/router.go
       - internal/suproxy/application/router.go
-      - web/src/lib/Api.ts
+      - web/src/lib/api.ts
       - internal/autotester/domain/handler/chat_test.go
       - internal/autotester/domain/handler/template_test.go
       - internal/autotester/domain/handler/localStorage_test.go
