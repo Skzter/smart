@@ -46,3 +46,10 @@ HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
 if (!document.queryCommandSupported) {
     document.queryCommandSupported = vi.fn(() => false);
 }
+
+// Prevent "document is not defined" errors from bits-ui cleanup timeouts
+// by ensuring cleanup waits for pending timers
+afterEach(async () => {
+    // Wait a bit for any pending timers/cleanup to complete
+    await new Promise((resolve) => setTimeout(resolve, 100));
+});

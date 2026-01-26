@@ -41,7 +41,7 @@ func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
 		Status: entity.TestStatusNotRun,
 	}
 
-	if err := a.localTestcaseStorageService.Save(testcaseToSave, localSaveRequest.UserId, localSaveRequest.ConversationId); err != nil {
+	if err := a.localTestcaseStorageService.Save(testcaseToSave, localSaveRequest.UserId, localSaveRequest.ChatId); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "saving testcase locally failed")
 		a.metricsService.IncRequestError("local_saving_failed")
@@ -57,7 +57,7 @@ func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
 }
 
 // HandleDeleteLocalRequest processes a request to delete a locally stored test case.
-// Expects query parameters with testcaseId, userId and conversationId.
+// Expects query parameters with testcaseId, userId and chatId.
 // Returns a LocalDeleteResponse confirming the deletion or an error if the deletion fails.
 func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 	start := time.Now()
@@ -76,7 +76,7 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 		return
 	}
 
-	if deleteLocalRequest.TestcaseId == "" || deleteLocalRequest.UserId == "" || deleteLocalRequest.ConversationId == "" {
+	if deleteLocalRequest.TestcaseId == "" || deleteLocalRequest.UserId == "" || deleteLocalRequest.ChatId == "" {
 		span.RecordError(errors.New("missing required parameter"))
 		span.SetStatus(codes.Error, "missing required parameter")
 		a.metricsService.IncRequestError("missing_parameters")
@@ -85,7 +85,7 @@ func (a *AutotesterController) HandleDeleteLocalRequest(c *gin.Context) {
 		return
 	}
 
-	if err := a.localTestcaseStorageService.Delete(deleteLocalRequest.TestcaseId, deleteLocalRequest.UserId, deleteLocalRequest.ConversationId); err != nil {
+	if err := a.localTestcaseStorageService.Delete(deleteLocalRequest.TestcaseId, deleteLocalRequest.UserId, deleteLocalRequest.ChatId); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "deleting testcase locally failed")
 		a.metricsService.IncRequestError("local_deletion_failed")

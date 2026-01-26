@@ -75,8 +75,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
-                url: "chat",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/chat",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockChatRequest,
             });
             expect(result).toEqual({
@@ -137,17 +137,25 @@ describe("API Functions", () => {
         it("should make a GET request to /chats", async () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({
-                data: { chatSummarys: mockChatSummaries },
+                data: {
+                    chatSummarys: mockChatSummaries,
+                    hasMore: false,
+                    pageSize: 10,
+                },
             });
 
-            const result = await getChats();
+            const result = await getChats({ page: 0, groupIds: [] });
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: `/chats`,
-                baseURL: "http://localhost:8081/api/v1/",
+                url: `/chats?page=0`,
+                baseURL: "http://localhost:8081/api/v1",
             });
-            expect(result).toEqual(mockChatSummaries);
+            expect(result).toEqual({
+                summaries: mockChatSummaries,
+                hasMore: false,
+                pageSize: 10,
+            });
         });
 
         it("should reject when the API call fails", async () => {
@@ -162,7 +170,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(getChats()).rejects.toThrow(
+            await expect(getChats({ page: 0, groupIds: [] })).rejects.toThrow(
                 "Failed to fetch user chats",
             );
         });
@@ -209,7 +217,7 @@ describe("API Functions", () => {
                 mockValidateParams.userId,
             );
             expect(callArgs.data).toHaveProperty(
-                "conversationId",
+                "chatId",
                 mockValidateParams.chatId,
             );
             expect(callArgs.data).toHaveProperty(
@@ -232,8 +240,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
-                url: "template",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/template",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockTemplate);
         });
@@ -274,8 +282,8 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
-                url: "saveLocal",
-                baseURL: "http://localhost:8081/api/v1/",
+                url: "/saveLocal",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockSaveLocalRequest,
             });
             expect(result).toEqual(mockSaveLocalResponse);
@@ -303,7 +311,7 @@ describe("API Functions", () => {
         const mockParams = {
             userId: mockUserId,
             testId: "test123",
-            sessionId: "session456",
+            chatId: "chat456",
         };
         const mockResult = "Container executed successfully";
 
@@ -345,7 +353,7 @@ describe("API Functions", () => {
             const complexParams = {
                 userId: "user999",
                 testId: "test999",
-                sessionId: "session999",
+                chatId: "chat999",
             };
 
             await runContainer(complexParams, {});
@@ -393,7 +401,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/${mockChatId}`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockChatResponse);
         });
@@ -410,7 +418,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/differentChat`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
             });
         });
 
@@ -443,11 +451,11 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: mockChatId,
+                    chatId: mockChatId,
                     userId: mockUserId,
                 },
             });
@@ -465,11 +473,11 @@ describe("API Functions", () => {
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
                 params: {
                     testcaseId: mockTestcaseId,
-                    conversationId: "chat999",
+                    chatId: "chat999",
                     userId: "user999",
                 },
             });

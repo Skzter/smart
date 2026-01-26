@@ -26,13 +26,13 @@ type ChatManager interface {
 type chatManager struct {
 	storageService ChatStorageService
 	logger         *slog.Logger
-	cfg            config.Config
+	cfg            config.Autotester
 	tracer         trace.Tracer
 }
 
 // NewChatManager constructs a new Chat service instance. It validates required dependencies and
 // copies the provided config into the service.
-func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Config, trace trace.Tracer) (ChatManager, error) {
+func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg *config.Autotester, trace trace.Tracer) (ChatManager, error) {
 	if err := assert.NotNil(logger, storageService, cfg, trace); err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func NewChatManager(logger *slog.Logger, storageService ChatStorageService, cfg 
 	}, nil
 }
 
-// LoadChat either loads an existing chat from storage (when request.ChatId is set) or
+// LoadChat either loads an existing chat from storage (when request.ChatID is set) or
 // creates and returns a new chat object initialized with a generated UUID, creation time,
 // empty message slice and the initial user prompt.
 func (c *chatManager) LoadChat(ctx context.Context, request entity.UserRequest) (*entity.Chat, error) {

@@ -6,7 +6,13 @@
     import { toast } from "svelte-sonner";
     import { type Message, chat, messages, user } from "$lib/shared.svelte";
 
-    let { summary = $bindable() }: { summary: ApiChatSummary } = $props();
+    let {
+        summary = $bindable(),
+        onUpdate,
+    }: {
+        summary: ApiChatSummary;
+        onUpdate?: (updated: ApiChatSummary) => void;
+    } = $props();
     let edit = $state(false);
 
     function formatToCET(iso?: string) {
@@ -99,6 +105,7 @@
                     value={summary.title === "" ? "Neuer Chat" : summary.title}
                     onfocusout={(e) => {
                         summary.title = (e.target as HTMLInputElement).value;
+                        onUpdate?.(summary);
                         edit = false;
                     }}
                     onkeydown={(e) => {
@@ -106,7 +113,7 @@
                             summary.title = (
                                 e.target as HTMLInputElement
                             ).value;
-                            edit = false;
+                            onUpdate?.(summary);
                             edit = false;
                         }
                         if (e.key == "Escape") {

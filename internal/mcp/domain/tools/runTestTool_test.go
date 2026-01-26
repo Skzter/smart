@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestNewRunTestTool(t *testing.T) {
 	}{
 		{
 			name:              "successful creation",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: mocks.NewMockAutotesterAPIService(t),
 			expectedError:     false,
 		},
@@ -38,7 +37,7 @@ func TestNewRunTestTool(t *testing.T) {
 		},
 		{
 			name:              "nil autotester service",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: nil,
 			expectedError:     true,
 			expectedErrorMsg:  "nil",
@@ -78,7 +77,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "successful test execution - passed",
 			input: entity.ExecuteTestRequest{
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 				Test:   "describe('Login', () => { it('should login', () => { expect(true).toBe(true); }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
@@ -97,7 +96,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "successful test execution - failed",
 			input: entity.ExecuteTestRequest{
 				UserId: "user789",
-				ChatId: "conv999",
+				ChatId: "chat999",
 				Test:   "describe('Broken Test', () => { it('should fail', () => { expect(true).toBe(false); }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
@@ -116,7 +115,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "service returns error",
 			input: entity.ExecuteTestRequest{
 				UserId: "user000",
-				ChatId: "conv000",
+				ChatId: "chat000",
 				Test:   "invalid test code",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
@@ -130,7 +129,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "empty test string",
 			input: entity.ExecuteTestRequest{
 				UserId: "user111",
-				ChatId: "conv222",
+				ChatId: "chat222",
 				Test:   "",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
@@ -149,7 +148,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			name: "test execution with detailed result",
 			input: entity.ExecuteTestRequest{
 				UserId: "user555",
-				ChatId: "conv666",
+				ChatId: "chat666",
 				Test:   "describe('Complex Test', () => { it('should work', () => { /* complex logic */ }); });",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
@@ -171,7 +170,7 @@ func TestRunTestTool_RunTest(t *testing.T) {
 			mockService := mocks.NewMockAutotesterAPIService(t)
 			test.mockSetup(mockService)
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			logger := slog.New(slog.DiscardHandler)
 			tool, err := NewRunTestTool(logger, mockService)
 			assert.NoError(t, err)
 

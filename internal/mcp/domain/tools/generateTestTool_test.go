@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -26,7 +25,7 @@ func TestNewGenerateTestTool(t *testing.T) {
 	}{
 		{
 			name:              "successful creation",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: mocks.NewMockAutotesterAPIService(t),
 			expectedError:     false,
 		},
@@ -39,7 +38,7 @@ func TestNewGenerateTestTool(t *testing.T) {
 		},
 		{
 			name:              "nil autotester service",
-			logger:            slog.New(slog.NewTextHandler(os.Stdout, nil)),
+			logger:            slog.New(slog.DiscardHandler),
 			autotesterService: nil,
 			expectedError:     true,
 			expectedErrorMsg:  "nil",
@@ -80,7 +79,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			input: entity.GenerateTestRequest{
 				Prompt: "Create a test for login",
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
 				expectedResponse := &entity.GenerateTestToolResponse{
@@ -91,7 +90,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 						CreatedAt: time.Now(),
 					},
 					UserId: "user123",
-					ChatId: "conv456",
+					ChatId: "chat456",
 				}
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
@@ -104,7 +103,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 					Body: "Generated test code here",
 				},
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 			},
 		},
 		{
@@ -112,7 +111,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			input: entity.GenerateTestRequest{
 				Prompt: "Incomplete prompt",
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
 				expectedResponse := &entity.GenerateTestToolResponse{
@@ -120,7 +119,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 						Body: "Please provide more context",
 					},
 					UserId: "user123",
-					ChatId: "conv456",
+					ChatId: "chat456",
 				}
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
@@ -131,7 +130,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 					Body: "Please provide more context",
 				},
 				UserId: "user123",
-				ChatId: "conv456",
+				ChatId: "chat456",
 			},
 		},
 		{
@@ -139,7 +138,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			input: entity.GenerateTestRequest{
 				Prompt: "Invalid prompt",
 				UserId: "user789",
-				ChatId: "conv999",
+				ChatId: "chat999",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
@@ -153,7 +152,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			input: entity.GenerateTestRequest{
 				Prompt: "",
 				UserId: "user000",
-				ChatId: "conv000",
+				ChatId: "chat000",
 			},
 			mockSetup: func(m *mocks.MockAutotesterAPIService) {
 				expectedResponse := &entity.GenerateTestToolResponse{
@@ -164,7 +163,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 						CreatedAt: time.Now(),
 					},
 					UserId: "user000",
-					ChatId: "conv000",
+					ChatId: "chat000",
 				}
 				m.EXPECT().GenerateTest(mock.Anything, mock.Anything).
 					Return(expectedResponse, nil).Once()
@@ -177,7 +176,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 					Body: "",
 				},
 				UserId: "user000",
-				ChatId: "conv000",
+				ChatId: "chat000",
 			},
 		},
 	}
@@ -187,7 +186,7 @@ func TestGenerateTestTool_GenerateTest(t *testing.T) {
 			mockService := mocks.NewMockAutotesterAPIService(t)
 			test.mockSetup(mockService)
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+			logger := slog.New(slog.DiscardHandler)
 			tool, err := NewGenerateTestTool(logger, mockService)
 			assert.NoError(t, err)
 

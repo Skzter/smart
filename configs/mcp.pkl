@@ -1,9 +1,12 @@
 @go.Package { name = "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config" }
-module config
+module mcp
 
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
 logLevel: String = "debug"
+
+logFilePath: String = ""
+
 port: String = ":8084"
 
 /// Server implementation details

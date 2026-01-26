@@ -170,12 +170,12 @@ paths:
             type: string
           description: "ID of the user deleting the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        - name: conversationId
+        - name: chatId
           in: query
           required: true
           schema:
             type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
 
       responses:
@@ -218,7 +218,7 @@ paths:
               required:
                 - userId
                 - testId
-                - sessionId
+                - chatId
               properties:
                 userId:
                   type: string
@@ -228,10 +228,10 @@ paths:
                   type: string
                   description: Unique identifier of the test to run
                   example: "test456"
-                sessionId:
+                chatId:
                   type: string
-                  description: Unique identifier of the session
-                  example: "session789"
+                  description: Unique identifier of the chat
+                  example: "chat789"
       responses:
         "200":
           description: Test executed successfully
@@ -461,23 +461,24 @@ paths:
   /api/v1/users/{userId}/chats:
   /chats:
     get:
-      summary: "Returns the chat history for a specific user"
+      summary: "Returns the chat history"
       description: |
-        Retrieves all chat summaries associated with the given `userId`.
+        Retrieves chat summaries with pagination support.
 
-        An optional `limit` query parameter can be provided to restrict how many
-        of the most recently updated chats are returned.  
-        - If `limit` is omitted or set to `0`, all chats are returned.  
+        An optional `page` query parameter can be provided to navigate through pages.  
+        - If `page` is omitted, defaults to `0` (first page).  
         - Chats are sorted by `updatedAt` descending.
+        - Page size is determined by server configuration and returned in the response.
       parameters:
-        - name: limit
+        - name: page
           in: query
           required: false
-          description: "Maximum number of chat summaries to return. Must be 0 or a positive integer."
+          description: "Page number for pagination. Must be 0 or a positive integer."
           schema:
             type: integer
             minimum: 0
-          example: 10
+            default: 0
+          example: 0
         - name: groups
           in: query
           required: false
@@ -486,6 +487,7 @@ paths:
             type: array
             items:
               type: string
+            minItems: 1
 
       responses:
         "200":
@@ -496,7 +498,7 @@ paths:
                 $ref: "#/components/schemas/ChatSummarys"
 
         "400":
-          description: "Bad request — invalid userId or invalid limit parameter."
+          description: "Bad request — invalid userId, invalid page parameter, or empty groups array."
           content:
             application/json:
               schema:
@@ -512,7 +514,7 @@ paths:
     get:
       summary: Get full chat by ID
       description: |
-        Returns a full chat (conversation) for the given user, including all messages.
+        Returns a full chat for the given user, including all messages.
       parameters:
         - in: path
           name: chatId
@@ -551,7 +553,7 @@ paths:
       summary: Retrieve stored test cases with optional filters
       description: >
         Returns test cases belonging to the specified user. Additional optional
-        query parameters can be used to filter for specific test cases, conversations,
+        query parameters can be used to filter for specific test cases, chats,
         or by creation timestamps.
       parameters:
         - name: author
@@ -780,10 +782,10 @@ components:
         createdAt:
           type: "number"
 
-    Conversation:
+    chat:
       type: object
       properties:
-        conversationId:
+        chatId:
           type: string
         Messages:
           type: array
@@ -802,10 +804,10 @@ components:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        allConversations:
+        allChats:
           type: array
           items:
-            $ref: "#/components/schemas/Conversation"
+            $ref: "#/components/schemas/Chats"
 
     Chat:
       type: object
@@ -861,7 +863,7 @@ components:
         userId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
 
@@ -876,7 +878,7 @@ components:
             userId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-            conversationId:
+            chatId:
               type: string
               example: "9177b856-46a0-11f0-9fe2-0242ac120002"
         tool_calls:
@@ -894,16 +896,16 @@ components:
       type: object
       required:
         - userId
-        - conversationId
+        - chatId
         - code
       properties:
         userId:
           type: string
           description: "ID of the user saving the test case."
           example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        conversationId:
+        chatId:
           type: string
-          description: "ID of the conversation the test case belongs to."
+          description: "ID of the chat the test case belongs to."
           example: "2f68cb52-47b0-11f0-bd5b-0242ac120002"
         code:
           type: string
@@ -951,6 +953,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChatSummary"
+        hasMore:
+          type: boolean
+          description: "Indicates whether there are more results available on subsequent pages."
+          example: true
+        pageSize:
+          type: integer
+          description: "The number of items per page as configured on the server."
+          example: 20
 
     ChatSummary:
       type: object
@@ -963,7 +973,7 @@ components:
           example: "auth0|687270280dca20b77cfdcf74"
         title:
           type: string
-          example: "Login Test Conversation"
+          example: "Login Test Chat"
         createdAt:
           type: string
           format: date-time

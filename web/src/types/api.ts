@@ -40,7 +40,7 @@ export type ApiSaveTestLocalResponse = {
 export type ApiRunContainer = {
     userId: string;
     testId: string;
-    sessionId: string;
+    chatId: string;
 };
 
 export type ApiGetChatByIdResponse = {
@@ -52,4 +52,15 @@ export type ApiGetChatByIdResponse = {
     messages: ApiMessage[];
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
+};
+
+export type ApiChatsRequest = {
+    page: number;
+    groupIds: string[];
+};
+
+export type ApiChatsResponse = {
+    summaries: ApiChatSummary[];
+    pageSize: number;
+    hasMore: boolean;
 };

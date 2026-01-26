@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewS3Wrapper(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -104,7 +104,7 @@ func TestNewS3WrapperNilLogger(t *testing.T) {
 }
 
 func TestS3WrapperInputValidation(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	config := entity.S3Config{
 		Region: "us-east-1",

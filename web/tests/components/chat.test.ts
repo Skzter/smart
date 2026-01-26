@@ -27,7 +27,7 @@ describe("Chat", () => {
         const emptyMessage = container.querySelector(
             ".flex.items-center.justify-center.flex-1",
         );
-        expect(emptyMessage?.textContent).toBe("Start a conversation...");
+        expect(emptyMessage?.textContent).toBe("Start a chat...");
     });
 
     it("renders chat container with correct styling", () => {
