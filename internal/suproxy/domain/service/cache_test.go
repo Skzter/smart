@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	sharedRepoMocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -30,6 +31,7 @@ func newTestCacheService(mockRepo *sharedRepoMocks.MockCache) *cacheService {
 			MockOK:       20 * time.Minute,
 			ErrorOrEmpty: 45 * time.Second,
 		},
+		tracer: otel.Tracer("test"),
 	}
 }
 

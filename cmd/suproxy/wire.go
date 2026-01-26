@@ -127,6 +127,6 @@ func TagsearchServiceProvider(cfg *config.Suproxy, s3 wrapper.S3StorageWrapper) 
 }
 
 // CacheServiceProvider provides a new CacheService
-func CacheServiceProvider(log *slog.Logger, cfg *config.Suproxy, repo sharedRepo.Cache) (service.CacheService, error) {
-	return service.NewCacheService(log, cfg, repo)
+func CacheServiceProvider(log *slog.Logger, cfg *config.Suproxy, repo sharedRepo.Cache, tracer trace.Tracer) (service.CacheService, error) {
+	return service.NewCacheService(log, cfg, repo, tracer)
 }
