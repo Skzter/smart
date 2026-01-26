@@ -12,7 +12,7 @@ import type {
 } from "$types/api";
 import { chat, user } from "./shared.svelte";
 
-const baseURL = "/api/v1";
+const baseURL = "http://localhost:8081/api/v1";
 
 /**
  * Fetches data from the api and returns the data for the chat
