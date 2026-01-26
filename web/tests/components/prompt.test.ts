@@ -18,7 +18,7 @@ vi.mock("svelte-sonner", () => ({
 }));
 
 import Prompt from "../../src/lib/components/Prompt.svelte";
-import { chat } from "../../src/lib/shared.svelte";
+import { chat, user } from "../../src/lib/shared.svelte";
 
 describe("Prompt", () => {
     let inputValue: string;
@@ -28,6 +28,7 @@ describe("Prompt", () => {
         inputValue = "";
         onclickMock = vi.fn();
         chat.isLoading = false;
+        user.id = "test-user-123"; // Set user ID so the effect runs
         mockGetTemplate.mockClear();
         mockToastError.mockClear();
     });

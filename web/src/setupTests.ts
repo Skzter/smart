@@ -47,6 +47,20 @@ if (!document.queryCommandSupported) {
     document.queryCommandSupported = vi.fn(() => false);
 }
 
+// Mock localStorage for ApiTokenStore
+const localStorageMock: Storage = {
+    getItem: vi.fn(),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+    clear: vi.fn(),
+    length: 0,
+    key: vi.fn(() => null),
+};
+
+Object.defineProperty(global, "localStorage", {
+    value: localStorageMock,
+    writable: true,
+});
 // Prevent "document is not defined" errors from bits-ui cleanup timeouts
 // by ensuring cleanup waits for pending timers
 afterEach(async () => {
