@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewAutotesterAPIService(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 
 	tests := []struct {
@@ -57,7 +57,7 @@ func TestNewAutotesterAPIService(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name            string
@@ -111,7 +111,7 @@ func TestGetTemplate(t *testing.T) {
 
 // nolint:funlen
 func TestGenerateTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name                string
@@ -276,7 +276,7 @@ func TestGenerateTest(t *testing.T) {
 
 // nolint:funlen
 func TestExecuteTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name          string

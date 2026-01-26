@@ -19,7 +19,7 @@ import (
 
 // nolint:dupl
 func TestCreate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	for _, test := range testcaseCreateTestCaseProvider() {
@@ -135,7 +135,7 @@ func testcaseCreateTestCaseProvider() []struct {
 
 // nolint:dupl
 func TestReadRemote(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	for _, test := range readRemoteTestcaseProvider() {
@@ -258,7 +258,7 @@ func readRemoteTestcaseProvider() []struct {
 }
 
 func TestReadAllMetadata(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 	prefix := "testcase/"
 
@@ -381,7 +381,7 @@ func testcaseReadAllMetadataTestCaseProvider() []struct {
 
 // nolint:dupl
 func TestUpdate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	for _, test := range testcaseUpdateTestCaseProvider() {
@@ -526,7 +526,7 @@ func testcaseUpdateTestCaseProvider() []struct {
 // nolint:dupl
 func TestDeleteRemote(t *testing.T) {
 	ctx := context.Background()
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -651,7 +651,7 @@ func TestValidateTestcaseData(t *testing.T) {
 func TestGenerateTestcaseKey(t *testing.T) {
 	mockS3 := mocks.NewMockS3StorageWrapper(t)
 	mockParquet := mocks.NewMockParquetFileWrapper[entity.TestCase](t)
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	prefix := "testcase/"
 	testID := "test-id-123"
 
@@ -681,7 +681,7 @@ func TestGenerateTestcaseKey(t *testing.T) {
 func TestNewTestcaseStorageRepository(t *testing.T) {
 	mockS3 := mocks.NewMockS3StorageWrapper(t)
 	mockParquet := mocks.NewMockParquetFileWrapper[entity.TestCase](t)
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
