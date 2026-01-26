@@ -70,7 +70,7 @@ func RedisConfigProvider(cfg *config.Suproxy) *sharedConfig.RedisConfig {
 
 // LoggerProvider provides a new logger.
 func LoggerProvider(cfg *config.Suproxy) *slog.Logger {
-	return logger.NewLogger(cfg.LogLevel)
+	return logger.NewLogger(cfg.LogLevel, cfg.LogFilePath)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
