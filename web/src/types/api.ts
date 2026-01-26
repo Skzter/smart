@@ -62,3 +62,14 @@ export type ApiToken = {
     expiresAt: Date;
     revokedAt: Date | null;
 };
+
+export type ApiChatsRequest = {
+    page: number;
+    groupIds: string[];
+};
+
+export type ApiChatsResponse = {
+    summaries: ApiChatSummary[];
+    pageSize: number;
+    hasMore: boolean;
+};

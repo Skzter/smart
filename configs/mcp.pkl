@@ -4,6 +4,9 @@ module mcp
 import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.10.0#/go.pkl" 
 
 logLevel: String = "debug"
+
+logFilePath: String = ""
+
 port: String = ":8084"
 
 /// Server implementation details

@@ -1,7 +1,6 @@
 import axios, { AxiosError } from "axios";
 import type {
     ApiMessage,
-    ApiChatSummary,
     ApiChatRequest,
     ApiChatResponse,
     ApiSaveTestLocal,
@@ -9,10 +8,12 @@ import type {
     ApiRunContainer,
     ApiGetChatByIdResponse,
     ApiToken,
+    ApiChatsRequest,
+    ApiChatsResponse,
 } from "$types/api";
 import { chat, user, apiToken } from "./shared.svelte";
 
-const baseURL = "http://localhost:8081/api/v1/";
+const baseURL = "http://localhost:8081/api/v1";
 
 function getAuthHeaders() {
     return apiToken.token ? { Authorization: `Bearer ${apiToken.token}` } : {};
@@ -70,7 +71,7 @@ export async function generatePrompt(
     try {
         const response = await axios({
             method: "post",
-            url: "chat",
+            url: "/chat",
             baseURL: baseURL,
             headers: getAuthHeaders(),
             data: request,
@@ -114,15 +115,25 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChats(): Promise<ApiChatSummary[]> {
+export async function getChats(
+    request: ApiChatsRequest,
+): Promise<ApiChatsResponse> {
+    const groups =
+        request.groupIds.length > 0
+            ? `&groups=${request.groupIds.join(",")}`
+            : "";
     try {
         const response = await axios({
             method: "get",
-            url: `/chats`,
+            url: `/chats?page=${request.page}${groups}`,
             baseURL: baseURL,
             headers: getAuthHeaders(),
         });
-        return response.data.chatSummarys;
+        return {
+            summaries: response.data.chatSummarys,
+            hasMore: response.data.hasMore,
+            pageSize: response.data.pageSize,
+        };
     } catch (error) {
         throw getErrorMessage(error);
     }
@@ -132,7 +143,7 @@ export async function getTemplate(): Promise<string> {
     try {
         const response = await axios({
             method: "get",
-            url: "template",
+            url: "/template",
             baseURL: baseURL,
             headers: getAuthHeaders(),
         });
@@ -148,7 +159,7 @@ export async function saveTestLocal(
     try {
         const response = await axios({
             method: "post",
-            url: "saveLocal",
+            url: "/saveLocal",
             baseURL: baseURL,
             headers: getAuthHeaders(),
             data: request,
@@ -166,7 +177,7 @@ export async function saveTestLocal(
 export async function runContainer(request: ApiRunContainer): Promise<void> {
     await axios({
         method: "post",
-        url: "run",
+        url: "/run",
         baseURL,
         headers: getAuthHeaders(),
         data: request,

@@ -57,49 +57,48 @@ func TestNewSuproxyController(t *testing.T) {
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
-		name       string
-		log        *slog.Logger
-		cfg        *config.Suproxy
-		val        service.Validator
-		clt        *http.Client
-		db         service.DatabaseService
-		syncer     service.TaglistSync
-		tagservice service.TagSearchService
-		metrics    sharedService.MetricsService
-		cache      service.CacheService
-		err        bool
+		name    string
+		log     *slog.Logger
+		cfg     *config.Suproxy
+		val     service.Validator
+		clt     *http.Client
+		db      service.DatabaseService
+		syncer  service.TaglistSync
+		metrics sharedService.MetricsService
+		cache   service.CacheService
+		err     bool
+		updater service.ResponseUpdateService
 	}{
 		{
-			name:       "valid",
-			cfg:        &config.Suproxy{},
-			log:        slog.New(slog.DiscardHandler),
-			val:        RejectValidator(t),
-			clt:        &http.Client{},
-			db:         mocks.NewMockDatabaseService(t),
-			syncer:     mocks.NewMockTaglistSync(t),
-			tagservice: mocks.NewMockTagSearchService(t),
-			metrics:    sharedMocks.NewMockMetricsService(t),
-			cache:      mocks.NewMockCacheService(t),
-			err:        false,
+			name:    "valid",
+			cfg:     &config.Suproxy{},
+			log:     slog.New(slog.DiscardHandler),
+			val:     RejectValidator(t),
+			clt:     &http.Client{},
+			db:      mocks.NewMockDatabaseService(t),
+			syncer:  mocks.NewMockTaglistSync(t),
+			metrics: sharedMocks.NewMockMetricsService(t),
+			cache:   mocks.NewMockCacheService(t),
+			updater: mocks.NewMockResponseUpdateService(t),
+			err:     false,
 		},
 		{
-			name:       "params nil",
-			log:        nil,
-			cfg:        nil,
-			val:        nil,
-			clt:        nil,
-			db:         nil,
-			syncer:     nil,
-			tagservice: nil,
-			metrics:    nil,
-			cache:      nil,
-			err:        true,
+			name:    "params nil",
+			log:     nil,
+			cfg:     nil,
+			val:     nil,
+			clt:     nil,
+			db:      nil,
+			syncer:  nil,
+			metrics: nil,
+			cache:   nil,
+			err:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tracer, tt.syncer, tt.tagservice, tt.metrics, tt.cache)
+			controller, err := handler.NewSuproxyController(tt.log, tt.cfg, tt.val, tt.clt, tt.db, tracer, tt.syncer, tt.metrics, tt.cache, tt.updater)
 
 			assert.Equal(t, tt.err, controller == nil)
 			assert.Equal(t, tt.err, err != nil)
@@ -185,52 +184,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				response: nil,
 			},
 		},
-		{
-			name: "non empty prompt, failure in tagsearch",
-			request: &entity.Request{
-				Tags: "non empty prompt, but fails in tagsearch",
-				Body: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			tsSetup:              &[]any{nil, errors.New("tagsearch error")},
-			expectGetTaglistCall: true,
-		},
-		{
-			name: "non empty prompt, no keys found",
-			request: &entity.Request{
-				Tags: "non emtpy prompt without matching keys",
-				Body: `{}`,
-			},
-			useCorrectAdress: true,
-
-			expectedResponse: entity.SupplierResponse{
-				HTTPStatusCode: 200,
-				Data: entity.SupplierOfferList{
-					Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
-				},
-			},
-			expects200: true,
-
-			sSetup: &supplierSetup{
-				code:     200,
-				response: nil,
-			},
-			tsSetup:              &[]any{[]string{}, nil},
-			expectGetTaglistCall: true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -238,9 +191,9 @@ func TestHandlerPostOfferlist(t *testing.T) {
 			validator := RejectValidator(t)
 			mockDB := mocks.NewMockDatabaseService(t)
 			mockSyncer := mocks.NewMockTaglistSync(t)
-			mockTagsearch := mocks.NewMockTagSearchService(t)
 			mockMetrics := sharedMocks.NewMockMetricsService(t)
 			mockCache := mocks.NewMockCacheService(t)
+			mockUpdate := mocks.NewMockResponseUpdateService(t)
 			tracer := otel.Tracer("test")
 
 			// Setup metrics mock to accept any calls
@@ -262,8 +215,12 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				mock.Anything, // isMock bool
 				mock.Anything, // isError bool
 			).Return(nil).Maybe()
+			mockSyncer.
+				On("GetCurrentTaglist").
+				Return(&sharedEntity.TagList{}, nil).
+				Maybe()
 
-			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Suproxy{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch, mockMetrics, mockCache)
+			h, _ := handler.NewSuproxyController(slog.New(slog.DiscardHandler), &config.Suproxy{}, validator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
 
 			router := SetupRouter(h)
 			w := httptest.NewRecorder()
@@ -298,23 +255,6 @@ func TestHandlerPostOfferlist(t *testing.T) {
 				reqstring, _ = json.Marshal(tt.request)
 			} else {
 				reqstring = []byte("invalid")
-			}
-			mockTagsearch.
-				On("FindKeysByTags", mock.Anything, mock.Anything).
-				Return([]string{}, nil).
-				Maybe()
-
-			if tt.expectGetTaglistCall {
-				mockSyncer.On("GetCurrentTaglist").
-					Return(&sharedEntity.TagList{
-						Tags: []sharedEntity.Tag{
-							{Name: "ResponseNot200", Description: "response not 200"},
-						},
-					}, nil).
-					Maybe()
-			}
-			if tt.tsSetup != nil {
-				mockTagsearch.On("FindKeysByTags", mock.Anything, mock.Anything).Return(*tt.tsSetup...)
 			}
 
 			req, _ := http.NewRequest("POST", "/api/v1/Offerlist", strings.NewReader(string(reqstring)))
@@ -408,14 +348,14 @@ func TestHandlerHandleRequest(t *testing.T) {
 	mockValidator := mocks.NewMockValidator(t)
 	mockDB := mocks.NewMockDatabaseService(t)
 	mockSyncer := mocks.NewMockTaglistSync(t)
-	mockTagsearch := mocks.NewMockTagSearchService(t)
 	mockMetrics := sharedMocks.NewMockMetricsService(t)
 	mockCache := mocks.NewMockCacheService(t)
+	mockUpdate := mocks.NewMockResponseUpdateService(t)
 	tracer := otel.Tracer("test")
 
 	var writer slicewriter
 
-	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Suproxy{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockTagsearch, mockMetrics, mockCache)
+	h, _ := handler.NewSuproxyController(slog.New(slog.NewJSONHandler(&writer, nil)), &config.Suproxy{}, mockValidator, &http.Client{}, mockDB, tracer, mockSyncer, mockMetrics, mockCache, mockUpdate)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -476,18 +416,25 @@ func TestHandlerHandleRequest(t *testing.T) {
 
 func BenchmarkPostOfferList(b *testing.B) {
 	tracer := otel.Tracer("test")
+
 	cache := mocks.NewMockCacheService(b)
+	mockUpdater := mocks.NewMockResponseUpdateService(b)
 	mockMetrics := sharedMocks.NewMockMetricsService(b)
+	mockDB := mocks.NewMockDatabaseService(b)
+	mockSyncer := mocks.NewMockTaglistSync(b)
+
 	mockMetrics.On("IncRequestSuccess").Return().Maybe()
 	mockMetrics.On("IncRequestError", mock.Anything).Return().Maybe()
 	mockMetrics.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 	mockMetrics.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
 	cache.On(
 		"Lookup",
 		mock.Anything,
 		mock.Anything,
 		mock.Anything,
 	).Return([]byte(nil), false, nil).Maybe()
+
 	cache.On(
 		"Store",
 		mock.Anything,
@@ -497,17 +444,22 @@ func BenchmarkPostOfferList(b *testing.B) {
 		mock.Anything,
 	).Return(nil).Maybe()
 
+	mockSyncer.
+		On("GetCurrentTaglist").
+		Return(&sharedEntity.TagList{}, nil).
+		Maybe()
+
 	ctrl, _ := handler.NewSuproxyController(
 		slog.New(slog.DiscardHandler),
 		&config.Suproxy{},
 		RejectValidator(b),
 		&http.Client{},
-		mocks.NewMockDatabaseService(b),
+		mockDB,
 		tracer,
-		mocks.NewMockTaglistSync(b),
-		mocks.NewMockTagSearchService(b),
+		mockSyncer,
 		mockMetrics,
 		cache,
+		mockUpdater,
 	)
 
 	router := SetupRouter(ctrl)
@@ -515,16 +467,17 @@ func BenchmarkPostOfferList(b *testing.B) {
 	response := entity.SupplierResponse{
 		HTTPStatusCode: 200,
 		Data: entity.SupplierOfferList{
-			Items: []json.RawMessage{[]byte(`{"offerid": 213213}`)},
+			Items: []json.RawMessage{
+				[]byte(`{"offerid": 213213}`),
+			},
 		},
 	}
 	mResponse, _ := json.Marshal(response)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write(mResponse); err != nil {
-			panic(err)
-		}
+		_, _ = w.Write(mResponse)
 	}))
+	defer server.Close()
 
 	requestBody, _ := json.Marshal(entity.Request{
 		Header:      map[string]string{"Content-Type": "application/json"},
@@ -533,14 +486,20 @@ func BenchmarkPostOfferList(b *testing.B) {
 		Body:        `{"apimode":"live","id":"a0950be9-76ad-4fcb-932d-37660d10b1f8","params":[]}`,
 	})
 
+	b.ResetTimer()
+
 	for b.Loop() {
-		request, _ := http.NewRequest(http.MethodPost, "/api/v1/Offerlist", bytes.NewReader(requestBody))
+		req, _ := http.NewRequest(
+			http.MethodPost,
+			"/api/v1/Offerlist",
+			bytes.NewReader(requestBody),
+		)
 
 		w := httptest.NewRecorder()
-		router.ServeHTTP(w, request)
+		router.ServeHTTP(w, req)
 
 		if w.Code != http.StatusOK {
-			b.Fatalf("Unexpected status code: got %d", w.Code)
+			b.Fatalf("unexpected status code: got %d", w.Code)
 		}
 	}
 }
