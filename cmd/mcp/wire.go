@@ -40,7 +40,7 @@ func InitializeMcpServer(cfg *config.Mcp) (*application.McpServer, error) {
 
 // ProvideLogger provides a new logger.
 func ProvideLogger(cfg *config.Mcp) *slog.Logger {
-	return logger.NewLogger(cfg.LogLevel)
+	return logger.NewLogger(cfg.LogLevel, cfg.LogFilePath)
 }
 
 // ProvideHTTPClient creates a configured HTTP client from config
