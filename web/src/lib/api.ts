@@ -1,17 +1,64 @@
 import axios, { AxiosError } from "axios";
 import type {
     ApiMessage,
-    ApiChatSummary,
     ApiChatRequest,
     ApiChatResponse,
     ApiSaveTestLocal,
     ApiSaveTestLocalResponse,
     ApiRunContainer,
     ApiGetChatByIdResponse,
+    ApiToken,
+    ApiChatsRequest,
+    ApiChatsResponse,
 } from "$types/api";
-import { chat, user } from "./shared.svelte";
+import { chat, user, apiToken } from "./shared.svelte";
 
-const baseURL = "http://localhost:8081/api/v1/";
+const baseURL = "http://localhost:8081/api/v1";
+
+function getAuthHeaders() {
+    return apiToken.token ? { Authorization: `Bearer ${apiToken.token}` } : {};
+}
+
+// Axios response interceptor to handle 401 and refresh token
+axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // Check if error is 401 and we haven't already retried
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            // Don't retry if the failed request was getApiToken itself
+            if (originalRequest.url?.includes("auth/generate")) {
+                return Promise.reject(error);
+            }
+
+            try {
+                // Get new token
+                const tokenResponse = await axios({
+                    method: "post",
+                    url: "auth/generate",
+                    baseURL: baseURL,
+                    data: { userId: user.id },
+                });
+
+                const newToken = tokenResponse.data as ApiToken;
+                apiToken.token = newToken.token;
+
+                // Retry original request with new token
+                originalRequest.headers.Authorization = `Bearer ${newToken.token}`;
+                return axios(originalRequest);
+            } catch (refreshError) {
+                // If token refresh fails, clear token and reject
+                apiToken.token = null;
+                return Promise.reject(refreshError);
+            }
+        }
+
+        return Promise.reject(error);
+    },
+);
 
 /**
  * Fetches data from the api and returns the data for the chat
@@ -24,8 +71,9 @@ export async function generatePrompt(
     try {
         const response = await axios({
             method: "post",
-            url: "chat",
+            url: "/chat",
             baseURL: baseURL,
+            headers: getAuthHeaders(),
             data: request,
         });
         return {
@@ -48,7 +96,8 @@ export async function validatePrompt(
         const response = await axios({
             method: "post",
             url: "/validate",
-            baseURL: "/api/v1/",
+            headers: getAuthHeaders(),
+            baseURL: baseURL,
             data: request,
         });
         return {
@@ -66,14 +115,25 @@ export async function validatePrompt(
  * @param params: parameters for api
  * @param url: url for api
  */
-export async function getChats(): Promise<ApiChatSummary[]> {
+export async function getChats(
+    request: ApiChatsRequest,
+): Promise<ApiChatsResponse> {
+    const groups =
+        request.groupIds.length > 0
+            ? `&groups=${request.groupIds.join(",")}`
+            : "";
     try {
         const response = await axios({
             method: "get",
-            url: `/chats`,
+            url: `/chats?page=${request.page}${groups}`,
             baseURL: baseURL,
+            headers: getAuthHeaders(),
         });
-        return response.data.chatSummarys;
+        return {
+            summaries: response.data.chatSummarys,
+            hasMore: response.data.hasMore,
+            pageSize: response.data.pageSize,
+        };
     } catch (error) {
         throw getErrorMessage(error);
     }
@@ -83,8 +143,9 @@ export async function getTemplate(): Promise<string> {
     try {
         const response = await axios({
             method: "get",
-            url: "template",
+            url: "/template",
             baseURL: baseURL,
+            headers: getAuthHeaders(),
         });
         return response.data.template;
     } catch (error) {
@@ -98,8 +159,9 @@ export async function saveTestLocal(
     try {
         const response = await axios({
             method: "post",
-            url: "saveLocal",
+            url: "/saveLocal",
             baseURL: baseURL,
+            headers: getAuthHeaders(),
             data: request,
         });
         return {
@@ -115,8 +177,9 @@ export async function saveTestLocal(
 export async function runContainer(request: ApiRunContainer): Promise<void> {
     await axios({
         method: "post",
-        url: "run",
+        url: "/run",
         baseURL,
+        headers: getAuthHeaders(),
         data: request,
     });
 }
@@ -127,6 +190,7 @@ export async function getChatById(): Promise<ApiGetChatByIdResponse> {
             method: "get",
             url: `/chats/${chat.id}`,
             baseURL: baseURL,
+            headers: getAuthHeaders(),
         });
         return response.data;
     } catch (err) {
@@ -140,6 +204,7 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
             method: "delete",
             baseURL: baseURL,
             url: "/deleteLocal",
+            headers: getAuthHeaders(),
             params: {
                 testcaseId,
                 chatId: chat.id,
@@ -149,6 +214,20 @@ export async function deleteLocalTest(testcaseId: string): Promise<string> {
         return response.data;
     } catch (err) {
         throw getErrorMessage(err);
+    }
+}
+
+export async function getApiToken(): Promise<ApiToken> {
+    try {
+        const response = await axios({
+            method: "post",
+            url: "auth/generate",
+            baseURL: baseURL,
+            data: { userId: user.id },
+        });
+        return response.data as ApiToken;
+    } catch (error) {
+        throw getErrorMessage(error);
     }
 }
 

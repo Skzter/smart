@@ -1,8 +1,7 @@
 <script lang="ts">
     import { getTemplate } from "$lib/api";
     import * as InputGroup from "$lib/components/ui/input-group";
-    import { chat } from "$lib/shared.svelte";
-    import { onMount } from "svelte";
+    import { chat, user } from "$lib/shared.svelte";
     import { toast } from "svelte-sonner";
 
     let {
@@ -13,20 +12,22 @@
         onclick: () => void;
     } = $props();
 
-    onMount(async () => {
-        try {
-            input = await getTemplate();
-        } catch (err: unknown) {
-            toast.error((err as Error).message, {
-                description: "Das war wohl nichts mit dem Template.",
-            });
-        }
+    $effect(() => {
+        if (!user.id) return;
+        (async () => {
+            try {
+                input = await getTemplate();
+            } catch (err: unknown) {
+                toast.error((err as Error).message, {
+                    description: "Das war wohl nichts mit dem Template.",
+                });
+            }
+        })();
     });
 
     function handleKeyPress(e: KeyboardEvent) {
         if (e.key === "Enter" && input.trim() && !e.shiftKey) {
             onclick();
-            input = "";
             e.preventDefault();
         }
     }
