@@ -63,7 +63,7 @@ func setupTestService(t *testing.T) *testServiceSetup {
 	t.Cleanup(cleanup)
 
 	ctx := context.Background()
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	endpoint, err := minioContainer.ConnectionString(ctx)

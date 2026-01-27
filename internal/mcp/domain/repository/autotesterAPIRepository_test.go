@@ -25,7 +25,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 	}{
 		{
 			name:      "success",
-			logger:    slog.Default(),
+			logger:    slog.New(slog.DiscardHandler),
 			client:    &http.Client{},
 			baseURL:   "http://example.com",
 			expectErr: false,
@@ -54,7 +54,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -116,7 +116,7 @@ func TestGetTemplate(t *testing.T) {
 }
 
 func TestValidatePrompt(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -193,7 +193,7 @@ func TestValidatePrompt(t *testing.T) {
 	}
 }
 func TestGenerateTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -261,7 +261,7 @@ func TestGenerateTest(t *testing.T) {
 }
 
 func TestSaveTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -332,7 +332,7 @@ func TestSaveTest(t *testing.T) {
 }
 
 func TestRunTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -400,7 +400,7 @@ func TestRunTest(t *testing.T) {
 }
 
 func TestNewJSONRequest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -481,7 +481,7 @@ func TestNewJSONRequest(t *testing.T) {
 
 // nolint:funlen
 func TestDoAndDecode(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name         string

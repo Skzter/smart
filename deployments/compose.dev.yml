@@ -32,6 +32,9 @@ services:
       context: ..
       dockerfile: deployments/autotester/Dockerfile.dev
     working_dir: /app
+    depends_on:
+      - postgres
+      - redis
     command: ["dev-entrypoint.sh"]
     volumes:
       - ..:/app
@@ -90,13 +93,21 @@ services:
 
   redis:
     image: valkey/valkey:alpine
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    volumes:
+      - ./valkey.conf:/etc/valkey/valkey.conf
     networks:
       - default
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   postgres:
     image: postgres:17-alpine
-    #depends_on:
-    #  - autotester
     networks:
       - default
     ports:

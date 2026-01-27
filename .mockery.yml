@@ -25,12 +25,15 @@ packages:
       OpenAI:
       OpenAIClient:
       TaglistStorage:
+      Cache:
+      RedisClient:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service:
     config:
       dir: "./internal/shared/domain/mocks/service"
     interfaces:
       OpenAI:
       TaglistStorage:
+      MetricsService:
 
   # SUPROXY
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service:
@@ -42,13 +45,12 @@ packages:
       TaglistSync:
       TagSearchService:
       CacheService:
+      ResponseUpdateService:
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository:
     config:
-      dir: "./internal/suproxy/domain/repository/mocks"
+      dir: "./internal/suproxy/domain/mocks/repository"
     interfaces:
       DatabaseRepository:
-      Cache:
-      RedisClient:
 
   # AUTOTESTER
   gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository:
@@ -75,6 +77,7 @@ packages:
       TestcaseStorageService:
       Auth:
       GroupStorage:
+      Cache:
       GroupManager:
 
   #MCP

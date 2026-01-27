@@ -27,4 +27,5 @@ var (
 	ErrChatNotFound       = errors.New("chat not found")
 	ErrGroupNotFound      = errors.New("group not found")
 	ErrChatNotInGroup     = errors.New("chat not in group")
+	ErrEmptyGroupIds      = errors.New("ids must not be empty")
 )

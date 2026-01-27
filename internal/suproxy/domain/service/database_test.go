@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"testing"
 
@@ -12,12 +11,12 @@ import (
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
-	mockRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository/mocks"
+	mockRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/repository"
 )
 
 // TestNewDatabaseService tests the creation of a new DatabaseService instance.
 func TestNewDatabaseService(t *testing.T) {
-	validLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	validLogger := slog.New(slog.DiscardHandler)
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
 	svc, err := NewDatabaseService(validLogger, validRepo, tracer)
@@ -31,7 +30,7 @@ func TestNewDatabaseService(t *testing.T) {
 
 // TestDatabaseServiceSaveDbEntry tests the SaveDbEntry method of the DatabaseService.
 func TestDatabaseServiceSaveDbEntry(t *testing.T) {
-	validLogger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	validLogger := slog.New(slog.DiscardHandler)
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
 
@@ -98,7 +97,7 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 
 // TestDatabaseServiceGetAllKeys tests the GetAllKeys method of the DatabaseService.
 func TestDatabaseServiceGetAllKeys(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	logger := slog.New(slog.DiscardHandler)
 	validRepo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
 	svc, _ := NewDatabaseService(logger, validRepo, tracer)

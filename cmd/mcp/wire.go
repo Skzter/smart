@@ -19,7 +19,7 @@ import (
 )
 
 // InitializeMcpServer initializes the mcp server with all dependencies
-func InitializeMcpServer(cfg *config.Config, tracer trace.Tracer) (*application.McpServer, error) {
+func InitializeMcpServer(cfg *config.Mcp, tracer trace.Tracer) (*application.McpServer, error) {
 	wire.Build(
 		ProvideHTTPClient,
 		ProvideLogger,
@@ -37,12 +37,12 @@ func InitializeMcpServer(cfg *config.Config, tracer trace.Tracer) (*application.
 }
 
 // ProvideLogger provides a new logger.
-func ProvideLogger(cfg *config.Config) *slog.Logger {
-	return logger.NewLogger(cfg.LogLevel)
+func ProvideLogger(cfg *config.Mcp) *slog.Logger {
+	return logger.NewLogger(cfg.LogLevel, cfg.LogFilePath)
 }
 
 // ProvideHTTPClient creates a configured HTTP client from config
-func ProvideHTTPClient(cfg *config.Config) *http.Client {
+func ProvideHTTPClient(cfg *config.Mcp) *http.Client {
 	return &http.Client{
 		Timeout: time.Duration(cfg.HttpClient.TimeoutSeconds) * time.Second,
 		Transport: &http.Transport{
@@ -54,12 +54,12 @@ func ProvideHTTPClient(cfg *config.Config) *http.Client {
 }
 
 // ProvideBaseURL extracts the base URL from config
-func ProvideBaseURL(cfg *config.Config) string {
+func ProvideBaseURL(cfg *config.Mcp) string {
 	return cfg.AutotesterAPIBaseURL
 }
 
 // ProvideMcpServer creates the underlying mcp.Server from config
-func ProvideMcpServer(cfg *config.Config) *mcp.Server {
+func ProvideMcpServer(cfg *config.Mcp) *mcp.Server {
 	impl := &mcp.Implementation{
 		Name:    cfg.McpServerImplementation.Name,
 		Version: cfg.McpServerImplementation.Version,
