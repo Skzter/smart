@@ -39,8 +39,8 @@ func (_m *MockAutotesterAPIRepository) EXPECT() *MockAutotesterAPIRepository_Exp
 }
 
 // GenerateTest provides a mock function for the type MockAutotesterAPIRepository
-func (_mock *MockAutotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
-	ret := _mock.Called(ctx, request)
+func (_mock *MockAutotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error) {
+	ret := _mock.Called(ctx, request, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateTest")
@@ -48,18 +48,18 @@ func (_mock *MockAutotesterAPIRepository) GenerateTest(ctx context.Context, requ
 
 	var r0 *entity.GenerateTestResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest, string) (*entity.GenerateTestResponse, error)); ok {
+		return returnFunc(ctx, request, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) *entity.GenerateTestResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest, string) *entity.GenerateTestResponse); ok {
+		r0 = returnFunc(ctx, request, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.GenerateTestResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest) error); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest, string) error); ok {
+		r1 = returnFunc(ctx, request, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -74,11 +74,12 @@ type MockAutotesterAPIRepository_GenerateTest_Call struct {
 // GenerateTest is a helper method to define mock.On call
 //   - ctx context.Context
 //   - request *entity.GenerateTestRequest
-func (_e *MockAutotesterAPIRepository_Expecter) GenerateTest(ctx interface{}, request interface{}) *MockAutotesterAPIRepository_GenerateTest_Call {
-	return &MockAutotesterAPIRepository_GenerateTest_Call{Call: _e.mock.On("GenerateTest", ctx, request)}
+//   - token string
+func (_e *MockAutotesterAPIRepository_Expecter) GenerateTest(ctx interface{}, request interface{}, token interface{}) *MockAutotesterAPIRepository_GenerateTest_Call {
+	return &MockAutotesterAPIRepository_GenerateTest_Call{Call: _e.mock.On("GenerateTest", ctx, request, token)}
 }
 
-func (_c *MockAutotesterAPIRepository_GenerateTest_Call) Run(run func(ctx context.Context, request *entity.GenerateTestRequest)) *MockAutotesterAPIRepository_GenerateTest_Call {
+func (_c *MockAutotesterAPIRepository_GenerateTest_Call) Run(run func(ctx context.Context, request *entity.GenerateTestRequest, token string)) *MockAutotesterAPIRepository_GenerateTest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -88,9 +89,14 @@ func (_c *MockAutotesterAPIRepository_GenerateTest_Call) Run(run func(ctx contex
 		if args[1] != nil {
 			arg1 = args[1].(*entity.GenerateTestRequest)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -101,14 +107,14 @@ func (_c *MockAutotesterAPIRepository_GenerateTest_Call) Return(generateTestResp
 	return _c
 }
 
-func (_c *MockAutotesterAPIRepository_GenerateTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)) *MockAutotesterAPIRepository_GenerateTest_Call {
+func (_c *MockAutotesterAPIRepository_GenerateTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error)) *MockAutotesterAPIRepository_GenerateTest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetTemplate provides a mock function for the type MockAutotesterAPIRepository
-func (_mock *MockAutotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockAutotesterAPIRepository) GetTemplate(ctx context.Context, token string) (*entity.TemplateResponse, error) {
+	ret := _mock.Called(ctx, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTemplate")
@@ -116,18 +122,18 @@ func (_mock *MockAutotesterAPIRepository) GetTemplate(ctx context.Context) (*ent
 
 	var r0 *entity.TemplateResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (*entity.TemplateResponse, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*entity.TemplateResponse, error)); ok {
+		return returnFunc(ctx, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) *entity.TemplateResponse); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *entity.TemplateResponse); ok {
+		r0 = returnFunc(ctx, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.TemplateResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -141,18 +147,24 @@ type MockAutotesterAPIRepository_GetTemplate_Call struct {
 
 // GetTemplate is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockAutotesterAPIRepository_Expecter) GetTemplate(ctx interface{}) *MockAutotesterAPIRepository_GetTemplate_Call {
-	return &MockAutotesterAPIRepository_GetTemplate_Call{Call: _e.mock.On("GetTemplate", ctx)}
+//   - token string
+func (_e *MockAutotesterAPIRepository_Expecter) GetTemplate(ctx interface{}, token interface{}) *MockAutotesterAPIRepository_GetTemplate_Call {
+	return &MockAutotesterAPIRepository_GetTemplate_Call{Call: _e.mock.On("GetTemplate", ctx, token)}
 }
 
-func (_c *MockAutotesterAPIRepository_GetTemplate_Call) Run(run func(ctx context.Context)) *MockAutotesterAPIRepository_GetTemplate_Call {
+func (_c *MockAutotesterAPIRepository_GetTemplate_Call) Run(run func(ctx context.Context, token string)) *MockAutotesterAPIRepository_GetTemplate_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
@@ -163,14 +175,14 @@ func (_c *MockAutotesterAPIRepository_GetTemplate_Call) Return(templateResponse 
 	return _c
 }
 
-func (_c *MockAutotesterAPIRepository_GetTemplate_Call) RunAndReturn(run func(ctx context.Context) (*entity.TemplateResponse, error)) *MockAutotesterAPIRepository_GetTemplate_Call {
+func (_c *MockAutotesterAPIRepository_GetTemplate_Call) RunAndReturn(run func(ctx context.Context, token string) (*entity.TemplateResponse, error)) *MockAutotesterAPIRepository_GetTemplate_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // RunTest provides a mock function for the type MockAutotesterAPIRepository
-func (_mock *MockAutotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error) {
-	ret := _mock.Called(ctx, request)
+func (_mock *MockAutotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error) {
+	ret := _mock.Called(ctx, request, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for RunTest")
@@ -178,18 +190,18 @@ func (_mock *MockAutotesterAPIRepository) RunTest(ctx context.Context, request *
 
 	var r0 *entity.RunTestResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.RunTestRequest) (*entity.RunTestResponse, error)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.RunTestRequest, string) (*entity.RunTestResponse, error)); ok {
+		return returnFunc(ctx, request, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.RunTestRequest) *entity.RunTestResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.RunTestRequest, string) *entity.RunTestResponse); ok {
+		r0 = returnFunc(ctx, request, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.RunTestResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.RunTestRequest) error); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.RunTestRequest, string) error); ok {
+		r1 = returnFunc(ctx, request, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -204,11 +216,12 @@ type MockAutotesterAPIRepository_RunTest_Call struct {
 // RunTest is a helper method to define mock.On call
 //   - ctx context.Context
 //   - request *entity.RunTestRequest
-func (_e *MockAutotesterAPIRepository_Expecter) RunTest(ctx interface{}, request interface{}) *MockAutotesterAPIRepository_RunTest_Call {
-	return &MockAutotesterAPIRepository_RunTest_Call{Call: _e.mock.On("RunTest", ctx, request)}
+//   - token string
+func (_e *MockAutotesterAPIRepository_Expecter) RunTest(ctx interface{}, request interface{}, token interface{}) *MockAutotesterAPIRepository_RunTest_Call {
+	return &MockAutotesterAPIRepository_RunTest_Call{Call: _e.mock.On("RunTest", ctx, request, token)}
 }
 
-func (_c *MockAutotesterAPIRepository_RunTest_Call) Run(run func(ctx context.Context, request *entity.RunTestRequest)) *MockAutotesterAPIRepository_RunTest_Call {
+func (_c *MockAutotesterAPIRepository_RunTest_Call) Run(run func(ctx context.Context, request *entity.RunTestRequest, token string)) *MockAutotesterAPIRepository_RunTest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -218,9 +231,14 @@ func (_c *MockAutotesterAPIRepository_RunTest_Call) Run(run func(ctx context.Con
 		if args[1] != nil {
 			arg1 = args[1].(*entity.RunTestRequest)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -231,14 +249,14 @@ func (_c *MockAutotesterAPIRepository_RunTest_Call) Return(runTestResponse *enti
 	return _c
 }
 
-func (_c *MockAutotesterAPIRepository_RunTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error)) *MockAutotesterAPIRepository_RunTest_Call {
+func (_c *MockAutotesterAPIRepository_RunTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error)) *MockAutotesterAPIRepository_RunTest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SaveTest provides a mock function for the type MockAutotesterAPIRepository
-func (_mock *MockAutotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error) {
-	ret := _mock.Called(ctx, request)
+func (_mock *MockAutotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error) {
+	ret := _mock.Called(ctx, request, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveTest")
@@ -246,18 +264,18 @@ func (_mock *MockAutotesterAPIRepository) SaveTest(ctx context.Context, request 
 
 	var r0 *entity.SaveTestResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SaveTestRequest) (*entity.SaveTestResponse, error)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SaveTestRequest, string) (*entity.SaveTestResponse, error)); ok {
+		return returnFunc(ctx, request, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SaveTestRequest) *entity.SaveTestResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.SaveTestRequest, string) *entity.SaveTestResponse); ok {
+		r0 = returnFunc(ctx, request, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.SaveTestResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SaveTestRequest) error); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.SaveTestRequest, string) error); ok {
+		r1 = returnFunc(ctx, request, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -272,11 +290,12 @@ type MockAutotesterAPIRepository_SaveTest_Call struct {
 // SaveTest is a helper method to define mock.On call
 //   - ctx context.Context
 //   - request *entity.SaveTestRequest
-func (_e *MockAutotesterAPIRepository_Expecter) SaveTest(ctx interface{}, request interface{}) *MockAutotesterAPIRepository_SaveTest_Call {
-	return &MockAutotesterAPIRepository_SaveTest_Call{Call: _e.mock.On("SaveTest", ctx, request)}
+//   - token string
+func (_e *MockAutotesterAPIRepository_Expecter) SaveTest(ctx interface{}, request interface{}, token interface{}) *MockAutotesterAPIRepository_SaveTest_Call {
+	return &MockAutotesterAPIRepository_SaveTest_Call{Call: _e.mock.On("SaveTest", ctx, request, token)}
 }
 
-func (_c *MockAutotesterAPIRepository_SaveTest_Call) Run(run func(ctx context.Context, request *entity.SaveTestRequest)) *MockAutotesterAPIRepository_SaveTest_Call {
+func (_c *MockAutotesterAPIRepository_SaveTest_Call) Run(run func(ctx context.Context, request *entity.SaveTestRequest, token string)) *MockAutotesterAPIRepository_SaveTest_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -286,9 +305,14 @@ func (_c *MockAutotesterAPIRepository_SaveTest_Call) Run(run func(ctx context.Co
 		if args[1] != nil {
 			arg1 = args[1].(*entity.SaveTestRequest)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -299,14 +323,14 @@ func (_c *MockAutotesterAPIRepository_SaveTest_Call) Return(saveTestResponse *en
 	return _c
 }
 
-func (_c *MockAutotesterAPIRepository_SaveTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error)) *MockAutotesterAPIRepository_SaveTest_Call {
+func (_c *MockAutotesterAPIRepository_SaveTest_Call) RunAndReturn(run func(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error)) *MockAutotesterAPIRepository_SaveTest_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // ValidatePrompt provides a mock function for the type MockAutotesterAPIRepository
-func (_mock *MockAutotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error) {
-	ret := _mock.Called(ctx, request)
+func (_mock *MockAutotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error) {
+	ret := _mock.Called(ctx, request, token)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidatePrompt")
@@ -314,18 +338,18 @@ func (_mock *MockAutotesterAPIRepository) ValidatePrompt(ctx context.Context, re
 
 	var r0 *entity.ValidatePromptResponse
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)); ok {
-		return returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest, string) (*entity.ValidatePromptResponse, error)); ok {
+		return returnFunc(ctx, request, token)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest) *entity.ValidatePromptResponse); ok {
-		r0 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.GenerateTestRequest, string) *entity.ValidatePromptResponse); ok {
+		r0 = returnFunc(ctx, request, token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*entity.ValidatePromptResponse)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest) error); ok {
-		r1 = returnFunc(ctx, request)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *entity.GenerateTestRequest, string) error); ok {
+		r1 = returnFunc(ctx, request, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -340,11 +364,12 @@ type MockAutotesterAPIRepository_ValidatePrompt_Call struct {
 // ValidatePrompt is a helper method to define mock.On call
 //   - ctx context.Context
 //   - request *entity.GenerateTestRequest
-func (_e *MockAutotesterAPIRepository_Expecter) ValidatePrompt(ctx interface{}, request interface{}) *MockAutotesterAPIRepository_ValidatePrompt_Call {
-	return &MockAutotesterAPIRepository_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, request)}
+//   - token string
+func (_e *MockAutotesterAPIRepository_Expecter) ValidatePrompt(ctx interface{}, request interface{}, token interface{}) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+	return &MockAutotesterAPIRepository_ValidatePrompt_Call{Call: _e.mock.On("ValidatePrompt", ctx, request, token)}
 }
 
-func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Run(run func(ctx context.Context, request *entity.GenerateTestRequest)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Run(run func(ctx context.Context, request *entity.GenerateTestRequest, token string)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -354,9 +379,14 @@ func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Run(run func(ctx cont
 		if args[1] != nil {
 			arg1 = args[1].(*entity.GenerateTestRequest)
 		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -367,7 +397,7 @@ func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) Return(validatePrompt
 	return _c
 }
 
-func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
+func (_c *MockAutotesterAPIRepository_ValidatePrompt_Call) RunAndReturn(run func(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error)) *MockAutotesterAPIRepository_ValidatePrompt_Call {
 	_c.Call.Return(run)
 	return _c
 }

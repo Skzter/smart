@@ -12,6 +12,9 @@ import (
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/mocks/repository"
 )
 
+// vorerst TODO
+const token = ""
+
 func TestNewAutotesterAPIService(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockAutotesterAPIRepository(t)
@@ -69,7 +72,7 @@ func TestGetTemplate(t *testing.T) {
 			name: "success",
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
-					GetTemplate(context.Background()).
+					GetTemplate(context.Background(), token).
 					Return(&entity.TemplateResponse{Content: "test template"}, nil).
 					Once()
 			},
@@ -80,7 +83,7 @@ func TestGetTemplate(t *testing.T) {
 			name: "repository-error",
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
-					GetTemplate(context.Background()).
+					GetTemplate(context.Background(), token).
 					Return(nil, errors.New("repo error")).
 					Once()
 			},
@@ -134,7 +137,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(&entity.ValidatePromptResponse{
+					}, token).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "",
 					},
@@ -146,7 +149,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(&entity.GenerateTestResponse{
+					}, token).Return(&entity.GenerateTestResponse{
 					Result: entity.GenerateMessage{
 						Id:   "msg-1",
 						Role: "assistant",
@@ -177,7 +180,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "bad prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(&entity.ValidatePromptResponse{
+					}, token).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "Please provide more details in your prompt",
 					},
@@ -213,7 +216,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(nil, errors.New("validation error")).Once()
+					}, token).Return(nil, errors.New("validation error")).Once()
 			},
 			expectErr:           true,
 			expectedValidateMsg: nil,
@@ -232,7 +235,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(&entity.ValidatePromptResponse{
+					}, token).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "",
 					},
@@ -244,7 +247,7 @@ func TestGenerateTest(t *testing.T) {
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).Return(nil, errors.New("generate error")).Once()
+					}, token).Return(nil, errors.New("generate error")).Once()
 			},
 			expectErr:           true,
 			expectedValidateMsg: nil,
@@ -298,7 +301,7 @@ func TestExecuteTest(t *testing.T) {
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).
+					}, token).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						Action: "saved",
@@ -310,7 +313,7 @@ func TestExecuteTest(t *testing.T) {
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).
+					}, token).
 					Return(&entity.RunTestResponse{
 						Result: "passed",
 					}, nil).
@@ -340,7 +343,7 @@ func TestExecuteTest(t *testing.T) {
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).
+					}, token).
 					Return(nil, errors.New("save error")).
 					Once()
 			},
@@ -360,7 +363,7 @@ func TestExecuteTest(t *testing.T) {
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).
+					}, token).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						Action: "saved",
@@ -372,7 +375,7 @@ func TestExecuteTest(t *testing.T) {
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
 						ChatId: "chat-456",
-					}).
+					}, token).
 					Return(nil, errors.New("run error")).
 					Once()
 			},

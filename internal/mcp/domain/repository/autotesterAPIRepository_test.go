@@ -12,6 +12,9 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 )
 
+// vorerst TODO
+const token = "token"
+
 func TestNewAutotesterAPIRepository(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -99,7 +102,7 @@ func TestGetTemplate(t *testing.T) {
 			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
 			require.NoError(t, err)
 
-			res, err := repo.GetTemplate(context.Background())
+			res, err := repo.GetTemplate(context.Background(), token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -173,7 +176,7 @@ func TestValidatePrompt(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.ValidatePrompt(context.Background(), req)
+			res, err := repo.ValidatePrompt(context.Background(), req, token)
 			if test.expectErr {
 				require.Error(t, err)
 				require.Nil(t, res)
@@ -242,7 +245,7 @@ func TestGenerateTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.GenerateTest(context.Background(), req)
+			res, err := repo.GenerateTest(context.Background(), req, token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -309,7 +312,7 @@ func TestSaveTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.SaveTest(context.Background(), req)
+			res, err := repo.SaveTest(context.Background(), req, token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -379,7 +382,7 @@ func TestRunTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.RunTest(context.Background(), req)
+			res, err := repo.RunTest(context.Background(), req, token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -451,7 +454,7 @@ func TestNewJSONRequest(t *testing.T) {
 			require.NoError(t, err)
 
 			concreteRepo := repo.(*autotesterAPIRepository)
-			req, err := concreteRepo.newJSONRequest(context.Background(), test.method, test.url, test.body)
+			req, err := concreteRepo.newJSONRequest(context.Background(), test.method, test.url, test.body, token)
 
 			if test.expectErr {
 				require.Error(t, err)

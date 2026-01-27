@@ -10,6 +10,8 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
+const jwtKey = "jwt"
+
 // AutotesterAPIService provides business logic for interacting with the Autotester API.
 type AutotesterAPIService interface {
 	// GetTemplate retrieves the test generation template.
@@ -43,7 +45,9 @@ func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIR
 func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
 	s.logger.Debug("Fetching test template from API")
 
-	template, err := s.repo.GetTemplate(ctx)
+	token, _ := ctx.Value(jwtKey).(string)
+
+	template, err := s.repo.GetTemplate(ctx, token)
 	if err != nil {
 		s.logger.Error("Failed to fetch template", "error", err)
 		return nil, err
@@ -61,7 +65,9 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 		return nil, err
 	}
 
-	valid, err := s.repo.ValidatePrompt(ctx, request)
+	token, _ := ctx.Value(jwtKey).(string)
+
+	valid, err := s.repo.ValidatePrompt(ctx, request, token)
 	if err != nil {
 		s.logger.Error("Failed to validate prompt", "error", err)
 		return nil, err
@@ -81,7 +87,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 
 	request.ChatId = valid.ChatId
 
-	resp, err := s.repo.GenerateTest(ctx, request)
+	resp, err := s.repo.GenerateTest(ctx, request, token)
 	if err != nil {
 		s.logger.Error("Failed to generate test", "error", err)
 		return nil, err
@@ -103,13 +109,15 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 		return nil, err
 	}
 
+	token, _ := ctx.Value(jwtKey).(string)
+
 	saveReq := &entity.SaveTestRequest{
 		Code:   request.Test,
 		UserId: request.UserId,
 		ChatId: request.ChatId,
 	}
 
-	saveResp, err := s.repo.SaveTest(ctx, saveReq)
+	saveResp, err := s.repo.SaveTest(ctx, saveReq, token)
 	if err != nil {
 		s.logger.Error("Failed to save test before execution", "error", err)
 		return nil, err
@@ -121,7 +129,7 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 		ChatId: request.ChatId,
 	}
 
-	runResp, err := s.repo.RunTest(ctx, runReq)
+	runResp, err := s.repo.RunTest(ctx, runReq, token)
 	if err != nil {
 		s.logger.Error("Failed to run test", "error", err)
 		return nil, err

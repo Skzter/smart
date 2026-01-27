@@ -16,19 +16,19 @@ import (
 // AutotesterAPIRepository handles HTTP communication with the Autotester backend API.
 type AutotesterAPIRepository interface {
 	// GetTemplate fetches the test generation template from the API.
-	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
+	GetTemplate(ctx context.Context, token string) (*entity.TemplateResponse, error)
 
 	// ValidatePrompt validates a prompt against the API.
-	ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)
+	ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error)
 
 	// GenerateTest sends a test generation request to the API.
-	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)
+	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error)
 
 	// SaveTest persists a generated test to the API.
-	SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error)
+	SaveTest(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error)
 
 	// RunTest executes a test by ID via the API.
-	RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error)
+	RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error)
 }
 
 type autotesterAPIRepository struct {
@@ -51,9 +51,9 @@ func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, ba
 	}, nil
 }
 
-func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
+func (a *autotesterAPIRepository) GetTemplate(ctx context.Context, token string) (*entity.TemplateResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/template", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodGet, url, nil)
+	req, err := a.newJSONRequest(ctx, http.MethodGet, url, nil, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -68,9 +68,9 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error) {
+func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/validate", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to validate prompt", "error", err)
 		return nil, err
@@ -85,9 +85,9 @@ func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *e
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
+func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/chat", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -102,9 +102,9 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error) {
+func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/saveLocal", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -119,9 +119,9 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error) {
+func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/run", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -139,7 +139,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 // newJSONRequest creates an HTTP request with an optional JSON body and sets
 // the Content-Type header when a body is provided.
 // --- helpers bound to the repository struct ---
-func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
+func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any, token string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -157,6 +157,8 @@ func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, ur
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	return req, nil
 }
