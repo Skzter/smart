@@ -353,7 +353,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "run",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 data: mockParams,
             });
             expect(result).toEqual(mockResult);
@@ -390,7 +390,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "run",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
                 data: complexParams,
             });
         });
@@ -563,7 +563,8 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: "/groups",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
             });
             expect(result).toEqual(mockGroups);
         });
@@ -586,7 +587,8 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: "/groups",
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
                 data: mockRequest,
             });
             expect(result).toEqual({ groupId: "new-group-id" });
@@ -601,7 +603,8 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
                 url: `/chats/${mockChatId}/groups`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
                 data: { groupIds: ["g1", "g2"] },
             });
         });
@@ -615,7 +618,8 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "delete",
                 url: `/chats/${mockChatId}/groups/g1`,
-                baseURL: "http://localhost:8081/api/v1/",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
             });
         });
     });
