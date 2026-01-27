@@ -674,7 +674,14 @@ func sampleRequestBody(travelType string, airports []string) entity.RequestBody 
 }
 
 func buildRequest(body entity.RequestBody, tags string) entity.Request {
-	raw, _ := json.Marshal(body)
+	payload := struct {
+		Params []entity.RequestBody `json:"params"`
+	}{
+		Params: []entity.RequestBody{body},
+	}
+
+	raw, _ := json.Marshal(payload)
+
 	return entity.Request{
 		Header: map[string]string{"content-type": "application/json"},
 		Body:   string(raw),

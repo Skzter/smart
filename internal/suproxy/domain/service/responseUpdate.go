@@ -488,12 +488,26 @@ func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) 
 		return nil, fmt.Errorf("mockRequest body cannot be empty")
 	}
 
-	var body entity.RequestBody
-	if err := json.Unmarshal([]byte(mockRequest.Body), &body); err != nil {
-		return nil, fmt.Errorf("failed to parse mockRequest body: %w", err)
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(mockRequest.Body), &root); err != nil {
+		return nil, fmt.Errorf("failed to parse request body: %w", err)
 	}
 
-	return &body, nil
+	rawParams, ok := root["params"]
+	if !ok {
+		return nil, fmt.Errorf("missing params field in request body")
+	}
+
+	var params []entity.RequestBody
+	if err := json.Unmarshal(rawParams, &params); err != nil {
+		return nil, fmt.Errorf("failed to parse params: %w", err)
+	}
+
+	if len(params) == 0 {
+		return nil, fmt.Errorf("params must contain at least one element")
+	}
+
+	return &params[0], nil
 }
 
 // validateRequestBody validates required request fields.
