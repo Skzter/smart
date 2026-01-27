@@ -7,6 +7,7 @@ type File struct {
 	fileExtension string
 }
 
+// NewFile creates a new File
 func NewFile(name string, data []byte, fileExtension string) File {
 	return File{fileName: name, fileData: data, fileExtension: fileExtension}
 }

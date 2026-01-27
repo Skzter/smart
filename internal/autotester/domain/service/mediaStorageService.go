@@ -105,7 +105,6 @@ func (s *mediaStorageService) HasMedia(ctx context.Context, testId string) (hasS
 func (s *mediaStorageService) UploadMedia(ctx context.Context, testId string, file entity.File) error {
 	s.logger.Debug("uploading media file to S3",
 		slog.String("testId", testId),
-		//slog.String("localDir", localDir),
 	)
 
 	err := s.repo.UploadMedia(ctx, testId, file)

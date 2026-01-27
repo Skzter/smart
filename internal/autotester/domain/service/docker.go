@@ -149,7 +149,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 		slog.String("testID", testID),
 	)
 
-	copyChan := d.attachCopyFromContainer(ctx, resp.ID)
+	copyChan := d.attachCopyFromContainer(resp.ID)
 
 	return resp.ID, copyChan, nil
 }
@@ -179,12 +179,20 @@ func (d *docker) GetContainerInfo(testID string) (*entity.ContainerInfo, bool) {
 	return info, ok
 }
 
-func (d *docker) attachCopyFromContainer(ctx context.Context, containerID string) <-chan []entity.File {
-	outchan := make(chan []entity.File)
+func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.File {
+	outchan := make(chan []entity.File, 1)
 
 	statusChan, errChan := d.WaitContainer(context.Background(), containerID)
 	go func() {
-		defer d.client.ContainerRemove(context.Background(), containerID, container.RemoveOptions{})
+		defer func() {
+			if err := d.client.ContainerRemove(context.Background(), containerID, container.RemoveOptions{
+				RemoveVolumes: true,
+				RemoveLinks:   true,
+				Force:         true,
+			}); err != nil {
+				d.logger.Error("error removing Container", "err", err)
+			}
+		}()
 		files := []entity.File{}
 		defer func() { outchan <- files }()
 

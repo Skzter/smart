@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
@@ -52,13 +53,16 @@ func TestHandleRunContainer(t *testing.T) {
 				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("/tmp/chat789.ts", nil)
 
+				filesChan := make(chan []entity.File, 1)
+				filesChan <- []entity.File{}
+
 				docker.On("RunTest",
 					mock.Anything,
 					"/tmp/chat789.ts",
 					"test456",
 					"user123",
 					"chat789",
-				).Return("container-id", nil)
+				).Return("container-id", (<-chan []entity.File)(filesChan), nil)
 			},
 		},
 		{
@@ -109,7 +113,7 @@ func TestHandleRunContainer(t *testing.T) {
 					"test456",
 					"user123",
 					"chat789",
-				).Return("", errors.New("running error"))
+				).Return("", (<-chan []entity.File)(nil), errors.New("running error"))
 			},
 		},
 	}

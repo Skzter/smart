@@ -255,7 +255,7 @@ func TestHandleLogRequest(t *testing.T) {
 			ctx.Params = gin.Params{{Key: "testId", Value: "abc"}}
 
 			mockMedia := mocks.NewMockMediaStorageService(t)
-			mockMedia.On("UploadMedia", mock.Anything, mock.Anything, mock.Anything).Return(0, nil).Maybe()
+			mockMedia.On("UploadMedia", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 			controller, err := NewAutotesterController(
 				logger,

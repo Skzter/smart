@@ -1,8 +1,11 @@
 package service
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"log/slog"
 	"testing"
 
@@ -60,6 +63,7 @@ func TestNewDocker(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func TestRunTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg, _ := config.LoadConfig()
@@ -72,6 +76,7 @@ func TestRunTest(t *testing.T) {
 		ctx        context.Context
 		createResp []any
 		startResp  []any
+		waitResp   []any
 		wantErr    bool
 	}{
 		{
@@ -106,6 +111,7 @@ func TestRunTest(t *testing.T) {
 				container.CreateResponse{ID: "123"}, nil,
 			},
 			startResp: []any{nil},
+			waitResp:  []any{},
 			wantErr:   false,
 		},
 	}
@@ -114,7 +120,6 @@ func TestRunTest(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockClient := mocks.NewMockDockerClient(t)
 
-			// mock ContainerCreate
 			if tc.createResp != nil {
 				mockClient.On("ContainerCreate",
 					mock.Anything,
@@ -123,11 +128,30 @@ func TestRunTest(t *testing.T) {
 				).Return(tc.createResp...)
 			}
 
-			// mock ContainerStart
 			if tc.startResp != nil {
 				mockClient.On("ContainerStart",
 					mock.Anything, "123", mock.Anything,
 				).Return(tc.startResp...)
+			}
+
+			if tc.waitResp != nil {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{}
+				close(statusCh)
+				close(errCh)
+
+				mockClient.On("ContainerWait",
+					mock.Anything, "123", mock.Anything,
+				).Return((<-chan container.WaitResponse)(statusCh), (<-chan error)(errCh))
+
+				mockClient.On("CopyFromContainer",
+					mock.Anything, "123", "/app/test-results",
+				).Return(nil, container.PathStat{}, errors.New("no files")).Maybe()
+
+				mockClient.On("ContainerRemove",
+					mock.Anything, "123", mock.Anything,
+				).Return(nil).Maybe()
 			}
 
 			d := &docker{
@@ -138,14 +162,16 @@ func TestRunTest(t *testing.T) {
 				tracer:           tracer,
 			}
 
-			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "chatY")
+			id, filesChan, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "chatY")
 
 			if tc.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, id)
+				assert.Nil(t, filesChan)
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, "123", id)
+				assert.NotNil(t, filesChan)
 
 				info, ok := d.testContainerMap[tc.testID]
 				assert.True(t, ok)
@@ -222,4 +248,211 @@ func TestGetContainerInfo(t *testing.T) {
 
 	_, found = d.GetContainerInfo("missing")
 	assert.False(t, found)
+}
+
+// createTarArchive creates a tar archive with test files
+func createTarArchive(files map[string][]byte) io.ReadCloser {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+
+	for name, content := range files {
+		hdr := &tar.Header{
+			Name: name,
+			Mode: 0600,
+			Size: int64(len(content)),
+		}
+		if err := tw.WriteHeader(hdr); err != nil {
+			panic(err)
+		}
+		if _, err := tw.Write(content); err != nil {
+			panic(err)
+		}
+	}
+	_ = tw.Close()
+
+	return io.NopCloser(buf)
+}
+
+//nolint:funlen
+func TestAttachCopyFromContainer(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	cfg, _ := config.LoadConfig()
+	tracer := otel.Tracer("test")
+
+	tests := []struct {
+		name               string
+		containerID        string
+		waitResp           func() (<-chan container.WaitResponse, <-chan error)
+		copyResp           []any
+		removeResp         error
+		expectedFiles      int
+		expectedExtensions []string
+	}{
+		{
+			name:        "success - png and webm files",
+			containerID: "container123",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{StatusCode: 0}
+				close(statusCh)
+				close(errCh)
+				return statusCh, errCh
+			},
+			copyResp: []any{
+				createTarArchive(map[string][]byte{
+					"screenshot.png": []byte("fake png data"),
+					"video.webm":     []byte("fake webm data"),
+				}),
+				container.PathStat{},
+				nil,
+			},
+			removeResp:         nil,
+			expectedFiles:      2,
+			expectedExtensions: []string{"png", "webm"},
+		},
+		{
+			name:        "success - only png file",
+			containerID: "container456",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{StatusCode: 0}
+				close(statusCh)
+				close(errCh)
+				return statusCh, errCh
+			},
+			copyResp: []any{
+				createTarArchive(map[string][]byte{
+					"screenshot.png": []byte("fake png data"),
+				}),
+				container.PathStat{},
+				nil,
+			},
+			removeResp:         nil,
+			expectedFiles:      1,
+			expectedExtensions: []string{"png"},
+		},
+		{
+			name:        "success - filters out non-media files",
+			containerID: "container789",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{StatusCode: 0}
+				close(statusCh)
+				close(errCh)
+				return statusCh, errCh
+			},
+			copyResp: []any{
+				createTarArchive(map[string][]byte{
+					"screenshot.png": []byte("fake png data"),
+					"log.txt":        []byte("some log"),
+					"test.json":      []byte("{}"),
+				}),
+				container.PathStat{},
+				nil,
+			},
+			removeResp:         nil,
+			expectedFiles:      1,
+			expectedExtensions: []string{"png"},
+		},
+		{
+			name:        "error - wait container error",
+			containerID: "containerErr1",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				errCh <- errors.New("wait error")
+				close(errCh)
+				// Don't close statusCh - it will block if no error is read first
+				return statusCh, errCh
+			},
+			removeResp:    nil,
+			expectedFiles: 0,
+		},
+		{
+			name:        "error - copy from container fails",
+			containerID: "containerErr2",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{StatusCode: 0}
+				close(statusCh)
+				close(errCh)
+				return statusCh, errCh
+			},
+			copyResp: []any{
+				nil,
+				container.PathStat{},
+				errors.New("copy failed"),
+			},
+			removeResp:    nil,
+			expectedFiles: 0,
+		},
+		{
+			name:        "success - empty archive",
+			containerID: "containerEmpty",
+			waitResp: func() (<-chan container.WaitResponse, <-chan error) {
+				statusCh := make(chan container.WaitResponse, 1)
+				errCh := make(chan error, 1)
+				statusCh <- container.WaitResponse{StatusCode: 0}
+				close(statusCh)
+				close(errCh)
+				return statusCh, errCh
+			},
+			copyResp: []any{
+				createTarArchive(map[string][]byte{}),
+				container.PathStat{},
+				nil,
+			},
+			removeResp:    nil,
+			expectedFiles: 0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockClient := mocks.NewMockDockerClient(t)
+
+			statusCh, errCh := tc.waitResp()
+			mockClient.On("ContainerWait",
+				mock.Anything, tc.containerID, mock.Anything,
+			).Return(statusCh, errCh)
+
+			if tc.copyResp != nil {
+				mockClient.On("CopyFromContainer",
+					mock.Anything, tc.containerID, "/app/test-results",
+				).Return(tc.copyResp...)
+			}
+
+			mockClient.On("ContainerRemove",
+				mock.Anything, tc.containerID, mock.Anything,
+			).Return(tc.removeResp)
+
+			d := &docker{
+				logger:           logger,
+				config:           cfg,
+				client:           mockClient,
+				testContainerMap: make(map[string]*entity.ContainerInfo),
+				tracer:           tracer,
+			}
+
+			filesChan := d.attachCopyFromContainer(tc.containerID)
+
+			files := <-filesChan
+
+			assert.Equal(t, tc.expectedFiles, len(files))
+
+			if tc.expectedExtensions != nil {
+				extensions := make([]string, len(files))
+				for i, file := range files {
+					extensions[i] = file.GetFileExtension()
+				}
+				assert.ElementsMatch(t, tc.expectedExtensions, extensions)
+			}
+
+			mockClient.AssertExpectations(t)
+		})
+	}
 }
