@@ -484,30 +484,20 @@ func parseFlexibleTimestamp(value string) (time.Time, error) {
 
 // parseRequestBody parses the request body.
 func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
-	if mockRequest.Body == "" {
+	if mockRequest == nil || mockRequest.Body == "" {
 		return nil, fmt.Errorf("mockRequest body cannot be empty")
 	}
 
-	var root map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(mockRequest.Body), &root); err != nil {
+	var payload entity.UpdateRequestPayload
+	if err := json.Unmarshal([]byte(mockRequest.Body), &payload); err != nil {
 		return nil, fmt.Errorf("failed to parse request body: %w", err)
 	}
 
-	rawParams, ok := root["params"]
-	if !ok {
-		return nil, fmt.Errorf("missing params field in request body")
-	}
-
-	var params []entity.RequestBody
-	if err := json.Unmarshal(rawParams, &params); err != nil {
-		return nil, fmt.Errorf("failed to parse params: %w", err)
-	}
-
-	if len(params) == 0 {
+	if len(payload.Params) == 0 {
 		return nil, fmt.Errorf("params must contain at least one element")
 	}
 
-	return &params[0], nil
+	return &payload.Params[0], nil
 }
 
 // validateRequestBody validates required request fields.
