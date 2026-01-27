@@ -59,12 +59,12 @@ type Validator interface {
 type validator struct {
 	openAiService sharedService.OpenAI
 	Logger        *slog.Logger
-	cfg           *config.Config
+	cfg           *config.Suproxy
 	tracer        trace.Tracer
 }
 
 // NewValidator creates a new validator service with logger and configuration
-func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService.OpenAI, tracer trace.Tracer) (Validator, error) {
+func NewValidator(logger *slog.Logger, cfg *config.Suproxy, service sharedService.OpenAI, tracer trace.Tracer) (Validator, error) {
 	if err := assert.NotNil(logger, cfg, service); err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func NewValidator(logger *slog.Logger, cfg *config.Config, service sharedService
 // Validate processes a supplier offer response, extracts individual offers (items), and sends up to MaxItems of them
 // to an OpenAI service for validation
 // nolint:funlen
-func (v validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
+func (v *validator) Validate(ctx context.Context, offers *entity.SupplierResponse, tagList *sharedEntity.TagList) (*sharedEntity.TagList, error) {
 	if err := assert.NotNil(ctx, offers); err != nil {
 		return nil, err
 	}

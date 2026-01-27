@@ -25,7 +25,7 @@ type GeneratePrompt interface {
 type generatePrompt struct {
 	openAIService  sharedService.OpenAI
 	taglistService sharedService.TaglistStorage
-	config         *config.Config
+	config         *config.Autotester
 	logger         *slog.Logger
 	validator      Validator
 	tracer         trace.Tracer
@@ -36,7 +36,7 @@ type generatePrompt struct {
 func NewGeneratePromptService(
 	openaiService sharedService.OpenAI,
 	taglistService sharedService.TaglistStorage,
-	config *config.Config,
+	config *config.Autotester,
 	logger *slog.Logger,
 	validator Validator,
 	tracer trace.Tracer,

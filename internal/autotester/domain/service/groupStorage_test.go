@@ -20,7 +20,7 @@ import (
 
 // nolint: dupl
 func TestNewGroupStorage(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockGroupStorage(t)
 	mockValidator := servmocks.NewMockValidator(t)
 	tracer := otel.Tracer("test")
@@ -92,7 +92,7 @@ func TestNewGroupStorage(t *testing.T) {
 
 // nolint: dupl
 func TestGroupStorageNew(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -183,7 +183,7 @@ func TestGroupStorageNew(t *testing.T) {
 
 // nolint: dupl
 func TestGroupStorageUpdate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -273,7 +273,7 @@ func TestGroupStorageUpdate(t *testing.T) {
 }
 
 func TestGroupStorageLoadAll(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -340,7 +340,7 @@ func TestGroupStorageLoadAll(t *testing.T) {
 }
 
 func TestGroupStorageLoad(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -413,7 +413,7 @@ func TestGroupStorageLoad(t *testing.T) {
 }
 
 func TestGroupStorageRemove(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	tests := []struct {

@@ -62,14 +62,14 @@ type DockerClient interface {
 
 type docker struct {
 	logger           *slog.Logger
-	config           *config.Config
+	config           *config.Autotester
 	client           DockerClient
 	testContainerMap map[string]*entity.ContainerInfo
 	tracer           trace.Tracer
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient, tracer trace.Tracer) (Docker, error) {
+func NewDocker(logger *slog.Logger, config *config.Autotester, client DockerClient, tracer trace.Tracer) (Docker, error) {
 	if err := assert.NotNil(logger, config); err != nil {
 		return nil, err
 	}

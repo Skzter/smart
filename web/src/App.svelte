@@ -3,7 +3,7 @@
     import AppSidebar from "$lib/components/Sidebar.svelte";
     import Main from "$lib/components/Main.svelte";
     import LoginButton from "$lib/components/LoginButton.svelte";
-    import { user } from "$lib/shared.svelte";
+    import { user, getToken } from "$lib/shared.svelte";
     import { onMount } from "svelte";
     import { Toaster } from "$lib/components/ui/sonner";
     import { auth } from "$lib/authService";
@@ -26,6 +26,7 @@
     $effect(() => {
         if ($auth.isAuthenticated && $auth.user) {
             user.id = $auth.user.sub;
+            getToken();
         } else {
             user.id = undefined;
         }

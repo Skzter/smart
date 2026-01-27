@@ -282,7 +282,7 @@ func setupTestHandler(t *testing.T) (*gin.Engine, map[string]string, map[string]
 
 	controller := &AutotesterController{
 		remoteTestcaseStorageService: setup.service,
-		logger:                       slog.Default(),
+		logger:                       slog.New(slog.DiscardHandler),
 		config:                       cfg,
 	}
 
@@ -318,7 +318,7 @@ func setupTestService(t *testing.T) *testServiceSetup {
 	t.Cleanup(cleanup)
 
 	ctx := context.Background()
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	tracer := otel.Tracer("test")
 
 	endpoint, err := minioContainer.ConnectionString(ctx)

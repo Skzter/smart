@@ -23,6 +23,7 @@ var SharedProviderSet = wire.NewSet(
 	TaglistStorageProvider,
 	TagListParquetWrapperProvider,
 	sharedService.NewTaglistStorage,
+	RedisCacheProvider,
 )
 
 // OpenAiClientProvider provides a new OpenAI client.
@@ -33,7 +34,7 @@ func OpenAiClientProvider() (repository.OpenAIClient, error) {
 // TaglistStorageProvider provides a Tagliststorage repository
 func TaglistStorageProvider(
 	logger *slog.Logger,
-	cfg *config.Taglist,
+	cfg *config.TaglistConfig,
 	parquet wrapper.ParquetFileWrapper[entity.TagList],
 	tracer trace.Tracer,
 ) (repository.TaglistStorage, error) {
@@ -51,10 +52,10 @@ func TaglistStorageProvider(
 }
 
 // S3WrapperProvider provides an S3Wrapper configured with the shared config
-func S3WrapperProvider(logger *slog.Logger, cfg *config.Taglist, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
+func S3WrapperProvider(logger *slog.Logger, cfg *config.TaglistConfig, tracer trace.Tracer) (wrapper.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
 		Region:    cfg.Region,
-		Bucket:    cfg.TaglistBucket,
+		Bucket:    cfg.Bucket,
 		AccessKey: build.AwsAccessKey,
 		SecretKey: build.AwsSecretAccessKey,
 	}
@@ -64,4 +65,9 @@ func S3WrapperProvider(logger *slog.Logger, cfg *config.Taglist, tracer trace.Tr
 // TagListParquetWrapperProvider provides a ParquetWrapper for Taglist
 func TagListParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wrapper.ParquetFileWrapper[entity.TagList], error) {
 	return wrapper.NewParquetWrapper[entity.TagList](logger, wrapper.DefaultParquetConfig(), tracer)
+}
+
+// RedisCacheProvider provides a new RedisCache
+func RedisCacheProvider(log *slog.Logger, cfg *config.RedisConfig) (repository.Cache, error) {
+	return repository.NewRedisCache(log, cfg)
 }
