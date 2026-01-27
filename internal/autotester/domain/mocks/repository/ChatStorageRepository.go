@@ -39,16 +39,16 @@ func (_m *MockChatStorageRepository) EXPECT() *MockChatStorageRepository_Expecte
 }
 
 // Create provides a mock function for the type MockChatStorageRepository
-func (_mock *MockChatStorageRepository) Create(ctx context.Context, obj *entity.Chat) error {
-	ret := _mock.Called(ctx, obj)
+func (_mock *MockChatStorageRepository) Create(ctx context.Context, obj *entity.Chat, summary *entity.ChatSummary) error {
+	ret := _mock.Called(ctx, obj, summary)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat) error); ok {
-		r0 = returnFunc(ctx, obj)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat, *entity.ChatSummary) error); ok {
+		r0 = returnFunc(ctx, obj, summary)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -63,11 +63,12 @@ type MockChatStorageRepository_Create_Call struct {
 // Create is a helper method to define mock.On call
 //   - ctx context.Context
 //   - obj *entity.Chat
-func (_e *MockChatStorageRepository_Expecter) Create(ctx interface{}, obj interface{}) *MockChatStorageRepository_Create_Call {
-	return &MockChatStorageRepository_Create_Call{Call: _e.mock.On("Create", ctx, obj)}
+//   - summary *entity.ChatSummary
+func (_e *MockChatStorageRepository_Expecter) Create(ctx interface{}, obj interface{}, summary interface{}) *MockChatStorageRepository_Create_Call {
+	return &MockChatStorageRepository_Create_Call{Call: _e.mock.On("Create", ctx, obj, summary)}
 }
 
-func (_c *MockChatStorageRepository_Create_Call) Run(run func(ctx context.Context, obj *entity.Chat)) *MockChatStorageRepository_Create_Call {
+func (_c *MockChatStorageRepository_Create_Call) Run(run func(ctx context.Context, obj *entity.Chat, summary *entity.ChatSummary)) *MockChatStorageRepository_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -77,9 +78,14 @@ func (_c *MockChatStorageRepository_Create_Call) Run(run func(ctx context.Contex
 		if args[1] != nil {
 			arg1 = args[1].(*entity.Chat)
 		}
+		var arg2 *entity.ChatSummary
+		if args[2] != nil {
+			arg2 = args[2].(*entity.ChatSummary)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -90,7 +96,7 @@ func (_c *MockChatStorageRepository_Create_Call) Return(err error) *MockChatStor
 	return _c
 }
 
-func (_c *MockChatStorageRepository_Create_Call) RunAndReturn(run func(ctx context.Context, obj *entity.Chat) error) *MockChatStorageRepository_Create_Call {
+func (_c *MockChatStorageRepository_Create_Call) RunAndReturn(run func(ctx context.Context, obj *entity.Chat, summary *entity.ChatSummary) error) *MockChatStorageRepository_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

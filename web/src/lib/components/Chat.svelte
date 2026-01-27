@@ -87,7 +87,7 @@
                 <div
                     class="flex items-center justify-center flex-1 text-muted-foreground"
                 >
-                    <p>Start a conversation...</p>
+                    <p>Start a chat...</p>
                 </div>
             {:else}
                 <div class="flex-1"></div>

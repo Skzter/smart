@@ -4,12 +4,14 @@
     import ChatSummary from "./ChatSummary.svelte";
 
     let {
-        group = $bindable(),
+        group,
+        updateChatSummary,
     }: {
         group: {
             label: string;
             summaries: ApiChatSummary[];
         };
+        updateChatSummary: (chatId: string, updated: ApiChatSummary) => void;
     } = $props();
 </script>
 
@@ -17,8 +19,12 @@
     <Sidebar.GroupLabel class="uppercase">{group.label}</Sidebar.GroupLabel>
     <Sidebar.GroupContent>
         <Sidebar.Menu>
-            {#each group.summaries as chat, key (chat.chatId)}
-                <ChatSummary bind:summary={group.summaries[key]}></ChatSummary>
+            {#each group.summaries as chat (chat.chatId)}
+                <ChatSummary
+                    summary={chat}
+                    onUpdate={(updated) =>
+                        updateChatSummary(chat.chatId, updated)}
+                ></ChatSummary>
             {/each}
         </Sidebar.Menu>
     </Sidebar.GroupContent>

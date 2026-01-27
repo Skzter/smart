@@ -42,7 +42,7 @@ func TestCreateChatStorage(t *testing.T) {
 
 			repo, _ := NewChatStorageRepository(logger, mockS3, mockParquet, mockSummaryParquet, tracer)
 
-			err := repo.Create(test.ctx, test.obj)
+			err := repo.Create(test.ctx, test.obj, test.summary)
 			if test.expectError {
 				if err == nil {
 					t.Errorf("Create() expected error but got none")
@@ -59,6 +59,7 @@ func TestCreateChatStorage(t *testing.T) {
 func chatCreateTestCaseProvider() []struct {
 	name            string
 	obj             *entity.Chat
+	summary         *entity.ChatSummary
 	chatWriteRet    []any
 	summaryWriteRet []any
 	uploadRet       []any
@@ -68,6 +69,7 @@ func chatCreateTestCaseProvider() []struct {
 	return []struct {
 		name            string
 		obj             *entity.Chat
+		summary         *entity.ChatSummary
 		chatWriteRet    []any
 		summaryWriteRet []any
 		uploadRet       []any
@@ -77,6 +79,7 @@ func chatCreateTestCaseProvider() []struct {
 		{
 			name:            "happy path",
 			obj:             &entity.Chat{},
+			summary:         &entity.ChatSummary{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
 			uploadRet:       []any{nil},
@@ -87,17 +90,27 @@ func chatCreateTestCaseProvider() []struct {
 			name:        "nil obj",
 			ctx:         context.Background(),
 			obj:         nil,
+			summary:     &entity.ChatSummary{},
+			expectError: true,
+		},
+		{
+			name:        "nil summary",
+			ctx:         context.Background(),
+			obj:         &entity.Chat{},
+			summary:     nil,
 			expectError: true,
 		},
 		{
 			name:        "nil ctx",
 			obj:         &entity.Chat{},
+			summary:     &entity.ChatSummary{},
 			ctx:         nil,
 			expectError: true,
 		},
 		{
 			name:         "chat parquet error",
 			obj:          &entity.Chat{},
+			summary:      &entity.ChatSummary{},
 			chatWriteRet: []any{nil, errors.New("err")},
 			expectError:  true,
 			ctx:          context.Background(),
@@ -105,6 +118,7 @@ func chatCreateTestCaseProvider() []struct {
 		{
 			name:            "summary parquet error",
 			obj:             &entity.Chat{},
+			summary:         &entity.ChatSummary{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{nil, errors.New("err")},
 			expectError:     true,
@@ -113,6 +127,7 @@ func chatCreateTestCaseProvider() []struct {
 		{
 			name:            "upload error",
 			obj:             &entity.Chat{},
+			summary:         &entity.ChatSummary{},
 			chatWriteRet:    []any{[]byte("chat parqeut data"), nil},
 			summaryWriteRet: []any{[]byte("summary parqeut data"), nil},
 			uploadRet:       []any{errors.New("err")},

@@ -170,8 +170,8 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleGetUserChats")
 	defer span.End()
 
-	var queryParameters entity.UserChatSummaryQueryParameters
-	if err := c.BindQuery(&queryParameters); err != nil {
+	var query entity.UserChatSummaryQueryParameters
+	if err := c.BindQuery(&query); err != nil {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusBadRequest, entity.ErrorMessage{
 			Error: "Bad Request",
@@ -179,7 +179,7 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 		return
 	}
 
-	chats, err := a.chatStorageService.LoadSummaries(ctx, queryParameters.Groups...)
+	chats, hasMore, err := a.chatStorageService.LoadSummaries(ctx, query.Page*a.config.PageSize, a.config.PageSize, query.Groups...)
 
 	if err != nil {
 		span.RecordError(err)
@@ -191,17 +191,13 @@ func (a *AutotesterController) HandleGetChats(c *gin.Context) {
 		return
 	}
 
-	if queryParameters.Limit > len(chats) || queryParameters.Limit == 0 {
-		queryParameters.Limit = len(chats)
-	}
-
-	chats = chats[:queryParameters.Limit]
-
 	span.SetStatus(codes.Ok, "")
 	a.metricsService.IncRequestSuccess()
 	a.metricsService.RecordRequestDuration(time.Since(start))
 	c.JSON(http.StatusOK, entity.ChatSummarys{
 		ChatSummarys: chats,
+		HasMore:      hasMore,
+		PageSize:     a.config.PageSize,
 	})
 }
 

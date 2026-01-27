@@ -18,7 +18,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	tests := []struct {
 		testName      string
 		logger        *slog.Logger
-		config        *config.Config
+		config        *config.Autotester
 		expectedError bool
 	}{
 		{
@@ -45,6 +45,7 @@ func TestNewAutoTesterController(t *testing.T) {
 	mockGroupManager := mocks.NewMockGroupManager(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuthServ := mocks.NewMockAuth(t)
 
 	for _, test := range tests {
 		t.Run(test.testName, func(t *testing.T) {
@@ -61,6 +62,7 @@ func TestNewAutoTesterController(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuthServ,
 			)
 
 			if test.expectedError {

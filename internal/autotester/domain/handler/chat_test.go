@@ -55,7 +55,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
@@ -72,7 +72,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 		},
@@ -84,7 +84,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
@@ -99,7 +99,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusOK,
 			MockSetup: []MockSetup{
@@ -116,7 +116,7 @@ func TestHandleChatRequest(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			MockSetup: []MockSetup{
@@ -145,6 +145,7 @@ func TestHandleChatRequest(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			for _, mc := range test.MockSetup {
@@ -183,6 +184,7 @@ func TestHandleChatRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			controller.HandleChatRequest(ctx)
@@ -220,7 +222,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -235,7 +237,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -250,7 +252,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusInternalServerError,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -264,7 +266,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 		},
@@ -276,7 +278,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:   http.StatusInternalServerError,
 			MockResponseLoad: []any{nil, errors.New("err")},
@@ -289,7 +291,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 					"role":"user"
 				},
 				"userId":"2",
-				"conversationId":"2"
+				"chatId":"2"
 			}`,
 			ExpectedStatus:       http.StatusOK,
 			MockResponseLoad:     []any{&entity.Chat{}, nil},
@@ -310,6 +312,7 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
+			mockAuth := mocks.NewMockAuth(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 
 			if test.MockResponseLoad != nil {
@@ -327,8 +330,20 @@ func TestHandleChatRequestValidity(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
-			controller, _ := NewAutotesterController(logger, cfg, mockValServ, mockGenServ, mockLocalStorageServ, mockDockerServ,
-				mockChatStorageServ, mockRemoteStorageServ, mockChatManager, mockGroupManager, tracer, mockMetricsServ)
+			controller, _ := NewAutotesterController(
+				logger,
+				cfg,
+				mockValServ,
+				mockGenServ,
+				mockLocalStorageServ,
+				mockDockerServ,
+				mockChatStorageServ,
+				mockRemoteStorageServ,
+				mockChatManager,
+				mockGroupManager,
+				tracer,
+				mockMetricsServ,
+				mockAuth)
 			controller.HandleChatRequestValidity(ctx)
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d", test.ExpectedStatus, rec.Code)
@@ -352,9 +367,9 @@ func TestHandleUserInfoRequest(t *testing.T) {
 			TestName: "Valid UserRequestBody",
 			UserRequestBody: `{
 				"userId": "9177b856-46a0-11f0-9fe2-0242ac120002",
-				"allConversations": [
+				"allChats": [
 				  {
-					"ConversationId": "string",
+					"ChatId": "string",
 					"Messages": [
 					  {
 						"data": "string",
@@ -382,6 +397,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 	mockChatStorageServ := mocks.NewMockChatStorageService(t)
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -416,6 +432,7 @@ func TestHandleUserInfoRequest(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 
 			if err != nil {
@@ -437,35 +454,26 @@ func TestGetUserChats(t *testing.T) {
 	tracer := otel.Tracer("test")
 	tests := []struct {
 		name             string
-		limit            string
+		queryParams      string
 		mockResponseLoad []any
 		expectedStatus   int
+		checkPageSize    bool
 	}{
 		{
-			name:           "error - limit is not a number",
-			limit:          "hallo",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "error - limit is a negative number",
-			limit:          "-131",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
 			name:             "error - no chat history for given user found",
-			limit:            "123",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			queryParams:      "",
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
 			name:             "error - empty limit but no history found",
-			limit:            "",
-			mockResponseLoad: []any{nil, errors.New("no history found")},
+			queryParams:      "",
+			mockResponseLoad: []any{nil, false, errors.New("no history found")},
 			expectedStatus:   http.StatusInternalServerError,
 		},
 		{
-			name:  "success",
-			limit: "5",
+			name:        "success",
+			queryParams: "",
 			mockResponseLoad: []any{[]*entity.ChatSummary{
 				{
 					ChatId:    "1",
@@ -475,8 +483,90 @@ func TestGetUserChats(t *testing.T) {
 					ChatId:    "2",
 					UpdatedAt: time.Now().Add(-10 * time.Hour),
 				},
-			}, nil},
+			}, false, nil},
 			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:        "success with hasMore true",
+			queryParams: "",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+				{
+					ChatId:    "2",
+					UpdatedAt: time.Now().Add(-10 * time.Hour),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:             "success with empty result",
+			queryParams:      "",
+			mockResponseLoad: []any{[]*entity.ChatSummary{}, false, nil},
+			expectedStatus:   http.StatusOK,
+			checkPageSize:    true,
+		},
+		{
+			name:        "success with page 0",
+			queryParams: "?page=0",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+			}, false, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:        "success with page 1",
+			queryParams: "?page=1",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "3",
+					UpdatedAt: time.Now(),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:           "error - invalid page parameter (negative)",
+			queryParams:    "?page=-1",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "success with valid groups",
+			queryParams: "?groups=group1&groups=group2",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "1",
+					UpdatedAt: time.Now(),
+				},
+			}, false, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
+		},
+		{
+			name:           "error - invalid groups parameter (empty string)",
+			queryParams:    "?groups=",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:        "success with page and groups combined",
+			queryParams: "?page=2&groups=group1&groups=group2",
+			mockResponseLoad: []any{[]*entity.ChatSummary{
+				{
+					ChatId:    "5",
+					UpdatedAt: time.Now(),
+				},
+			}, true, nil},
+			expectedStatus: http.StatusOK,
+			checkPageSize:  true,
 		},
 	}
 
@@ -487,6 +577,7 @@ func TestGetUserChats(t *testing.T) {
 	mockDockerServ := mocks.NewMockDocker(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -499,7 +590,7 @@ func TestGetUserChats(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			if tc.mockResponseLoad != nil {
-				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
+				mockChatStorageServ.On("LoadSummaries", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResponseLoad...)
 			}
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
@@ -517,10 +608,11 @@ func TestGetUserChats(t *testing.T) {
 				mockGroupManager,
 				tracer,
 				mockMetricsServ,
+				mockAuth,
 			)
 			router.GET("/api/v1/chats/", controller.HandleGetChats)
 
-			endpoint := "/api/v1/chats/?limit=" + tc.limit
+			endpoint := "/api/v1/chats/" + tc.queryParams
 			req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 			rec := httptest.NewRecorder()
 
@@ -528,6 +620,17 @@ func TestGetUserChats(t *testing.T) {
 
 			if rec.Code != tc.expectedStatus {
 				t.Errorf("Expected status %d, got %d. Body: %s", tc.expectedStatus, rec.Code, rec.Body.String())
+			}
+
+			// Check that PageSize is included in successful responses
+			if tc.checkPageSize && rec.Code == http.StatusOK {
+				var response entity.ChatSummarys
+				if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+					t.Errorf("Failed to unmarshal response: %v", err)
+				}
+				if response.PageSize != cfg.PageSize {
+					t.Errorf("Expected PageSize %d, got %d", cfg.PageSize, response.PageSize)
+				}
 			}
 		})
 	}
@@ -547,6 +650,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -574,6 +678,7 @@ func newTestControllerWithChatMock(t *testing.T, chat *entity.Chat, err error) *
 		mockGroupManager,
 		tracer,
 		mockMetricsServ,
+		mockAuth,
 	)
 	if buildErr != nil {
 		t.Fatalf("failed to build controller: %v", buildErr)
@@ -596,6 +701,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 	mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
 	mockChatManager := mocks.NewMockChatManager(t)
 	mockMetricsServ := sharedMocks.NewMockMetricsService(t)
+	mockAuth := mocks.NewMockAuth(t)
 	mockGroupManager := mocks.NewMockGroupManager(t)
 
 	// Setup metrics mock to accept any calls
@@ -619,6 +725,7 @@ func TestGetChatById_MissingParams_ReturnsBadRequest(t *testing.T) {
 		mockGroupManager,
 		tracer,
 		mockMetricsServ,
+		mockAuth,
 	)
 	if err != nil {
 		t.Fatalf("failed to build controller: %v", err)

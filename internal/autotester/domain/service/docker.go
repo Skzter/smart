@@ -21,7 +21,7 @@ import (
 
 // Docker interface
 type Docker interface {
-	RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error)
+	RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, error)
 	AttachToContainer(ctx context.Context, containerID string) (*types.HijackedResponse, error)
 	WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error)
 	GetContainerInfo(testID string) (*entity.ContainerInfo, bool)
@@ -61,14 +61,14 @@ type DockerClient interface {
 
 type docker struct {
 	logger           *slog.Logger
-	config           *config.Config
+	config           *config.Autotester
 	client           DockerClient
 	testContainerMap map[string]*entity.ContainerInfo
 	tracer           trace.Tracer
 }
 
 // NewDocker creates a new docker instance
-func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient, tracer trace.Tracer) (Docker, error) {
+func NewDocker(logger *slog.Logger, config *config.Autotester, client DockerClient, tracer trace.Tracer) (Docker, error) {
 	if err := assert.NotNil(logger, config); err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func NewDocker(logger *slog.Logger, config *config.Config, client DockerClient, 
 }
 
 // RunTest creates and starts a container for running tests
-func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, sessionID string) (string, error) {
+func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, error) {
 	basefile := path.Base(filename)
 
 	ctx, span := d.tracer.Start(ctx, "docker.RunTest")
@@ -94,7 +94,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 		Cmd: []string{
 			"/bin/bash",
 			"-c",
-			fmt.Sprintf("cd /apw && npx playwright test %s", basefile),
+			fmt.Sprintf("cd /app && npx playwright test %s", basefile),
 		},
 		AttachStdout: true,
 		AttachStderr: true,
@@ -107,7 +107,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 			{
 				Type:   mount.TypeBind,
 				Source: filename,
-				Target: fmt.Sprintf("/apw/%s", basefile),
+				Target: fmt.Sprintf("/app/%s", basefile),
 			},
 		},
 	}
@@ -133,7 +133,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, s
 	d.testContainerMap[testID] = &entity.ContainerInfo{
 		ContainerID: resp.ID,
 		UserID:      userID,
-		SessionID:   sessionID,
+		ChatID:      chatID,
 	}
 
 	d.logger.Debug("Container started",

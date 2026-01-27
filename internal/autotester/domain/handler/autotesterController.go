@@ -15,7 +15,7 @@ import (
 // AutotesterController is the controller for autotesting requests.
 // It encapsulates logging and access to the OpenAI service.
 type AutotesterController struct {
-	config                       *config.Config
+	config                       *config.Autotester
 	logger                       *slog.Logger
 	validationService            service.Validator
 	generationService            service.GeneratePrompt
@@ -27,13 +27,14 @@ type AutotesterController struct {
 	groupManager                 service.GroupManager
 	tracer                       trace.Tracer
 	metricsService               shared.MetricsService
+	authService                  service.Auth
 }
 
 // NewAutotesterController creates a new AutotesterController.
 // Returns an initialized controller or an error.
 func NewAutotesterController(
 	logger *slog.Logger,
-	config *config.Config,
+	config *config.Autotester,
 	validationService service.Validator,
 	generationService service.GeneratePrompt,
 	localTestcaseStorageService service.TestcaseLocalStorageService,
@@ -44,6 +45,7 @@ func NewAutotesterController(
 	groupManager service.GroupManager,
 	tracer trace.Tracer,
 	metricsService shared.MetricsService,
+	authService service.Auth,
 ) (*AutotesterController, error) {
 	if err := assert.NotNil(
 		logger,
@@ -58,6 +60,7 @@ func NewAutotesterController(
 		groupManager,
 		tracer,
 		metricsService,
+		authService,
 	); err != nil {
 		return nil, err
 	}
@@ -75,5 +78,6 @@ func NewAutotesterController(
 		groupManager:                 groupManager,
 		tracer:                       tracer,
 		metricsService:               metricsService,
+		authService:                  authService,
 	}, nil
 }

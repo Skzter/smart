@@ -13,7 +13,7 @@ import (
 )
 
 func TestNewAutotesterAPIService(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 
 	tests := []struct {
@@ -57,7 +57,7 @@ func TestNewAutotesterAPIService(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name            string
@@ -111,7 +111,7 @@ func TestGetTemplate(t *testing.T) {
 
 // nolint:funlen
 func TestGenerateTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name                string
@@ -126,26 +126,26 @@ func TestGenerateTest(t *testing.T) {
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "",
 					},
 					UserId: "user-123",
-					ChatId: "conv-456",
+					ChatId: "chat-456",
 				}, nil).Once()
 				m.EXPECT().
 					GenerateTest(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(&entity.GenerateTestResponse{
 					Result: entity.GenerateMessage{
 						Id:   "msg-1",
@@ -153,7 +153,7 @@ func TestGenerateTest(t *testing.T) {
 						Body: "generated test code",
 					},
 					UserId: "user-123",
-					ChatId: "conv-456",
+					ChatId: "chat-456",
 				}, nil).Once()
 			},
 			expectErr:           false,
@@ -169,20 +169,20 @@ func TestGenerateTest(t *testing.T) {
 			request: &entity.GenerateTestRequest{
 				Prompt: "bad prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "bad prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "Please provide more details in your prompt",
 					},
 					UserId: "user-123",
-					ChatId: "conv-456",
+					ChatId: "chat-456",
 				}, nil).Once()
 			},
 			expectErr: false,
@@ -205,14 +205,14 @@ func TestGenerateTest(t *testing.T) {
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(nil, errors.New("validation error")).Once()
 			},
 			expectErr:           true,
@@ -224,26 +224,26 @@ func TestGenerateTest(t *testing.T) {
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(&entity.ValidatePromptResponse{
 					Result: entity.ValidateMessage{
 						Body: "",
 					},
 					UserId: "user-123",
-					ChatId: "conv-456",
+					ChatId: "chat-456",
 				}, nil).Once()
 				m.EXPECT().
 					GenerateTest(context.Background(), &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).Return(nil, errors.New("generate error")).Once()
 			},
 			expectErr:           true,
@@ -276,7 +276,7 @@ func TestGenerateTest(t *testing.T) {
 
 // nolint:funlen
 func TestExecuteTest(t *testing.T) {
-	logger := slog.Default()
+	logger := slog.New(slog.DiscardHandler)
 
 	tests := []struct {
 		name          string
@@ -290,14 +290,14 @@ func TestExecuteTest(t *testing.T) {
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
@@ -309,7 +309,7 @@ func TestExecuteTest(t *testing.T) {
 					RunTest(context.Background(), &entity.RunTestRequest{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).
 					Return(&entity.RunTestResponse{
 						Result: "passed",
@@ -332,14 +332,14 @@ func TestExecuteTest(t *testing.T) {
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).
 					Return(nil, errors.New("save error")).
 					Once()
@@ -352,14 +352,14 @@ func TestExecuteTest(t *testing.T) {
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
-				ChatId: "conv-456",
+				ChatId: "chat-456",
 			},
 			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
 				m.EXPECT().
 					SaveTest(context.Background(), &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).
 					Return(&entity.SaveTestResponse{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
@@ -371,7 +371,7 @@ func TestExecuteTest(t *testing.T) {
 					RunTest(context.Background(), &entity.RunTestRequest{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
-						ChatId: "conv-456",
+						ChatId: "chat-456",
 					}).
 					Return(nil, errors.New("run error")).
 					Once()

@@ -3,10 +3,12 @@ package application
 import (
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 
 	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/handler"
@@ -33,12 +35,16 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/run", controller.HandleRunContainer)
 		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
 		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+		apiV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
 
 		apiV1.GET("/groups", controller.HandleGetGroups)
 		apiV1.POST("/groups", controller.HandleCreateGroup)
 		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
 		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
 	}
+
+	debugGroup := router.Group("/debug", pprofAuthMiddleware())
+	pprof.RouteRegister(debugGroup, "pprof")
 
 	if !isHeadless {
 		router.GET("/auth_config.json", func(c *gin.Context) {
@@ -66,6 +72,17 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 	return router, nil
 }
 
+func pprofAuthMiddleware() gin.HandlerFunc {
+	password := os.Getenv("PPROF_AUTH_PASSWORD")
+	if password == "" {
+		password = "smart-qa"
+	}
+
+	return gin.BasicAuth(gin.Accounts{
+		"admin": password,
+	})
+}
+
 func sseHeaderMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Content-Type", "text/event-stream")
@@ -73,5 +90,51 @@ func sseHeaderMiddleWare() gin.HandlerFunc {
 		c.Writer.Header().Set("Connection", "keep-alive")
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Next()
+	}
+}
+
+// internalOnlyMiddleware restricts access to localhost and Docker internal networks.
+// This prevents external access to sensitive endpoints like token generation.
+func internalOnlyMiddleware(logger *slog.Logger) gin.HandlerFunc {
+	// Define allowed CIDR ranges for Docker networks
+	allowedCIDRs := []string{
+		"127.0.0.0/8",    // Localhost IPv4
+		"::1/128",        // Localhost IPv6
+		"172.16.0.0/12",  // Docker default bridge
+		"192.168.0.0/16", // Docker Compose networks
+	}
+
+	allowedNets := make([]*net.IPNet, 0, len(allowedCIDRs))
+	for _, cidr := range allowedCIDRs {
+		_, ipNet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			logger.Error("Failed to parse CIDR", "cidr", cidr, "error", err)
+			continue
+		}
+		allowedNets = append(allowedNets, ipNet)
+	}
+
+	return func(c *gin.Context) {
+		clientIP := net.ParseIP(c.ClientIP())
+		if clientIP == nil {
+			logger.Warn("Invalid client IP", "ip", c.ClientIP())
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Forbidden: Invalid IP address",
+			})
+			return
+		}
+
+		// Check if client IP is in any allowed network
+		for _, ipNet := range allowedNets {
+			if ipNet.Contains(clientIP) {
+				c.Next()
+				return
+			}
+		}
+
+		logger.Warn("Blocked external access attempt", "ip", clientIP.String(), "path", c.Request.URL.Path)
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": "Forbidden: Endpoint only accessible from internal networks",
+		})
 	}
 }

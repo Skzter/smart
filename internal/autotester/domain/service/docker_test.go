@@ -25,7 +25,7 @@ func TestNewDocker(t *testing.T) {
 	tests := []struct {
 		name    string
 		logger  *slog.Logger
-		config  *config.Config
+		config  *config.Autotester
 		client  DockerClient
 		wantErr bool
 	}{
@@ -138,7 +138,7 @@ func TestRunTest(t *testing.T) {
 				tracer:           tracer,
 			}
 
-			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "sessionY")
+			id, err := d.RunTest(tc.ctx, tc.filename, tc.testID, "userX", "chatY")
 
 			if tc.wantErr {
 				assert.Error(t, err)
@@ -151,7 +151,7 @@ func TestRunTest(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, "123", info.ContainerID)
 				assert.Equal(t, "userX", info.UserID)
-				assert.Equal(t, "sessionY", info.SessionID)
+				assert.Equal(t, "chatY", info.ChatID)
 			}
 		})
 	}
@@ -212,7 +212,7 @@ func TestWaitContainer(t *testing.T) {
 func TestGetContainerInfo(t *testing.T) {
 	d := &docker{
 		testContainerMap: map[string]*entity.ContainerInfo{
-			"t1": {ContainerID: "cid1", UserID: "u1", SessionID: "s1"},
+			"t1": {ContainerID: "cid1", UserID: "u1", ChatID: "s1"},
 		},
 	}
 
