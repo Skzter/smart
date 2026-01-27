@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -26,7 +27,7 @@ type MediaStorageService interface {
 
 	// UploadMedia uploads media files from a local directory to S3.
 	// Returns the number of files uploaded.
-	UploadMedia(ctx context.Context, testId string, localDir string) (int, error)
+	UploadMedia(ctx context.Context, testId string, file entity.File) error
 }
 
 type mediaStorageService struct {
@@ -101,24 +102,23 @@ func (s *mediaStorageService) HasMedia(ctx context.Context, testId string) (hasS
 	return hasScreenshot, hasVideo
 }
 
-func (s *mediaStorageService) UploadMedia(ctx context.Context, testId string, localDir string) (int, error) {
-	s.logger.Debug("uploading media files to S3",
+func (s *mediaStorageService) UploadMedia(ctx context.Context, testId string, file entity.File) error {
+	s.logger.Debug("uploading media file to S3",
 		slog.String("testId", testId),
-		slog.String("localDir", localDir),
+		//slog.String("localDir", localDir),
 	)
 
-	count, err := s.repo.UploadMediaFromDir(ctx, testId, localDir)
+	err := s.repo.UploadMedia(ctx, testId, file)
 	if err != nil {
 		s.logger.Error("failed to upload media files",
 			slog.String("testId", testId),
 			slog.String("error", err.Error()),
 		)
-		return count, fmt.Errorf("upload media failed: %w", err)
+		return fmt.Errorf("upload media failed: %w", err)
 	}
 
 	s.logger.Debug("media files uploaded successfully",
 		slog.String("testId", testId),
-		slog.Int("filesUploaded", count),
 	)
-	return count, nil
+	return nil
 }

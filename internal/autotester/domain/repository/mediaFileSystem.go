@@ -3,9 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	wrapperService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service/wrapper"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -30,7 +29,7 @@ type MediaFileSystem interface {
 	// UploadMediaFromDir uploads screenshot and video files from a local directory to S3.
 	// It searches for .png and .webm files in the directory and uploads them.
 	// Returns the number of files uploaded and any error encountered.
-	UploadMediaFromDir(ctx context.Context, testId string, localDir string) (int, error)
+	UploadMedia(ctx context.Context, testId string, file entity.File) error
 }
 
 const (
@@ -102,62 +101,15 @@ func (fs *mediaFileSystem) HasVideo(ctx context.Context, testId string) bool {
 	return err == nil && exists
 }
 
-func (fs *mediaFileSystem) UploadMediaFromDir(ctx context.Context, testId string, localDir string) (int, error) {
+func (fs *mediaFileSystem) UploadMedia(ctx context.Context, testId string, file entity.File) error {
 	if err := assert.StringNotEmpty(testId); err != nil {
-		return 0, fmt.Errorf("testId must not be empty")
-	}
-	if err := assert.StringNotEmpty(localDir); err != nil {
-		return 0, fmt.Errorf("localDir must not be empty")
-	}
-
-	uploaded := 0
-
-	// Find and upload screenshot (.png)
-	if err := fs.uploadFileByExtension(ctx, testId, localDir, screenshotExtension); err == nil {
-		uploaded++
-	}
-
-	// Find and upload video (.webm)
-	if err := fs.uploadFileByExtension(ctx, testId, localDir, videoExtension); err == nil {
-		uploaded++
-	}
-
-	return uploaded, nil
-}
-
-func (fs *mediaFileSystem) uploadFileByExtension(ctx context.Context, testId, localDir, extension string) error {
-	// Search for files with the given extension in the directory and subdirectories
-	var filePath string
-
-	err := filepath.Walk(localDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && filepath.Ext(path) == "."+extension {
-			filePath = path
-			return filepath.SkipAll // Stop after finding the first match
-		}
-		return nil
-	})
-
-	if err != nil && err != filepath.SkipAll {
-		return fmt.Errorf("error walking directory: %w", err)
-	}
-
-	if filePath == "" {
-		return fmt.Errorf("no %s file found in %s", extension, localDir)
-	}
-
-	// Read the file
-	data, err := os.ReadFile(filePath) //nolint:gosec // G304: path is from controlled directory
-	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", filePath, err)
+		return fmt.Errorf("testId must not be empty")
 	}
 
 	// Upload to S3
-	key := fs.getMediaKey(testId, extension)
-	if err := fs.s3Wrapper.UploadMediaFile(ctx, key, data, nil); err != nil {
-		return fmt.Errorf("failed to upload %s to S3: %w", extension, err)
+	key := fs.getMediaKey(testId, file.GetFileExtension())
+	if err := fs.s3Wrapper.UploadMediaFile(ctx, key, file.GetFileData(), nil); err != nil {
+		return fmt.Errorf("failed to upload %s to S3: %w", file.GetFileExtension(), err)
 	}
 
 	return nil

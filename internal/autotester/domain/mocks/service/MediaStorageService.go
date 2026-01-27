@@ -8,6 +8,7 @@ import (
 	"context"
 
 	mock "github.com/stretchr/testify/mock"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
 // NewMockMediaStorageService creates a new instance of MockMediaStorageService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -63,6 +64,46 @@ func (_mock *MockMediaStorageService) GetScreenshotUrl(ctx context.Context, test
 	return r0, r1
 }
 
+// MockMediaStorageService_GetScreenshotUrl_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetScreenshotUrl'
+type MockMediaStorageService_GetScreenshotUrl_Call struct {
+	*mock.Call
+}
+
+// GetScreenshotUrl is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testId string
+func (_e *MockMediaStorageService_Expecter) GetScreenshotUrl(ctx interface{}, testId interface{}) *MockMediaStorageService_GetScreenshotUrl_Call {
+	return &MockMediaStorageService_GetScreenshotUrl_Call{Call: _e.mock.On("GetScreenshotUrl", ctx, testId)}
+}
+
+func (_c *MockMediaStorageService_GetScreenshotUrl_Call) Run(run func(ctx context.Context, testId string)) *MockMediaStorageService_GetScreenshotUrl_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMediaStorageService_GetScreenshotUrl_Call) Return(s string, err error) *MockMediaStorageService_GetScreenshotUrl_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockMediaStorageService_GetScreenshotUrl_Call) RunAndReturn(run func(ctx context.Context, testId string) (string, error)) *MockMediaStorageService_GetScreenshotUrl_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetVideoUrl provides a mock function for the type MockMediaStorageService
 func (_mock *MockMediaStorageService) GetVideoUrl(ctx context.Context, testId string) (string, error) {
 	ret := _mock.Called(ctx, testId)
@@ -87,6 +128,46 @@ func (_mock *MockMediaStorageService) GetVideoUrl(ctx context.Context, testId st
 		r1 = ret.Error(1)
 	}
 	return r0, r1
+}
+
+// MockMediaStorageService_GetVideoUrl_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetVideoUrl'
+type MockMediaStorageService_GetVideoUrl_Call struct {
+	*mock.Call
+}
+
+// GetVideoUrl is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testId string
+func (_e *MockMediaStorageService_Expecter) GetVideoUrl(ctx interface{}, testId interface{}) *MockMediaStorageService_GetVideoUrl_Call {
+	return &MockMediaStorageService_GetVideoUrl_Call{Call: _e.mock.On("GetVideoUrl", ctx, testId)}
+}
+
+func (_c *MockMediaStorageService_GetVideoUrl_Call) Run(run func(ctx context.Context, testId string)) *MockMediaStorageService_GetVideoUrl_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMediaStorageService_GetVideoUrl_Call) Return(s string, err error) *MockMediaStorageService_GetVideoUrl_Call {
+	_c.Call.Return(s, err)
+	return _c
+}
+
+func (_c *MockMediaStorageService_GetVideoUrl_Call) RunAndReturn(run func(ctx context.Context, testId string) (string, error)) *MockMediaStorageService_GetVideoUrl_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // HasMedia provides a mock function for the type MockMediaStorageService
@@ -115,28 +196,105 @@ func (_mock *MockMediaStorageService) HasMedia(ctx context.Context, testId strin
 	return r0, r1
 }
 
+// MockMediaStorageService_HasMedia_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'HasMedia'
+type MockMediaStorageService_HasMedia_Call struct {
+	*mock.Call
+}
+
+// HasMedia is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testId string
+func (_e *MockMediaStorageService_Expecter) HasMedia(ctx interface{}, testId interface{}) *MockMediaStorageService_HasMedia_Call {
+	return &MockMediaStorageService_HasMedia_Call{Call: _e.mock.On("HasMedia", ctx, testId)}
+}
+
+func (_c *MockMediaStorageService_HasMedia_Call) Run(run func(ctx context.Context, testId string)) *MockMediaStorageService_HasMedia_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMediaStorageService_HasMedia_Call) Return(hasScreenshot bool, hasVideo bool) *MockMediaStorageService_HasMedia_Call {
+	_c.Call.Return(hasScreenshot, hasVideo)
+	return _c
+}
+
+func (_c *MockMediaStorageService_HasMedia_Call) RunAndReturn(run func(ctx context.Context, testId string) (bool, bool)) *MockMediaStorageService_HasMedia_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UploadMedia provides a mock function for the type MockMediaStorageService
-func (_mock *MockMediaStorageService) UploadMedia(ctx context.Context, testId string, localDir string) (int, error) {
-	ret := _mock.Called(ctx, testId, localDir)
+func (_mock *MockMediaStorageService) UploadMedia(ctx context.Context, testId string, file entity.File) error {
+	ret := _mock.Called(ctx, testId, file)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UploadMedia")
 	}
 
-	var r0 int
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (int, error)); ok {
-		return returnFunc(ctx, testId, localDir)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) int); ok {
-		r0 = returnFunc(ctx, testId, localDir)
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, entity.File) error); ok {
+		r0 = returnFunc(ctx, testId, file)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Error(0)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, testId, localDir)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
+	return r0
+}
+
+// MockMediaStorageService_UploadMedia_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadMedia'
+type MockMediaStorageService_UploadMedia_Call struct {
+	*mock.Call
+}
+
+// UploadMedia is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testId string
+//   - file entity.File
+func (_e *MockMediaStorageService_Expecter) UploadMedia(ctx interface{}, testId interface{}, file interface{}) *MockMediaStorageService_UploadMedia_Call {
+	return &MockMediaStorageService_UploadMedia_Call{Call: _e.mock.On("UploadMedia", ctx, testId, file)}
+}
+
+func (_c *MockMediaStorageService_UploadMedia_Call) Run(run func(ctx context.Context, testId string, file entity.File)) *MockMediaStorageService_UploadMedia_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 entity.File
+		if args[2] != nil {
+			arg2 = args[2].(entity.File)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockMediaStorageService_UploadMedia_Call) Return(err error) *MockMediaStorageService_UploadMedia_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockMediaStorageService_UploadMedia_Call) RunAndReturn(run func(ctx context.Context, testId string, file entity.File) error) *MockMediaStorageService_UploadMedia_Call {
+	_c.Call.Return(run)
+	return _c
 }

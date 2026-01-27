@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -53,7 +54,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	_, err = a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.ChatID)
+	_, filesChan, err := a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.ChatID)
 	if err != nil {
 		span.SetStatus(codes.Error, "unable to run container")
 		a.metricsService.IncRequestError("run_container_failed")
@@ -62,6 +63,14 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
+
+	go func() {
+		for _, file := range <-filesChan {
+			if a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file) != nil {
+				a.logger.Error("error uploading media", "err", err)
+			}
+		}
+	}()
 
 	span.SetStatus(codes.Ok, "")
 	a.metricsService.IncRequestSuccess()
