@@ -85,10 +85,11 @@ type S3StorageWrapper interface {
 
 // S3Wrapper provides methods to interact with AWS S3 for parquet files
 type S3Wrapper struct {
-	client *s3.Client
-	config entity.S3Config
-	logger *slog.Logger
-	tracer trace.Tracer
+	client        *s3.Client
+	presignClient *s3.PresignClient
+	config        entity.S3Config
+	logger        *slog.Logger
+	tracer        trace.Tracer
 }
 
 // NewS3Wrapper creates a new S3Wrapper instance
@@ -142,11 +143,16 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 		s3Client = s3.NewFromConfig(cfg)
 	}
 
+	s3PresignClient := s3.NewPresignClient(s3Client, func(po *s3.PresignOptions) {
+		po.Expires = time.Minute
+	})
+
 	wrapper := &S3Wrapper{
-		client: s3Client,
-		config: config,
-		logger: logger,
-		tracer: tracer,
+		client:        s3Client,
+		config:        config,
+		logger:        logger,
+		tracer:        tracer,
+		presignClient: s3PresignClient,
 	}
 
 	logger.Debug("S3Wrapper initialized",
@@ -578,13 +584,11 @@ func (s *S3Wrapper) GetMediaUrl(ctx context.Context, key string) (string, error)
 		return "", err
 	}
 
-	// Check if file exists
-	input := &s3.HeadObjectInput{
+	request, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
-	}
+	})
 
-	_, err := s.client.HeadObject(ctx, input)
 	if err != nil {
 		var notFound *types.NotFound
 		errMsg := err.Error()
@@ -620,5 +624,5 @@ func (s *S3Wrapper) GetMediaUrl(ctx context.Context, key string) (string, error)
 	))
 	span.SetStatus(codes.Ok, "")
 
-	return fmt.Sprintf("https://%s.s3.amazonaws.com/%s", s.config.Bucket, key), nil
+	return request.URL, nil
 }

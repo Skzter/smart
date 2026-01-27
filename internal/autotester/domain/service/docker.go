@@ -187,7 +187,6 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 		defer func() {
 			if err := d.client.ContainerRemove(context.Background(), containerID, container.RemoveOptions{
 				RemoveVolumes: true,
-				RemoveLinks:   true,
 				Force:         true,
 			}); err != nil {
 				d.logger.Error("error removing Container", "err", err)

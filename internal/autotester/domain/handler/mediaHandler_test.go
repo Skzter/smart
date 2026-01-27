@@ -37,10 +37,10 @@ func TestHandleGetScreenshot(t *testing.T) {
 		{
 			TestName:       "Valid screenshot request",
 			TestID:         "test123",
-			ExpectedStatus: http.StatusOK,
+			ExpectedStatus: http.StatusTemporaryRedirect,
 			HasScreenshot:  true,
 			ScreenshotURL:  "https://s3.example.com/screenshots/test123.png",
-			ExpectedBody:   `{"testId":"test123","url":"https://s3.example.com/screenshots/test123.png"}`,
+			ExpectedBody:   "",
 		},
 		{
 			TestName:       "Missing testId parameter",
@@ -131,7 +131,13 @@ func TestHandleGetScreenshot(t *testing.T) {
 					test.ExpectedStatus, rec.Code, rec.Body.String())
 			}
 
-			if rec.Body.String() != test.ExpectedBody {
+			if test.ExpectedStatus == http.StatusTemporaryRedirect {
+				location := rec.Header().Get("Location")
+				if location != test.ScreenshotURL {
+					t.Errorf("Expected redirect to %s, got %s",
+						test.ScreenshotURL, location)
+				}
+			} else if rec.Body.String() != test.ExpectedBody {
 				t.Errorf("Expected body %s, got %s",
 					test.ExpectedBody, rec.Body.String())
 			}
@@ -159,10 +165,10 @@ func TestHandleGetVideo(t *testing.T) {
 		{
 			TestName:       "Valid video request",
 			TestID:         "test123",
-			ExpectedStatus: http.StatusOK,
+			ExpectedStatus: http.StatusTemporaryRedirect,
 			HasVideo:       true,
 			VideoURL:       "https://s3.example.com/videos/test123.webm",
-			ExpectedBody:   `{"testId":"test123","url":"https://s3.example.com/videos/test123.webm"}`,
+			ExpectedBody:   "",
 		},
 		{
 			TestName:       "Missing testId parameter",
@@ -253,7 +259,13 @@ func TestHandleGetVideo(t *testing.T) {
 					test.ExpectedStatus, rec.Code, rec.Body.String())
 			}
 
-			if rec.Body.String() != test.ExpectedBody {
+			if test.ExpectedStatus == http.StatusTemporaryRedirect {
+				location := rec.Header().Get("Location")
+				if location != test.VideoURL {
+					t.Errorf("Expected redirect to %s, got %s",
+						test.VideoURL, location)
+				}
+			} else if rec.Body.String() != test.ExpectedBody {
 				t.Errorf("Expected body %s, got %s",
 					test.ExpectedBody, rec.Body.String())
 			}

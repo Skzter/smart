@@ -513,13 +513,18 @@ func TestS3WrapperGetMediaUrlIntegration(t *testing.T) {
 	err := wrapper.UploadMediaFile(ctx, testKey, testData, nil)
 	assert.NoError(t, err)
 
-	// Get media url for existing file
+	// Get media url for existing file (presigned URL)
 	url, err := wrapper.GetMediaUrl(ctx, testKey)
 	assert.NoError(t, err)
-	assert.Equal(t, "https://test-bucket.s3.amazonaws.com/test-file.jpg", url)
+	assert.NotEmpty(t, url)
+	// Presigned URLs contain query parameters for authentication
+	assert.Contains(t, url, testKey)
+	assert.Contains(t, url, "X-Amz")
 
 	// Get media url again (should still work)
 	url, err = wrapper.GetMediaUrl(ctx, testKey)
 	assert.NoError(t, err)
-	assert.Equal(t, "https://test-bucket.s3.amazonaws.com/test-file.jpg", url)
+	assert.NotEmpty(t, url)
+	assert.Contains(t, url, testKey)
+	assert.Contains(t, url, "X-Amz")
 }

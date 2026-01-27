@@ -38,10 +38,7 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"testId": testID,
-		"url":    screenshotUrl,
-	})
+	c.Redirect(http.StatusTemporaryRedirect, screenshotUrl)
 }
 
 // HandleGetVideo handles requests for test videos.
@@ -76,10 +73,7 @@ func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"testId": testID,
-		"url":    videoUrl,
-	})
+	c.Redirect(http.StatusTemporaryRedirect, videoUrl)
 }
 
 // HandleGetMediaInfo handles requests to check if media exists for a test.
