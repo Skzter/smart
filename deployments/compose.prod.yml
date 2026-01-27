@@ -19,14 +19,11 @@ services:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
       - /tmp/smart/logs/:/tmp/smart/logs/
       - /tmp/tests:/tmp/tests
+      - /home/stud/.env:/.env:ro
     ports:
       - "8079:8081"
     networks:
       - default
-    environment:
-      - DD_AGENT_HOST=datadog
-      - DD_TRACE_AGENT_PORT=8126
-      - DD_SITE=us5.datadoghq.com
 
   autotester-mcp:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester-mcp:latest
