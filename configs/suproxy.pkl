@@ -12,6 +12,8 @@ maxItemsPerValidation: Int = 10
 
 logLevel: String = "info"
 
+logFilePath: String = ""
+
 class Prompts {
     validationPrompt : String = """
     You are a strict, technically experienced mock-data tester. Your task is to determine whether a given HTTP response is logically and semantically consistent with its corresponding HTTP request in the context of travel offers. 

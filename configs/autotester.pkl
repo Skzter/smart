@@ -12,6 +12,8 @@ port: String = "8081"
 
 logLevel: String = "info"
 
+logFilePath: String = ""
+
 class Prompts {
     validationPrompt : String = 
         """

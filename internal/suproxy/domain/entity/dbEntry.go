@@ -7,4 +7,5 @@ type DatabaseEntry struct {
 	Request  Request         `json:"request"`
 	Response Response        `json:"response"`
 	Tags     *shared.TagList `json:"tags"`
+	Updated  bool            `json:"updated"`
 }

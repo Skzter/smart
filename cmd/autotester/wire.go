@@ -91,7 +91,7 @@ func RedisConfigProvider(cfg *config.Autotester) *sharedConfig.RedisConfig {
 
 // LoggerProvider provides a new logger.
 func LoggerProvider(cfg *config.Autotester) *slog.Logger {
-	return logger.NewLogger(cfg.LogLevel)
+	return logger.NewLogger(cfg.LogLevel, cfg.LogFilePath)
 }
 
 // OpenAiRepositoryProvider provides a new OpenAI repository.
