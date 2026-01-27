@@ -650,10 +650,9 @@ func buildResponse(items ...entity.ODTItem) entity.ODTResponse {
 		},
 	}
 }
-
 func sampleItem(id, travelType, outbound string) entity.ODTItem {
 	return entity.ODTItem{
-		OfferID:    id,
+		OfferID:    entity.FlexibleString(id),
 		TravelType: travelType,
 		Flight: entity.FlightInfo{
 			OutboundDepartureAirport: entity.Airport{Code: outbound},
@@ -667,8 +666,17 @@ func sampleRequestBody(travelType string, airports []string) entity.RequestBody 
 		DepartureDate:        "2025-07-07",
 		ReturnDate:           "2025-07-14",
 		TravelType:           travelType,
-		Travelers: map[string]entity.Traveler{
-			"a1": {Adults: 2},
+		Travelers: []entity.Traveler{
+			{
+				ID:                "a1",
+				Type:              "adult",
+				Age:               36,
+				PersonBookingCode: "H",
+				Price: entity.TravelerPrice{
+					Amount:   100,
+					Currency: "EUR",
+				},
+			},
 		},
 	}
 }
