@@ -89,10 +89,9 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	defer span.End()
 
 	if err := s.validator.ValidateChat(ctx, chat); err != nil {
-		s.logger.Error("chat validation failed", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error during validation")
-		return errors.ErrValidation
+		return err
 	}
 
 	summary := &entity.ChatSummary{
