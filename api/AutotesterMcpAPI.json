@@ -27,7 +27,7 @@
     },
     {
       "name": "generate_test",
-      "description": "takes prompt, sends it to backend and receives feedback to display in frontend",
+      "description": "Takes prompt, sends it to backend to validate and then generates test code, if validation fails, returns validation message",
       "params": [
         {
           "name": "prompt",
