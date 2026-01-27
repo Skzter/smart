@@ -75,7 +75,6 @@
 
                     <!-- BROWSER -->
                     <div class="flex flex-col overflow-hidden">
-                        <div class="px-4 py-2 border-b">Vorschau</div>
                         <BrowserView />
                     </div>
                 </div>
@@ -86,7 +85,6 @@
                 </div>
             {:else if view === "browser"}
                 <div class="flex flex-col flex-1 overflow-hidden">
-                    <div class="px-4 py-2 border-b">Vorschau</div>
                     <BrowserView />
                 </div>
             {/if}

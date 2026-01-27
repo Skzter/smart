@@ -1,10 +1,19 @@
 import { render } from "@testing-library/svelte";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 import BrowserView from "../../src/lib/components/BrowserView.svelte";
 
 describe("BrowserView", () => {
+    beforeEach(() => {
+        vi.spyOn(window, "addEventListener");
+        vi.spyOn(window, "removeEventListener");
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it("renders the preview header", () => {
         const { container } = render(BrowserView);
 
@@ -13,36 +22,104 @@ describe("BrowserView", () => {
         expect(header?.textContent?.trim()).toBe("Vorschau");
     });
 
-    it("renders the monitor icon", () => {
-        const { container } = render(BrowserView);
-
-        const icon = container.querySelector("svg");
-        expect(icon).toBeInTheDocument();
-    });
-
-    it("displays browser preview text", () => {
-        const { container } = render(BrowserView);
-
-        const previewText = container.querySelector("p.text-sm");
-        expect(previewText?.textContent).toBe("Browser Vorschau");
-    });
-
-    it("has correct layout structure", () => {
-        const { container } = render(BrowserView);
-
-        const mainContainer = container.querySelector(".flex.flex-col");
-        const contentArea = container.querySelector(".flex-1.overflow-auto");
-
-        expect(mainContainer).toBeInTheDocument();
-        expect(contentArea).toBeInTheDocument();
-    });
-
     it("centers the content", () => {
         const { container } = render(BrowserView);
 
         const centeredContent = container.querySelector(
-            ".flex.items-center.justify-center",
+            ".flex.justify-center.items-center.flex-1.overflow-hidden",
         );
         expect(centeredContent).toBeInTheDocument();
+    });
+
+    it("renders a video element with controls", () => {
+        const { container } = render(BrowserView);
+
+        const video = container.querySelector("video");
+        expect(video).toBeInTheDocument();
+        expect(video).toHaveAttribute("controls");
+    });
+
+    it("has a container with h-full class for proper sizing", () => {
+        const { container } = render(BrowserView);
+
+        const mainContainer = container.querySelector("#container");
+        expect(mainContainer).toBeInTheDocument();
+        expect(mainContainer).toHaveClass("h-full");
+    });
+
+    it("adds resize event listener on mount", () => {
+        render(BrowserView);
+
+        expect(window.addEventListener).toHaveBeenCalledWith(
+            "resize",
+            expect.any(Function),
+        );
+    });
+
+    it("removes resize event listener on unmount", () => {
+        const { unmount } = render(BrowserView);
+        unmount();
+
+        expect(window.removeEventListener).toHaveBeenCalledWith(
+            "resize",
+            expect.any(Function),
+        );
+    });
+
+    it("calculates video size based on parent height", async () => {
+        const { container } = render(BrowserView);
+
+        const mainContainer = container.querySelector(
+            "#container",
+        ) as HTMLElement;
+        const video = container.querySelector("video") as HTMLVideoElement;
+
+        // Mock parent element with specific dimensions
+        Object.defineProperty(mainContainer, "parentElement", {
+            value: {
+                clientHeight: 500,
+                clientWidth: 800,
+            },
+            writable: true,
+        });
+
+        // Trigger resize event to recalculate
+        window.dispatchEvent(new Event("resize"));
+
+        // Wait for the update
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // Expected: availableHeight = 500 - 50 = 450
+        // calculatedWidth = 450 * (16/9) = 800
+        expect(video.style.height).toBe("450px");
+        expect(video.style.width).toBe("800px");
+    });
+
+    it("does not set video size if parent element is missing", async () => {
+        const { container } = render(BrowserView);
+
+        const mainContainer = container.querySelector(
+            "#container",
+        ) as HTMLElement;
+        const video = container.querySelector("video") as HTMLVideoElement;
+
+        // Mock no parent element
+        Object.defineProperty(mainContainer, "parentElement", {
+            value: null,
+            writable: true,
+        });
+
+        // Clear any styles that might have been set
+        video.style.width = "";
+        video.style.height = "";
+
+        // Trigger resize event
+        window.dispatchEvent(new Event("resize"));
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // Video style should remain unchanged (empty or not set)
+        expect(video.style.width).toBe("");
+        expect(video.style.height).toBe("");
     });
 });
