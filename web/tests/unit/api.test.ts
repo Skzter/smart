@@ -9,6 +9,7 @@ import {
     getChatById,
     deleteLocalTest,
     validatePrompt,
+    getApiToken,
 } from "../../src/lib/api";
 import * as shared from "../../src/lib/shared.svelte";
 
@@ -19,6 +20,7 @@ vi.mock("axios");
 vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
     chat: { id: "chat456", isLoading: false },
+    apiToken: { token: null },
 }));
 
 describe("API Functions", () => {
@@ -77,6 +79,7 @@ describe("API Functions", () => {
                 method: "post",
                 url: "/chat",
                 baseURL: "http://localhost:8081/api/v1",
+                headers: {},
                 data: mockChatRequest,
             });
             expect(result).toEqual({
@@ -150,6 +153,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: `/chats?page=0`,
                 baseURL: "http://localhost:8081/api/v1",
+                headers: {},
             });
             expect(result).toEqual({
                 summaries: mockChatSummaries,
@@ -242,6 +246,7 @@ describe("API Functions", () => {
                 method: "get",
                 url: "/template",
                 baseURL: "http://localhost:8081/api/v1",
+                headers: {},
             });
             expect(result).toEqual(mockTemplate);
         });
@@ -284,6 +289,7 @@ describe("API Functions", () => {
                 method: "post",
                 url: "/saveLocal",
                 baseURL: "http://localhost:8081/api/v1",
+                headers: {},
                 data: mockSaveLocalRequest,
             });
             expect(result).toEqual(mockSaveLocalResponse);
@@ -319,7 +325,7 @@ describe("API Functions", () => {
             const mockedAxios = axios as unknown as Mock;
             mockedAxios.mockResolvedValue({ data: { result: mockResult } });
 
-            const result = await runContainer(mockParams, {});
+            const result = await runContainer(mockParams);
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
@@ -342,7 +348,7 @@ describe("API Functions", () => {
             };
             mockedAxios.mockRejectedValue(err);
 
-            await expect(runContainer(mockParams, {})).rejects.toThrow(
+            await expect(runContainer(mockParams)).rejects.toThrow(
                 "Failed to run container",
             );
         });
@@ -356,7 +362,7 @@ describe("API Functions", () => {
                 chatId: "chat999",
             };
 
-            await runContainer(complexParams, {});
+            await runContainer(complexParams);
 
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "post",
@@ -401,6 +407,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/${mockChatId}`,
+                headers: {},
                 baseURL: "http://localhost:8081/api/v1",
             });
             expect(result).toEqual(mockChatResponse);
@@ -418,6 +425,7 @@ describe("API Functions", () => {
             expect(mockedAxios).toHaveBeenCalledWith({
                 method: "get",
                 url: `/chats/differentChat`,
+                headers: {},
                 baseURL: "http://localhost:8081/api/v1",
             });
         });
@@ -453,6 +461,7 @@ describe("API Functions", () => {
                 method: "delete",
                 baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
+                headers: {},
                 params: {
                     testcaseId: mockTestcaseId,
                     chatId: mockChatId,
@@ -475,6 +484,7 @@ describe("API Functions", () => {
                 method: "delete",
                 baseURL: "http://localhost:8081/api/v1",
                 url: "/deleteLocal",
+                headers: {},
                 params: {
                     testcaseId: mockTestcaseId,
                     chatId: "chat999",
@@ -497,6 +507,75 @@ describe("API Functions", () => {
 
             await expect(deleteLocalTest(mockTestcaseId)).rejects.toThrow(
                 "Failed to delete test",
+            );
+        });
+    });
+
+    describe("getApiToken", () => {
+        const mockTokenResponse = {
+            userId: mockUserId,
+            token: "mock-jwt-token-12345",
+            createdAt: new Date("2024-01-01T00:00:00Z"),
+            updatedAt: new Date("2024-01-01T00:00:00Z"),
+            expiresAt: new Date("2024-01-02T00:00:00Z"),
+            revokedAt: null,
+        };
+
+        it("should make a POST request to /auth/generate with userId", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValueOnce({ data: mockTokenResponse });
+
+            const result = await getApiToken();
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "auth/generate",
+                baseURL: "http://localhost:8081/api/v1",
+                data: { userId: mockUserId },
+            });
+            expect(result).toEqual(mockTokenResponse);
+        });
+
+        it("should return the API token data", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValueOnce({ data: mockTokenResponse });
+
+            const result = await getApiToken();
+
+            expect(result).toHaveProperty("userId", mockUserId);
+            expect(result).toHaveProperty("token", "mock-jwt-token-12345");
+            expect(result).toHaveProperty("createdAt");
+            expect(result).toHaveProperty("updatedAt");
+            expect(result).toHaveProperty("expiresAt");
+            expect(result).toHaveProperty("revokedAt", null);
+        });
+
+        it("should use the current user id from shared state", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValueOnce({ data: mockTokenResponse });
+
+            shared.user.id = "user999";
+
+            await getApiToken();
+
+            const callArgs = mockedAxios.mock.calls[0][0];
+            expect(callArgs.data).toHaveProperty("userId", "user999");
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            const err = new AxiosError("Failed to generate token");
+            err.response = {
+                data: { message: "Failed to generate token" },
+                status: 500,
+                statusText: "Internal Server Error",
+                headers: {},
+                config: {} as InternalAxiosRequestConfig,
+            };
+            mockedAxios.mockRejectedValueOnce(err);
+
+            await expect(getApiToken()).rejects.toThrow(
+                "Failed to generate token",
             );
         });
     });
