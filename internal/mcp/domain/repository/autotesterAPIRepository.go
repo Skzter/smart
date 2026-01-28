@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
@@ -29,6 +31,11 @@ type AutotesterAPIRepository interface {
 
 	// RunTest executes a test by ID via the API.
 	RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error)
+
+	// ReadTestLogStream opens a connection to the backend SSE stream.
+	// This method is blocking and writes events to the provided channel.
+	// Returns an error if the stream cannot be established or fails.
+	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error
 }
 
 type autotesterAPIRepository struct {
@@ -40,7 +47,7 @@ type autotesterAPIRepository struct {
 // NewAutotesterAPIRepository creates a new instance of AutotesterAPIRepository.
 // It initializes the repository with an HTTP client, base URL, and logger for API communication.
 func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, baseURL string) (AutotesterAPIRepository, error) {
-	if err := assert.NotNil(logger); err != nil {
+	if err := assert.NotNil(logger, httpClient); err != nil {
 		return nil, err
 	}
 
@@ -132,13 +139,90 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 		return nil, err
 	}
 
-	a.logger.Debug("Successfullywie d test run")
+	a.logger.Debug("Successfully run test")
 	return &result, nil
+}
+
+// ReadTestLogStream establishes an SSE connection to the backend stream and
+// parses events in a line-oriented manner.
+// The method is blocking and follows the lifecycle of `ctx`
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
+	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
+	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "keep-alive")
+
+	resp, err := a.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to connect to stream: %w", err)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			a.logger.Warn("Failed to close response body", "error", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	var currentEvent entity.LogEvent
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return fmt.Errorf("error reading stream: %w", err)
+		}
+
+		line = strings.TrimRight(line, "\r\n")
+		a.logger.Debug("Read line from stream", "testId", testId, "line", line)
+
+		if strings.HasPrefix(line, ":") {
+			continue
+		}
+
+		if line == "" {
+			if currentEvent.Event != "" || currentEvent.Data != "" {
+				eventCopy := currentEvent
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case eventsCh <- &eventCopy:
+					a.logger.Debug("Successfully sent SSE event to channel", "testId", testId, "event", eventCopy.Event)
+				}
+				currentEvent = entity.LogEvent{}
+			}
+			continue
+		}
+
+		if after, ok := strings.CutPrefix(line, "event:"); ok {
+			currentEvent.Event = strings.TrimSpace(after)
+		} else if after, ok := strings.CutPrefix(line, "data:"); ok {
+			dataPart := strings.TrimSpace(after)
+			if currentEvent.Data != "" {
+				currentEvent.Data += "\n" + dataPart
+			} else {
+				currentEvent.Data = dataPart
+			}
+		}
+	}
+
+	return nil
 }
 
 // newJSONRequest creates an HTTP request with an optional JSON body and sets
 // the Content-Type header when a body is provided.
-// --- helpers bound to the repository struct ---
 func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any, token string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {

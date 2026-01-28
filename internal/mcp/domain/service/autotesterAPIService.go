@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	"golang.org/x/sync/errgroup"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -22,23 +25,29 @@ type AutotesterAPIService interface {
 
 	// ExecuteTest runs an existing test by ID.
 	ExecuteTest(ctx context.Context, request *entity.ExecuteTestRequest) (*entity.ExecuteTestResponse, error)
+
+	// ReadTestLogStream reads log events from the backend stream and stores them.
+	// It marks the stream as complete when the backend stream is exhausted.
+	ReadTestLogStream(ctx context.Context, testId string) error
 }
 
 type autotesterAPIService struct {
 	logger *slog.Logger
 	repo   repository.AutotesterAPIRepository
+	store  store.TestLogStreamStore
 }
 
 // NewAutotesterAPIService creates a new service for the Autotester API.
-// Expects a logger and a repository, checks both for nil.
-func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIRepository) (AutotesterAPIService, error) {
-	if err := assert.NotNil(logger, repo); err != nil {
+// Expects a logger, a repository, and a test log stream store, checks all for nil.
+func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIRepository, store store.TestLogStreamStore) (AutotesterAPIService, error) {
+	if err := assert.NotNil(logger, repo, store); err != nil {
 		return nil, err
 	}
 
 	return &autotesterAPIService{
 		logger: logger,
 		repo:   repo,
+		store:  store,
 	}, nil
 }
 
@@ -139,5 +148,102 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 
 	s.logger.Info("Successfully executed test", "summary", combined)
 
-	return &entity.ExecuteTestResponse{Result: combined}, nil
+	return &entity.ExecuteTestResponse{Result: combined, TestId: saveResp.TestId}, nil
+}
+
+// ReadTestLogStream reads SSE events and stores them.
+//
+// IMPORTANT: This method must be called at most once concurrently per testId.
+// Calling this method multiple times simultaneously for the same testId can lead to race conditions
+// when both streams write to the same store, resulting in data loss or inconsistency.
+//
+// The current architecture ensures this constraint at the call site, but callers must guarantee
+// that a new ReadTestLogStream call for the same testId only happens after the previous stream
+// has completed (indicated by calling store.CompleteStream).
+//
+// Technical: producer–consumer using two goroutines — producer reads SSE into a
+// buffered channel, consumer drains the channel and writes to the store. Coordination
+// is via `errgroup` and a derived context.
+func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
+	s.logger.Info("Start reading and processing log stream", "testId", testId)
+	const rawEventsCapacity = 2048
+	rawEventsCh := make(chan *entity.LogEvent, rawEventsCapacity)
+	wg, groupCtx := errgroup.WithContext(ctx)
+
+	// PRODUCER: reads logstream
+	wg.Go(func() error {
+		defer close(rawEventsCh)
+		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
+
+		if err := s.repo.ReadTestLogStream(groupCtx, testId, rawEventsCh); err != nil {
+			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
+			return err
+		}
+		s.logger.Debug("PRODUCER: SSE reader stopped", "testId", testId)
+		return nil
+	})
+
+	// CONSUMER: add logEvents to store
+	wg.Go(func() error {
+		s.logger.Debug("CONSUMER: Starting event processor", "testId", testId)
+
+		for {
+			select {
+			case <-groupCtx.Done():
+				return groupCtx.Err()
+			case event, ok := <-rawEventsCh:
+				if !ok {
+					s.logger.Info("Stream read and processed", "testId", testId)
+					return nil
+				}
+				if event != nil {
+					s.logger.Debug("CONSUMER: Received event",
+						"testId", testId,
+						"event", event.Event,
+					)
+					s.store.AddEvent(testId, *event)
+				}
+			}
+		}
+	})
+
+	// MONITOR: check channel capacity while waiting for goroutines to complete
+	monitorDone := make(chan struct{})
+	go func() {
+		const capacityThreshold = rawEventsCapacity * 9 / 10
+		lastWarned := false
+
+		for {
+			select {
+			case <-monitorDone:
+				return
+			case <-groupCtx.Done():
+				return
+			default:
+				currentLoad := len(rawEventsCh)
+				if currentLoad >= capacityThreshold && !lastWarned {
+					s.logger.Warn("Event channel at 90% capacity",
+						"testId", testId,
+						"currentLoad", currentLoad,
+						"capacity", rawEventsCapacity,
+					)
+					lastWarned = true
+				} else if currentLoad < capacityThreshold {
+					lastWarned = false
+				}
+			}
+		}
+	}()
+
+	err := wg.Wait()
+	close(monitorDone)
+
+	s.store.CompleteStream(testId)
+
+	if err != nil {
+		s.logger.Error("Log stream processing failed", "testId", testId, "error", err)
+		return err
+	}
+
+	return nil
 }

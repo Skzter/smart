@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -44,6 +45,7 @@ func NewGeneratePromptService(
 	if err := assert.NotNil(openaiService, taglistService, config, logger, validator, tracer); err != nil {
 		return nil, err
 	}
+
 	return &generatePrompt{openaiService, taglistService, config, logger, validator, tracer}, nil
 }
 
@@ -83,6 +85,18 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.SetStatus(codes.Error, "OpenAI service request failed")
 		return "", errors.ErrInternalServer
 	}
+
+	var parsedMsg entity.ModelAnswerText
+
+	if err := json.Unmarshal([]byte(resp.Body), &parsedMsg); err != nil {
+		s.logger.Error("Failed to unmarshal model JSON", "err", err, "body", resp.Body)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "JSON unmarshal failed")
+		return "", errors.ErrGeneration
+	}
+
+	resp.Body = parsedMsg.Code
+
 	chat.AddMessage(resp, entity.MessageTypeGeneration)
 
 	if err = assert.StringNotEmpty(resp.Body); err != nil {
@@ -90,6 +104,15 @@ func (s *generatePrompt) GeneratePrompt(ctx context.Context, chat *entity.Chat, 
 		span.SetStatus(codes.Error, "Empty response body")
 		s.logger.Error(err.Error())
 		return "", errors.ErrGeneration
+	}
+
+	if parsedMsg.Title != "" {
+		if chat.Title == "" || chat.Title == "Neuer Chat" {
+			chat.Title = parsedMsg.Title
+		}
+	} else {
+		s.logger.Error("Model did not return a title, using default title")
+		chat.Title = "Neuer Chat"
 	}
 
 	span.SetStatus(codes.Ok, "")

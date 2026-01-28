@@ -98,6 +98,7 @@ func TestNewGeneratePromptService(t *testing.T) {
 	}
 }
 
+// nolint: funlen
 func TestGeneratePrompt(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	cfg := &config.Autotester{
@@ -106,7 +107,6 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 	}
 	tags := &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "Tag1", Description: ""}, {Name: "Tag2", Description: ""}}}
-	code := "some code"
 	tracer := otel.Tracer("test")
 
 	tests := []struct {
@@ -119,19 +119,25 @@ func TestGeneratePrompt(t *testing.T) {
 		ctx               context.Context
 	}{
 		{
-			name:              "success",
-			expectedResult:    code,
-			validateReturns:   []any{nil},
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			name:            "success",
+			expectedResult:  "some code",
+			validateReturns: []any{nil},
+			requestReturns: []any{
+				&sharedEntity.Message{
+					Role: "assistant",
+					Body: `{"Code": "some code", "Title": ""}`, // valid JSON now
+				},
+				nil,
+			},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         false,
 			ctx:               context.Background(),
 		},
 		{
 			name:              "getTaglist error",
-			expectedResult:    code,
+			expectedResult:    "some code",
 			validateReturns:   []any{nil},
-			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: code}, nil},
+			requestReturns:    []any{&sharedEntity.Message{Role: "assistant", Body: `{"Code": "some code", "Title": ""}`}, nil},
 			getTaglistReturns: []any{nil, errors.New("err")},
 			expectErr:         false,
 			ctx:               context.Background(),
@@ -143,7 +149,7 @@ func TestGeneratePrompt(t *testing.T) {
 		},
 		{
 			name:              "validate error",
-			expectedResult:    code,
+			expectedResult:    "some code",
 			validateReturns:   []any{errors.New("err")},
 			getTaglistReturns: []any{tags, nil},
 			expectErr:         true,
