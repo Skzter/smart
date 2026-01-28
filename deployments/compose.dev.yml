@@ -53,23 +53,32 @@ services:
       - DOPPLER_PROJECT=${DOPPLER_PROJECT:-htwk-projekt}
       - DOPPLER_CONFIG=${DOPPLER_CONFIG:-dev}
       - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}
-      - DD_AGENT_HOST=datadog
-      - DD_TRACE_AGENT_PORT=8126
-      - DD_SITE=us5.datadoghq.com
 
   autotester-mcp:
     build:
       context: ..
       dockerfile: deployments/mcp/Dockerfile.dev
+    working_dir: /app
+    depends_on:
+      - autotester
+    command: ["dev-entrypoint.sh"]
+    volumes:
+      - ..:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
     ports:
       - "8084:8084"
     networks:
       - default
     environment:
+      - APP_CMD=./cmd/mcp
+      - VERSION=dev
+      - VERSION_VAR=gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build.Version
       - AUTOTESTER_BASE_URL=http://autotester:8081
-      - DD_AGENT_HOST=datadog
-      - DD_TRACE_AGENT_PORT=8126
-      - DD_SITE=us5.datadoghq.com    
+      - DOPPLER_PROJECT=${DOPPLER_PROJECT:-htwk-projekt}
+      - DOPPLER_CONFIG=${DOPPLER_CONFIG:-dev}
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}
+      - DD_TRACE_ENABLED=false    
 
   frontend-mock:
     platform: linux/amd64
