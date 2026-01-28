@@ -2,7 +2,9 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/codes"
@@ -78,6 +80,7 @@ func (a *AutotesterController) HandleChatRequest(c *gin.Context) {
 			Message: sharedEntity.Message{Body: generatedCode},
 			UserId:  userRequest.UserId,
 			ChatId:  chat.Id,
+			Title:   chat.Title,
 		})
 }
 
@@ -238,4 +241,73 @@ func (a *AutotesterController) GetChatById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, chat)
+}
+
+// HandleUpdateChatTitle allows a user to update the title of an existing chat.
+//
+//nolint:funlen
+func (a *AutotesterController) HandleUpdateChatTitle(c *gin.Context) {
+	start := time.Now()
+	ctx, span := a.tracer.Start(c.Request.Context(), "autotesterController.HandleUpdateChatTitle")
+	defer span.End()
+
+	var uri entity.UpdateChatUri
+
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	var req entity.UpdateTitleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Bad Request"})
+		return
+	}
+
+	chat, err := a.chatStorageService.LoadChat(ctx, uri.ChatId)
+	if err != nil {
+		if errors.Is(err, sharedErrors.ErrChatNotFound) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, "failed to find user chat")
+			a.metricsService.IncRequestError("find_user_chat_failed")
+			a.metricsService.RecordRequestDuration(time.Since(start))
+			a.logger.Info("chat not found", "chatId", uri.ChatId)
+			c.JSON(http.StatusNotFound, entity.ErrorMessage{Error: "chat not found"})
+			return
+		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to load user chat")
+		a.metricsService.IncRequestError("load_user_chat_failed")
+		a.metricsService.RecordRequestDuration(time.Since(start))
+		a.logger.Error("LoadChat failed", "error", err, "chatId", uri.ChatId)
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not load chat"})
+		return
+	}
+
+	title := strings.TrimSpace(req.Title)
+	if len(title) == 0 || len(title) > 30 {
+		err := fmt.Errorf("invalid chat title length: %d", len(title))
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "invalid chat title length")
+		a.metricsService.IncRequestError("invalid_chat_title_length")
+		c.JSON(http.StatusBadRequest, entity.ErrorMessage{Error: "Title must be 1–30 characters"})
+		return
+	}
+
+	chat.Title = title
+
+	if err := a.chatManager.SaveChat(ctx, chat, chat.Author); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to save updated chat title")
+		a.metricsService.IncRequestError("save_updated_chat_title_failed")
+		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "could not save chat"})
+		return
+	}
+
+	a.metricsService.IncRequestSuccess()
+	span.SetStatus(codes.Ok, "")
+	c.JSON(http.StatusOK, gin.H{
+		"chatId": chat.Id,
+		"title":  chat.Title,
+	})
 }

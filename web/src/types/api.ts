@@ -24,6 +24,7 @@ export type ApiChatResponse = {
     message: ApiMessage;
     userId: string;
     chatId: string;
+    title?: string;
 };
 
 export type ApiSaveTestLocal = {

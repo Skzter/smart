@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/svelte";
+import {render, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { tick } from "svelte";
@@ -19,13 +19,26 @@ vi.mock("$lib/api", () => ({
 }));
 
 // Mock shared state
-vi.mock("$lib/shared.svelte", () => ({
-    user: { id: "test-user-123" },
-    ChatDate: { Range: undefined },
-    ChatFilter: { sortBy: "recent", timeFilter: "all" },
+vi.mock("$lib/shared.svelte", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("$lib/shared.svelte")>();
+
+    return {
+        ...actual,
+
+        user: { id: "test-user-123" },
+        ChatDate: { Range: undefined },
+        ChatFilter: { sortBy: "recent", timeFilter: "all" },
+
+        registerChatTitleUpdater: vi.fn(),
+        updateChatTitle: vi.fn(),
+    };
+});
+
+vi.mock("$lib/components/Group.svelte", () => ({
+    default: vi.fn(),
 }));
 
-import { getChats } from "$lib/api";
+import { getChats} from "$lib/api";
 import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 

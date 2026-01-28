@@ -77,6 +77,7 @@ func main() {
 
 	<-ctx.Done()
 	slog.Info("Shutdown signal received")
+	mcpServer.ShutdownComponents()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

@@ -31,7 +31,8 @@ func NewGenerateTestTool(logger *slog.Logger, autotesterAPIService service.Autot
 // GenerateTest generates Test with validation
 func (tt *GenerateTestTool) GenerateTest(ctx context.Context,
 	request *mcp.CallToolRequest,
-	input entity.GenerateTestRequest) (result *mcp.CallToolResult, output entity.GenerateTestToolResponse, _ error) {
+	input entity.GenerateTestRequest,
+) (result *mcp.CallToolResult, output entity.GenerateTestToolResponse, _ error) {
 	tt.logger.Debug("Generate Test with validation")
 
 	resp, err := tt.autotesterAPIService.GenerateTest(ctx, &input)

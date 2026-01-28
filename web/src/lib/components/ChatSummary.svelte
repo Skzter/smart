@@ -5,12 +5,16 @@
     import { getChatById } from "$lib/api";
     import { toast } from "svelte-sonner";
     import { type Message, chat, messages, user } from "$lib/shared.svelte";
-
-    let {
-        summary = $bindable(),
+    import { updateChatTitle as updateChatTitleApi } from "$lib/api";
+    
+    let {   
+        summary,
+        updateChatTitleState,
         onUpdate,
-    }: {
+    }:{
+       
         summary: ApiChatSummary;
+        updateChatTitleState?: (chatId: string, title: string) => void;
         onUpdate?: (updated: ApiChatSummary) => void;
     } = $props();
     let edit = $state(false);
@@ -76,6 +80,11 @@
             const response = await getChatById();
             messages.length = 0;
             messages.push(...convertApiMessagesToMessages(response.messages));
+
+            if (response.title && response.title !== summary.title) {
+                updateChatTitleState?.(summary.chatId, response.title);
+            }
+
         } catch (error) {
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof Error) {
@@ -87,6 +96,41 @@
             });
         }
     }
+
+    async function saveTitle(newTitle: string) {
+        const trimmed = newTitle.trim();
+        edit = false;
+
+        if (!trimmed || trimmed === summary.title) {
+            return;
+        }
+
+        if (trimmed.length > 30) {
+            toast.error("Titel darf maximal 30 Zeichen lang sein");
+            return;
+        }
+
+        try {
+            const updated = await updateChatTitleApi(summary.chatId, trimmed);
+            updateChatTitleState?.(summary.chatId, updated.title);
+
+        } catch (error) {
+            toast.error("Umbenennen fehlgeschlagen", {
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : "Unbekannter Fehler",
+            });
+        }
+    }
+
+    function commitTitleChange(target: HTMLInputElement) {
+        const newTitle = target.value.trim();
+        if (!newTitle || newTitle === summary.title) return;
+
+        saveTitle(newTitle);
+    }
+
 </script>
 
 <Sidebar.MenuItem>
@@ -94,32 +138,33 @@
         class="h-12 py-1 mb-1 flex"
         role="button"
         tabindex={0}
-        onclick={invokeSwitchChat}
+        onclick={() => {
+            if (!edit) invokeSwitchChat();
+}}
     >
         <LucideMessageSquare class="mr-1" />
         <div class="flex flex-col justify-between min-w-0 mr-2">
             {#if edit}
                 <input
                     use:focusAction
-                    id={`title${summary.chatId}`}
-                    value={summary.title === "" ? "Neuer Chat" : summary.title}
-                    onfocusout={(e) => {
-                        summary.title = (e.target as HTMLInputElement).value;
+                    value={summary.title || "Neuer Chat"}
+                        onblur={(e) => {
+                            const newTitle = (e.target as HTMLInputElement).value.trim();
+                            if (newTitle && newTitle !== summary.title) {
+                                commitTitleChange(e.target as HTMLInputElement);
+                            }
                         onUpdate?.(summary);
-                        edit = false;
-                    }}
+                            edit = false;
+                        }}
                     onkeydown={(e) => {
-                        if (e.key == "Enter") {
-                            summary.title = (
-                                e.target as HTMLInputElement
-                            ).value;
-                            onUpdate?.(summary);
-                            edit = false;
-                        }
-                        if (e.key == "Escape") {
+                        if (e.key === "Enter") {
+                        const newTitle = (e.target as HTMLInputElement).value.trim();
+                        if (newTitle && newTitle !== summary.title) {
+                            commitTitleChange(e.target as HTMLInputElement);
                             edit = false;
                         }
                     }}
+                    }
                 />
             {:else}
                 <p class="truncate">
