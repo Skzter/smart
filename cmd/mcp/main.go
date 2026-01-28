@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,7 +29,7 @@ func main() {
 	}
 	defer func() {
 		if err := shutdownTracer(); err != nil {
-			log.Println("tracer shutdown error:", err)
+			slog.Error("tracer shutdown error", "error", err)
 		}
 	}()
 
@@ -68,22 +68,23 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Starting MCP server on %s\n", cfg.Port)
+		slog.Info("Starting MCP server", "port", cfg.Port)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen error: %v", err)
+			slog.Error("listen error", "error", err)
+			os.Exit(1)
 		}
 	}()
 
 	<-ctx.Done()
-	log.Println("Shutdown signal received")
+	slog.Info("Shutdown signal received")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	log.Println("Shutting down HTTP server...")
+	slog.Info("Shutting down HTTP server")
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		log.Printf("HTTP shutdown error: %v", err)
+		slog.Error("HTTP shutdown error", "error", err)
 	}
 
-	log.Println("MCP server exited gracefully")
+	slog.Info("MCP server exited gracefully")
 }
