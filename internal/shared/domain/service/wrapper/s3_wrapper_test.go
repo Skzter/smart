@@ -470,36 +470,6 @@ func TestS3WrapperLargeFileIntegration(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestS3WrapperUploadAndDownloadMediaFileIntegration(t *testing.T) {
-	minioContainer, cleanup := setupMinIOContainer(t)
-	defer cleanup()
-
-	wrapper := createS3WrapperWithMinIO(t, minioContainer)
-	ctx := context.Background()
-
-	testKey := "test-media-file"
-	testData := []byte("Test data for media file")
-	testMetadata := map[string]string{
-		"source":    "integration-test",
-		"test-case": "upload-download",
-		"version":   "1.0",
-	}
-
-	// Upload media file
-	err := wrapper.UploadMediaFile(ctx, testKey, testData, testMetadata)
-	assert.NoError(t, err)
-
-	// Get media url
-	url, err := wrapper.GetMediaUrl(ctx, testKey)
-	assert.NoError(t, err)
-	assert.Equal(t, "https://test-bucket.s3.amazonaws.com/test-media-file", url)
-
-	// Test non-existent file
-	url, err = wrapper.GetMediaUrl(ctx, "non-existent-file.jpg")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get media url")
-}
-
 func TestS3WrapperGetMediaUrlIntegration(t *testing.T) {
 	minioContainer, cleanup := setupMinIOContainer(t)
 	defer cleanup()
@@ -510,7 +480,12 @@ func TestS3WrapperGetMediaUrlIntegration(t *testing.T) {
 	// Upload a file first
 	testKey := "test-file.jpg"
 	testData := []byte("Test data for media file")
-	err := wrapper.UploadMediaFile(ctx, testKey, testData, nil)
+	testMetadata := map[string]string{
+		"source":    "integration-test",
+		"test-case": "upload-download",
+		"version":   "1.0",
+	}
+	err := wrapper.UploadMediaFile(ctx, testKey, testData, testMetadata)
 	assert.NoError(t, err)
 
 	// Get media url for existing file (presigned URL)

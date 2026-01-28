@@ -7,15 +7,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/mocks/wrapper"
 )
 
 func TestNewMediaFileSystem(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range newMediaFileSystemTestCaseProvider(t) {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := NewMediaFileSystem(test.s3Wrapper, test.prefix)
+			result, err := NewMediaFileSystem(test.s3Wrapper, tracer, test.prefix)
 			if test.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, result)
@@ -46,10 +48,10 @@ func newMediaFileSystemTestCaseProvider(t *testing.T) []struct {
 			expectError: false,
 		},
 		{
-			name:        "happy path without prefix",
+			name:        "no prefix",
 			s3Wrapper:   mocks.NewMockS3StorageWrapper(t),
 			prefix:      "",
-			expectError: false,
+			expectError: true,
 		},
 		{
 			name:        "nil s3Wrapper",
@@ -61,6 +63,7 @@ func newMediaFileSystemTestCaseProvider(t *testing.T) []struct {
 }
 
 func TestGetScreenshotUrl(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range getScreenshotUrlTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
@@ -69,7 +72,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 				mockS3.On("GetMediaUrl", mock.Anything, test.expectedKey).Return(test.getMediaUrlRet...)
 			}
 
-			repo, _ := NewMediaFileSystem(mockS3, test.prefix)
+			repo, _ := NewMediaFileSystem(mockS3, tracer, "media/screenshots")
 
 			url, err := repo.GetScreenshotUrl(test.ctx, test.testId)
 			if test.expectError {
@@ -88,20 +91,18 @@ func TestGetScreenshotUrl(t *testing.T) {
 func getScreenshotUrlTestCaseProvider() []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	getMediaUrlRet []any
 	expectedUrl    string
 	expectError    bool
 	ctx            context.Context
 } {
-	return getMediaUrlTestCases("media/screenshots", "test-123.png", "test-456.png", "test-789.png")
+	return getMediaUrlTestCases("media/screenshots", "test-123.png", "test-789.png")
 }
 
-func getMediaUrlTestCases(prefixPath, file1, file2, file3 string) []struct {
+func getMediaUrlTestCases(prefixPath, file1, file3 string) []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	getMediaUrlRet []any
 	expectedUrl    string
@@ -111,7 +112,6 @@ func getMediaUrlTestCases(prefixPath, file1, file2, file3 string) []struct {
 	return []struct {
 		name           string
 		testId         string
-		prefix         string
 		expectedKey    string
 		getMediaUrlRet []any
 		expectedUrl    string
@@ -121,7 +121,6 @@ func getMediaUrlTestCases(prefixPath, file1, file2, file3 string) []struct {
 		{
 			name:           "happy path with prefix",
 			testId:         "test-123",
-			prefix:         prefixPath,
 			expectedKey:    prefixPath + "/" + file1,
 			getMediaUrlRet: []any{"https://s3.example.com/" + file1, nil},
 			expectedUrl:    "https://s3.example.com/" + file1,
@@ -129,27 +128,15 @@ func getMediaUrlTestCases(prefixPath, file1, file2, file3 string) []struct {
 			ctx:            context.Background(),
 		},
 		{
-			name:           "happy path without prefix",
-			testId:         "test-456",
-			prefix:         "",
-			expectedKey:    file2,
-			getMediaUrlRet: []any{"https://s3.example.com/" + file2, nil},
-			expectedUrl:    "https://s3.example.com/" + file2,
-			expectError:    false,
-			ctx:            context.Background(),
-		},
-		{
 			name:        "empty testId",
 			testId:      "",
-			prefix:      "media",
 			expectError: true,
 			ctx:         context.Background(),
 		},
 		{
 			name:           "S3 error",
 			testId:         "test-789",
-			prefix:         "media",
-			expectedKey:    "media/" + file3,
+			expectedKey:    prefixPath + "/" + file3,
 			getMediaUrlRet: []any{"", errors.New("S3 error")},
 			expectError:    true,
 			ctx:            context.Background(),
@@ -158,6 +145,7 @@ func getMediaUrlTestCases(prefixPath, file1, file2, file3 string) []struct {
 }
 
 func TestGetVideoUrl(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range getVideoUrlTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
@@ -166,7 +154,7 @@ func TestGetVideoUrl(t *testing.T) {
 				mockS3.On("GetMediaUrl", mock.Anything, test.expectedKey).Return(test.getMediaUrlRet...)
 			}
 
-			repo, _ := NewMediaFileSystem(mockS3, test.prefix)
+			repo, _ := NewMediaFileSystem(mockS3, tracer, "media/videos")
 
 			url, err := repo.GetVideoUrl(test.ctx, test.testId)
 			if test.expectError {
@@ -185,17 +173,17 @@ func TestGetVideoUrl(t *testing.T) {
 func getVideoUrlTestCaseProvider() []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	getMediaUrlRet []any
 	expectedUrl    string
 	expectError    bool
 	ctx            context.Context
 } {
-	return getMediaUrlTestCases("media/videos", "test-123.webm", "test-456.webm", "test-789.webm")
+	return getMediaUrlTestCases("media/videos", "test-123.webm", "test-789.webm")
 }
 
 func TestHasScreenshot(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range hasScreenshotTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
@@ -204,7 +192,7 @@ func TestHasScreenshot(t *testing.T) {
 				mockS3.On("FileExists", mock.Anything, test.expectedKey).Return(test.fileExistsRet...)
 			}
 
-			repo, _ := NewMediaFileSystem(mockS3, test.prefix)
+			repo, _ := NewMediaFileSystem(mockS3, tracer, "media/screenshots")
 
 			exists := repo.HasScreenshot(test.ctx, test.testId)
 			assert.Equal(t, test.expectedExists, exists)
@@ -217,19 +205,17 @@ func TestHasScreenshot(t *testing.T) {
 func hasScreenshotTestCaseProvider() []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	fileExistsRet  []any
 	expectedExists bool
 	ctx            context.Context
 } {
-	return hasMediaTestCases("media/screenshots", "test-123.png", "test-456.png", "test-789.png", "test-error.png", "screenshot")
+	return hasMediaTestCases("media/screenshots", "test-123.png", "test-789.png", "test-error.png", "screenshot")
 }
 
-func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string) []struct {
+func hasMediaTestCases(prefixPath, file1, file3, file4, mediaType string) []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	fileExistsRet  []any
 	expectedExists bool
@@ -238,7 +224,6 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 	return []struct {
 		name           string
 		testId         string
-		prefix         string
 		expectedKey    string
 		fileExistsRet  []any
 		expectedExists bool
@@ -247,17 +232,7 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 		{
 			name:           mediaType + " exists with prefix",
 			testId:         "test-123",
-			prefix:         prefixPath,
 			expectedKey:    prefixPath + "/" + file1,
-			fileExistsRet:  []any{true, nil},
-			expectedExists: true,
-			ctx:            context.Background(),
-		},
-		{
-			name:           mediaType + " exists without prefix",
-			testId:         "test-456",
-			prefix:         "",
-			expectedKey:    file2,
 			fileExistsRet:  []any{true, nil},
 			expectedExists: true,
 			ctx:            context.Background(),
@@ -265,8 +240,7 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 		{
 			name:           mediaType + " does not exist",
 			testId:         "test-789",
-			prefix:         "media",
-			expectedKey:    "media/" + file3,
+			expectedKey:    prefixPath + "/" + file3,
 			fileExistsRet:  []any{false, nil},
 			expectedExists: false,
 			ctx:            context.Background(),
@@ -274,8 +248,7 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 		{
 			name:           "S3 error",
 			testId:         "test-error",
-			prefix:         "media",
-			expectedKey:    "media/" + file4,
+			expectedKey:    prefixPath + "/" + file4,
 			fileExistsRet:  []any{false, errors.New("S3 error")},
 			expectedExists: false,
 			ctx:            context.Background(),
@@ -283,7 +256,6 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 		{
 			name:           "empty testId",
 			testId:         "",
-			prefix:         "media",
 			expectedExists: false,
 			ctx:            context.Background(),
 		},
@@ -291,6 +263,7 @@ func hasMediaTestCases(prefixPath, file1, file2, file3, file4, mediaType string)
 }
 
 func TestHasVideo(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range hasVideoTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
@@ -299,7 +272,7 @@ func TestHasVideo(t *testing.T) {
 				mockS3.On("FileExists", mock.Anything, test.expectedKey).Return(test.fileExistsRet...)
 			}
 
-			repo, _ := NewMediaFileSystem(mockS3, test.prefix)
+			repo, _ := NewMediaFileSystem(mockS3, tracer, "media/videos")
 
 			exists := repo.HasVideo(test.ctx, test.testId)
 			assert.Equal(t, test.expectedExists, exists)
@@ -312,16 +285,16 @@ func TestHasVideo(t *testing.T) {
 func hasVideoTestCaseProvider() []struct {
 	name           string
 	testId         string
-	prefix         string
 	expectedKey    string
 	fileExistsRet  []any
 	expectedExists bool
 	ctx            context.Context
 } {
-	return hasMediaTestCases("media/videos", "test-123.webm", "test-456.webm", "test-789.webm", "test-error.webm", "video")
+	return hasMediaTestCases("media/videos", "test-123.webm", "test-789.webm", "test-error.webm", "video")
 }
 
 func TestUploadMedia(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range uploadMediaTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
@@ -330,7 +303,7 @@ func TestUploadMedia(t *testing.T) {
 				mockS3.On("UploadMediaFile", mock.Anything, test.expectedKey, mock.Anything, mock.Anything).Return(test.uploadMediaFileRet...)
 			}
 
-			repo, _ := NewMediaFileSystem(mockS3, test.prefix)
+			repo, _ := NewMediaFileSystem(mockS3, tracer, test.prefix)
 
 			err := repo.UploadMedia(test.ctx, test.testId, test.file)
 			if test.expectError {
@@ -384,16 +357,7 @@ func uploadMediaTestCaseProvider() []struct {
 			expectError:        false,
 			ctx:                context.Background(),
 		},
-		{
-			name:               "upload screenshot without prefix",
-			testId:             "test-789",
-			prefix:             "",
-			file:               entity.NewFile("screenshot.png", []byte("image data"), "png"),
-			expectedKey:        "test-789.png",
-			uploadMediaFileRet: []any{nil},
-			expectError:        false,
-			ctx:                context.Background(),
-		},
+
 		{
 			name:        "empty testId",
 			testId:      "",
@@ -416,10 +380,11 @@ func uploadMediaTestCaseProvider() []struct {
 }
 
 func TestGetMediaKey(t *testing.T) {
+	tracer := otel.Tracer("test")
 	for _, test := range getMediaKeyTestCaseProvider() {
 		t.Run(test.name, func(t *testing.T) {
 			mockS3 := mocks.NewMockS3StorageWrapper(t)
-			fs, _ := NewMediaFileSystem(mockS3, test.prefix)
+			fs, _ := NewMediaFileSystem(mockS3, tracer, test.prefix)
 
 			// Type assert to access private method for testing
 			mediaFs := fs.(*mediaFileSystem)
@@ -452,11 +417,11 @@ func getMediaKeyTestCaseProvider() []struct {
 			expectedKey: "media/screenshots/test-123.png",
 		},
 		{
-			name:        "without prefix",
+			name:        "with different prefix",
 			testId:      "test-456",
 			extension:   "webm",
-			prefix:      "",
-			expectedKey: "test-456.webm",
+			prefix:      "media/videos",
+			expectedKey: "media/videos/test-456.webm",
 		},
 		{
 			name:        "nested prefix",

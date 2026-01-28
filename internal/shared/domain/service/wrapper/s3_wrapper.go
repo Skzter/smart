@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -556,8 +555,7 @@ func (s *S3Wrapper) UploadMediaFile(ctx context.Context, key string, data []byte
 		Metadata:    metadata,
 	}
 
-	_, err := s.client.PutObject(ctx, input)
-	if err != nil {
+	if _, err := s.client.PutObject(ctx, input); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "S3 upload failed")
 		return fmt.Errorf("failed to upload media file: %w", err)
@@ -594,23 +592,6 @@ func (s *S3Wrapper) GetMediaUrl(ctx context.Context, key string) (string, error)
 	})
 
 	if err != nil {
-		var notFound *types.NotFound
-		errMsg := err.Error()
-		isNotFound := errors.As(err, &notFound) ||
-			strings.Contains(strings.ToLower(errMsg), "not found") ||
-			strings.Contains(strings.ToLower(errMsg), "nosuchkey") ||
-			strings.Contains(strings.ToLower(errMsg), "no such key")
-
-		if isNotFound {
-			err := fmt.Errorf("failed to get media url: file does not exist")
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "file does not exist")
-			s.logger.Error("Failed to get media url: file does not exist",
-				slog.String("bucket", s.config.Bucket),
-				slog.String("key", key),
-			)
-			return "", err
-		}
 		err := fmt.Errorf("failed to get media url: %w", err)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "S3 head object failed")

@@ -14,7 +14,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
-// HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run.
+// HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run. Uploads any debugging media artifacts outside of request context.
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	start := time.Now()
 	ctx := c.Request.Context()
@@ -65,7 +65,8 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	}
 
 	go func() {
-		for _, file := range <-filesChan {
+		files := <-filesChan
+		for _, file := range files {
 			if err := a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file); err != nil {
 				a.logger.Error("error uploading media",
 					"testId", params.TestId,

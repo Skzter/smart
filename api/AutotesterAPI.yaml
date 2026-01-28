@@ -5,10 +5,23 @@ info:
   version: 1.0.0
 servers:
   - url: https://localhost:8081/api/v1
+tags:
+  - name: Chat
+    description: Chat and message operations
+  - name: Test
+    description: Test case management and execution
+  - name: Auth
+    description: Authentication operations
+  - name: Groups
+    description: Group management operations
+  - name: Media
+    description: Test debugging media
 paths:
   /chat:
     post:
       summary: "Takes user message and returns LLMs message."
+      tags:
+        - Chat
       requestBody:
         required: true
         content:
@@ -38,6 +51,8 @@ paths:
   /validate:
     post:
       summary: "Validates a prompt with user/chat context"
+      tags:
+        - Chat
       requestBody:
         required: true
         content:
@@ -74,39 +89,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /userInfo:
-    post:
-      summary: "Requests User Info from Backend on inital load"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserRequest"
-
-      responses:
-        "200":
-          description: Successful Request for user info
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserResponse"
-        "400":
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-        "500":
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
   /template:
     get:
       summary: "Gets Template from Autotester Config and returns it"
+      tags:
+        - Chat
       responses:
         "200":
           description: Template from config is not empty
@@ -125,6 +112,8 @@ paths:
   /saveLocal:
     post:
       summary: "Takes a testcode and saves it locally"
+      tags:
+        - Test
       requestBody:
         required: true
         content:
@@ -155,6 +144,8 @@ paths:
   /deleteLocal:
     delete:
       summary: "Deletes a locally stored test case by its ID"
+      tags:
+        - Test
       parameters:
         - name: testcaseId
           in: query
@@ -209,6 +200,8 @@ paths:
     post:
       summary: Run automated Playwright test in container
       description: Executes a Playwright test file in a containerized environment and returns the test output logs
+      tags:
+        - Test
       requestBody:
         required: true
         content:
@@ -274,6 +267,8 @@ paths:
         Streams live logs of a running Playwright test.
         Each event contains a JSON payload.
         Transport uses Server-Sent Events (SSE).
+      tags:
+        - Test
       parameters:
         - name: testId
           in: path
@@ -308,6 +303,8 @@ paths:
       summary: Generate authentication token for a user
       description: |
         Generates and returns a new authentication token for the specified user. Only accessible from internal networks.
+      tags:
+        - Auth
       requestBody:
         required: true
         content:
@@ -338,8 +335,7 @@ paths:
     get:
       summary: Get screenshot from a failed test
       description: |
-        Returns the screenshot captured during a failed Playwright test run.
-        Screenshots are only available for tests that failed and had screenshot capture enabled.
+        Redirects to a presigned AWS S3 URL for the screenshot captured during a Playwright test run.
       tags:
         - Media
       parameters:
@@ -351,13 +347,15 @@ paths:
           description: Unique identifier of the test
           example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
       responses:
-        '200':
-          description: Screenshot image
-          content:
-            image/png:
+        '307':
+          description: Temporary redirect to presigned S3 URL for the screenshot
+          headers:
+            Location:
+              description: Presigned AWS S3 URL for downloading the screenshot
               schema:
                 type: string
-                format: binary
+                format: uri
+                example: "https://s3.amazonaws.com/bucket/screenshot.png?X-Amz-Algorithm=..."
         '400':
           description: Bad request - testId is required
           content:
@@ -381,9 +379,7 @@ paths:
     get:
       summary: Get video from a failed test
       description: |
-        Returns the video recording captured during a failed Playwright test run.
-        Videos are only available for tests that failed and had video capture enabled.
-        Supports HTTP Range requests for video streaming.
+        Redirects to a presigned AWS S3 URL for the video recording captured during a Playwright test run.
       tags:
         - Media
       parameters:
@@ -395,20 +391,15 @@ paths:
           description: Unique identifier of the test
           example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
       responses:
-        '200':
-          description: Video file
-          content:
-            video/webm:
+        '307':
+          description: Temporary redirect to presigned S3 URL for the video
+          headers:
+            Location:
+              description: Presigned AWS S3 URL for downloading/streaming the video
               schema:
                 type: string
-                format: binary
-        '206':
-          description: Partial content (range request)
-          content:
-            video/webm:
-              schema:
-                type: string
-                format: binary
+                format: uri
+                example: "https://s3.amazonaws.com/bucket/video.webm?X-Amz-Algorithm=..."
         '400':
           description: Bad request - testId is required
           content:
@@ -458,10 +449,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/users/{userId}/chats:
   /chats:
     get:
       summary: "Returns the chat history"
+      tags:
+        - Chat
       description: |
         Retrieves chat summaries with pagination support.
 
@@ -513,6 +505,8 @@ paths:
   /chats/{chatId}:
     get:
       summary: Get full chat by ID
+      tags:
+        - Chat
       description: |
         Returns a full chat for the given user, including all messages.
       parameters:
@@ -551,6 +545,8 @@ paths:
   /tests:
     get:
       summary: Retrieve stored test cases with optional filters
+      tags:
+        - Test
       description: >
         Returns test cases belonging to the specified user. Additional optional
         query parameters can be used to filter for specific test cases, chats,
@@ -647,6 +643,8 @@ paths:
   /groups:
     get:
       summary: List all groups
+      tags:
+        - Groups
       operationId: getGroups
       responses:
         "200":
@@ -668,6 +666,8 @@ paths:
                     type: string
     post:
       summary: Create a new group
+      tags:
+        - Groups
       operationId: createGroup
       requestBody:
         required: true
@@ -708,6 +708,8 @@ paths:
   /chats/{chatId}/groups:
     post:
       summary: Assign chat to groups
+      tags:
+        - Groups
       operationId: assignChatToGroups
       parameters:
         - name: chatId
@@ -742,6 +744,8 @@ paths:
   /chats/{chatId}/groups/{groupId}:
     delete:
       summary: Remove chat from group
+      tags:
+        - Groups
       operationId: removeChatFromGroup
       parameters:
         - name: chatId
@@ -782,32 +786,11 @@ components:
         createdAt:
           type: "number"
 
-    chat:
-      type: object
-      properties:
-        chatId:
-          type: string
-        Messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/Message"
-
     UserRequest:
       type: object
       properties:
         userId:
           type: string
-
-    UserResponse:
-      type: object
-      properties:
-        userId:
-          type: string
-          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
-        allChats:
-          type: array
-          items:
-            $ref: "#/components/schemas/Chats"
 
     Chat:
       type: object
@@ -946,6 +929,7 @@ components:
         template:
           type: string
           example: "Config: Base Url: {{url}}, Scenario: {{ scenario }}, ..."
+
     ChatSummarys:
       type: object
       properties:
@@ -1015,6 +999,7 @@ components:
           type: string
           description: "Descriptive name of the test case."
           example: "Login form test"
+
     Token:
       type: object
       properties:
@@ -1047,6 +1032,7 @@ components:
         - createdAt
         - updatedAt
         - expiresAt
+
     Group:
       type: object
       properties:
@@ -1066,3 +1052,24 @@ components:
         createdBy:
           type: string
           description: ID of the user who created the group
+    
+    MediaInfo:
+      type: object
+      properties:
+        testId:
+          type: string
+          description: The unique identifier of the test
+          example: "test-123-abc"
+        hasScreenshot:
+          type: boolean
+          description: Indicates whether a screenshot is available for this test
+          example: true
+        hasVideo:
+          type: boolean
+          description: Indicates whether a video is available for this test
+          example: false
+      required:
+        - testId
+        - hasScreenshot
+        - hasVideo
+          

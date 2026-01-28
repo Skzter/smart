@@ -23,6 +23,6 @@ type MediaFileSystem interface {
 	// HasVideo checks if a video exists for the given testId in S3.
 	HasVideo(ctx context.Context, testId string) bool
 
-	// UploadMediaFromDir a mediafile to s3
+	// UploadMedia uploads a file to s3
 	UploadMedia(ctx context.Context, testId string, file entity.File) error
 }

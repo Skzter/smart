@@ -9,15 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
 )
 
+//nolint:dupl
 func TestNewMediaStorageService(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	mockRepo := mocks.NewMockMediaFileSystem(t)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name    string
@@ -47,7 +50,7 @@ func TestNewMediaStorageService(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			svc, err := NewMediaStorageService(test.logger, test.repo)
+			svc, err := NewMediaStorageService(test.logger, test.repo, tracer)
 
 			if test.wantErr {
 				assert.Error(t, err, "expected an error")
@@ -64,6 +67,7 @@ func TestNewMediaStorageService(t *testing.T) {
 func TestGetScreenshotUrl(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -76,7 +80,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 			name:   "success - screenshot url retrieved",
 			testId: "test-123",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetScreenshotUrl(ctx, "test-123").Return("https://s3.example.com/test-123.png", nil)
+				mockRepo.EXPECT().GetScreenshotUrl(mock.Anything, "test-123").Return("https://s3.example.com/test-123.png", nil)
 			},
 			expectedUrl: "https://s3.example.com/test-123.png",
 			wantErr:     false,
@@ -85,7 +89,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 			name:   "error - screenshot not found",
 			testId: "test-404",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetScreenshotUrl(ctx, "test-404").Return("", errors.New("screenshot not found"))
+				mockRepo.EXPECT().GetScreenshotUrl(mock.Anything, "test-404").Return("", errors.New("screenshot not found"))
 			},
 			expectedUrl: "",
 			wantErr:     true,
@@ -94,7 +98,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 			name:   "error - repository error",
 			testId: "test-error",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetScreenshotUrl(ctx, "test-error").Return("", errors.New("repo error"))
+				mockRepo.EXPECT().GetScreenshotUrl(mock.Anything, "test-error").Return("", errors.New("repo error"))
 			},
 			expectedUrl: "",
 			wantErr:     true,
@@ -109,7 +113,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 				test.setupMock(mockRepo)
 			}
 
-			svc, err := NewMediaStorageService(logger, mockRepo)
+			svc, err := NewMediaStorageService(logger, mockRepo, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
 			url, err := svc.GetScreenshotUrl(ctx, test.testId)
@@ -131,6 +135,7 @@ func TestGetScreenshotUrl(t *testing.T) {
 func TestGetVideoUrl(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name        string
@@ -143,7 +148,7 @@ func TestGetVideoUrl(t *testing.T) {
 			name:   "success - video url retrieved",
 			testId: "test-123",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetVideoUrl(ctx, "test-123").Return("https://s3.example.com/test-123.webm", nil)
+				mockRepo.EXPECT().GetVideoUrl(mock.Anything, "test-123").Return("https://s3.example.com/test-123.webm", nil)
 			},
 			expectedUrl: "https://s3.example.com/test-123.webm",
 			wantErr:     false,
@@ -152,7 +157,7 @@ func TestGetVideoUrl(t *testing.T) {
 			name:   "error - video not found",
 			testId: "test-404",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetVideoUrl(ctx, "test-404").Return("", errors.New("video not found"))
+				mockRepo.EXPECT().GetVideoUrl(mock.Anything, "test-404").Return("", errors.New("video not found"))
 			},
 			expectedUrl: "",
 			wantErr:     true,
@@ -161,7 +166,7 @@ func TestGetVideoUrl(t *testing.T) {
 			name:   "error - repository error",
 			testId: "test-error",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().GetVideoUrl(ctx, "test-error").Return("", errors.New("repo error"))
+				mockRepo.EXPECT().GetVideoUrl(mock.Anything, "test-error").Return("", errors.New("repo error"))
 			},
 			expectedUrl: "",
 			wantErr:     true,
@@ -176,7 +181,7 @@ func TestGetVideoUrl(t *testing.T) {
 				test.setupMock(mockRepo)
 			}
 
-			svc, err := NewMediaStorageService(logger, mockRepo)
+			svc, err := NewMediaStorageService(logger, mockRepo, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
 			url, err := svc.GetVideoUrl(ctx, test.testId)
@@ -197,6 +202,7 @@ func TestGetVideoUrl(t *testing.T) {
 func TestHasMedia(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name               string
@@ -209,8 +215,8 @@ func TestHasMedia(t *testing.T) {
 			name:   "both screenshot and video exist",
 			testId: "test-123",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().HasScreenshot(ctx, "test-123").Return(true)
-				mockRepo.EXPECT().HasVideo(ctx, "test-123").Return(true)
+				mockRepo.EXPECT().HasScreenshot(mock.Anything, "test-123").Return(true)
+				mockRepo.EXPECT().HasVideo(mock.Anything, "test-123").Return(true)
 			},
 			expectedScreenshot: true,
 			expectedVideo:      true,
@@ -219,8 +225,8 @@ func TestHasMedia(t *testing.T) {
 			name:   "only screenshot exists",
 			testId: "test-screenshot",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().HasScreenshot(ctx, "test-screenshot").Return(true)
-				mockRepo.EXPECT().HasVideo(ctx, "test-screenshot").Return(false)
+				mockRepo.EXPECT().HasScreenshot(mock.Anything, "test-screenshot").Return(true)
+				mockRepo.EXPECT().HasVideo(mock.Anything, "test-screenshot").Return(false)
 			},
 			expectedScreenshot: true,
 			expectedVideo:      false,
@@ -229,8 +235,8 @@ func TestHasMedia(t *testing.T) {
 			name:   "only video exists",
 			testId: "test-video",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().HasScreenshot(ctx, "test-video").Return(false)
-				mockRepo.EXPECT().HasVideo(ctx, "test-video").Return(true)
+				mockRepo.EXPECT().HasScreenshot(mock.Anything, "test-video").Return(false)
+				mockRepo.EXPECT().HasVideo(mock.Anything, "test-video").Return(true)
 			},
 			expectedScreenshot: false,
 			expectedVideo:      true,
@@ -239,8 +245,8 @@ func TestHasMedia(t *testing.T) {
 			name:   "neither exists",
 			testId: "test-none",
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().HasScreenshot(ctx, "test-none").Return(false)
-				mockRepo.EXPECT().HasVideo(ctx, "test-none").Return(false)
+				mockRepo.EXPECT().HasScreenshot(mock.Anything, "test-none").Return(false)
+				mockRepo.EXPECT().HasVideo(mock.Anything, "test-none").Return(false)
 			},
 			expectedScreenshot: false,
 			expectedVideo:      false,
@@ -255,7 +261,7 @@ func TestHasMedia(t *testing.T) {
 				test.setupMock(mockRepo)
 			}
 
-			svc, err := NewMediaStorageService(logger, mockRepo)
+			svc, err := NewMediaStorageService(logger, mockRepo, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
 			hasScreenshot, hasVideo := svc.HasMedia(ctx, test.testId)
@@ -271,6 +277,7 @@ func TestHasMedia(t *testing.T) {
 func TestUploadMedia(t *testing.T) {
 	ctx := context.Background()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	testFile := entity.NewFile("screenshot.png", []byte("test data"), "png")
 
@@ -286,7 +293,7 @@ func TestUploadMedia(t *testing.T) {
 			testId: "test-123",
 			file:   testFile,
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().UploadMedia(ctx, "test-123", mock.MatchedBy(func(f entity.File) bool {
+				mockRepo.EXPECT().UploadMedia(mock.Anything, "test-123", mock.MatchedBy(func(f entity.File) bool {
 					return f.GetFileName() == "screenshot.png"
 				})).Return(nil)
 			},
@@ -297,7 +304,7 @@ func TestUploadMedia(t *testing.T) {
 			testId: "test-error",
 			file:   testFile,
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().UploadMedia(ctx, "test-error", mock.Anything).Return(errors.New("upload failed"))
+				mockRepo.EXPECT().UploadMedia(mock.Anything, "test-error", mock.Anything).Return(errors.New("upload failed"))
 			},
 			wantErr: true,
 		},
@@ -306,7 +313,7 @@ func TestUploadMedia(t *testing.T) {
 			testId: "test-s3-error",
 			file:   testFile,
 			setupMock: func(mockRepo *mocks.MockMediaFileSystem) {
-				mockRepo.EXPECT().UploadMedia(ctx, "test-s3-error", mock.Anything).Return(errors.New("s3 connection failed"))
+				mockRepo.EXPECT().UploadMedia(mock.Anything, "test-s3-error", mock.Anything).Return(errors.New("s3 connection failed"))
 			},
 			wantErr: true,
 		},
@@ -320,7 +327,7 @@ func TestUploadMedia(t *testing.T) {
 				test.setupMock(mockRepo)
 			}
 
-			svc, err := NewMediaStorageService(logger, mockRepo)
+			svc, err := NewMediaStorageService(logger, mockRepo, tracer)
 			require.NoError(t, err, "unexpected error creating service")
 
 			err = svc.UploadMedia(ctx, test.testId, test.file)

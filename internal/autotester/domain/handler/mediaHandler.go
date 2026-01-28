@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // HandleGetScreenshot handles requests for test screenshots.
@@ -11,6 +13,11 @@ import (
 // Returns a JSON response with the S3 URL to the screenshot.
 // nolint:dupl
 func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
+	if err := assert.NotNil(c); err != nil {
+		a.logger.Error(err.Error())
+		return
+	}
+
 	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetScreenshot")
 	defer span.End()
 
@@ -46,6 +53,11 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 // Returns a JSON response with the S3 URL to the video.
 // nolint:dupl
 func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
+	if err := assert.NotNil(c); err != nil {
+		a.logger.Error(err.Error())
+		return
+	}
+
 	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetVideo")
 	defer span.End()
 
@@ -79,6 +91,11 @@ func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 // HandleGetMediaInfo handles requests to check if media exists for a test.
 // GET /api/v1/test/:testId/media
 func (a *AutotesterController) HandleGetMediaInfo(c *gin.Context) {
+	if err := assert.NotNil(c); err != nil {
+		a.logger.Error(err.Error())
+		return
+	}
+
 	ctx, span := a.tracer.Start(c, "autotesterController.HandleGetMediaInfo")
 	defer span.End()
 
