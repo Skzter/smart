@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
@@ -70,10 +71,13 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 
 	var result entity.TemplateResponse
 	if err := doAndDecode(a.httpClient, a.logger, req, &result); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to decode")
 		return nil, err
 	}
 
 	a.logger.Debug("Successfully fetched template", "templateLength", len(result.Content))
+	span.SetStatus(codes.Ok, "")
 	return &result, nil
 }
 
@@ -101,21 +105,26 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("user.id", request.UserId),
-		attribute.String("conversation.id", request.ChatId),
+		attribute.String("chat.Id", request.ChatId),
 	)
 
 	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to create request")
 		return nil, err
 	}
 
 	var result entity.GenerateTestResponse
 	if err := doAndDecode(a.httpClient, a.logger, req, &result); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "Failed to decode")
 		return nil, err
 	}
 
 	a.logger.Debug("Successfully generated test")
+	span.SetStatus(codes.Ok, "")
 	return &result, nil
 }
 
@@ -141,6 +150,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 	}
 
 	a.logger.Debug("Successfully saved test locally")
+	span.SetStatus(codes.Ok, "")
 	return &result, nil
 }
 
