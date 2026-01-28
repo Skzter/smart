@@ -68,6 +68,6 @@ func TagListParquetWrapperProvider(logger *slog.Logger, tracer trace.Tracer) (wr
 }
 
 // RedisCacheProvider provides a new RedisCache
-func RedisCacheProvider(log *slog.Logger, cfg *config.RedisConfig) (repository.Cache, error) {
-	return repository.NewRedisCache(log, cfg)
+func RedisCacheProvider(log *slog.Logger, cfg *config.RedisConfig, tracer trace.Tracer) (repository.Cache, error) {
+	return repository.NewRedisCache(log, cfg, tracer)
 }
