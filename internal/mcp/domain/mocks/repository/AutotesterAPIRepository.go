@@ -168,6 +168,69 @@ func (_c *MockAutotesterAPIRepository_GetTemplate_Call) RunAndReturn(run func(ct
 	return _c
 }
 
+// ReadTestLogStream provides a mock function for the type MockAutotesterAPIRepository
+func (_mock *MockAutotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
+	ret := _mock.Called(ctx, testId, eventsCh)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReadTestLogStream")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, chan<- *entity.LogEvent) error); ok {
+		r0 = returnFunc(ctx, testId, eventsCh)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAutotesterAPIRepository_ReadTestLogStream_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ReadTestLogStream'
+type MockAutotesterAPIRepository_ReadTestLogStream_Call struct {
+	*mock.Call
+}
+
+// ReadTestLogStream is a helper method to define mock.On call
+//   - ctx context.Context
+//   - testId string
+//   - eventsCh chan<- *entity.LogEvent
+func (_e *MockAutotesterAPIRepository_Expecter) ReadTestLogStream(ctx interface{}, testId interface{}, eventsCh interface{}) *MockAutotesterAPIRepository_ReadTestLogStream_Call {
+	return &MockAutotesterAPIRepository_ReadTestLogStream_Call{Call: _e.mock.On("ReadTestLogStream", ctx, testId, eventsCh)}
+}
+
+func (_c *MockAutotesterAPIRepository_ReadTestLogStream_Call) Run(run func(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent)) *MockAutotesterAPIRepository_ReadTestLogStream_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 chan<- *entity.LogEvent
+		if args[2] != nil {
+			arg2 = args[2].(chan<- *entity.LogEvent)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAutotesterAPIRepository_ReadTestLogStream_Call) Return(err error) *MockAutotesterAPIRepository_ReadTestLogStream_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAutotesterAPIRepository_ReadTestLogStream_Call) RunAndReturn(run func(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error) *MockAutotesterAPIRepository_ReadTestLogStream_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // RunTest provides a mock function for the type MockAutotesterAPIRepository
 func (_mock *MockAutotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error) {
 	ret := _mock.Called(ctx, request)

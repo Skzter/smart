@@ -10,15 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	tcValkey "github.com/testcontainers/testcontainers-go/modules/valkey"
+	"go.opentelemetry.io/otel"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
-	"go.opentelemetry.io/otel"
 )
 
 func TestCache(t *testing.T) {
 	ctx := t.Context()
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	valkeyTestContainer, err := tcValkey.Run(ctx, "valkey/valkey:alpine")
 	require.NoError(t, err)
@@ -41,10 +43,9 @@ func TestCache(t *testing.T) {
 	autotesterConfig.RedisConfig.Db = 0
 	autotesterConfig.RedisConfig.Protocol = 2
 
-	cacheRepo, err := repository.NewRedisCache(logger, autotesterConfig.RedisConfig)
+	cacheRepo, err := repository.NewRedisCache(logger, autotesterConfig.RedisConfig, tracer)
 	require.NoError(t, err)
 
-	tracer := otel.Tracer("integration test")
 	cacheServ, err := NewCacheService(autotesterConfig, logger, cacheRepo, tracer)
 	require.NoError(t, err)
 

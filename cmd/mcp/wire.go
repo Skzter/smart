@@ -14,6 +14,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/logger"
 )
 
@@ -27,6 +28,8 @@ func InitializeMcpServer(cfg *config.Mcp) (*application.McpServer, error) {
 		repository.NewAutotesterAPIRepository,
 
 		service.NewAutotesterAPIService,
+
+		store.NewTestLogStreamStore,
 
 		ProvideMcpServer,
 
@@ -59,10 +62,11 @@ func ProvideBaseURL(cfg *config.Mcp) string {
 
 // ProvideMcpServer creates the underlying mcp.Server from config
 func ProvideMcpServer(cfg *config.Mcp) *mcp.Server {
+	serverOpts := mcp.ServerOptions{HasResources: true}
 	impl := &mcp.Implementation{
 		Name:    cfg.McpServerImplementation.Name,
 		Version: cfg.McpServerImplementation.Version,
 	}
 
-	return mcp.NewServer(impl, nil)
+	return mcp.NewServer(impl, &serverOpts)
 }

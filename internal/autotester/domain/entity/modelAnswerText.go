@@ -1,6 +1,7 @@
 package entity
 
-// ModelAnswerText represents the answer text returned by the language model.
+// ModelAnswerText represents the answer jsonObject returned by the language model.
 type ModelAnswerText struct {
-	Text string `json:"message"`
+	Title string `json:"title"`
+	Code  string `json:"code"`
 }
