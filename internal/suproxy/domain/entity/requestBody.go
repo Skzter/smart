@@ -41,7 +41,7 @@ func (t *Travelers) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Case 1: array (korrektes JSON)
+	// Case 1: array
 	var arr []Traveler
 	if err := json.Unmarshal(data, &arr); err == nil {
 		*t = arr
