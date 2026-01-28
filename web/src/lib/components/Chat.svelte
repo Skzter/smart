@@ -3,6 +3,9 @@
     import BotMessage from "./BotMessage.svelte";
     import Dots from "./Dots.svelte";
 
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+    import { Button } from "$lib/components/ui/button";
+
     import { chat, messages, GroupsState } from "$lib/shared.svelte";
     import { assignChatToGroups, removeChatFromGroup } from "$lib/api";
     import { toast } from "svelte-sonner";
@@ -11,7 +14,20 @@
         new Map<string, string>(GroupsState.items.map((g) => [g.id, g.name])),
     );
 
-    let selectedGroupIds = $derived.by(() => [...(chat.groups ?? [])]);
+    let selectedGroupIds = $state<string[]>([]);
+
+    let lastChatId = $state<string | null>(null);
+
+    $effect(() => {
+        if (chat.id && chat.id !== lastChatId) {
+            lastChatId = chat.id;
+            selectedGroupIds = [...(chat.groups ?? [])];
+        }
+    });
+
+    const selectedKey = $derived(selectedGroupIds.slice().sort().join(","));
+    const currentKey = $derived((chat.groups ?? []).slice().sort().join(","));
+    const isDirty = $derived(selectedKey !== currentKey);
 
     let container: HTMLElement | undefined = $state();
 
@@ -32,9 +48,9 @@
         try {
             await assignChatToGroups(chat.id, selectedGroupIds);
             chat.groups = [...selectedGroupIds];
-            toast.success("Gruppen gespeichert");
+            toast.success("Groups saved");
         } catch {
-            toast.error("Gruppen konnten nicht gespeichert werden");
+            toast.error("Failed to save groups");
         }
     }
 
@@ -43,10 +59,12 @@
 
         try {
             await removeChatFromGroup(chat.id, groupId);
-            chat.groups = chat.groups.filter((g) => g !== groupId);
+
+            chat.groups = (chat.groups ?? []).filter((g) => g !== groupId);
             selectedGroupIds = selectedGroupIds.filter((g) => g !== groupId);
+            toast.success("Group removed");
         } catch {
-            toast.error("Gruppe konnte nicht entfernt werden");
+            toast.error("Failed to remove group");
         }
     }
 </script>
@@ -54,16 +72,73 @@
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0 h-full">
     <div class="flex-1 flex items-start justify-center min-h-0">
         <div
-    bind:this={container}
-    class="w-full max-w-6xl bg-muted/50 h-full rounded-xl md:min-h-min overflow-auto p-6 min-h-0 flex flex-col"
->
-            {#if chat.groups?.length}
-                <div class="mb-2 flex flex-wrap gap-2">
-                    {#each chat.groups as groupId}
+            bind:this={container}
+            class="w-full max-w-6xl bg-muted/50 h-full rounded-xl md:min-h-min overflow-auto p-6 min-h-0 flex flex-col"
+        >
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                        {#snippet child({ props })}
+                            <Button
+                                {...props}
+                                variant="ghost"
+                                class="h-8 bg-muted hover:bg-muted/80"
+                            >
+                                Select groups
+                            </Button>
+                        {/snippet}
+                    </DropdownMenu.Trigger>
+
+                    <DropdownMenu.Content class="w-56">
+                        <DropdownMenu.Label>Chat groups</DropdownMenu.Label>
+                        <DropdownMenu.Separator />
+
+                        {#if GroupsState.items.length === 0}
+                            <div class="px-2 py-2 text-xs text-muted-foreground">
+                                No groups available
+                            </div>
+                        {:else}
+                            {#each GroupsState.items as g (g.id)}
+                                <DropdownMenu.CheckboxItem
+                                checked={selectedGroupIds.includes(g.id)}
+                                onCheckedChange={(checked) => {
+                                    const isChecked = Boolean(checked);
+                                    const has = selectedGroupIds.includes(g.id);
+                            
+                                    if (isChecked && !has) {
+                                        selectedGroupIds = [...selectedGroupIds, g.id];
+                                    }
+                            
+                                    if (!isChecked && has) {
+                                        selectedGroupIds = selectedGroupIds.filter((id) => id !== g.id);
+                                    }
+                                }}
+                            >
+                                {g.name}
+                            </DropdownMenu.CheckboxItem>
+                        
+                            {/each}
+                        {/if}
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
+
+                {#if isDirty}
+                    <button
+                        class="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80"
+                        onclick={saveGroups}
+                    >
+                        Save groups
+                    </button>
+                {/if}
+            </div>
+
+            {#if (chat.groups ?? []).length > 0}
+                <div class="mb-4 flex flex-wrap gap-2">
+                    {#each chat.groups as groupId (groupId)}
                         <button
                             type="button"
                             class="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80"
-                            aria-label="Gruppe entfernen"
+                            aria-label="Remove group"
                             onclick={() => removeGroup(groupId)}
                         >
                             {groupNameById.get(groupId) ?? groupId}
@@ -73,24 +148,13 @@
                 </div>
             {/if}
 
-            {#if selectedGroupIds.length !== (chat.groups?.length ?? 0)}
-                <button
-                    class="mb-4 w-fit rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80"
-                    onclick={saveGroups}
-                >
-                    Gruppen speichern
-                </button>
-            {/if}
-
-
             {#if messages.length === 0}
-                <div
-                    class="flex items-center justify-center flex-1 text-muted-foreground"
-                >
+                <div class="flex items-center justify-center flex-1 text-muted-foreground">
                     <p>Start a chat...</p>
                 </div>
             {:else}
                 <div class="flex-1"></div>
+
                 <div class="flex flex-col gap-4">
                     {#each messages as message}
                         {#if message.t === "user"}

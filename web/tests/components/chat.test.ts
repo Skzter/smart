@@ -8,6 +8,12 @@ vi.mock("../../src/lib/shared.svelte", () => ({
     chat: {
         id: "",
         isLoading: false,
+        groups: [],
+    },
+    GroupsState: {
+        items: [],
+        isLoading: false,
+        error: "",
     },
 }));
 
@@ -19,6 +25,8 @@ describe("Chat", () => {
         // Reset state before each test
         messages.length = 0;
         chat.isLoading = false;
+        chat.groups = [];
+        chat.id = "";
     });
 
     it("displays empty state when no messages", () => {
@@ -41,8 +49,8 @@ describe("Chat", () => {
 
     it("renders messages when they exist", () => {
         messages.push({
-            question: "Test question",
-            answer: "Test answer",
+            t: "user",
+            Message: "Test message",
         });
 
         const { container } = render(Chat);
@@ -55,8 +63,8 @@ describe("Chat", () => {
 
     it("shows loading indicator when chat is loading", () => {
         messages.push({
-            question: "Test question",
-            answer: "",
+            t: "user",
+            Message: "Test message",
         });
         chat.isLoading = true;
 
@@ -69,8 +77,8 @@ describe("Chat", () => {
 
     it("does not show empty state when messages exist", () => {
         messages.push({
-            question: "Test",
-            answer: "Answer",
+            t: "user",
+            Message: "Test message",
         });
 
         const { container } = render(Chat);

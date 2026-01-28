@@ -81,19 +81,33 @@
         }
     }
 
+    let lastGroupFilterKey = $state<string | null>(null);
+
     function resetAndReload() {
         error = "";
         items = [];
         hasMore = true;
         page = 0;
         initialized = false;
+        loading = false;
+        lastGroupFilterKey = GroupFilter.selectedIds.slice().sort().join(",");
         void loadMore();
     }
 
-        $effect(() => {
-        GroupFilter.selectedIds.join(",");
-        resetAndReload();
+    $effect(() => {
+        const key = GroupFilter.selectedIds.slice().sort().join(",");
+
+        if (lastGroupFilterKey === null) {
+            lastGroupFilterKey = key;
+            return;
+        }
+
+        if (key !== lastGroupFilterKey) {
+            lastGroupFilterKey = key;
+            resetAndReload();
+        }
     });
+
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
