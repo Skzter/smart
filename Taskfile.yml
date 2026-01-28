@@ -166,6 +166,12 @@ tasks:
         vars:
           APP_NAME: autotester
           FLAGS: "--headless"
+  run-mcp:
+    desc: "Run the autotester mcp"
+    cmds:
+      - task: .run-app
+        vars:
+          APP_NAME: mcp
           
   compose-local:
     desc: "Run the whole project in docker-compose for local environment"
@@ -241,12 +247,20 @@ tasks:
       - echo "Quality Gate checking test coverage is above threshold"
       - echo "Threshold {{.TESTCOVERAGE_THRESHOLD}} %"
       - ./scripts/check-coverage.sh {{.TESTCOVERAGE_THRESHOLD}} coverage.out
+      - echo "Running race detector tests"
+      - go clean -testcache
+      - go tool gotestsum -- -race -tags=concurrent -run "Concurrent" ./...
     silent: true
 
   test-integration:
     desc: "Run the integration tests"
     cmds:
       - go tool gotestsum -- -tags=integration ./...
+
+  test-race:
+    desc: "Run concurrent tests with race detector"
+    cmds:
+      - go tool gotestsum -- -race -tags=concurrent -run "Concurrent" ./...
 
   test-integration-coverage:
     desc: "Run the integration tests with coverage"

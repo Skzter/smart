@@ -55,6 +55,7 @@ func main() {
 	go func() {
 		<-ctx.Done()
 		log.Println("Shutting down MCP HTTP server...")
+		mcpServer.ShutdownComponents()
 		_ = srv.Shutdown(context.Background())
 	}()
 
