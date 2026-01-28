@@ -1,3 +1,5 @@
+//go:build !concurrent
+
 package handler
 
 import (

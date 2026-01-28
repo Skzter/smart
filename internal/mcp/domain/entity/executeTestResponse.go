@@ -6,4 +6,5 @@ package entity
 // package consistent and ready for future fields.
 type ExecuteTestResponse struct {
 	Result string `json:"result"`
+	TestId string `json:"testId,omitempty"`
 }

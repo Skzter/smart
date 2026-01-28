@@ -24,6 +24,7 @@ export type ApiChatResponse = {
     message: ApiMessage;
     userId: string;
     chatId: string;
+    title?: string;
 };
 
 export type ApiSaveTestLocal = {
@@ -52,6 +53,15 @@ export type ApiGetChatByIdResponse = {
     messages: ApiMessage[];
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
+};
+
+export type ApiToken = {
+    userId: string;
+    token: string;
+    createdAt: Date;
+    updatedAt: Date;
+    expiresAt: Date;
+    revokedAt: Date | null;
 };
 
 export type ApiChatsRequest = {

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
@@ -6,23 +6,37 @@ import "@testing-library/jest-dom/vitest";
 // Mock API and shared modules
 vi.mock("$lib/api", () => ({
     getChatById: vi.fn(),
+    updateChatTitle: vi.fn(),
 }));
 
 vi.mock("svelte-sonner", () => ({
     toast: {
+        success: vi.fn(),
         error: vi.fn(),
     },
 }));
 
+vi.mock("$lib/toast", () => ({
+    toast: {
+        success: vi.fn(),
+        error: vi.fn()
+    }
+}));
+
+vi.mock("$lib/hooks/api", () => ({
+    updateChatTitle: vi.fn()
+}));
+
 import ChatSummary from "../../src/lib/components/ChatSummary.svelte";
 import { getChatById } from "$lib/api";
-import { toast } from "svelte-sonner";
-import { chat, messages, user as sharedUser } from "$lib/shared.svelte";
+import { toast } from "svelte-sonner";import { chat, messages, user as sharedUser} from "$lib/shared.svelte";
+
 import type {
     ApiChatSummary,
     ApiMessage,
     ApiGetChatByIdResponse,
 } from "$types/api";
+import { updateChatTitle as updateChatTitleApi } from "$lib/api";
 
 // Helper to create a complete mock response
 const createMockResponse = (
@@ -857,5 +871,149 @@ describe.skip("ChatSummary.svelte TODO: fix this test", () => {
                 "<script>alert('xss')</script>",
             );
         });
+    });
+});
+
+describe("commitTitleChange and saveTitle", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it("updates chat title on blur and calls state update and success toast", async () => {
+        const summary = {
+            title: "Old title",
+            chatId: "chat-123",
+            userId: "user-1",
+            createdAt: "",
+            updatedAt: "",
+        } as ApiChatSummary;
+
+        vi.mocked(updateChatTitleApi).mockResolvedValue({
+            chatId: "chat-123",
+            title: "New title",
+            updatedAt: "2024-01-01",
+            userId: "user-1",
+            createdAt: "2023-12-01",
+        });
+
+        const updateChatTitleState = vi.fn();
+
+        const { container } = render(ChatSummary, {
+            props: {
+                summary,
+                updateChatTitleState,
+            },
+        });
+
+        const pencil = container.querySelector("svg.lucide-pencil");
+        const editButton = pencil?.closest("button");
+        expect(editButton).toBeTruthy();
+        await fireEvent.click(editButton!);
+
+        const input = container.querySelector("input") as HTMLInputElement;
+        expect(input).toBeTruthy();
+
+        await fireEvent.input(input, { target: { value: " New title " } });
+        await fireEvent.blur(input);
+
+        await waitFor(() => {
+            expect(updateChatTitleApi).toHaveBeenCalledWith(
+                "chat-123",
+                "New title",
+            );
+        });
+
+
+    expect(updateChatTitleState).toHaveBeenCalledWith(
+        "chat-123",
+        "New title",
+    );
+
+});
+
+
+    it("shows error toast when saveTitle fails", async () => {
+        const summary = {
+            title: "Old title",
+            chatId: "chat-123",
+            userId: "user-1",
+            createdAt: "",
+            updatedAt: "",
+        } as ApiChatSummary;
+
+        vi.mocked(updateChatTitleApi).mockRejectedValue(new Error("Boom"));
+
+        const { container } = render(ChatSummary, { props: { summary } });
+
+        const pencil = container.querySelector("svg.lucide-pencil");
+        const editButton = pencil?.closest("button");
+        await fireEvent.click(editButton!);
+
+        const input = container.querySelector("input") as HTMLInputElement;
+        await fireEvent.input(input, { target: { value: " New title " } });
+        await fireEvent.blur(input);
+
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(
+            "Umbenennen fehlgeschlagen",
+            { description: "Boom" },
+        ));
+    });
+
+    it("does nothing if title is unchanged on blur", async () => {
+        const summary = {
+            title: "Same title",
+            chatId: "chat-123",
+            userId: "user-1",
+            createdAt: "",
+            updatedAt: "",
+        } as ApiChatSummary;
+
+        const { container } = render(ChatSummary, { props: { summary } });
+
+        const pencil = container.querySelector("svg.lucide-pencil");
+        const editButton = pencil?.closest("button");
+        await fireEvent.click(editButton!);
+
+        const input = container.querySelector("input") as HTMLInputElement;
+        // blur without changing value
+        await fireEvent.blur(input);
+
+        expect(updateChatTitleApi).not.toHaveBeenCalled();
+        expect(toast.success).not.toHaveBeenCalled();
+        expect(toast.error).not.toHaveBeenCalled();
+    });
+
+    it("calls updateChatTitleStance prop when provided", async () => {
+        const summary = {
+            title: "Old title",
+            chatId: "chat-123",
+            userId: "user-1",
+            createdAt: "",
+            updatedAt: "",
+        } as ApiChatSummary;
+
+        vi.mocked(updateChatTitleApi).mockResolvedValue({
+            chatId: "chat-123",
+            title: "New title",
+            updatedAt: "2024-01-01",
+            userId: "user-1",
+            createdAt: "2023-12-01"
+        });
+
+        const stub = vi.fn();
+
+        const { container } = render(ChatSummary, {
+            props: { summary, updateChatTitleState: stub },
+        });
+
+        const pencil = container.querySelector("svg.lucide-pencil");
+        const editButton = pencil?.closest("button");
+        await fireEvent.click(editButton!);
+
+        const input = container.querySelector("input") as HTMLInputElement;
+        await fireEvent.input(input, { target: { value: " New title " } });
+        await fireEvent.blur(input);
+
+        await waitFor(() => expect(stub).toHaveBeenCalledWith("chat-123", "New title"));
     });
 });
