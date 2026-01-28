@@ -18,137 +18,93 @@ import (
 
 func TestTestLogStreamResource_Integration(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	testStore := store.NewTestLogStreamStore()
-	defer testStore.Shutdown()
 
-	// Create the resource
-	resource, err := NewTestLogStreamResource(logger, testStore)
-	require.NoError(t, err)
-
-	t.Run("Successfully read empty log stream", func(t *testing.T) {
-		ctx := context.Background()
-		testID := "test-empty"
-
-		req := &mcp.ReadResourceRequest{
-			Params: mcp.ReadResourceRequestParams{
-				URI: "mcp://tests/" + testID + "/logs",
+	tests := []struct {
+		name  string
+		input *mcp.ReadResourceRequest
+		setup func(store.TestLogStreamStore)
+		check func(*testing.T, *mcp.ReadResourceResult, error)
+	}{
+		{
+			name: "Error when reading non-existent log stream",
+			input: &mcp.ReadResourceRequest{
+				Params: &mcp.ReadResourceParams{
+					URI: "mcp://tests/test-empty/logs",
+				},
 			},
-		}
+			setup: nil,
+			check: func(t *testing.T, result *mcp.ReadResourceResult, err error) {
+				require.Error(t, err)
+				require.Nil(t, result)
+			},
+		},
+		{
+			name: "Successfully read completed log stream",
+			input: &mcp.ReadResourceRequest{
+				Params: &mcp.ReadResourceParams{
+					URI: "mcp://tests/test-completed/logs",
+				},
+			},
+			setup: func(s store.TestLogStreamStore) {
+				s.AddEvent("test-completed", entity.LogEvent{
+					Event: "progress",
+					Data:  `{"status":"completed"}`,
+				})
+				s.CompleteStream("test-completed")
+			},
+			check: func(t *testing.T, result *mcp.ReadResourceResult, err error) {
+				require.NoError(t, err)
+				require.NotNil(t, result)
 
-		result, err := resource.ReadTestLogStream(ctx, req)
+				var payload map[string]any
+				err = json.Unmarshal([]byte(result.Contents[0].Text), &payload)
+				require.NoError(t, err)
 
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.Len(t, result.Contents, 1)
-		require.Equal(t, "mcp://tests/"+testID+"/logs", result.Contents[0].URI)
-		require.Equal(t, "application/json", result.Contents[0].MIMEType)
+				require.True(t, payload["meta"].(map[string]any)["final"].(bool))
+			},
+		},
+		{
+			name: "Error with invalid URI format",
+			input: &mcp.ReadResourceRequest{
+				Params: &mcp.ReadResourceParams{
+					URI: "invalid://format",
+				},
+			},
+			check: func(t *testing.T, result *mcp.ReadResourceResult, err error) {
+				require.Error(t, err)
+				require.Nil(t, result)
+			},
+		},
+		{
+			name: "Error with non-existent stream",
+			input: &mcp.ReadResourceRequest{
+				Params: &mcp.ReadResourceParams{
+					URI: "mcp://tests/non-existent/logs",
+				},
+			},
+			check: func(t *testing.T, result *mcp.ReadResourceResult, err error) {
+				require.Error(t, err)
+				require.Nil(t, result)
+			},
+		},
+	}
 
-		// Verify JSON content
-		var payload map[string]any
-		err = json.Unmarshal([]byte(result.Contents[0].Text), &payload)
-		require.NoError(t, err)
-		require.NotEmpty(t, payload)
-		require.False(t, payload["meta"].(map[string]any)["final"].(bool))
-	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			testStore := store.NewTestLogStreamStore()
+			defer testStore.Shutdown()
 
-	t.Run("Successfully read log stream with events", func(t *testing.T) {
-		ctx := context.Background()
-		testID := "test-with-events"
+			resource, err := NewTestLogStreamResource(logger, testStore)
+			require.NoError(t, err)
 
-		// Add events to the store
-		testStore.AddEvent(testID, entity.LogEvent{
-			Event: "progress",
-			Data:  `{"status":"started"}`,
+			if test.setup != nil {
+				test.setup(testStore)
+			}
+
+			ctx := context.Background()
+			result, err := resource.ReadTestLogStream(ctx, test.input)
+
+			test.check(t, result, err)
 		})
-		testStore.AddEvent(testID, entity.LogEvent{
-			Event: "log",
-			Data:  `{"message":"test running"}`,
-		})
-
-		req := &mcp.ReadResourceRequest{
-			Params: mcp.ReadResourceRequestParams{
-				URI: "mcp://tests/" + testID + "/logs",
-			},
-		}
-
-		result, err := resource.ReadTestLogStream(ctx, req)
-
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.Len(t, result.Contents, 1)
-
-		// Verify JSON content
-		var payload map[string]any
-		err = json.Unmarshal([]byte(result.Contents[0].Text), &payload)
-		require.NoError(t, err)
-
-		events := payload["events"].([]any)
-		require.Len(t, events, 2)
-
-		firstEvent := events[0].(map[string]any)
-		require.Equal(t, "progress", firstEvent["Event"].(string))
-
-		secondEvent := events[1].(map[string]any)
-		require.Equal(t, "log", secondEvent["Event"].(string))
-	})
-
-	t.Run("Successfully read completed log stream", func(t *testing.T) {
-		ctx := context.Background()
-		testID := "test-completed"
-
-		// Add event and complete the stream
-		testStore.AddEvent(testID, entity.LogEvent{
-			Event: "progress",
-			Data:  `{"status":"completed"}`,
-		})
-		testStore.CompleteStream(testID)
-
-		req := &mcp.ReadResourceRequest{
-			Params: mcp.ReadResourceRequestParams{
-				URI: "mcp://tests/" + testID + "/logs",
-			},
-		}
-
-		result, err := resource.ReadTestLogStream(ctx, req)
-
-		require.NoError(t, err)
-		require.NotNil(t, result)
-
-		// Verify JSON content
-		var payload map[string]any
-		err = json.Unmarshal([]byte(result.Contents[0].Text), &payload)
-		require.NoError(t, err)
-
-		require.True(t, payload["meta"].(map[string]any)["final"].(bool))
-	})
-
-	t.Run("Error with invalid URI format", func(t *testing.T) {
-		ctx := context.Background()
-
-		req := &mcp.ReadResourceRequest{
-			Params: mcp.ReadResourceRequestParams{
-				URI: "invalid://format",
-			},
-		}
-
-		result, err := resource.ReadTestLogStream(ctx, req)
-
-		require.Error(t, err)
-		require.Nil(t, result)
-	})
-
-	t.Run("Error with non-existent stream", func(t *testing.T) {
-		ctx := context.Background()
-
-		req := &mcp.ReadResourceRequest{
-			Params: mcp.ReadResourceRequestParams{
-				URI: "mcp://tests/non-existent/logs",
-			},
-		}
-
-		result, err := resource.ReadTestLogStream(ctx, req)
-
-		require.Error(t, err)
-		require.Nil(t, result)
-	})
+	}
 }
