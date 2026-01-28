@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	tcRedis "github.com/testcontainers/testcontainers-go/modules/redis"
+	"go.opentelemetry.io/otel"
 
 	sharedConfig "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
@@ -43,6 +44,7 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 	// Create Redis config pointing to the test container
 	logger := newIntegrationLogger()
 	suproxyCfg, err := config.LoadAppConfig()
+	tracer := otel.Tracer("test")
 	require.NoError(t, err)
 
 	suproxyCfg.RedisConfig = &sharedConfig.RedisConfig{
@@ -53,14 +55,14 @@ func TestCacheService_Integration_WithRedis(t *testing.T) {
 	}
 
 	// Initialize real Redis cache repository
-	cacheRepo, err := sharedRepository.NewRedisCache(logger, suproxyCfg.RedisConfig)
+	cacheRepo, err := sharedRepository.NewRedisCache(logger, suproxyCfg.RedisConfig, tracer)
 	require.NoError(t, err)
 	defer func() {
 		_ = cacheRepo.Close() // ignore close error intentionally
 	}()
 
 	// Create CacheService instance using the real repository
-	cacheSvc, err := NewCacheService(logger, suproxyCfg, cacheRepo)
+	cacheSvc, err := NewCacheService(logger, suproxyCfg, cacheRepo, tracer)
 	require.NoError(t, err)
 
 	// Build example request used as cache key input
