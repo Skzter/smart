@@ -13,7 +13,7 @@ import (
 	domainRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 )
 
-// databaseRepository struct defines the infrastructure layer of database
+// DatabaseRepository struct defines the infrastructure layer of database
 type databaseRepository struct {
 	s3      service.S3StorageWrapper
 	parquet service.ParquetFileWrapper[entity.DatabaseEntry]

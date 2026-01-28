@@ -1,4 +1,4 @@
-package service
+package database
 
 import (
 	"context"
@@ -14,27 +14,27 @@ import (
 	mockRepo "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/repository"
 )
 
-// TestNewDatabaseService tests the creation of a new DatabaseService instance.
 func TestNewDatabaseService(t *testing.T) {
-	validLogger := slog.New(slog.DiscardHandler)
-	validRepo := mockRepo.NewMockDatabaseRepository(t)
+	logger := slog.New(slog.DiscardHandler)
+	repo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
-	svc, err := NewDatabaseService(validLogger, validRepo, tracer)
+
+	svc, err := NewDatabaseService(logger, repo, tracer)
 	assert.NoError(t, err)
 	assert.NotNil(t, svc)
 
-	svcNilLogger, err := NewDatabaseService(nil, validRepo, tracer)
+	// nil logger
+	svcNilLogger, err := NewDatabaseService(nil, repo, tracer)
 	assert.Error(t, err)
 	assert.Nil(t, svcNilLogger)
 }
 
-// TestDatabaseServiceSaveDbEntry tests the SaveDbEntry method of the DatabaseService.
-func TestDatabaseServiceSaveDbEntry(t *testing.T) {
-	validLogger := slog.New(slog.DiscardHandler)
-	validRepo := mockRepo.NewMockDatabaseRepository(t)
+func TestDatabaseService_SaveDbEntry(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	repo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
 
-	svc, err := NewDatabaseService(validLogger, validRepo, tracer)
+	svc, err := NewDatabaseService(logger, repo, tracer)
 	assert.NoError(t, err)
 
 	entry := entity.DatabaseEntry{
@@ -45,100 +45,100 @@ func TestDatabaseServiceSaveDbEntry(t *testing.T) {
 			Body:        `{}`,
 		},
 		Response: entity.Response{Response: "OK"},
-		Tags:     &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1", Description: "TAG1"}, {Name: "TAG2", Description: "TAG2"}}},
+		Tags:     &sharedEntity.TagList{Tags: []sharedEntity.Tag{{Name: "TAG1"}, {Name: "TAG2"}}},
 	}
 
 	tests := []struct {
 		name      string
-		setupMock func()
 		ctx       context.Context
+		setupMock func()
 		wantErr   bool
 	}{
 		{
 			name: "success",
+			ctx:  context.Background(),
 			setupMock: func() {
-				validRepo.On("CreateRequest", mock.Anything, entry).Return(nil)
+				repo.On("CreateRequest", mock.Anything, entry).Return(nil)
 			},
-			ctx:     context.Background(),
 			wantErr: false,
 		},
 		{
 			name: "repo error",
+			ctx:  context.Background(),
 			setupMock: func() {
-				validRepo.On("CreateRequest", mock.Anything, entry).Return(assert.AnError)
+				repo.On("CreateRequest", mock.Anything, entry).Return(assert.AnError)
 			},
-			ctx:     context.Background(),
 			wantErr: true,
 		},
 		{
-			name: "nil context",
-			setupMock: func() {
-				// No mock setup needed because the context is nil,
-			},
-			ctx:     nil,
-			wantErr: true,
+			name:      "nil context",
+			ctx:       nil,
+			setupMock: func() {},
+			wantErr:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validRepo.ExpectedCalls = nil // reset expectations
+			repo.ExpectedCalls = nil
 			tt.setupMock()
+
 			err := svc.SaveDbEntry(tt.ctx, entry)
+
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			validRepo.AssertExpectations(t)
+
+			repo.AssertExpectations(t)
 		})
 	}
 }
 
-// TestDatabaseServiceGetAllKeys tests the GetAllKeys method of the DatabaseService.
-func TestDatabaseServiceGetAllKeys(t *testing.T) {
+func TestDatabaseService_GetAllKeys(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
-	validRepo := mockRepo.NewMockDatabaseRepository(t)
+	repo := mockRepo.NewMockDatabaseRepository(t)
 	tracer := otel.Tracer("test")
-	svc, _ := NewDatabaseService(logger, validRepo, tracer)
+
+	svc, _ := NewDatabaseService(logger, repo, tracer)
 
 	tests := []struct {
 		name      string
+		ctx       context.Context
 		mockKeys  []string
 		mockError error
 		wantErr   bool
-		ctx       context.Context
 	}{
 		{
 			name:      "success",
-			mockKeys:  []string{"tag1-tag2-123456", "mock-test-98765"},
+			ctx:       context.Background(),
+			mockKeys:  []string{"key1", "key2"},
 			mockError: nil,
 			wantErr:   false,
-			ctx:       context.Background(),
 		},
 		{
 			name:      "repo error",
+			ctx:       context.Background(),
 			mockKeys:  nil,
 			mockError: assert.AnError,
 			wantErr:   true,
-			ctx:       context.Background(),
 		},
 		{
 			name:      "nil context",
+			ctx:       nil,
 			mockKeys:  nil,
 			mockError: nil,
 			wantErr:   true,
-			ctx:       nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			validRepo.ExpectedCalls = nil
+			repo.ExpectedCalls = nil
 
-			// Only set up mock if context is not nil, otherwise expect error from service
 			if tt.ctx != nil {
-				validRepo.On("ListAllKeys", mock.Anything).Return(tt.mockKeys, tt.mockError)
+				repo.On("ListAllKeys", mock.Anything).Return(tt.mockKeys, tt.mockError)
 			}
 
 			keys, err := svc.GetAllKeys(tt.ctx)
@@ -151,7 +151,7 @@ func TestDatabaseServiceGetAllKeys(t *testing.T) {
 				assert.Equal(t, tt.mockKeys, keys)
 			}
 
-			validRepo.AssertExpectations(t)
+			repo.AssertExpectations(t)
 		})
 	}
 }
