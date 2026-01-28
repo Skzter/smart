@@ -57,6 +57,10 @@
     async function removeGroup(groupId: string) {
         if (!chat.id) return;
 
+        const groupName = groupNameById.get(groupId) ?? groupId;
+        const ok = window.confirm(`Remove "${groupName}" from this chat?`);
+        if (!ok) return;
+
         try {
             await removeChatFromGroup(chat.id, groupId);
 
@@ -67,6 +71,7 @@
             toast.error("Failed to remove group");
         }
     }
+
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0 h-full">

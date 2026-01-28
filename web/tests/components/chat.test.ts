@@ -1,8 +1,7 @@
 import { render } from "@testing-library/svelte";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
-// Mock shared state
 vi.mock("../../src/lib/shared.svelte", () => ({
     messages: [],
     chat: {
@@ -22,19 +21,26 @@ import { messages, chat } from "../../src/lib/shared.svelte";
 
 describe("Chat", () => {
     beforeEach(() => {
-        // Reset state before each test
         messages.length = 0;
         chat.isLoading = false;
         chat.groups = [];
         chat.id = "";
+
+        vi.spyOn(window, "confirm").mockReturnValue(true);
     });
 
-    it("displays empty state when no messages", () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it("displays empty state when no messages exist", () => {
         const { container } = render(Chat);
 
         const emptyMessage = container.querySelector(
             ".flex.items-center.justify-center.flex-1",
         );
+
+        expect(emptyMessage).toBeInTheDocument();
         expect(emptyMessage?.textContent).toBe("Start a chat...");
     });
 
@@ -44,6 +50,7 @@ describe("Chat", () => {
         const chatContainer = container.querySelector(
             ".bg-muted\\/50.rounded-xl",
         );
+
         expect(chatContainer).toBeInTheDocument();
     });
 
@@ -58,6 +65,7 @@ describe("Chat", () => {
         const messageContainer = container.querySelector(
             ".flex.flex-col.gap-4",
         );
+
         expect(messageContainer).toBeInTheDocument();
     });
 
@@ -66,11 +74,12 @@ describe("Chat", () => {
             t: "user",
             Message: "Test message",
         });
+
         chat.isLoading = true;
 
         const { container } = render(Chat);
 
-        // Dots component should be rendered (looking for the animated dots)
+        // Dots component → simple structural assertion
         const dotsContainer = container.querySelector(".flex.gap-1");
         expect(dotsContainer).toBeInTheDocument();
     });
@@ -86,6 +95,7 @@ describe("Chat", () => {
         const emptyMessage = container.querySelector(
             ".flex.items-center.justify-center.flex-1",
         );
+
         expect(emptyMessage).not.toBeInTheDocument();
     });
 });
