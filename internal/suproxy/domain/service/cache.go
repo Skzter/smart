@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	sharedRepository "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
@@ -27,15 +31,21 @@ type CacheService interface {
 
 // cacheService struct implements CacheService and contains the main cache logic
 type cacheService struct {
-	log  *slog.Logger
-	cfg  *config.Suproxy
-	repo sharedRepository.Cache
-	ttls entity.CacheTTLPolicy
+	log    *slog.Logger
+	cfg    *config.Suproxy
+	repo   sharedRepository.Cache
+	ttls   entity.CacheTTLPolicy
+	tracer trace.Tracer
 }
 
 // NewCacheService creates and configures a new instance of cacheService with default TTLs
-func NewCacheService(log *slog.Logger, cfg *config.Suproxy, repo sharedRepository.Cache) (CacheService, error) {
-	if err := assert.NotNil(log, cfg, repo); err != nil {
+func NewCacheService(
+	log *slog.Logger,
+	cfg *config.Suproxy,
+	repo sharedRepository.Cache,
+	tracer trace.Tracer,
+) (CacheService, error) {
+	if err := assert.NotNil(log, cfg, repo, tracer); err != nil {
 		return nil, err
 	}
 
@@ -47,10 +57,11 @@ func NewCacheService(log *slog.Logger, cfg *config.Suproxy, repo sharedRepositor
 	}
 
 	svc := &cacheService{
-		log:  log,
-		cfg:  cfg,
-		repo: repo,
-		ttls: ttls,
+		log:    log,
+		cfg:    cfg,
+		repo:   repo,
+		ttls:   ttls,
+		tracer: tracer,
 	}
 
 	log.Debug("cache: service initialized",
@@ -68,51 +79,40 @@ func (s *cacheService) Lookup(ctx context.Context, req entity.Request, isMock bo
 		return nil, false, err
 	}
 
+	ctx, span := s.tracer.Start(ctx, "cache.Lookup")
+	defer span.End()
+
 	key := s.BuildKey(req, isMock)
 
-	start := time.Now()
 	raw, hit, err := s.repo.Get(ctx, key) // Try to get entry from cache
-	elapsed := time.Since(start)
 
 	if err != nil {
-		s.log.Error("cache: lookup failed, treating as miss",
-			"key", key,
-			"mock", isMock,
-			"duration", elapsed,
-			"err", err,
-		)
+		span.RecordError(err)
+		s.log.Error("cache: lookup failed, treating as miss", "err", err)
 		return nil, false, nil
 	}
 
 	if !hit {
-		s.log.Debug("cache: miss",
-			"key", key,
-			"mock", isMock,
-			"duration", elapsed,
-		)
 		return nil, false, nil
 	}
+
+	span.AddEvent(
+		"cache.Lookup.hit",
+		trace.WithAttributes(
+			attribute.String("key", key),
+			attribute.Bool("mock", isMock),
+		),
+	)
 
 	var entry entity.CacheEntry
 	if err := json.Unmarshal(raw, &entry); err != nil {
+		span.RecordError(err)
 		// Defensive: ignore corrupted cache entries
-		s.log.Warn("cache: failed to unmarshal entry, ignoring",
-			"key", key,
-			"mock", isMock,
-			"duration", elapsed,
-			"err", err,
-		)
+		s.log.Warn("cache: failed to unmarshal entry, ignoring", "err", err)
 		return nil, false, nil
 	}
 
-	age := time.Since(entry.CachedAt)
-
-	s.log.Debug("cache: hit",
-		"key", key,
-		"mock", isMock,
-		"duration", elapsed,
-		"age", age,
-	)
+	span.SetStatus(codes.Ok, "")
 
 	return []byte(entry.Response), true, nil
 }
@@ -122,6 +122,9 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 	if err := assert.NotNil(ctx, req, response); err != nil {
 		return err
 	}
+
+	ctx, span := s.tracer.Start(ctx, "cache.Store")
+	defer span.End()
 
 	key := s.BuildKey(req, isMock)
 
@@ -140,38 +143,28 @@ func (s *cacheService) Store(ctx context.Context, req entity.Request, response [
 
 	payload, err := json.Marshal(entry) // Serialize to JSON
 	if err != nil {
-		s.log.Error("cache: failed to marshal entry",
-			"key", key,
-			"mock", isMock,
-			"err", err,
-		)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to marshal payload")
+		s.log.Error("cache: failed to marshal entry", "err", err)
 		return err
 	}
 
 	ttl := s.chooseTTL(isMock, isError, response) // Pick appropriate TTL
 
-	start := time.Now()
-	err = s.repo.Set(ctx, key, payload, ttl) // Store in cache repository
-	elapsed := time.Since(start)
+	span.SetAttributes(
+		attribute.String("key", key),
+		attribute.Bool("mock", isMock),
+		attribute.Int64("ttl", int64(ttl)),
+	)
 
-	if err != nil {
-		s.log.Error("cache: store failed",
-			"key", key,
-			"mock", isMock,
-			"ttl", ttl,
-			"duration", elapsed,
-			"err", err,
-		)
+	if err = s.repo.Set(ctx, key, payload, ttl); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to store entry")
+		s.log.Error("cache: store failed", "err", err)
 		return err
 	}
 
-	s.log.Debug("cache: stored entry",
-		"key", key,
-		"mock", isMock,
-		"ttl", ttl,
-		"duration", elapsed,
-		"is_error", isError,
-	)
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
@@ -182,27 +175,24 @@ func (s *cacheService) Invalidate(ctx context.Context, req entity.Request, isMoc
 		return err
 	}
 
+	ctx, span := s.tracer.Start(ctx, "cache.Invalidate")
+	defer span.End()
+
 	key := s.BuildKey(req, isMock) // Reconstruct cache key
 
-	start := time.Now()
-	err := s.repo.Delete(ctx, key) // Delete entry from cache
-	elapsed := time.Since(start)
+	span.SetAttributes(
+		attribute.String("key", key),
+		attribute.Bool("mock", isMock),
+	)
 
-	if err != nil {
-		s.log.Error("cache: invalidation failed",
-			"key", key,
-			"mock", isMock,
-			"duration", elapsed,
-			"err", err,
-		)
+	if err := s.repo.Delete(ctx, key); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to invalidate entry")
+		s.log.Error("cache: invalidation failed", "err", err)
 		return err
 	}
 
-	s.log.Debug("cache: invalidated entry",
-		"key", key,
-		"mock", isMock,
-		"duration", elapsed,
-	)
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
