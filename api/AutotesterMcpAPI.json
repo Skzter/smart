@@ -142,6 +142,40 @@
           }
         }
       }
+    },
+    {
+      "name": "read_testLogStream",
+      "description": "Reads the log stream for a given testId and returns JSON with content and meta.final.",
+      "params": [
+        {
+          "name": "testId",
+          "description": "Unique identifier of the test",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "result": {
+        "name": "TestLogStreamResponse",
+        "description": "The log stream content",
+        "schema": {
+          "type": "object",
+          "poperties": {
+            "content": {
+              "type": "array",
+              "description": "list of log events",
+              "items": {
+                "type": "object"
+              }
+            },
+            "meta": {
+              "type": "object",
+              "description": "metadata about the stream, e.g. 'final' flag and existence"
+            }
+          }
+        }
+      }
     }
   ]
 }
