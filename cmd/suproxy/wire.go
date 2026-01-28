@@ -24,6 +24,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/service"
+		"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/infrastructure/database"
 )
 
 // InitializeApp initializes the application.
@@ -111,8 +112,8 @@ func DatabaseRepositoryProvider(
 	s3wrapper wrapper.S3StorageWrapper,
 	parquetWrapper wrapper.ParquetFileWrapper[entity.DatabaseEntry],
 	tracer trace.Tracer,
-) (repository.DatabaseRepository, error) {
-	return repository.NewDatabaseRepository(
+)repository.DatabaseRepository{
+	return database.NewDatabaseRepository(
 		logger,
 		s3wrapper,
 		parquetWrapper,
