@@ -66,8 +66,11 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 
 	go func() {
 		for _, file := range <-filesChan {
-			if a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file) != nil {
-				a.logger.Error("error uploading media", "err", err)
+			if err := a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file); err != nil {
+				a.logger.Error("error uploading media",
+					"testId", params.TestId,
+					"fileName", file.GetFileName(),
+					"err", err)
 			}
 		}
 	}()

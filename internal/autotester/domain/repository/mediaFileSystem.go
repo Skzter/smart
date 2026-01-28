@@ -23,8 +23,6 @@ type MediaFileSystem interface {
 	// HasVideo checks if a video exists for the given testId in S3.
 	HasVideo(ctx context.Context, testId string) bool
 
-	// UploadMediaFromDir uploads screenshot and video files from a local directory to S3.
-	// It searches for .png and .webm files in the directory and uploads them.
-	// Returns the number of files uploaded and any error encountered.
+	// UploadMediaFromDir a mediafile to s3
 	UploadMedia(ctx context.Context, testId string, file entity.File) error
 }

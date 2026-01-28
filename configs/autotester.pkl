@@ -270,3 +270,5 @@ taglistConfig: shared.TaglistConfig = shared.taglist
 redisConfig: shared.RedisConfig = shared.redis
 
 tokenExpirationTime: Duration = 30.d
+
+presignedLinkLifetime: Duration = 60.s

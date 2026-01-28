@@ -144,7 +144,11 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 	}
 
 	s3PresignClient := s3.NewPresignClient(s3Client, func(po *s3.PresignOptions) {
-		po.Expires = time.Minute
+		duration := config.PresignLifetime
+		if duration == 0 {
+			duration = time.Second * 60
+		}
+		po.Expires = duration
 	})
 
 	wrapper := &S3Wrapper{

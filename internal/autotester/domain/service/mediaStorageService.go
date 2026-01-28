@@ -25,8 +25,7 @@ type MediaStorageService interface {
 	// Returns hasScreenshot and hasVideo flags.
 	HasMedia(ctx context.Context, testId string) (hasScreenshot, hasVideo bool)
 
-	// UploadMedia uploads media files from a local directory to S3.
-	// Returns the number of files uploaded.
+	// UploadMedia uploads a mediafile
 	UploadMedia(ctx context.Context, testId string, file entity.File) error
 }
 

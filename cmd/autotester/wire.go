@@ -129,10 +129,11 @@ func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetC
 // S3WrapperProvider provides a new S3Wrapper
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
-		Region:    cfg.Region,
-		Bucket:    cfg.Bucket,
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
+		Region:          cfg.Region,
+		Bucket:          cfg.Bucket,
+		AccessKey:       build.AwsAccessKey,
+		SecretKey:       build.AwsSecretAccessKey,
+		PresignLifetime: cfg.PresignedLinkLifetime.GoDuration(),
 	}
 	return wrapperService.NewS3Wrapper(logger, config, tracer)
 }

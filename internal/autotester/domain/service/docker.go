@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -185,9 +186,11 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 	statusChan, errChan := d.WaitContainer(context.Background(), containerID)
 	go func() {
 		defer func() {
-			if err := d.client.ContainerRemove(context.Background(), containerID, container.RemoveOptions{
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
+
+			if err := d.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
 				RemoveVolumes: true,
-				Force:         true,
 			}); err != nil {
 				d.logger.Error("error removing Container", "err", err)
 			}
@@ -226,7 +229,6 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 			d.logger.Debug("reading file from container", "file", hdr.Name)
 			extension, _ := strings.CutPrefix(filepath.Ext(hdr.Name), ".")
 			if !slices.Contains(formats, extension) {
-				d.logger.Debug(fmt.Sprintf("file %s (extension %s) is not in list %v", hdr.Name, extension, formats))
 				continue
 			}
 
