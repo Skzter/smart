@@ -55,6 +55,7 @@ func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.Templat
 	s.logger.Debug("Fetching test template from API")
 
 	token, _ := ctx.Value(jwtKey).(string)
+	s.logger.Debug("token: " + token)
 
 	template, err := s.repo.GetTemplate(ctx, token)
 	if err != nil {
@@ -75,6 +76,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 	}
 
 	token, _ := ctx.Value(jwtKey).(string)
+	s.logger.Debug("token: " + token)
 
 	valid, err := s.repo.ValidatePrompt(ctx, request, token)
 	if err != nil {
@@ -119,6 +121,7 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 	}
 
 	token, _ := ctx.Value(jwtKey).(string)
+	s.logger.Debug("token: " + token)
 
 	saveReq := &entity.SaveTestRequest{
 		Code:   request.Test,

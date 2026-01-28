@@ -28,6 +28,7 @@ func InitializeMcpServer(cfg *config.Mcp) (*application.McpServer, error) {
 		repository.NewAutotesterAPIRepository,
 
 		service.NewAutotesterAPIService,
+		service.NewJWTAuthentification,
 
 		store.NewTestLogStreamStore,
 

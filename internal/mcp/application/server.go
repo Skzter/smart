@@ -18,6 +18,7 @@ type McpServer struct {
 	server            *mcp.Server
 	autotesterService service.AutotesterAPIService
 	store             store.TestLogStreamStore
+	JwtExtraction     service.JwtExtractionService
 	logger            *slog.Logger
 }
 
@@ -26,9 +27,10 @@ func NewMcpServer(
 	server *mcp.Server,
 	autotesterService service.AutotesterAPIService,
 	store store.TestLogStreamStore,
+	jwtExtraction service.JwtExtractionService,
 	logger *slog.Logger,
 ) (*McpServer, error) {
-	if err := assert.NotNil(server, autotesterService, store, logger); err != nil {
+	if err := assert.NotNil(server, autotesterService, store, jwtExtraction, logger); err != nil {
 		return nil, err
 	}
 
@@ -36,6 +38,7 @@ func NewMcpServer(
 		server:            server,
 		autotesterService: autotesterService,
 		store:             store,
+		JwtExtraction:     jwtExtraction,
 		logger:            logger,
 	}
 

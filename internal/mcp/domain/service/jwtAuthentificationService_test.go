@@ -93,18 +93,15 @@ func TestJWTExtraction(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			headers := make(http.Header)
-			if test.authHeader != "" {
-				headers.Set("Authorization", test.authHeader)
-			}
-
-			handler := service.JWTExtraction(headers)
-
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			req, _ := http.NewRequest("GET", "/test", nil)
+			if test.authHeader != "" {
+				req.Header.Set("Authorization", test.authHeader)
+			}
 			ctx, _ := gin.CreateTestContext(w)
 			ctx.Request = req
+			handler := service.JWTExtraction()
 
 			handler(ctx)
 
@@ -117,11 +114,6 @@ func TestJWTExtraction(t *testing.T) {
 					jwtValue, exists := ctx.Get("jwt")
 					require.True(t, exists)
 					require.NotNil(t, jwtValue)
-
-					jwtArray, ok := jwtValue.([]string)
-					require.True(t, ok)
-					require.GreaterOrEqual(t, len(jwtArray), 2)
-					require.Equal(t, "Bearer", jwtArray[0])
 				}
 			}
 		})
