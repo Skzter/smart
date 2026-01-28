@@ -7,6 +7,7 @@ type ResponseForUser struct {
 	Message   sharedEntity.Message `json:"message"`
 	UserId    string               `json:"userId"`
 	ChatId    string               `json:"chatId"`
+	Title     string               `json:"title,omitempty"`
 	ToolCall  ToolCall             `json:"tool_calls"`
 	TestCases []*TestCase          `json:"-"` // list of test cases for multiple options
 }
