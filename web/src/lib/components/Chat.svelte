@@ -71,7 +71,6 @@
             toast.error("Failed to remove group");
         }
     }
-
 </script>
 
 <div class="flex flex-1 flex-col gap-4 p-4 pt-0 h-full">
@@ -99,29 +98,38 @@
                         <DropdownMenu.Separator />
 
                         {#if GroupsState.items.length === 0}
-                            <div class="px-2 py-2 text-xs text-muted-foreground">
+                            <div
+                                class="px-2 py-2 text-xs text-muted-foreground"
+                            >
                                 No groups available
                             </div>
                         {:else}
                             {#each GroupsState.items as g (g.id)}
                                 <DropdownMenu.CheckboxItem
-                                checked={selectedGroupIds.includes(g.id)}
-                                onCheckedChange={(checked) => {
-                                    const isChecked = Boolean(checked);
-                                    const has = selectedGroupIds.includes(g.id);
-                            
-                                    if (isChecked && !has) {
-                                        selectedGroupIds = [...selectedGroupIds, g.id];
-                                    }
-                            
-                                    if (!isChecked && has) {
-                                        selectedGroupIds = selectedGroupIds.filter((id) => id !== g.id);
-                                    }
-                                }}
-                            >
-                                {g.name}
-                            </DropdownMenu.CheckboxItem>
-                        
+                                    checked={selectedGroupIds.includes(g.id)}
+                                    onCheckedChange={(checked) => {
+                                        const isChecked = Boolean(checked);
+                                        const has = selectedGroupIds.includes(
+                                            g.id,
+                                        );
+
+                                        if (isChecked && !has) {
+                                            selectedGroupIds = [
+                                                ...selectedGroupIds,
+                                                g.id,
+                                            ];
+                                        }
+
+                                        if (!isChecked && has) {
+                                            selectedGroupIds =
+                                                selectedGroupIds.filter(
+                                                    (id) => id !== g.id,
+                                                );
+                                        }
+                                    }}
+                                >
+                                    {g.name}
+                                </DropdownMenu.CheckboxItem>
                             {/each}
                         {/if}
                     </DropdownMenu.Content>
@@ -154,7 +162,9 @@
             {/if}
 
             {#if messages.length === 0}
-                <div class="flex items-center justify-center flex-1 text-muted-foreground">
+                <div
+                    class="flex items-center justify-center flex-1 text-muted-foreground"
+                >
                     <p>Start a chat...</p>
                 </div>
             {:else}

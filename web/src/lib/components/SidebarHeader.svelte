@@ -14,7 +14,6 @@
 
     import { toast } from "svelte-sonner";
 
-
     let open = false;
     let groupName = "";
     let description = "";

@@ -83,6 +83,7 @@ export async function generatePrompt(
             message: response.data.message as ApiMessage,
             chatId: response.data.chatId,
             userId: response.data.userId,
+            title: response.data.title,
         };
     } catch (error) {
         throw getErrorMessage(error);
@@ -236,6 +237,24 @@ export async function getApiToken(): Promise<ApiToken> {
             data: { userId: user.id },
         });
         return response.data as ApiToken;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function updateChatTitle(
+    chatId: string,
+    title: string,
+): Promise<ApiChatSummary> {
+    try {
+        const response = await axios({
+            method: "patch",
+            url: `/chats/${chatId}/title`,
+            baseURL,
+            data: { title },
+        });
+
+        return response.data;
     } catch (error) {
         throw getErrorMessage(error);
     }

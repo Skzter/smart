@@ -10,6 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/otel"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/config"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/mocks/repository"
@@ -26,14 +27,16 @@ func setupCacheMocks(t *testing.T) (*redisCache, *mocks.MockRedisClient) {
 	mockClient := mocks.NewMockRedisClient(t)
 
 	cache := &redisCache{
-		log: logger,
-		rdb: mockClient,
+		log:    logger,
+		rdb:    mockClient,
+		tracer: otel.Tracer("test"),
 	}
 
 	return cache, mockClient
 }
 
 func TestNewRedisCache(t *testing.T) {
+	tracer := otel.Tracer("test")
 	tests := []struct {
 		name     string
 		logger   *slog.Logger
@@ -69,7 +72,7 @@ func TestNewRedisCache(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cache, err := NewRedisCache(tt.logger, tt.cfg)
+			cache, err := NewRedisCache(tt.logger, tt.cfg, tracer)
 
 			if tt.wantErr {
 				assert.Error(t, err)

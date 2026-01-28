@@ -2,10 +2,13 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -31,6 +34,13 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 			name:      "nil-logger",
 			logger:    nil,
 			client:    &http.Client{},
+			baseURL:   "http://example.com",
+			expectErr: true,
+		},
+		{
+			name:      "nil-client",
+			logger:    slog.Default(),
+			client:    nil,
 			baseURL:   "http://example.com",
 			expectErr: true,
 		},
@@ -387,6 +397,184 @@ func TestRunTest(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, res)
 			require.Equal(t, test.expectedStatus, res.Result)
+		})
+	}
+}
+
+// nolint:funlen
+func TestReadTestLogStream(t *testing.T) {
+	logger := slog.Default()
+
+	tests := []struct {
+		name           string
+		testId         string
+		statusCode     int
+		streamEvents   []string
+		expectedEvents []entity.LogEvent
+		expectErr      bool
+		cancelContext  bool
+	}{
+		{
+			name:       "success-multiple-events",
+			testId:     "uuid-123",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+				"event:log\ndata:{\"content\":\"running test\"}\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+				{Event: "log", Data: "{\"content\":\"running test\"}"},
+			},
+			expectErr: false,
+		},
+		{
+			name:           "error-status-404",
+			testId:         "invalid-id",
+			statusCode:     http.StatusNotFound,
+			streamEvents:   []string{},
+			expectedEvents: nil,
+			expectErr:      true,
+		},
+		{
+			name:       "robustness-invalid-lines",
+			testId:     "uuid-456",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+				"this is an invalid line without colon\n",
+				": comment\n\n",
+				"event:log\ndata:{\"content\":\"still running\"}\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+				{Event: "log", Data: "{\"content\":\"still running\"}"},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "context-canceled",
+			testId:     "uuid-ctx",
+			statusCode: http.StatusOK,
+			streamEvents: []string{ // more than buffered channel
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+				"event:log\ndata:{\"content\":\"running test\"}\n\n",
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+			},
+			expectErr:     true,
+			cancelContext: true,
+		},
+		{
+			name:       "spaces-and-multiline-data",
+			testId:     "uuid-spaces",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:  trim-me  \ndata:   {\"key\": \"value\"}   \ndata: second-line \n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "trim-me", Data: "{\"key\": \"value\"}\nsecond-line"},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "very-large-data-line",
+			testId:     "uuid-large",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				"event:large\ndata:" + strings.Repeat("A", 70000) + "\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "large", Data: strings.Repeat("A", 70000)},
+			},
+			expectErr: false,
+		},
+		{
+			name:       "robustness-invalid-and-comments",
+			testId:     "uuid-456",
+			statusCode: http.StatusOK,
+			streamEvents: []string{
+				": this is an SSE comment and should be ignored\n",
+				"event:progress\ndata:{\"content\":\"started\"}\n\n",
+				"invalid line without prefix and colon is ignored by logic\n",
+				": yet another comment\n",
+				"event:log\ndata:{\"content\":\"still running\"}\n\n",
+			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+				{Event: "log", Data: "{\"content\":\"still running\"}"},
+			},
+			expectErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedPath := fmt.Sprintf("/api/v1/test/%s/stream", test.testId)
+				if r.URL.Path != expectedPath {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				if test.statusCode != http.StatusOK {
+					w.WriteHeader(test.statusCode)
+					return
+				}
+
+				w.Header().Set("Content-Type", "text/event-stream")
+				w.Header().Set("Cache-Control", "no-cache")
+				w.Header().Set("Connection", "keep-alive")
+				w.WriteHeader(http.StatusOK)
+
+				flusher, ok := w.(http.Flusher)
+				require.True(t, ok)
+
+				for _, event := range test.streamEvents {
+					_, _ = fmt.Fprint(w, event)
+					flusher.Flush()
+				}
+			}))
+			defer srv.Close()
+
+			repo, err := NewAutotesterAPIRepository(logger, srv.Client(), srv.URL)
+			require.NoError(t, err)
+
+			eventsCh := make(chan *entity.LogEvent, 2)
+			ctx, cancel := context.WithCancel(context.Background())
+
+			if test.cancelContext {
+				errCh := make(chan error, 1)
+				go func() {
+					errCh <- repo.ReadTestLogStream(ctx, test.testId, eventsCh)
+				}()
+				time.Sleep(50 * time.Millisecond)
+				cancel()
+
+				err = <-errCh
+				close(eventsCh)
+			} else {
+				err = repo.ReadTestLogStream(ctx, test.testId, eventsCh)
+				close(eventsCh)
+				cancel()
+			}
+
+			if test.expectErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			var received []entity.LogEvent
+			for ev := range eventsCh {
+				received = append(received, *ev)
+			}
+
+			require.Equal(t, len(test.expectedEvents), len(received))
+			for i := range test.expectedEvents {
+				require.Equal(t, test.expectedEvents[i].Event, received[i].Event)
+				require.Equal(t, test.expectedEvents[i].Data, received[i].Data)
+			}
 		})
 	}
 }

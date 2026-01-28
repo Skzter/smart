@@ -5,12 +5,14 @@
 
     let {
         group,
+        updateChatTitleState,
         updateChatSummary,
     }: {
         group: {
             label: string;
             summaries: ApiChatSummary[];
         };
+        updateChatTitleState: (chatId: string, title: string) => void;
         updateChatSummary: (chatId: string, updated: ApiChatSummary) => void;
     } = $props();
 </script>
@@ -21,6 +23,7 @@
         <Sidebar.Menu>
             {#each group.summaries as chat (chat.chatId)}
                 <ChatSummary
+                    {updateChatTitleState}
                     summary={chat}
                     onUpdate={(updated) =>
                         updateChatSummary(chat.chatId, updated)}

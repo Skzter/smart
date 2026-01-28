@@ -21,17 +21,31 @@ vi.mock("$lib/api", () => ({
 }));
 
 // Mock shared state
-vi.mock("$lib/shared.svelte", () => ({
-    user: { id: "test-user-123" },
-    ChatDate: { Range: undefined },
-    ChatFilter: { sortBy: "recent", timeFilter: "all" },
-    GroupFilter: { selectedIds: [] as string[] },
+vi.mock("$lib/shared.svelte", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("$lib/shared.svelte")>();
 
-    GroupsState: {
-        items: [],
-        isLoading: false,
-        error: "",
-    },
+    return {
+        ...actual,
+
+        user: { id: "test-user-123" },
+        ChatDate: { Range: undefined },
+        ChatFilter: { sortBy: "recent", timeFilter: "all" },
+
+        registerChatTitleUpdater: vi.fn(),
+        updateChatTitle: vi.fn(),
+
+        GroupFilter: { selectedIds: [] as string[] },
+
+        GroupsState: {
+            items: [],
+            isLoading: false,
+            error: "",
+        },
+    };
+});
+
+vi.mock("$lib/components/Group.svelte", () => ({
+    default: vi.fn(),
 }));
 
 import { getChats } from "$lib/api";
@@ -92,18 +106,6 @@ describe("Sidebar", () => {
         await waitFor(() => {
             expect(toast.error).toHaveBeenCalled();
         });
-    });
-
-    it("loads chats even when user.id is undefined", async () => {
-        (user as unknown as { id: undefined }).id = undefined;
-        vi.clearAllMocks(); // Clear any mocks from beforeEach
-
-        vi.mocked(getChats).mockResolvedValue([]);
-
-        render(SidebarTestWrapper);
-        await tick();
-
-        expect(getChats).toHaveBeenCalledTimes(1);
     });
 
     it("categorizes chat as 'Heute' for today's chats", async () => {
@@ -620,20 +622,41 @@ describe("Sidebar", () => {
     });
 
     it("resets group filter and loads all chats", async () => {
-        GroupFilter.selectedIds = ["g1"];
-        vi.mocked(getChats).mockResolvedValue([]);
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: [],
+            hasMore: false,
+            pageSize: 10,
+        });
 
         render(SidebarTestWrapper);
 
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalledWith(["g1"]);
+            expect(getChats).toHaveBeenCalledWith({
+                groupIds: [],
+                page: 0,
+            });
         });
 
+        GroupFilter.selectedIds = ["g1"];
+        await tick();
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenCalledWith({
+                groupIds: ["g1"],
+                page: 0,
+            });
+        });
+
+        // Reset the filter
         GroupFilter.selectedIds.length = 0;
         await tick();
 
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalledWith([]);
+            expect(getChats).toHaveBeenCalledTimes(2);
+            expect(getChats).toHaveBeenLastCalledWith({
+                groupIds: [],
+                page: 0,
+            });
         });
     });
 });

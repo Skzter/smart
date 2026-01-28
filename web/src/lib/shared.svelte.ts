@@ -5,6 +5,8 @@ import { toast } from "svelte-sonner";
 import { AxiosError } from "axios";
 import type { ApiToken } from "$types/api";
 
+let updater: ((chatId: string, title: string) => void) | null = null;
+
 export type MessageType = "user" | "validation" | "generation" | "error";
 export type Message = { t: MessageType; Message: string };
 
@@ -79,4 +81,14 @@ export async function getToken() {
         }
         apiToken.token = null;
     }
+}
+
+export function registerChatTitleUpdater(
+    fn: (chatId: string, title: string) => void,
+) {
+    updater = fn;
+}
+
+export function updateChatTitle(chatId: string, title: string) {
+    updater?.(chatId, title);
 }
