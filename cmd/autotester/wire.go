@@ -43,6 +43,7 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 		OpenAiRepositoryProvider,
 		OpenAiServiceProvider,
 		FileSystemProvider,
+		MediaFileSystemProvider,
 		TestCaseParquetWrapperProvider,
 		S3WrapperProvider,
 		repository.NewTestcaseLocalStorageRepository,
@@ -51,6 +52,7 @@ func InitializeApp(cfg *config.Autotester, tracer trace.Tracer, isHeadless bool)
 		MetricsServiceProvider,
 		service.NewTestcaseStorageService,
 		TestcaseLocalStorageServiceProvider,
+		service.NewMediaStorageService,
 		RouterProvider,
 		handler.NewAutotesterController,
 		service.NewGeneratePromptService,
@@ -127,10 +129,11 @@ func GroupParquetWrapperProvider(logger *slog.Logger, cfg wrapperEntity.ParquetC
 // S3WrapperProvider provides a new S3Wrapper
 func S3WrapperProvider(logger *slog.Logger, cfg *config.Autotester, tracer trace.Tracer) (wrapperService.S3StorageWrapper, error) {
 	config := wrapperEntity.S3Config{
-		Region:    cfg.Region,
-		Bucket:    cfg.Bucket,
-		AccessKey: build.AwsAccessKey,
-		SecretKey: build.AwsSecretAccessKey,
+		Region:          cfg.Region,
+		Bucket:          cfg.Bucket,
+		AccessKey:       build.AwsAccessKey,
+		SecretKey:       build.AwsSecretAccessKey,
+		PresignLifetime: cfg.PresignedLinkLifetime.GoDuration(),
 	}
 	return wrapperService.NewS3Wrapper(logger, config, tracer)
 }
@@ -169,6 +172,11 @@ func ChatParquetConfigProvider() wrapperEntity.ParquetConfig {
 // MetricsServiceProvider provides a new MetricsService
 func MetricsServiceProvider(logger *slog.Logger) (sharedService.MetricsService, error) {
 	return sharedService.NewMetricsService("autotester", logger)
+}
+
+// MediaFileSystemProvider provides a new media filesystem using S3.
+func MediaFileSystemProvider(s3Wrapper wrapperService.S3StorageWrapper, tracer trace.Tracer) (repository.MediaFileSystem, error) {
+	return infra.NewMediaFileSystem(s3Wrapper, tracer, "test-media")
 }
 
 // DatabaseRepositoryProvider provides a new DatabaseRepository

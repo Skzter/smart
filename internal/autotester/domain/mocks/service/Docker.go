@@ -171,7 +171,7 @@ func (_c *MockDocker_GetContainerInfo_Call) RunAndReturn(run func(testID string)
 }
 
 // RunTest provides a mock function for the type MockDocker
-func (_mock *MockDocker) RunTest(ctx context.Context, filename string, testID string, userID string, chatID string) (string, error) {
+func (_mock *MockDocker) RunTest(ctx context.Context, filename string, testID string, userID string, chatID string) (string, <-chan []entity.File, error) {
 	ret := _mock.Called(ctx, filename, testID, userID, chatID)
 
 	if len(ret) == 0 {
@@ -179,8 +179,9 @@ func (_mock *MockDocker) RunTest(ctx context.Context, filename string, testID st
 	}
 
 	var r0 string
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (string, error)); ok {
+	var r1 <-chan []entity.File
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) (string, <-chan []entity.File, error)); ok {
 		return returnFunc(ctx, filename, testID, userID, chatID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string) string); ok {
@@ -188,12 +189,19 @@ func (_mock *MockDocker) RunTest(ctx context.Context, filename string, testID st
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string) <-chan []entity.File); ok {
 		r1 = returnFunc(ctx, filename, testID, userID, chatID)
 	} else {
-		r1 = ret.Error(1)
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(<-chan []entity.File)
+		}
 	}
-	return r0, r1
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string, string, string) error); ok {
+		r2 = returnFunc(ctx, filename, testID, userID, chatID)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
 }
 
 // MockDocker_RunTest_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RunTest'
@@ -244,12 +252,12 @@ func (_c *MockDocker_RunTest_Call) Run(run func(ctx context.Context, filename st
 	return _c
 }
 
-func (_c *MockDocker_RunTest_Call) Return(s string, err error) *MockDocker_RunTest_Call {
-	_c.Call.Return(s, err)
+func (_c *MockDocker_RunTest_Call) Return(s string, filesCh <-chan []entity.File, err error) *MockDocker_RunTest_Call {
+	_c.Call.Return(s, filesCh, err)
 	return _c
 }
 
-func (_c *MockDocker_RunTest_Call) RunAndReturn(run func(ctx context.Context, filename string, testID string, userID string, chatID string) (string, error)) *MockDocker_RunTest_Call {
+func (_c *MockDocker_RunTest_Call) RunAndReturn(run func(ctx context.Context, filename string, testID string, userID string, chatID string) (string, <-chan []entity.File, error)) *MockDocker_RunTest_Call {
 	_c.Call.Return(run)
 	return _c
 }
