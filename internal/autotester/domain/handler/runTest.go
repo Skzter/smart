@@ -65,14 +65,19 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	}
 
 	go func() {
-		files := <-filesChan
-		for _, file := range files {
-			if err := a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file); err != nil {
-				a.logger.Error("error uploading media",
-					"testId", params.TestId,
-					"fileName", file.GetFileName(),
-					"err", err)
+		files, ok := <-filesChan
+		if ok {
+			a.logger.Debug("recieved files from container", "count", len(files))
+			for _, file := range files {
+				if err := a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file); err != nil {
+					a.logger.Error("error uploading media",
+						"testId", params.TestId,
+						"fileName", file.GetFileName(),
+						"err", err)
+				}
 			}
+		} else {
+			a.logger.Debug("recieved no files")
 		}
 	}()
 

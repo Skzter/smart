@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/otel"
 
@@ -31,6 +32,7 @@ func TestHandleRunContainer(t *testing.T) {
 	type mockSetupFunc func(
 		local *mocks.MockTestcaseLocalStorageService,
 		docker *mocks.MockDocker,
+		media *mocks.MockMediaStorageService,
 	)
 
 	tests := []struct {
@@ -49,12 +51,96 @@ func TestHandleRunContainer(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusOK,
 			ExpectedBody:   `{"result":"Test started"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
 				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("/tmp/chat789.ts", nil)
 
 				filesChan := make(chan []entity.File, 1)
 				filesChan <- []entity.File{}
+				close(filesChan)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/chat789.ts",
+					"test456",
+					"user123",
+					"chat789",
+				).Return("container-id", (<-chan []entity.File)(filesChan), nil)
+			},
+		},
+		{
+			TestName: "Valid run container request with files",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"chatId": "chat789"
+			}`,
+			ExpectedStatus: http.StatusOK,
+			ExpectedBody:   `{"result":"Test started"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/chat789.ts", nil)
+
+				filesChan := make(chan []entity.File, 1)
+				testFile := entity.NewFile("test.png", []byte("test-content"), ".png")
+				filesChan <- []entity.File{testFile}
+				close(filesChan)
+
+				media.On("UploadMedia", mock.Anything, "test456", testFile).Return(nil)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/chat789.ts",
+					"test456",
+					"user123",
+					"chat789",
+				).Return("container-id", (<-chan []entity.File)(filesChan), nil)
+			},
+		},
+		{
+			TestName: "Valid run container request with closed channel",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"chatId": "chat789"
+			}`,
+			ExpectedStatus: http.StatusOK,
+			ExpectedBody:   `{"result":"Test started"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/chat789.ts", nil)
+
+				filesChan := make(chan []entity.File)
+				close(filesChan)
+
+				docker.On("RunTest",
+					mock.Anything,
+					"/tmp/chat789.ts",
+					"test456",
+					"user123",
+					"chat789",
+				).Return("container-id", (<-chan []entity.File)(filesChan), nil)
+			},
+		},
+		{
+			TestName: "Valid run container request with file upload error",
+			RequestBody: `{
+				"userId": "user123",
+				"testId": "test456",
+				"chatId": "chat789"
+			}`,
+			ExpectedStatus: http.StatusOK,
+			ExpectedBody:   `{"result":"Test started"}`,
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
+				local.On("GetTestPath", "test456", "user123", "chat789").
+					Return("/tmp/chat789.ts", nil)
+
+				filesChan := make(chan []entity.File, 1)
+				testFile := entity.NewFile("test.png", []byte("test-content"), ".png")
+				filesChan <- []entity.File{testFile}
+				close(filesChan)
+
+				media.On("UploadMedia", mock.Anything, "test456", testFile).Return(errors.New("upload failed"))
 
 				docker.On("RunTest",
 					mock.Anything,
@@ -89,7 +175,7 @@ func TestHandleRunContainer(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusBadRequest,
 			ExpectedBody:   `{"message":"files not found"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
 				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("", errors.New("files not found"))
 			},
@@ -103,7 +189,7 @@ func TestHandleRunContainer(t *testing.T) {
 			}`,
 			ExpectedStatus: http.StatusInternalServerError,
 			ExpectedBody:   `{"message":"running error"}`,
-			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker) {
+			MockSetup: func(local *mocks.MockTestcaseLocalStorageService, docker *mocks.MockDocker, media *mocks.MockMediaStorageService) {
 				local.On("GetTestPath", "test456", "user123", "chat789").
 					Return("/tmp/test.spec.ts", nil)
 
@@ -135,8 +221,10 @@ func TestHandleRunContainer(t *testing.T) {
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
+
 			if test.MockSetup != nil {
-				test.MockSetup(mockLocalStorageServ, mockDockerServ)
+				test.MockSetup(mockLocalStorageServ, mockDockerServ, mockMediaServ)
 			}
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/run", bytes.NewBufferString(test.RequestBody))
@@ -145,8 +233,6 @@ func TestHandleRunContainer(t *testing.T) {
 			rec := httptest.NewRecorder()
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
-
-			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -169,6 +255,9 @@ func TestHandleRunContainer(t *testing.T) {
 
 			controller.HandleRunContainer(ctx)
 
+			// Give goroutine time to complete for async file upload tests
+			time.Sleep(10 * time.Millisecond)
+
 			if rec.Code != test.ExpectedStatus {
 				t.Errorf("Expected status %d, got %d. Body: %s",
 					test.ExpectedStatus, rec.Code, rec.Body.String())
@@ -181,6 +270,7 @@ func TestHandleRunContainer(t *testing.T) {
 
 			mockLocalStorageServ.AssertExpectations(t)
 			mockDockerServ.AssertExpectations(t)
+			mockMediaServ.AssertExpectations(t)
 		})
 	}
 }

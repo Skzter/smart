@@ -195,16 +195,12 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 				d.logger.Error("error removing Container", "err", err)
 			}
 		}()
-		files := []entity.File{}
-		defer func() {
-			outchan <- files
-			close(outchan)
-		}()
+		defer close(outchan)
 
 		select {
 		case err := <-errChan:
 			if err != nil {
-				d.logger.Error("derrChan", "err", err)
+				d.logger.Error("errChan", "err", err)
 				return
 			}
 		case <-statusChan:
@@ -222,6 +218,7 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 
 		d.logger.Debug("copied from container", "info", info)
 		tr := tar.NewReader(reader)
+		files := []entity.File{}
 		for {
 			hdr, err := tr.Next()
 			if err == io.EOF {
@@ -245,6 +242,7 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 			}
 			files = append(files, entity.NewFile(filepath.Base(hdr.Name), bytes, extension))
 		}
+		outchan <- files
 	}()
 
 	return outchan
