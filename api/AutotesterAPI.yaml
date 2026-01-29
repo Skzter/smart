@@ -7,10 +7,23 @@ info:
 # NOTE: All paths must include /api/v1/ prefix for Prism API mock to work correctly.
 # Do not add a servers section with a baseUrl - paths must start with /api/v1/
 
+tags:
+  - name: Chat
+    description: Chat and message operations
+  - name: Test
+    description: Test case management and execution
+  - name: Auth
+    description: Authentication operations
+  - name: Groups
+    description: Group management operations
+  - name: Media
+    description: Test debugging media
 paths:
   /api/v1/chat:
     post:
       summary: "Takes user message and returns LLMs message."
+      tags:
+        - Chat
       requestBody:
         required: true
         content:
@@ -37,7 +50,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /chats/{chatId}/title:
+  /api/v1/chats/{chatId}/title:
     patch:
       summary: "Updates the title of a chat"
       requestBody:
@@ -80,6 +93,8 @@ paths:
   /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"
+      tags:
+        - Chat
       requestBody:
         required: true
         content:
@@ -149,6 +164,8 @@ paths:
   /api/v1/template:
     get:
       summary: "Gets Template from Autotester Config and returns it"
+      tags:
+        - Chat
       responses:
         "200":
           description: Template from config is not empty
@@ -167,6 +184,8 @@ paths:
   /api/v1/saveLocal:
     post:
       summary: "Takes a testcode and saves it locally"
+      tags:
+        - Test
       requestBody:
         required: true
         content:
@@ -197,6 +216,8 @@ paths:
   /api/v1/deleteLocal:
     delete:
       summary: "Deletes a locally stored test case by its ID"
+      tags:
+        - Test
       parameters:
         - name: testcaseId
           in: query
@@ -251,6 +272,8 @@ paths:
     post:
       summary: Run automated Playwright test in container
       description: Executes a Playwright test file in a containerized environment and returns the test output logs
+      tags:
+        - Test
       requestBody:
         required: true
         content:
@@ -316,6 +339,8 @@ paths:
         Streams live logs of a running Playwright test.
         Each event contains a JSON payload.
         Transport uses Server-Sent Events (SSE).
+      tags:
+        - Test
       parameters:
         - name: testId
           in: path
@@ -350,6 +375,8 @@ paths:
       summary: Generate authentication token for a user
       description: |
         Generates and returns a new authentication token for the specified user. Only accessible from internal networks.
+      tags:
+        - Auth
       requestBody:
         required: true
         content:
@@ -376,9 +403,129 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/test/{testId}/screenshot:
+    get:
+      summary: Get screenshot from a failed test
+      description: |
+        Redirects to a presigned AWS S3 URL for the screenshot captured during a Playwright test run.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '307':
+          description: Temporary redirect to presigned S3 URL for the screenshot
+          headers:
+            Location:
+              description: Presigned AWS S3 URL for downloading the screenshot
+              schema:
+                type: string
+                format: uri
+                example: "https://s3.amazonaws.com/bucket/screenshot.png?X-Amz-Algorithm=..."
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No screenshot found for this test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/test/{testId}/video:
+    get:
+      summary: Get video from a failed test
+      description: |
+        Redirects to a presigned AWS S3 URL for the video recording captured during a Playwright test run.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '307':
+          description: Temporary redirect to presigned S3 URL for the video
+          headers:
+            Location:
+              description: Presigned AWS S3 URL for downloading/streaming the video
+              schema:
+                type: string
+                format: uri
+                example: "https://s3.amazonaws.com/bucket/video.webm?X-Amz-Algorithm=..."
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No video found for this test
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/test/{testId}/media:
+    get:
+      summary: Check media availability for a test
+      description: |
+        Returns information about available media files (screenshot, video) for a test.
+        Useful for checking if debugging artifacts exist before attempting to fetch them.
+      tags:
+        - Media
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the test
+          example: "bdf1e5b4-47c2-11f0-b8a3-0242ac120002"
+      responses:
+        '200':
+          description: Media availability information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaInfo'
+        '400':
+          description: Bad request - testId is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/v1/chats:
     get:
       summary: "Returns the chat history"
+      tags:
+        - Chat
       description: |
         Retrieves chat summaries with pagination support.
 
@@ -430,6 +577,8 @@ paths:
   /api/v1/chats/{chatId}:
     get:
       summary: Get full chat by ID
+      tags:
+        - Chat
       description: |
         Returns a full chat for the given user, including all messages.
       parameters:
@@ -468,6 +617,8 @@ paths:
   /api/v1/tests:
     get:
       summary: Retrieve stored test cases with optional filters
+      tags:
+        - Test
       description: >
         Returns test cases belonging to the specified user. Additional optional
         query parameters can be used to filter for specific test cases, chats,
@@ -564,6 +715,8 @@ paths:
   /api/v1/groups:
     get:
       summary: List all groups
+      tags:
+        - Groups
       operationId: getGroups
       responses:
         "200":
@@ -585,6 +738,8 @@ paths:
                     type: string
     post:
       summary: Create a new group
+      tags:
+        - Groups
       operationId: createGroup
       requestBody:
         required: true
@@ -625,6 +780,8 @@ paths:
   /api/v1/chats/{chatId}/groups:
     post:
       summary: Assign chat to groups
+      tags:
+        - Groups
       operationId: assignChatToGroups
       parameters:
         - name: chatId
@@ -659,6 +816,8 @@ paths:
   /api/v1/chats/{chatId}/groups/{groupId}:
     delete:
       summary: Remove chat from group
+      tags:
+        - Groups
       operationId: removeChatFromGroup
       parameters:
         - name: chatId
@@ -698,16 +857,6 @@ components:
           enum: [user, system]
         createdAt:
           type: "number"
-
-    chat:
-      type: object
-      properties:
-        chatId:
-          type: string
-        Messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/Message"
 
     UserRequest:
       type: object
@@ -933,6 +1082,7 @@ components:
           type: string
           description: "Descriptive name of the test case."
           example: "Login form test"
+
     Token:
       type: object
       properties:
@@ -965,6 +1115,7 @@ components:
         - createdAt
         - updatedAt
         - expiresAt
+
     Group:
       type: object
       properties:
@@ -984,3 +1135,24 @@ components:
         createdBy:
           type: string
           description: ID of the user who created the group
+    
+    MediaInfo:
+      type: object
+      properties:
+        testId:
+          type: string
+          description: The unique identifier of the test
+          example: "test-123-abc"
+        hasScreenshot:
+          type: boolean
+          description: Indicates whether a screenshot is available for this test
+          example: true
+        hasVideo:
+          type: boolean
+          description: Indicates whether a video is available for this test
+          example: false
+      required:
+        - testId
+        - hasScreenshot
+        - hasVideo
+          

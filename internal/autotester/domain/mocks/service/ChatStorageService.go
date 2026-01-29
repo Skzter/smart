@@ -202,8 +202,8 @@ func (_c *MockChatStorageService_LoadSummaries_Call) RunAndReturn(run func(ctx c
 }
 
 // SaveChat provides a mock function for the type MockChatStorageService
-func (_mock *MockChatStorageService) SaveChat(ctx context.Context, summary *entity.Chat) error {
-	ret := _mock.Called(ctx, summary)
+func (_mock *MockChatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) error {
+	ret := _mock.Called(ctx, chat)
 
 	if len(ret) == 0 {
 		panic("no return value specified for SaveChat")
@@ -211,7 +211,7 @@ func (_mock *MockChatStorageService) SaveChat(ctx context.Context, summary *enti
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, *entity.Chat) error); ok {
-		r0 = returnFunc(ctx, summary)
+		r0 = returnFunc(ctx, chat)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -225,12 +225,12 @@ type MockChatStorageService_SaveChat_Call struct {
 
 // SaveChat is a helper method to define mock.On call
 //   - ctx context.Context
-//   - summary *entity.Chat
-func (_e *MockChatStorageService_Expecter) SaveChat(ctx interface{}, summary interface{}) *MockChatStorageService_SaveChat_Call {
-	return &MockChatStorageService_SaveChat_Call{Call: _e.mock.On("SaveChat", ctx, summary)}
+//   - chat *entity.Chat
+func (_e *MockChatStorageService_Expecter) SaveChat(ctx interface{}, chat interface{}) *MockChatStorageService_SaveChat_Call {
+	return &MockChatStorageService_SaveChat_Call{Call: _e.mock.On("SaveChat", ctx, chat)}
 }
 
-func (_c *MockChatStorageService_SaveChat_Call) Run(run func(ctx context.Context, summary *entity.Chat)) *MockChatStorageService_SaveChat_Call {
+func (_c *MockChatStorageService_SaveChat_Call) Run(run func(ctx context.Context, chat *entity.Chat)) *MockChatStorageService_SaveChat_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -253,7 +253,7 @@ func (_c *MockChatStorageService_SaveChat_Call) Return(err error) *MockChatStora
 	return _c
 }
 
-func (_c *MockChatStorageService_SaveChat_Call) RunAndReturn(run func(ctx context.Context, summary *entity.Chat) error) *MockChatStorageService_SaveChat_Call {
+func (_c *MockChatStorageService_SaveChat_Call) RunAndReturn(run func(ctx context.Context, chat *entity.Chat) error) *MockChatStorageService_SaveChat_Call {
 	_c.Call.Return(run)
 	return _c
 }
