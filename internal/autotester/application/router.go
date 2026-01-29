@@ -109,12 +109,12 @@ func sseHeaderMiddleWare() gin.HandlerFunc {
 // internalOnlyMiddleware restricts access to localhost and Docker internal networks.
 // This prevents external access to sensitive endpoints like token generation.
 func internalOnlyMiddleware(logger *slog.Logger) gin.HandlerFunc {
-	// Define allowed CIDR ranges for Docker networks
+	// Define allowed CIDR ranges for Docker and Podman internal networks
 	allowedCIDRs := []string{
-		"127.0.0.0/8",    // Localhost IPv4
-		"::1/128",        // Localhost IPv6
-		"172.16.0.0/12",  // Docker default bridge
-		"192.168.0.0/16", // Docker Compose networks
+		"127.0.0.0/8",   // Localhost IPv4
+		"::1/128",       // Localhost IPv6
+		"10.0.0.0/8",    // Podman default bridge
+		"172.16.0.0/12", // Docker default bridge
 	}
 
 	allowedNets := make([]*net.IPNet, 0, len(allowedCIDRs))
