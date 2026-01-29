@@ -76,6 +76,7 @@ func TestGetTemplate(t *testing.T) {
 		setupMock       func(*mocks.MockAutotesterAPIRepository)
 		expectErr       bool
 		expectedContent string
+		ctx             context.Context
 	}{
 		{
 			name: "success",
@@ -87,6 +88,7 @@ func TestGetTemplate(t *testing.T) {
 			},
 			expectErr:       false,
 			expectedContent: "test template",
+			ctx:             context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "repository-error",
@@ -98,6 +100,7 @@ func TestGetTemplate(t *testing.T) {
 			},
 			expectErr:       true,
 			expectedContent: "",
+			ctx:             context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 	}
 
@@ -133,6 +136,7 @@ func TestGenerateTest(t *testing.T) {
 		expectErr           bool
 		expectedValidateMsg *entity.ValidateMessage
 		expectedGenerateMsg *entity.GenerateMessage
+		ctx                 context.Context
 	}{
 		{
 			name: "success - validation passes, test generated",
@@ -176,6 +180,7 @@ func TestGenerateTest(t *testing.T) {
 				Role: "assistant",
 				Body: "generated test code",
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "validation fails - returns validation message",
@@ -203,6 +208,7 @@ func TestGenerateTest(t *testing.T) {
 				Body: "Please provide more details in your prompt",
 			},
 			expectedGenerateMsg: nil,
+			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:    "nil-request",
@@ -212,6 +218,7 @@ func TestGenerateTest(t *testing.T) {
 			expectErr:           true,
 			expectedValidateMsg: nil,
 			expectedGenerateMsg: nil,
+			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "validation-error",
@@ -231,6 +238,7 @@ func TestGenerateTest(t *testing.T) {
 			expectErr:           true,
 			expectedValidateMsg: nil,
 			expectedGenerateMsg: nil,
+			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "generate-error",
@@ -262,6 +270,7 @@ func TestGenerateTest(t *testing.T) {
 			expectErr:           true,
 			expectedValidateMsg: nil,
 			expectedGenerateMsg: nil,
+			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 	}
 
@@ -298,6 +307,7 @@ func TestExecuteTest(t *testing.T) {
 		setupMock     func(*mocks.MockAutotesterAPIRepository)
 		expectErr     bool
 		expectedMatch string
+		ctx           context.Context
 	}{
 		{
 			name: "success",
@@ -332,6 +342,7 @@ func TestExecuteTest(t *testing.T) {
 			},
 			expectErr:     false,
 			expectedMatch: "saved:testId=550e8400-e29b-41d4-a716-446655440000 action=saved; runResult=passed",
+			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:    "nil-request",
@@ -340,6 +351,7 @@ func TestExecuteTest(t *testing.T) {
 			},
 			expectErr:     true,
 			expectedMatch: "",
+			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "save-error",
@@ -360,6 +372,7 @@ func TestExecuteTest(t *testing.T) {
 			},
 			expectErr:     true,
 			expectedMatch: "",
+			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name: "run-error",
@@ -392,6 +405,7 @@ func TestExecuteTest(t *testing.T) {
 			},
 			expectErr:     true,
 			expectedMatch: "",
+			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 	}
 
@@ -426,6 +440,7 @@ func TestReadTestLogStream(t *testing.T) {
 		cancelContextDuring  bool
 		readLogs             bool
 		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, *[]entity.LogEvent)
+		ctx                  context.Context
 	}{
 		{
 			name:   "success - transmits all events to store",
@@ -463,6 +478,7 @@ func TestReadTestLogStream(t *testing.T) {
 
 				ms.EXPECT().CompleteStream("test-123").Once()
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:                 "repo returns error when connecting",
@@ -477,6 +493,7 @@ func TestReadTestLogStream(t *testing.T) {
 
 				ms.EXPECT().CompleteStream("test-123").Once()
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:   "handles nil events - filters them out",
@@ -496,6 +513,7 @@ func TestReadTestLogStream(t *testing.T) {
 				}).Return().Once()
 				ms.EXPECT().CompleteStream("test-nil").Once()
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:                 "terminates processing on context cancellation",
@@ -513,6 +531,7 @@ func TestReadTestLogStream(t *testing.T) {
 
 				ms.EXPECT().CompleteStream("test-cancel").Once()
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
 			name:   "channel fills to 90% capacity - monitor logs warning",
@@ -554,6 +573,7 @@ func TestReadTestLogStream(t *testing.T) {
 
 				ms.EXPECT().CompleteStream("test-full").Once()
 			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 	}
 
