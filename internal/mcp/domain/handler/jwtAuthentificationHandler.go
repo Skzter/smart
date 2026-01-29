@@ -1,4 +1,4 @@
-package service
+package handler
 
 import (
 	"context"
@@ -11,29 +11,29 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// JwtExtractionService provides JWT extractor
-type JwtExtractionService interface {
+// JwtExtractionHandler provides JWT extractor
+type JwtExtractionHandler interface {
 	JWTExtractionIntoContext() gin.HandlerFunc
 }
 
-type jwtExtractionService struct {
+type jwtExtractionHandler struct {
 	logger        *slog.Logger
 	jwtContextKey entity.JwtContextKey
 }
 
 // NewJWTAuthentification creates a new service for JWTAuthentification
-func NewJWTAuthentification(logger *slog.Logger) (JwtExtractionService, error) {
+func NewJWTAuthentification(logger *slog.Logger) (JwtExtractionHandler, error) {
 	if err := assert.NotNil(logger); err != nil {
 		return nil, err
 	}
-	return &jwtExtractionService{
+	return &jwtExtractionHandler{
 		logger:        logger,
 		jwtContextKey: entity.JwtContextKey{},
 	}, nil
 }
 
-// JWTExtraction extracts the token and pass it to gin.Context
-func (j *jwtExtractionService) JWTExtractionIntoContext() gin.HandlerFunc {
+// JWTExtractionIntoContext extracts the token and pass it to gin.Context
+func (j *jwtExtractionHandler) JWTExtractionIntoContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		auth := c.GetHeader("Authorization")
 		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
@@ -49,7 +49,7 @@ func (j *jwtExtractionService) JWTExtractionIntoContext() gin.HandlerFunc {
 
 		ctx := context.WithValue(c.Request.Context(), j.jwtContextKey, token)
 		c.Request = c.Request.WithContext(ctx)
-		j.logger.Debug("JWTExtraction - wrote jwt: " + token + " to context.")
+		j.logger.Debug("JWTExtraction - wrote jwt to context.")
 		c.Next()
 	}
 }
