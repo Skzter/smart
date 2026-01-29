@@ -196,7 +196,10 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 			}
 		}()
 		files := []entity.File{}
-		defer func() { outchan <- files }()
+		defer func() {
+			outchan <- files
+			close(outchan)
+		}()
 
 		select {
 		case err := <-errChan:
@@ -206,7 +209,10 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 			}
 		case <-statusChan:
 		}
-		reader, info, err := d.client.CopyFromContainer(context.Background(), containerID, "/app/test-results")
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		reader, info, err := d.client.CopyFromContainer(ctx, containerID, "/app/test-results")
 		if err != nil {
 			d.logger.Error("error copying from container", "err", err)
 			return
