@@ -36,7 +36,13 @@ axios.interceptors.response.use(
             if (originalRequest.url?.includes("auth/generate")) {
                 return Promise.reject(error);
             }
-
+            
+            // If we don't have a user id (e.g. auth not ready / logged out), we can't refresh a token
+            if (!user.id) {
+                apiToken.token = null;
+                return Promise.reject(error);
+            }
+            
             try {
                 // Get new token
                 const tokenResponse = await axios({

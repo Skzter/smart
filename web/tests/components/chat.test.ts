@@ -41,7 +41,7 @@ describe("Chat", () => {
         );
 
         expect(emptyMessage).toBeInTheDocument();
-        expect(emptyMessage?.textContent).toBe("Start a chat...");
+        expect(emptyMessage?.textContent).toBe("Chat starten...");
     });
 
     it("renders chat container with correct styling", () => {

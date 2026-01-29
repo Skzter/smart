@@ -28,13 +28,12 @@
 
     let container = $state<HTMLElement | null>(null);
 
-    let timeout = 500;
-    const maxTimeout = 10000;
     const scrollThreshold = 100; // Load more when within 100px of bottom
 
     let hasMore = $state(true);
     let page = $state(0);
     let initialized = $state(false);
+    let lastToast = $state<string | null>(null);
 
     let groupState = $derived.by<GroupState[]>(() =>
         updateGroupsWithDateRange(
@@ -73,17 +72,15 @@
             page++;
             error = "";
         } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                toast.error(err.message, {});
-            } else {
-                error = "Unbekannter Fehler";
-                toast.error("Unbekannter Fehler", {});
+            const msg = err instanceof Error ? err.message : "Unbekannter Fehler";
+            error = msg;
+
+            if (lastToast !== msg) {
+                lastToast = msg;
+                toast.error(msg, {});
             }
-            if (timeout < maxTimeout) {
-                timeout = Math.min(timeout * 2, maxTimeout);
-            }
-            setTimeout(loadMore, timeout);
+
+            hasMore = false;
         } finally {
             loading = false;
         }
@@ -98,6 +95,8 @@
         page = 0;
         initialized = false;
         loading = false;
+        lastToast = null;
+
         lastGroupFilterKey = GroupFilter.selectedIds.slice().sort().join(",");
         void loadMore();
     }

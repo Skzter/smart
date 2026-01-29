@@ -659,4 +659,15 @@ describe("Sidebar", () => {
             });
         });
     });
+
+    it("does not load chats when user.id is undefined", async () => {
+        user.id = undefined;
+    
+        render(SidebarTestWrapper);
+    
+        await tick();
+    
+        expect(getChats).not.toHaveBeenCalled();
+        expect(toast.error).not.toHaveBeenCalled();
+    });
 });

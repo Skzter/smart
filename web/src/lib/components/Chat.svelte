@@ -48,9 +48,9 @@
         try {
             await assignChatToGroups(chat.id, selectedGroupIds);
             chat.groups = [...selectedGroupIds];
-            toast.success("Groups saved");
+            toast.success("Gruppen gespeichert");
         } catch {
-            toast.error("Failed to save groups");
+            toast.error("Gruppen konnten nicht gespeichert werden");
         }
     }
 
@@ -58,7 +58,7 @@
         if (!chat.id) return;
 
         const groupName = groupNameById.get(groupId) ?? groupId;
-        const ok = window.confirm(`Remove "${groupName}" from this chat?`);
+        const ok = window.confirm(`"${groupName}" aus diesem Chat entfernen?`);
         if (!ok) return;
 
         try {
@@ -66,9 +66,9 @@
 
             chat.groups = (chat.groups ?? []).filter((g) => g !== groupId);
             selectedGroupIds = selectedGroupIds.filter((g) => g !== groupId);
-            toast.success("Group removed");
+            toast.success("Gruppe entfernt");
         } catch {
-            toast.error("Failed to remove group");
+            toast.error("Gruppe konnte nicht entfernt werden");
         }
     }
 </script>
@@ -88,20 +88,20 @@
                                 variant="ghost"
                                 class="h-8 bg-muted hover:bg-muted/80"
                             >
-                                Select groups
+                                Gruppen auswählen
                             </Button>
                         {/snippet}
                     </DropdownMenu.Trigger>
 
                     <DropdownMenu.Content class="w-56">
-                        <DropdownMenu.Label>Chat groups</DropdownMenu.Label>
+                        <DropdownMenu.Label>Chat-Gruppen</DropdownMenu.Label>
                         <DropdownMenu.Separator />
 
                         {#if GroupsState.items.length === 0}
                             <div
                                 class="px-2 py-2 text-xs text-muted-foreground"
                             >
-                                No groups available
+                                Keine Gruppen vorhanden
                             </div>
                         {:else}
                             {#each GroupsState.items as g (g.id)}
@@ -140,7 +140,7 @@
                         class="rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80"
                         onclick={saveGroups}
                     >
-                        Save groups
+                        Gruppen speichern
                     </button>
                 {/if}
             </div>
@@ -151,7 +151,7 @@
                         <button
                             type="button"
                             class="flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground hover:bg-muted/80"
-                            aria-label="Remove group"
+                            aria-label="Gruppe entfernen"
                             onclick={() => removeGroup(groupId)}
                         >
                             {groupNameById.get(groupId) ?? groupId}
@@ -165,7 +165,7 @@
                 <div
                     class="flex items-center justify-center flex-1 text-muted-foreground"
                 >
-                    <p>Start a chat...</p>
+                    <p>Chat starten...</p>
                 </div>
             {:else}
                 <div class="flex-1"></div>

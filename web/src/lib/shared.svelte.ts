@@ -61,7 +61,7 @@ export const ChatFilter = $state({
 export const GroupsState = $state({
     items: [] as ApiGroup[],
     isLoading: false,
-    error: "" as string,
+    error: "",
 });
 
 export const GroupFilter = $state({
