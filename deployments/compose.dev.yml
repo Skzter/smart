@@ -73,8 +73,7 @@ services:
       - AUTOTESTER_BASE_URL=http://autotester:8081
       - DOPPLER_PROJECT=${DOPPLER_PROJECT:-htwk-projekt}
       - DOPPLER_CONFIG=${DOPPLER_CONFIG:-dev}
-      - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}
-      - DD_TRACE_ENABLED=false    
+      - DOPPLER_TOKEN=${DOPPLER_TOKEN:-}   
 
   frontend-mock:
     platform: linux/amd64
