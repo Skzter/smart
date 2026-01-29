@@ -14,6 +14,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/tracing"
 )
 
 func main() {
@@ -22,7 +23,17 @@ func main() {
 		panic(err)
 	}
 
-	mcpServer, err := InitializeMcpServer(cfg)
+	tracer, shutdownTracer, err := tracing.Setup("mcp")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := shutdownTracer(); err != nil {
+			slog.Error("tracer shutdown error", "error", err)
+		}
+	}()
+
+	mcpServer, err := InitializeMcpServer(cfg, tracer)
 	if err != nil {
 		panic(err)
 	}
@@ -51,10 +62,10 @@ func main() {
 		Addr:    cfg.Port,
 		Handler: router,
 
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+		ReadTimeout:       600 * time.Second,
+		WriteTimeout:      600 * time.Second,
+		IdleTimeout:       600 * time.Second,
 	}
 
 	go func() {

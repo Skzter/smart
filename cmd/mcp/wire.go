@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/wire"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/application"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
@@ -19,7 +20,7 @@ import (
 )
 
 // InitializeMcpServer initializes the mcp server with all dependencies
-func InitializeMcpServer(cfg *config.Mcp) (*application.McpServer, error) {
+func InitializeMcpServer(cfg *config.Mcp, tracer trace.Tracer) (*application.McpServer, error) {
 	wire.Build(
 		ProvideHTTPClient,
 		ProvideLogger,
