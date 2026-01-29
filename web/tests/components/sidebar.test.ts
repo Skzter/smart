@@ -59,7 +59,7 @@ describe("Sidebar", () => {
         ChatDate.Range = undefined;
         ChatFilter.sortBy = "recent";
         ChatFilter.timeFilter = "all";
-        GroupFilter.selectedIds.length = 0;
+        GroupFilter.selectedIds = [];
     });
 
     it("renders the sidebar with loading state initially", async () => {
@@ -648,7 +648,7 @@ describe("Sidebar", () => {
         });
 
         // Reset the filter
-        GroupFilter.selectedIds.length = 0;
+        GroupFilter.selectedIds = [];
         await tick();
 
         await waitFor(() => {
