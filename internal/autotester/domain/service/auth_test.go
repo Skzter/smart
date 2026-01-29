@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -415,6 +416,127 @@ func TestConvSqlNullTimeIntoTime(t *testing.T) {
 				assert.NotNil(t, result)
 				assert.Equal(t, tc.expected.Unix(), result.Unix())
 			}
+		})
+	}
+}
+
+// nolint:funlen
+func TestValidateToken(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	cfg, _ := config.LoadConfig()
+	tr := otel.Tracer("test")
+
+	now := time.Now().UTC()
+
+	tests := []struct {
+		name        string
+		token       string
+		dbResp      []any
+		wantValid   bool
+		wantRevoked bool
+		wantErr     bool
+
+		nilCtx bool
+	}{
+		{
+			name:    "nil ctx -> error",
+			token:   "some-token",
+			wantErr: true,
+			nilCtx:  true,
+		},
+		{
+			name:    "empty token -> error",
+			token:   "",
+			wantErr: true,
+		},
+		{
+			name:   "token not in db -> invalid",
+			token:  "unknown-token",
+			dbResp: []any{database.RefreshToken{}, sql.ErrNoRows},
+		},
+		{
+			name:  "token expired in db -> invalid",
+			token: "expired-token",
+			dbResp: []any{
+				database.RefreshToken{
+					Token:     "expired-token",
+					ExpiresAt: now.Add(-time.Minute),
+					RevokedAt: sql.NullTime{Valid: false},
+				}, nil,
+			},
+			wantValid: false,
+		},
+		{
+			name:  "token revoked in db -> invalid + revoked",
+			token: "revoked-token",
+			dbResp: []any{
+				database.RefreshToken{
+					Token:     "revoked-token",
+					ExpiresAt: now.Add(time.Hour),
+					RevokedAt: sql.NullTime{Valid: true, Time: now},
+				}, nil,
+			},
+			wantValid:   false,
+			wantRevoked: true,
+		},
+		{
+			name:  "token active in db -> valid",
+			token: "active-token",
+			dbResp: []any{
+				database.RefreshToken{
+					Token:     "active-token",
+					ExpiresAt: now.Add(time.Hour),
+					RevokedAt: sql.NullTime{Valid: false},
+				}, nil,
+			},
+			wantValid: true,
+		},
+		{
+			name:    "db error -> error",
+			token:   "active-token",
+			dbResp:  []any{database.RefreshToken{}, errors.New("db down")},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockDB := mockRepo.NewMockTokenDatabase(t)
+
+			// DB is only called if ctx != nil AND token after TrimSpace is non-empty
+			if !tc.nilCtx && strings.TrimSpace(tc.token) != "" {
+				if tc.dbResp != nil {
+					tok := strings.TrimSpace(tc.token)
+					mockDB.
+						On("ReadTokenByToken", mock.Anything, tok).
+						Return(tc.dbResp...)
+				}
+			}
+
+			authSrv := &auth{
+				logger: logger,
+				config: cfg,
+				db:     mockDB,
+				tracer: tr,
+			}
+
+			ctx := t.Context()
+			if tc.nilCtx {
+				ctx = nil
+			}
+
+			res, err := authSrv.ValidateToken(ctx, tc.token)
+
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, res)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, res)
+			assert.Equal(t, tc.wantValid, res.Valid)
+			assert.Equal(t, tc.wantRevoked, res.Revoked)
 		})
 	}
 }

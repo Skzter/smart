@@ -9,8 +9,10 @@
 *.dylib
 suproxy
 autotester
+mcp
 !suproxy/
 !autotester/
+!mcp/
 !task.exe
 !doppler.exe
 !pkl.exe

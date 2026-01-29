@@ -28,3 +28,9 @@ do update set
     expires_at = excluded.expires_at,
     revoked_at = excluded.revoked_at
 returning *;
+
+-- name: ReadTokenByToken :one
+select *
+from refresh_tokens
+where
+token = $1;

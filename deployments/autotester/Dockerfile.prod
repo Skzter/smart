@@ -4,14 +4,19 @@ WORKDIR /app
 
 COPY build/autotester bin/autotester
 
+# Build static goose for Alpine
+RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest
+
 FROM docker:cli
 
 ARG DOPPLER_TOKEN
 
 COPY --from=builder /app/bin/autotester /bin/autotester
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /go/bin/goose /usr/local/bin/goose
 
-COPY scripts/run-container.sh /bin/run-container.sh
+COPY scripts/run-migrations.sh /bin/run-migrations.sh
+COPY internal/autotester/infrastructure/database/sql/migrations /migrations
 
 ENV DOPPLER_TOKEN=$DOPPLER_TOKEN
 
@@ -19,7 +24,7 @@ RUN wget -q -t3 'https://packages.doppler.com/public/cli/rsa.8004D9FF50437357.ke
     echo 'https://packages.doppler.com/public/cli/alpine/any-version/main' | tee -a /etc/apk/repositories && \
     apk add doppler
 
-RUN chmod +x /bin/run-container.sh
+RUN chmod +x /bin/run-migrations.sh
 RUN mkdir -p /var/log/smart/
 
 ENTRYPOINT ["/bin/autotester"]
