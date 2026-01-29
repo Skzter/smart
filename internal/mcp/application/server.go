@@ -91,8 +91,9 @@ func (m *McpServer) registerTools() error {
 	m.logger.Debug("Registered tool: get_template")
 
 	mcp.AddTool(m.server, &mcp.Tool{
-		Name:        "generate_test",
-		Description: "Takes prompt from user, sends it to backend to validate and then generates test code, if validation fails, it returns validation message",
+		Name: "generate_test",
+		Description: `Generates test code from a user prompt. ChatId must be empty by default. Sends prompt, userId, and chatId to backend for validation. 
+	Returns generated test code or validation message if validation fails.`,
 	}, generateTestTool.GenerateTest)
 
 	m.logger.Debug("Registered tool: generate_test")

@@ -61,10 +61,10 @@ func main() {
 		Addr:    cfg.Port,
 		Handler: router,
 
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: 60 * time.Second,
+		ReadTimeout:       600 * time.Second,
+		WriteTimeout:      600 * time.Second,
+		IdleTimeout:       600 * time.Second,
 	}
 
 	go func() {
