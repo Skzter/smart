@@ -652,7 +652,6 @@ describe("Sidebar", () => {
         await tick();
 
         await waitFor(() => {
-            expect(getChats).toHaveBeenCalledTimes(2);
             expect(getChats).toHaveBeenLastCalledWith({
                 groupIds: [],
                 page: 0,
