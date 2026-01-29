@@ -55,7 +55,7 @@ var (
 	ErrFailedToGetFileMetadata = errors.New("failed to get file metadata")
 )
 
-// S3StorageWrapper defines an interface for storing, retrieving and managing Parquet files in an S3-compatible storage service.
+// S3StorageWrapper defines an interface for storing, retrieving and managing files in an S3-compatible storage service.
 type S3StorageWrapper interface {
 	// UploadParquetFile uploads a Parquet file to the given key with optional metadata.
 	UploadParquetFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
@@ -74,14 +74,21 @@ type S3StorageWrapper interface {
 
 	// GetFileSize returns the size of the file in bytes for the given key.
 	GetFileSize(ctx context.Context, key string) (int64, error)
+
+	// UploadMediaFile uploads a media file to the given key with optional metadata.
+	UploadMediaFile(ctx context.Context, key string, data []byte, metadata map[string]string) error
+
+	// GetMediaUrl returns the URL of a media file in S3.
+	GetMediaUrl(ctx context.Context, key string) (string, error)
 }
 
 // S3Wrapper provides methods to interact with AWS S3 for parquet files
 type S3Wrapper struct {
-	client *s3.Client
-	config entity.S3Config
-	logger *slog.Logger
-	tracer trace.Tracer
+	client        *s3.Client
+	presignClient *s3.PresignClient
+	config        entity.S3Config
+	logger        *slog.Logger
+	tracer        trace.Tracer
 }
 
 // NewS3Wrapper creates a new S3Wrapper instance
@@ -135,11 +142,20 @@ func NewS3Wrapper(logger *slog.Logger, config entity.S3Config, tracer trace.Trac
 		s3Client = s3.NewFromConfig(cfg)
 	}
 
+	s3PresignClient := s3.NewPresignClient(s3Client, func(po *s3.PresignOptions) {
+		duration := config.PresignLifetime
+		if duration == 0 {
+			duration = time.Second * 60
+		}
+		po.Expires = duration
+	})
+
 	wrapper := &S3Wrapper{
-		client: s3Client,
-		config: config,
-		logger: logger,
-		tracer: tracer,
+		client:        s3Client,
+		config:        config,
+		logger:        logger,
+		tracer:        tracer,
+		presignClient: s3PresignClient,
 	}
 
 	logger.Debug("S3Wrapper initialized",
@@ -493,4 +509,105 @@ func (s *S3Wrapper) GetFileSize(ctx context.Context, key string) (int64, error) 
 	span.SetStatus(codes.Ok, "")
 
 	return aws.ToInt64(result.ContentLength), nil
+}
+
+// UploadMediaFile uploads a media file to S3 (key with extension)
+func (s *S3Wrapper) UploadMediaFile(ctx context.Context, key string, data []byte, metadata map[string]string) error {
+	if err := assert.NotNil(ctx); err != nil {
+		return ErrNilContext
+	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.UploadMediaFile")
+	defer span.End()
+
+	if key == "" {
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return err
+	}
+
+	if len(data) == 0 {
+		err := ErrEmptyData
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "data validation failed")
+		return err
+	}
+
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	metadata["Content-Type"] = "application/octet-stream"
+	metadata["File-Type"] = "media"
+	metadata["Upload-Time"] = time.Now().UTC().Format(time.RFC3339)
+
+	s.logger.Debug("Uploading media file to S3",
+		slog.String("bucket", s.config.Bucket),
+		slog.String("key", key),
+		slog.Int("size_bytes", len(data)),
+	)
+
+	input := &s3.PutObjectInput{
+		Bucket:      aws.String(s.config.Bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(data),
+		ContentType: aws.String("application/octet-stream"),
+		Metadata:    metadata,
+	}
+
+	if _, err := s.client.PutObject(ctx, input); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 upload failed")
+		return fmt.Errorf("failed to upload media file: %w", err)
+	}
+
+	span.AddEvent("Media file uploaded", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	return nil
+}
+
+// GetMediaUrl returns the URL of a media file in S3 (key with extension)
+func (s *S3Wrapper) GetMediaUrl(ctx context.Context, key string) (string, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return "", ErrNilContext
+	}
+
+	ctx, span := s.tracer.Start(ctx, "S3Wrapper.GetMediaUrl")
+	defer span.End()
+
+	if key == "" {
+		err := ErrEmptyKey
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "key validation failed")
+		return "", err
+	}
+
+	request, err := s.presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		err := fmt.Errorf("failed to get media url: %w", err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "S3 head object failed")
+		s.logger.Error("Failed to get media url",
+			slog.String("bucket", s.config.Bucket),
+			slog.String("key", key),
+			slog.String("error", err.Error()),
+		)
+		return "", err
+	}
+
+	span.AddEvent("Media URL generated", trace.WithAttributes(
+		attribute.String("bucket", s.config.Bucket),
+		attribute.String("key", key),
+	))
+	span.SetStatus(codes.Ok, "")
+
+	return request.URL, nil
 }

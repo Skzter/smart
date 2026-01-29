@@ -23,6 +23,7 @@ type AutotesterController struct {
 	dockerService                service.Docker
 	chatStorageService           service.ChatStorageService
 	remoteTestcaseStorageService service.TestcaseStorageService
+	mediaStorageService          service.MediaStorageService
 	chatManager                  service.ChatManager
 	groupManager                 service.GroupManager
 	tracer                       trace.Tracer
@@ -41,6 +42,7 @@ func NewAutotesterController(
 	dockerService service.Docker,
 	chatStorageService service.ChatStorageService,
 	remoteTestcaseStorageService service.TestcaseStorageService,
+	mediaStorageService service.MediaStorageService,
 	chatManager service.ChatManager,
 	groupManager service.GroupManager,
 	tracer trace.Tracer,
@@ -56,6 +58,7 @@ func NewAutotesterController(
 		dockerService,
 		remoteTestcaseStorageService,
 		chatStorageService,
+		mediaStorageService,
 		chatManager,
 		groupManager,
 		tracer,
@@ -74,6 +77,7 @@ func NewAutotesterController(
 		dockerService:                dockerService,
 		chatStorageService:           chatStorageService,
 		remoteTestcaseStorageService: remoteTestcaseStorageService,
+		mediaStorageService:          mediaStorageService,
 		chatManager:                  chatManager,
 		groupManager:                 groupManager,
 		tracer:                       tracer,

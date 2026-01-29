@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"io"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -199,6 +200,69 @@ func (_c *MockDockerClient_ContainerCreate_Call) Return(createResponse container
 }
 
 func (_c *MockDockerClient_ContainerCreate_Call) RunAndReturn(run func(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *v1.Platform, containerName string) (container.CreateResponse, error)) *MockDockerClient_ContainerCreate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ContainerRemove provides a mock function for the type MockDockerClient
+func (_mock *MockDockerClient) ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error {
+	ret := _mock.Called(ctx, containerID, options)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ContainerRemove")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, container.RemoveOptions) error); ok {
+		r0 = returnFunc(ctx, containerID, options)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockDockerClient_ContainerRemove_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ContainerRemove'
+type MockDockerClient_ContainerRemove_Call struct {
+	*mock.Call
+}
+
+// ContainerRemove is a helper method to define mock.On call
+//   - ctx context.Context
+//   - containerID string
+//   - options container.RemoveOptions
+func (_e *MockDockerClient_Expecter) ContainerRemove(ctx interface{}, containerID interface{}, options interface{}) *MockDockerClient_ContainerRemove_Call {
+	return &MockDockerClient_ContainerRemove_Call{Call: _e.mock.On("ContainerRemove", ctx, containerID, options)}
+}
+
+func (_c *MockDockerClient_ContainerRemove_Call) Run(run func(ctx context.Context, containerID string, options container.RemoveOptions)) *MockDockerClient_ContainerRemove_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 container.RemoveOptions
+		if args[2] != nil {
+			arg2 = args[2].(container.RemoveOptions)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerRemove_Call) Return(err error) *MockDockerClient_ContainerRemove_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockDockerClient_ContainerRemove_Call) RunAndReturn(run func(ctx context.Context, containerID string, options container.RemoveOptions) error) *MockDockerClient_ContainerRemove_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -401,6 +465,86 @@ func (_c *MockDockerClient_ContainerWait_Call) Return(waitResponseCh <-chan cont
 }
 
 func (_c *MockDockerClient_ContainerWait_Call) RunAndReturn(run func(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.WaitResponse, <-chan error)) *MockDockerClient_ContainerWait_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CopyFromContainer provides a mock function for the type MockDockerClient
+func (_mock *MockDockerClient) CopyFromContainer(ctx context.Context, containerID string, srcPath string) (io.ReadCloser, container.PathStat, error) {
+	ret := _mock.Called(ctx, containerID, srcPath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CopyFromContainer")
+	}
+
+	var r0 io.ReadCloser
+	var r1 container.PathStat
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (io.ReadCloser, container.PathStat, error)); ok {
+		return returnFunc(ctx, containerID, srcPath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) io.ReadCloser); ok {
+		r0 = returnFunc(ctx, containerID, srcPath)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(io.ReadCloser)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) container.PathStat); ok {
+		r1 = returnFunc(ctx, containerID, srcPath)
+	} else {
+		r1 = ret.Get(1).(container.PathStat)
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string) error); ok {
+		r2 = returnFunc(ctx, containerID, srcPath)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockDockerClient_CopyFromContainer_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CopyFromContainer'
+type MockDockerClient_CopyFromContainer_Call struct {
+	*mock.Call
+}
+
+// CopyFromContainer is a helper method to define mock.On call
+//   - ctx context.Context
+//   - containerID string
+//   - srcPath string
+func (_e *MockDockerClient_Expecter) CopyFromContainer(ctx interface{}, containerID interface{}, srcPath interface{}) *MockDockerClient_CopyFromContainer_Call {
+	return &MockDockerClient_CopyFromContainer_Call{Call: _e.mock.On("CopyFromContainer", ctx, containerID, srcPath)}
+}
+
+func (_c *MockDockerClient_CopyFromContainer_Call) Run(run func(ctx context.Context, containerID string, srcPath string)) *MockDockerClient_CopyFromContainer_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockDockerClient_CopyFromContainer_Call) Return(readCloser io.ReadCloser, pathStat container.PathStat, err error) *MockDockerClient_CopyFromContainer_Call {
+	_c.Call.Return(readCloser, pathStat, err)
+	return _c
+}
+
+func (_c *MockDockerClient_CopyFromContainer_Call) RunAndReturn(run func(ctx context.Context, containerID string, srcPath string) (io.ReadCloser, container.PathStat, error)) *MockDockerClient_CopyFromContainer_Call {
 	_c.Call.Return(run)
 	return _c
 }
