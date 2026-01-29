@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 )
 
-// HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run.
+// HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run. Uploads any debugging media artifacts outside of request context.
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	start := time.Now()
 	ctx := c.Request.Context()
@@ -53,7 +54,7 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		return
 	}
 
-	_, err = a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.ChatID)
+	_, filesChan, err := a.dockerService.RunTest(c.Request.Context(), testfile, params.TestId, params.UserID, params.ChatID)
 	if err != nil {
 		span.SetStatus(codes.Error, "unable to run container")
 		a.metricsService.IncRequestError("run_container_failed")
@@ -62,6 +63,23 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
 	}
+
+	go func() {
+		files, ok := <-filesChan
+		if ok {
+			a.logger.Debug("recieved files from container", "count", len(files))
+			for _, file := range files {
+				if err := a.mediaStorageService.UploadMedia(context.Background(), params.TestId, file); err != nil {
+					a.logger.Error("error uploading media",
+						"testId", params.TestId,
+						"fileName", file.GetFileName(),
+						"err", err)
+				}
+			}
+		} else {
+			a.logger.Debug("recieved no files")
+		}
+	}()
 
 	span.SetStatus(codes.Ok, "")
 	a.metricsService.IncRequestSuccess()

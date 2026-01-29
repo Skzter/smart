@@ -43,7 +43,7 @@ func safeSend(ch chan<- entity.SSEvent, ev entity.SSEvent) (err error) {
 // HandleLogRequest handles the log streaming request for a specific test container.
 // nolint: funlen
 func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
-	_, span := a.tracer.Start(c, "autotesterController.HandleLogRequest")
+	ctx, span := a.tracer.Start(c, "autotesterController.HandleLogRequest")
 	defer span.End()
 	testID := c.Param("testId")
 
@@ -53,7 +53,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 		return
 	}
 
-	attachResp, err := a.dockerService.AttachToContainer(c, containerInfo.ContainerID)
+	attachResp, err := a.dockerService.AttachToContainer(ctx, containerInfo.ContainerID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to attach to container"})
 		return
@@ -111,7 +111,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 		}
 	}()
 
-	statusCh, errCh := a.dockerService.WaitContainer(c.Request.Context(), containerInfo.ContainerID)
+	statusCh, errCh := a.dockerService.WaitContainer(ctx, containerInfo.ContainerID)
 
 	c.Stream(func(w io.Writer) bool {
 		select {
@@ -138,7 +138,7 @@ func (a *AutotesterController) HandleLogRequest(c *gin.Context) {
 						Status: entity.TestStatusPassed,
 					}
 
-					if _, err := a.remoteTestcaseStorageService.SaveTestcase(c, test, containerInfo.UserID); err != nil {
+					if _, err := a.remoteTestcaseStorageService.SaveTestcase(ctx, test, containerInfo.UserID); err != nil {
 						a.logger.Error("failed to save testcase remotely: " + err.Error())
 					}
 				}

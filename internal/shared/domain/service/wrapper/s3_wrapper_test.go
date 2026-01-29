@@ -469,3 +469,37 @@ func TestS3WrapperLargeFileIntegration(t *testing.T) {
 	err = wrapper.DeleteParquetFile(ctx, key+".parquet")
 	assert.NoError(t, err)
 }
+
+func TestS3WrapperGetMediaUrlIntegration(t *testing.T) {
+	minioContainer, cleanup := setupMinIOContainer(t)
+	defer cleanup()
+
+	wrapper := createS3WrapperWithMinIO(t, minioContainer)
+	ctx := context.Background()
+
+	// Upload a file first
+	testKey := "test-file.jpg"
+	testData := []byte("Test data for media file")
+	testMetadata := map[string]string{
+		"source":    "integration-test",
+		"test-case": "upload-download",
+		"version":   "1.0",
+	}
+	err := wrapper.UploadMediaFile(ctx, testKey, testData, testMetadata)
+	assert.NoError(t, err)
+
+	// Get media url for existing file (presigned URL)
+	url, err := wrapper.GetMediaUrl(ctx, testKey)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, url)
+	// Presigned URLs contain query parameters for authentication
+	assert.Contains(t, url, testKey)
+	assert.Contains(t, url, "X-Amz")
+
+	// Get media url again (should still work)
+	url, err = wrapper.GetMediaUrl(ctx, testKey)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, url)
+	assert.Contains(t, url, testKey)
+	assert.Contains(t, url, "X-Amz")
+}

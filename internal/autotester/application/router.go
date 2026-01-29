@@ -31,17 +31,22 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.GET("/chats/:chatId", controller.GetChatById)
 		apiV1.PATCH("/chats/:chatId/title", controller.HandleUpdateChatTitle)
 		apiV1.GET("/template", controller.HandleGetTemplate)
-		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
-		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
-		apiV1.POST("/run", controller.HandleRunContainer)
-		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
-		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
-		apiV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
 
 		apiV1.GET("/groups", controller.HandleGetGroups)
 		apiV1.POST("/groups", controller.HandleCreateGroup)
 		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
 		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
+
+		apiV1.POST("/run", controller.HandleRunContainer)
+		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
+		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
+		apiV1.GET("/tests", controller.HandleGetRemoteTestcase)
+		apiV1.GET("/test/:testId/stream", sseHeaderMiddleWare(), controller.HandleLogRequest)
+		apiV1.GET("/test/:testId/screenshot", controller.HandleGetScreenshot)
+		apiV1.GET("/test/:testId/video", controller.HandleGetVideo)
+		apiV1.GET("/test/:testId/media", controller.HandleGetMediaInfo)
+
+		apiV1.POST("/auth/generate", internalOnlyMiddleware(logger), controller.HandleGenerateToken)
 	}
 
 	debugGroup := router.Group("/debug", pprofAuthMiddleware())
