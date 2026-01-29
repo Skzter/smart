@@ -62,10 +62,6 @@ services:
     depends_on:
       - autotester
     command: ["dev-entrypoint.sh"]
-    volumes:
-      - ..:/app
-      - go-mod-cache:/go/pkg/mod
-      - go-build-cache:/root/.cache/go-build
     ports:
       - "8084:8084"
     networks:

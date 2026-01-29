@@ -55,7 +55,7 @@ func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.Templat
 	s.logger.Debug("Fetching test template from API")
 
 	token, _ := ctx.Value(s.jwtContextKey).(string)
-	s.logger.Debug("Get template with token: " + token)
+	s.logger.Debug("Get template with token")
 
 	template, err := s.repo.GetTemplate(ctx, token)
 	if err != nil {
@@ -76,7 +76,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 	}
 
 	token, _ := ctx.Value(s.jwtContextKey).(string)
-	s.logger.Debug("Generate test with token: " + token)
+	s.logger.Debug("Generate test with token")
 
 	valid, err := s.repo.ValidatePrompt(ctx, request, token)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 	}
 
 	token, _ := ctx.Value(s.jwtContextKey).(string)
-	s.logger.Debug("Executing test with token: " + token)
+	s.logger.Debug("Executing test with token")
 
 	saveReq := &entity.SaveTestRequest{
 		Code:   request.Test,
@@ -171,7 +171,7 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
 
 	token, _ := ctx.Value(s.jwtContextKey).(string)
-	s.logger.Debug("Executing test with token: " + token)
+	s.logger.Debug("Executing test with token")
 
 	const rawEventsCapacity = 2048
 	rawEventsCh := make(chan *entity.LogEvent, rawEventsCapacity)

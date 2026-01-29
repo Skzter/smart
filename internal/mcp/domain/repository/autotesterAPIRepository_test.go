@@ -397,7 +397,7 @@ func TestSaveTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.SaveTest(context.Background(), req, token)
+			res, err := repo.SaveTest(context.Background(), req, test.token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
