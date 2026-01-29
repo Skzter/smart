@@ -37,8 +37,7 @@ graph TB
 
     AutotesterSvc --> AutotesterRepo
 
-    AutotesterRepo -->|"API calls (HTTPS/REST)"| Autotester
-    AutotesterRepo -.->|"Fetches token<br/>/auth/generate"| Autotester
+    AutotesterRepo -->|"API calls (HTTPS/REST)<br/>Authorization: Bearer &lt;token&gt;"| Autotester
 
     LLM -->|"Tool calls<br/>(MCP Protocol)"| MCPServer
     MCPServer -.->|"Tool responses<br/>(MCP Protocol)"| LLM

@@ -16,8 +16,8 @@ flowchart TB
     end
 
     subgraph external[External Systems]
-        Auth0[Auth0<br/>HTWK SSO]
-        LLM[LLM Service<br/>OpenAI/Claude]
+        Auth0[Auth0<br/>SSO for Application]
+        LLM[LLM Service<br/>OpenAI]
         Datadog[Datadog<br/>APM & Monitoring]
         Doppler[Doppler<br/>Secrets Management]
         Supplier[Supplier APIs<br/>Travel suppliers]
@@ -45,7 +45,7 @@ flowchart TB
     class Developer,Admin person
 ```
 
-See [system-context.mmd](diagrams/system-context.mmd) for the source.
+See [system-context.mmd](diagrams/system-context.mmd) for the Mermaid source.
 
 ## System: S.M.A.R.T
 
@@ -58,9 +58,9 @@ See [system-context.mmd](diagrams/system-context.mmd) for the source.
 
 ## Actors
 
-### Developers & Testers (HTWK)
+### Developers & Testers (Check24)
 **Type:** Person
-**Description:** Students and staff at HTWK Leipzig who use S.M.A.R.T to create and run automated tests
+**Description:** Students and staff at Check24 who use S.M.A.R.T to create and run automated tests
 
 **Interactions:**
 - Access web UI to chat with LLM for test creation
@@ -79,19 +79,19 @@ See [system-context.mmd](diagrams/system-context.mmd) for the source.
 
 ## External Systems
 
-### Auth0 (HTWK SSO)
+### Auth0 (SSO for Application)
 **Type:** External Authentication System
 **Technology:** Auth0
-**Description:** Provides single sign-on authentication for HTWK users
+**Description:** Provides single sign-on authentication for application users
 
 **Interactions:**
 - Frontend authenticates users via Auth0
 - Issues JWT tokens for authenticated sessions
-- **Note:** Only used for frontend authentication, not for internal service-to-service communication
+- **Note:** Only used for service-to-service communication (MCP ↔ Autotester)
 
 ### OpenAI / LLM Service
 **Type:** External AI Service
-**Technology:** OpenAI API (GPT models) or Anthropic Claude
+**Technology:** OpenAI API (GPT models)
 **Description:** Large Language Model service for test generation and chat responses
 
 **Interactions:**
@@ -142,7 +142,7 @@ See [system-context.mmd](diagrams/system-context.mmd) for the source.
 
 1. **User Authentication Flow**
    - Developers → Auth0 → S.M.A.R.T Frontend
-   - Auth0 provides SSO for HTWK users
+   - Auth0 provides SSO for application users
 
 2. **Test Creation Flow**
    - Developers → S.M.A.R.T → LLM Service → S.M.A.R.T
@@ -170,7 +170,7 @@ See [system-context.mmd](diagrams/system-context.mmd) for the source.
 - User authentication requests (Auth0)
 - User chat messages and test requests
 - Test execution requests
-- Proxy requests from frontends
+- Proxy requests from web applications under test
 
 ### Outbound
 - LLM API calls for test generation
@@ -181,7 +181,7 @@ See [system-context.mmd](diagrams/system-context.mmd) for the source.
 
 ## Security Boundaries
 
-- **Frontend Authentication:** Auth0 SSO for HTWK users
+- **Frontend Authentication:** Auth0 SSO for application users
 - **Internal Services:** Network-level isolation within Docker
 - **External APIs:** Secured via API keys from Doppler
 - **Supplier Access:** Controlled proxy with request validation

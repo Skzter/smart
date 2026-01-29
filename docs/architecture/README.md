@@ -46,11 +46,12 @@ Mermaid diagrams render automatically when viewing markdown files in GitLab and 
 # Install Mermaid CLI
 npm install -g @mermaid-js/mermaid-cli
 
-# Generate PNG
-mmdc -i docs/architecture/**/*.mmd -o output/
+# Generate PNG next to each .mmd (run from repo root)
+find docs/architecture -name '*.mmd' -exec sh -c 'mmdc -i "$1" -o "${1%.mmd}.png"' _ {} \;
 
-# Generate SVG
-mmdc -i docs/architecture/**/*.mmd -o output/ -t svg
+# Generate SVG into output/
+mkdir -p docs/architecture/output
+find docs/architecture -name '*.mmd' -exec sh -c 'mmdc -i "$1" -o "docs/architecture/output/$(basename "$1" .mmd).svg" -t svg' _ {} \;
 ```
 
 ### Live Preview

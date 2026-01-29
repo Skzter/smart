@@ -4,7 +4,107 @@ This document describes the detailed code-level flow for LLM-powered test genera
 
 ## Diagram
 
-See [llm-flow.mmd](diagrams/llm-flow.mmd) for the Mermaid source (diagram embedded below renders in GitLab/GitHub).
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend as Frontend<br/>(Chat Component)
+    participant API as API Service<br/>(api.ts)
+    participant Router as Autotester API<br/>(Router)
+    participant Controller as Chat Controller<br/>(HandleChatRequest)
+    participant ChatManager as Chat Manager<br/>(ProcessChat)
+    participant LLMSuite as LLM Test Suite<br/>(GenerateTest)
+    participant PromptBuilder as Prompt Builder<br/>(BuildPrompt)
+    participant LLM as LLM API<br/>(OpenAI/Claude)
+    participant Parser as Response Parser<br/>(ParseResponse)
+    participant Storage as Chat Storage<br/>(SaveMessage)
+    participant S3 as S3 / Object Storage<br/>(Parquet)
+
+    User->>Frontend: Types test description<br/>"Create test for login button"
+    activate Frontend
+    Frontend->>Frontend: Capture input
+    Frontend->>API: generatePrompt(request)
+    activate API
+    
+    API->>Router: POST /api/v1/chat<br/>{userId, chatId, message}
+    activate Router
+    Router->>Controller: HandleChatRequest()
+    activate Controller
+    
+    Controller->>Controller: Validate request
+    Controller->>ChatManager: ProcessChat(request)
+    activate ChatManager
+    
+    ChatManager->>Storage: GetChatHistory(chatId)
+    activate Storage
+    Storage->>S3: Get chat (Parquet) by prefix
+    activate S3
+    S3-->>Storage: Chat history (Parquet)
+    deactivate S3
+    Storage-->>ChatManager: Previous messages
+    deactivate Storage
+    
+    ChatManager->>LLMSuite: GenerateTest(userMessage, context)
+    activate LLMSuite
+    
+    LLMSuite->>PromptBuilder: BuildPrompt(message, history)
+    activate PromptBuilder
+    PromptBuilder->>PromptBuilder: Load template from config
+    PromptBuilder->>PromptBuilder: Inject context
+    PromptBuilder->>PromptBuilder: Format for LLM
+    PromptBuilder-->>LLMSuite: Constructed prompt
+    deactivate PromptBuilder
+    
+    LLMSuite->>LLM: POST /v1/chat/completions<br/>{model, messages, temperature}
+    activate LLM
+    Note right of LLM: System: "You are an expert..."<br/>User: "Create test..."
+    LLM->>LLM: Process prompt
+    LLM->>LLM: Generate test code
+    LLM-->>LLMSuite: Response with test code
+    deactivate LLM
+    
+    LLMSuite->>Parser: ParseResponse(llmOutput)
+    activate Parser
+    Parser->>Parser: Extract code blocks
+    Parser->>Parser: Validate syntax
+    Parser->>Parser: Clean formatting
+    Parser-->>LLMSuite: Validated test code
+    deactivate Parser
+    
+    LLMSuite-->>ChatManager: Generated test code
+    deactivate LLMSuite
+    
+    ChatManager->>Storage: SaveMessage(userMessage)
+    activate Storage
+    Storage->>S3: Upload Parquet (user message)
+    S3-->>Storage: OK
+    Storage-->>ChatManager: Saved
+    deactivate Storage
+    
+    ChatManager->>Storage: SaveMessage(llmResponse)
+    activate Storage
+    Storage->>S3: Upload Parquet (LLM response)
+    S3-->>Storage: OK
+    Storage-->>ChatManager: Saved
+    deactivate Storage
+    
+    ChatManager-->>Controller: ChatResponse<br/>{message, chatId, userId}
+    deactivate ChatManager
+    
+    Controller-->>Router: JSON response
+    deactivate Controller
+    Router-->>API: HTTP 200<br/>{message, chatId}
+    deactivate Router
+    
+    API-->>Frontend: ChatResponse
+    deactivate API
+    
+    Frontend->>Frontend: Update messages state
+    Frontend->>Frontend: Render with syntax highlighting
+    Frontend-->>User: Display generated test
+    deactivate Frontend
+```
+
+See [llm-flow.mmd](diagrams/llm-flow.mmd) for the Mermaid source.
 
 ## Overview
 
@@ -22,7 +122,7 @@ The LLM integration flow enables natural language test generation by orchestrati
 - LLM Test Suite Service
 - LLM API (OpenAI/Claude)
 - Chat Storage
-- Database
+- S3 / Object Storage (Parquet)
 
 **Steps:**
 
@@ -72,7 +172,7 @@ The LLM integration flow enables natural language test generation by orchestrati
    - Prepares request:
      ```json
      {
-       "model": "gpt-4",
+       "model": "gpt-5.2",
        "messages": [
          {"role": "system", "content": "You are..."},
          {"role": "user", "content": "Create a test..."}
@@ -101,8 +201,8 @@ The LLM integration flow enables natural language test generation by orchestrati
 
 9. **Persistence**
    - ChatStorageService.SaveMessage() called
-   - Stores user message in database
-   - Stores LLM response in database
+   - Stores user message in S3 (Parquet)
+   - Stores LLM response in S3 (Parquet)
    - Updates chat metadata (timestamp, message count)
 
 10. **Response Construction**
@@ -280,7 +380,7 @@ Task: Generate a Playwright test for: [specific requirement]
 
 4. **Parallel Processing**
    - Validation + generation in parallel (if needed)
-   - Async database writes
+   - Async S3 writes (Parquet)
    - Non-blocking LLM calls
 
 ---

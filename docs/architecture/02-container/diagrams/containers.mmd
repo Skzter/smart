@@ -22,6 +22,7 @@ graph TB
     subgraph "External Systems"
         Auth0["🔒 Auth0"]
         LLM["🤖 LLM Service"]
+        S3["📦 S3 / Object Storage<br/>(Parquet: chats, testcases, taglists)"]
         DatadogCloud["📊 Datadog Cloud"]
         Doppler["🔑 Doppler"]
         Supplier["🌐 Supplier APIs"]
@@ -37,7 +38,9 @@ graph TB
     
     Autotester -->|"Reads/writes (SQL)"| Postgres
     Autotester -->|"Caches (Redis)"| Redis
+    Autotester -->|"Stores Parquet (S3 API)"| S3
     Suproxy -->|"Caches (Redis)"| Redis
+    Suproxy -->|"Reads Parquet taglists (S3 API)"| S3
 
     Autotester -->|"Generates tests (HTTPS)"| LLM
     MCP -->|"Calls API (HTTP)"| Autotester
@@ -64,5 +67,5 @@ graph TB
 
     class Frontend,Nginx,Autotester,MCP,Suproxy,DatadogAgent,FrontendMock,SupplierMock container
     class Postgres,Redis database
-    class Auth0,LLM,DatadogCloud,Doppler,Supplier,WebApp external
+    class Auth0,LLM,S3,DatadogCloud,Doppler,Supplier,WebApp external
     class Developer person

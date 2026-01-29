@@ -4,7 +4,97 @@ The Autotester service is the core of S.M.A.R.T, responsible for LLM-powered tes
 
 ## Diagram
 
-See [autotester.mmd](diagrams/autotester.mmd) for the Mermaid source (diagram embedded below renders in GitLab/GitHub).
+```mermaid
+graph TB
+    subgraph Application["Application Layer"]
+        Router["Router<br/>(Gin, HTTP server)"]
+        MiddlewareInternal["Internal-Only Middleware<br/>(CIDR validation)"]
+        MiddlewareSSE["SSE Middleware<br/>(Server-Sent Events)"]
+    end
+
+    subgraph Handlers["Domain - Handlers"]
+        Controller["Autotester Controller<br/>(HTTP request handlers)"]
+    end
+
+    subgraph Services["Domain - Services"]
+        ChatManager["Chat Manager<br/>(LLM orchestration)"]
+        ChatStorageSvc["Chat Storage Service<br/>(Persistence)"]
+        TestLocalSvc["Testcase Local Storage<br/>(File management)"]
+        TestStorageSvc["Testcase Storage Service<br/>(S3 storage)"]
+        DockerSvc["Docker Service<br/>(Container orchestration)"]
+        LLMSuite["LLM Test Suite<br/>(Test generation)"]
+        Validator["Validator<br/>(Validation logic)"]
+        AuthSvc["Auth Service<br/>(Token management)"]
+        GroupMgr["Group Manager<br/>(Group logic)"]
+        GroupStorageSvc["Group Storage Service<br/>(Group persistence)"]
+    end
+
+    subgraph Repositories["Domain - Repositories"]
+        ChatRepo["Chat Storage Repository<br/>(SQLC)"]
+        TestLocalRepo["Testcase Local Repository<br/>(File system)"]
+        TokenRepo["Token Database<br/>(SQLC)"]
+        GroupRepo["Group Storage Repository<br/>(SQLC)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        PostgresConn["PostgreSQL Connection<br/>(SQLC)"]
+        RedisConn["Redis Connection<br/>(Go-Redis)"]
+    end
+
+    subgraph External["External Dependencies"]
+        Postgres["🗄️ PostgreSQL"]
+        Redis["💾 Redis"]
+        LLMAPI["🤖 LLM API"]
+        DockerEngine["🐳 Docker Engine"]
+        S3["☁️ Object Storage"]
+    end
+
+    Router --> MiddlewareInternal
+    Router --> MiddlewareSSE
+    Router --> Controller
+
+    Controller --> ChatManager
+    Controller --> ChatStorageSvc
+    Controller --> TestLocalSvc
+    Controller --> TestStorageSvc
+    Controller --> DockerSvc
+    Controller --> Validator
+    Controller --> AuthSvc
+    Controller --> GroupMgr
+
+    ChatManager --> LLMSuite
+    ChatManager --> ChatStorageSvc
+    GroupMgr --> GroupStorageSvc
+
+    ChatStorageSvc --> ChatRepo
+    TestLocalSvc --> TestLocalRepo
+    AuthSvc --> TokenRepo
+    GroupStorageSvc --> GroupRepo
+
+    ChatRepo --> PostgresConn
+    TokenRepo --> PostgresConn
+    GroupRepo --> PostgresConn
+    ChatStorageSvc --> RedisConn
+    TestStorageSvc --> RedisConn
+
+    PostgresConn --> Postgres
+    RedisConn --> Redis
+    LLMSuite --> LLMAPI
+    DockerSvc --> DockerEngine
+    TestStorageSvc --> S3
+
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef infrastructure fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+
+    class Router,MiddlewareInternal,MiddlewareSSE,Controller component
+    class ChatManager,ChatStorageSvc,TestLocalSvc,TestStorageSvc,DockerSvc,LLMSuite,Validator,AuthSvc,GroupMgr,GroupStorageSvc component
+    class ChatRepo,TestLocalRepo,TokenRepo,GroupRepo component
+    class PostgresConn,RedisConn infrastructure
+    class Postgres,Redis,LLMAPI,DockerEngine,S3 external
+```
+
+See [autotester.mmd](diagrams/autotester.mmd) for the Mermaid source.
 
 ## Architecture Overview
 
@@ -258,12 +348,14 @@ Key domain entities:
 7. **Response** with results returned
 
 ### Authentication Flow
-1. **MCP** calls `/auth/generate` (internal only)
+1. **Authenticated user** (e.g. via Frontend) calls `/auth/generate` (internal only, from allowed networks)
 2. **Internal-Only Middleware** validates IP
 3. **AuthController** receives request
 4. **Auth Service** generates JWT token
 5. **TokenDatabase** stores token
-6. **Token** returned to MCP
+6. **Token** returned to caller
+
+**MCP:** Does not call `/auth/generate`. Sends the bearer token in the `Authorization` header when calling Autotester (token obtained by the authenticated user, e.g. via Frontend).
 
 ### Group Management Flow
 1. **Router** receives group request

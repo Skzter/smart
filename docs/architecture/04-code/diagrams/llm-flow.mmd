@@ -10,7 +10,7 @@ sequenceDiagram
     participant LLM as LLM API<br/>(OpenAI/Claude)
     participant Parser as Response Parser<br/>(ParseResponse)
     participant Storage as Chat Storage<br/>(SaveMessage)
-    participant DB as PostgreSQL
+    participant S3 as S3 / Object Storage<br/>(Parquet)
 
     User->>Frontend: Types test description<br/>"Create test for login button"
     activate Frontend
@@ -29,10 +29,10 @@ sequenceDiagram
     
     ChatManager->>Storage: GetChatHistory(chatId)
     activate Storage
-    Storage->>DB: SELECT messages...
-    activate DB
-    DB-->>Storage: Chat history
-    deactivate DB
+    Storage->>S3: Get chat (Parquet) by prefix
+    activate S3
+    S3-->>Storage: Chat history (Parquet)
+    deactivate S3
     Storage-->>ChatManager: Previous messages
     deactivate Storage
     
@@ -68,15 +68,15 @@ sequenceDiagram
     
     ChatManager->>Storage: SaveMessage(userMessage)
     activate Storage
-    Storage->>DB: INSERT user message
-    DB-->>Storage: OK
+    Storage->>S3: Upload Parquet (user message)
+    S3-->>Storage: OK
     Storage-->>ChatManager: Saved
     deactivate Storage
     
     ChatManager->>Storage: SaveMessage(llmResponse)
     activate Storage
-    Storage->>DB: INSERT LLM response
-    DB-->>Storage: OK
+    Storage->>S3: Upload Parquet (LLM response)
+    S3-->>Storage: OK
     Storage-->>ChatManager: Saved
     deactivate Storage
     

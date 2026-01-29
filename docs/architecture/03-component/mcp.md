@@ -4,7 +4,61 @@ The Autotester MCP service implements the Model Context Protocol, enabling LLM s
 
 ## Diagram
 
-See [mcp.mmd](diagrams/mcp.mmd) for the Mermaid source (diagram embedded below renders in GitLab/GitHub).
+```mermaid
+graph TB
+    subgraph Application["Application Layer"]
+        MCPServer["MCP Server<br/>(MCP SDK, tool registration)"]
+    end
+
+    subgraph Tools["Domain - Tools"]
+        GetTemplateTool["Get Template Tool<br/>(Retrieve test template)"]
+        GenerateTestTool["Generate Test Tool<br/>(Generate test from prompt)"]
+        RunTestTool["Run Test Tool<br/>(Execute test by ID)"]
+    end
+
+    subgraph Services["Domain - Service"]
+        AutotesterSvc["Autotester API Service<br/>(Business logic)"]
+    end
+
+    subgraph Repositories["Domain - Repository"]
+        AutotesterRepo["Autotester API Repository<br/>(HTTP client, net/http)"]
+    end
+
+    subgraph Config["Configuration"]
+        PklConfig["Pkl Configuration<br/>(MCP & HTTP settings)"]
+    end
+
+    subgraph External["External Systems"]
+        Autotester["⚙️ Autotester Service"]
+        LLM["🤖 LLM System<br/>(Claude/GPT via MCP)"]
+    end
+
+    MCPServer --> GetTemplateTool
+    MCPServer --> GenerateTestTool
+    MCPServer --> RunTestTool
+    MCPServer --> PklConfig
+
+    GetTemplateTool --> AutotesterSvc
+    GenerateTestTool --> AutotesterSvc
+    RunTestTool --> AutotesterSvc
+
+    AutotesterSvc --> AutotesterRepo
+
+    AutotesterRepo -->|"API calls (HTTPS/REST)<br/>Authorization: Bearer &lt;token&gt;"| Autotester
+
+    LLM -->|"Tool calls<br/>(MCP Protocol)"| MCPServer
+    MCPServer -.->|"Tool responses<br/>(MCP Protocol)"| LLM
+
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+
+    class MCPServer,GetTemplateTool,GenerateTestTool,RunTestTool component
+    class AutotesterSvc,AutotesterRepo component
+    class PklConfig component
+    class Autotester,LLM external
+```
+
+See [mcp.mmd](diagrams/mcp.mmd) for the Mermaid source.
 
 ## Architecture Overview
 
@@ -139,9 +193,9 @@ The MCP service acts as a bridge between LLM systems and the Autotester backend:
 - `SaveTest(request)` - POST `/saveLocal`
 
 **Authentication:**
-- Fetches internal token from `/auth/generate`
-- Includes token in subsequent requests
-- Token refresh on expiry
+- Sends bearer token in `Authorization` header on every request to Autotester
+- Token is provided at MCP startup (e.g. from authenticated user who obtained it via Frontend calling `/auth/generate`)
+- MCP does not call `/auth/generate`
 
 **Technology:** Go standard `net/http`
 
@@ -208,7 +262,7 @@ Similar to RunTest but with additional execution parameters
 - MCP server port (8084)
 - Autotester base URL
 - HTTP client timeouts
-- Authentication settings
+- Bearer token for Autotester API (provided at startup)
 - Tool configurations
 
 ---
@@ -223,19 +277,15 @@ Similar to RunTest but with additional execution parameters
 5. **Tool** calls **Autotester API Service**
 6. **Service** calls **Autotester API Repository**
 7. **Repository** makes HTTP request to Autotester
-8. **Repository** handles authentication (token)
+8. **Repository** sends bearer token in `Authorization` header
 9. **Response** flows back through layers
 10. **MCP Server** returns to LLM via MCP protocol
 
 ### Authentication Flow
-1. **MCP Server** starts up
-2. **Autotester API Repository** initializes
-3. **Repository** calls `/auth/generate` (internal endpoint)
-4. **Autotester** validates IP (internal network)
-5. **Autotester** generates JWT token
-6. **Repository** stores token
-7. **Repository** includes token in all subsequent requests
-8. **Token** refreshed on expiry
+1. **Authenticated user** obtains JWT via Frontend calling `/auth/generate` (internal, IP-restricted)
+2. **Bearer token** is provided to MCP at startup (e.g. via IDE/CLI configuration)
+3. **Autotester API Repository** sends `Authorization: Bearer <token>` on every HTTP request to Autotester
+4. **Autotester** validates the token; MCP does not call `/auth/generate`
 
 ### Test Generation Flow (via MCP)
 1. **LLM** invokes `generate_test` tool
@@ -305,11 +355,10 @@ Similar to RunTest but with additional execution parameters
 
 ## Security Considerations
 
-1. **Internal Token**: Fetched from internal-only endpoint
+1. **Bearer Token**: Sent in `Authorization` header; token provided at startup (from authenticated user, not from MCP calling `/auth/generate`)
 2. **Network Restriction**: MCP runs within Docker network
 3. **Input Validation**: All tool parameters validated
 4. **Error Handling**: Sensitive information not leaked in errors
-5. **Token Refresh**: Automatic token renewal
 
 ## Future Enhancements
 

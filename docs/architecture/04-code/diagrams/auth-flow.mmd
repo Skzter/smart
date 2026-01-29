@@ -6,7 +6,7 @@ sequenceDiagram
     participant User
     participant Frontend as Frontend<br/>(Svelte)
     participant AuthService as Auth Service<br/>(authService.ts)
-    participant Auth0 as Auth0<br/>(HTWK SSO)
+    participant Auth0 as Auth0<br/>(SSO Provider)
     
     User->>Frontend: Navigate to app
     activate Frontend
@@ -48,80 +48,52 @@ sequenceDiagram
     deactivate AuthService
     deactivate Frontend
     
-    Note over MCP,TokenDB: <br/><br/>Internal Service Authentication (MCP ↔ Autotester)
+    Note over Frontend,TokenDB2: Internal token (for MCP): obtained by authenticated user via Frontend. MCP does NOT call /auth/generate.
     
+    participant Nginx2 as Nginx<br/>(Reverse Proxy)
+    participant Router2 as Autotester<br/>(Router)
+    participant Middleware2 as Internal Middleware<br/>(CIDR Check)
+    participant AuthSvc2 as Auth Service<br/>(GenerateToken)
+    participant TokenDB2 as Token Database<br/>(PostgreSQL)
+    
+    Frontend->>Nginx2: POST /api/v1/auth/generate<br/>(from allowed network)
+    activate Nginx2
+    Nginx2->>Nginx2: Check source IP<br/>Allow: 127.0.0.1, 172.16.0.0/12, 192.168.0.0/16
+    Nginx2->>Router2: Forward request
+    activate Router2
+    Router2->>Middleware2: internalOnlyMiddleware()
+    Middleware2->>Middleware2: Validate CIDRs
+    Middleware2->>Router2: Continue
+    Router2->>AuthSvc2: HandleGenerateToken()
+    activate AuthSvc2
+    AuthSvc2->>AuthSvc2: Create JWT, sign
+    AuthSvc2->>TokenDB2: INSERT token
+    TokenDB2-->>AuthSvc2: OK
+    AuthSvc2-->>Router2: {token, expiresAt}
+    deactivate AuthSvc2
+    Router2-->>Nginx2: 200 OK {token}
+    deactivate Router2
+    Nginx2-->>Frontend: 200 OK {token}
+    deactivate Nginx2
+    
+    Note over User2,MCP: Token provided to MCP at startup (e.g. IDE/CLI config). MCP does not call /auth/generate.
+    
+    participant User2 as User / Config<br/>(provides token to MCP)
     participant MCP as MCP Service<br/>(API Repository)
-    participant Nginx as Nginx<br/>(Reverse Proxy)
-    participant Router as Autotester<br/>(Router)
-    participant Middleware as Internal Middleware<br/>(CIDR Check)
-    participant AuthSvc as Auth Service<br/>(GenerateToken)
-    participant TokenDB as Token Database<br/>(PostgreSQL)
     
-    MCP->>MCP: Service starts<br/>Need auth token
-    MCP->>Nginx: POST /api/v1/auth/generate<br/>{userId: "mcp-service"}
-    activate Nginx
+    User2->>MCP: Bearer token at startup<br/>(e.g. from Frontend / IDE config)
+    MCP->>MCP: Store token in memory
     
-    Nginx->>Nginx: Check source IP<br/>Allow: 172.16.0.0/12,<br/>192.168.0.0/16
+    Note over MCP,Router2: API Request with Token (Bearer in Authorization header)
     
-    alt External IP
-        Nginx-->>MCP: 403 Forbidden
-    else Internal IP (Docker network)
-        Nginx->>Router: Forward request
-        activate Router
-        
-        Router->>Middleware: internalOnlyMiddleware()
-        activate Middleware
-        
-        Middleware->>Middleware: Extract client IP
-        Middleware->>Middleware: Validate against CIDRs
-        
-        alt IP not in allowed ranges
-            Middleware-->>Router: Abort with 403
-            Router-->>Nginx: 403 Forbidden
-            Nginx-->>MCP: 403 Forbidden
-        else IP in allowed ranges
-            Middleware->>Router: Continue
-            deactivate Middleware
-            
-            Router->>AuthSvc: HandleGenerateToken()
-            activate AuthSvc
-            
-            AuthSvc->>AuthSvc: Create JWT claims<br/>{sub, iat, exp, iss}
-            AuthSvc->>AuthSvc: Sign with secret key
-            
-            AuthSvc->>TokenDB: INSERT token<br/>(user_id, token, expires_at)
-            activate TokenDB
-            TokenDB-->>AuthSvc: OK
-            deactivate TokenDB
-            
-            AuthSvc-->>Router: {token, expiresAt}
-            deactivate AuthSvc
-            
-            Router-->>Nginx: 200 OK<br/>{token: "eyJ..."}
-            deactivate Router
-            
-            Nginx-->>MCP: 200 OK<br/>{token: "eyJ..."}
-            deactivate Nginx
-            
-            MCP->>MCP: Store token in memory
-        end
-    end
-    
-    Note over MCP,Router: <br/>API Request with Token
-    
-    MCP->>MCP: Tool invoked<br/>Need to call Autotester
-    MCP->>Router: POST /api/v1/chat<br/>Authorization: Bearer eyJ...
-    activate Router
-    
-    Router->>Router: Extract token
-    Router->>Router: Validate JWT<br/>- Signature<br/>- Expiry<br/>- Issuer
-    
+    MCP->>MCP: Tool invoked<br/>Call Autotester API
+    MCP->>Router2: POST /api/v1/chat, Authorization: Bearer token
+    activate Router2
+    Router2->>Router2: Extract token, validate JWT<br/>Signature, expiry, issuer
     alt Token invalid or expired
-        Router-->>MCP: 401 Unauthorized
-        MCP->>MCP: Refresh token<br/>(repeat generation flow)
+        Router2-->>MCP: 401 Unauthorized (no refresh, user must reconfigure MCP)
     else Token valid
-        Router->>Router: Process request normally
-        Router-->>MCP: 200 OK with response
+        Router2->>Router2: Process request normally
+        Router2-->>MCP: 200 OK with response
     end
-    
-    deactivate Router
+    deactivate Router2

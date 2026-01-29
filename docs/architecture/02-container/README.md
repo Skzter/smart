@@ -4,7 +4,81 @@ The Container diagram zooms into the S.M.A.R.T system to show the high-level tec
 
 ## Diagram
 
-See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram embedded below renders in GitLab/GitHub).
+```mermaid
+graph TB
+    subgraph "Users"
+        Developer["👤 Developer/Tester"]
+    end
+
+    subgraph SMART["S.M.A.R.T System"]
+        Frontend["📱 Web Frontend<br/>(Svelte, TypeScript)"]
+        Nginx["🔀 Nginx Reverse Proxy<br/>(Request routing, security)"]
+        Autotester["⚙️ Autotester Service<br/>(Go, Gin, Port 8081)"]
+        MCP["🔌 Autotester MCP<br/>(Go, MCP Protocol, Port 8084)"]
+        Suproxy["🔄 Suproxy Service<br/>(Go, Gin, Port 8080)"]
+        
+        Postgres["🗄️ PostgreSQL<br/>(Users, chats, tests, results)"]
+        Redis["💾 Redis/Valkey<br/>(Cache, sessions)"]
+        
+        DatadogAgent["📊 Datadog Agent<br/>(Collects traces, metrics)"]
+        
+        FrontendMock["🎭 Frontend Mock<br/>(Node.js, Port 8082)"]
+        SupplierMock["🎭 Supplier Mock<br/>(Node.js, Port 8083)"]
+    end
+
+    subgraph "External Systems"
+        Auth0["🔒 Auth0"]
+        LLM["🤖 LLM Service"]
+        S3["📦 S3 / Object Storage<br/>(Parquet: chats, testcases, taglists)"]
+        DatadogCloud["📊 Datadog Cloud"]
+        Doppler["🔑 Doppler"]
+        Supplier["🌐 Supplier APIs"]
+        WebApp["💻 Web App Under Test"]
+    end
+
+    Developer -->|"Uses (HTTPS)"| Frontend
+    Frontend -->|"API calls"| Nginx
+    Nginx -->|"Routes to"| Autotester
+    Nginx -->|"Routes to"| Suproxy
+
+    Frontend -->|"Authenticates (OAuth2)"| Auth0
+    
+    Autotester -->|"Reads/writes (SQL)"| Postgres
+    Autotester -->|"Caches (Redis)"| Redis
+    Autotester -->|"Stores Parquet (S3 API)"| S3
+    Suproxy -->|"Caches (Redis)"| Redis
+    Suproxy -->|"Reads Parquet taglists (S3 API)"| S3
+
+    Autotester -->|"Generates tests (HTTPS)"| LLM
+    MCP -->|"Calls API (HTTP)"| Autotester
+    MCP -->|"Tool calls (MCP)"| LLM
+
+    Autotester -->|"Executes tests (Playwright)"| WebApp
+    Suproxy -->|"Proxies (HTTPS)"| Supplier
+
+    FrontendMock -->|"Test requests"| Suproxy
+    Suproxy -->|"Proxies to"| SupplierMock
+
+    Autotester -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    Suproxy -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    MCP -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    DatadogAgent -->|"Forwards (HTTPS)"| DatadogCloud
+
+    Autotester -->|"Fetches secrets (HTTPS)"| Doppler
+    Suproxy -->|"Fetches secrets (HTTPS)"| Doppler
+
+    classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef database fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+
+    class Frontend,Nginx,Autotester,MCP,Suproxy,DatadogAgent,FrontendMock,SupplierMock container
+    class Postgres,Redis database
+    class Auth0,LLM,S3,DatadogCloud,Doppler,Supplier,WebApp external
+    class Developer person
+```
+
+See [containers.mmd](diagrams/containers.mmd) for the Mermaid source.
 
 ## Containers Overview
 
@@ -29,6 +103,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 **Dependencies:**
 - PostgreSQL (persistent storage)
 - Redis (caching, sessions)
+- S3 / object storage (Parquet: chats, testcases, groups)
 - LLM Service (via HTTP)
 - Playwright (embedded)
 
@@ -65,7 +140,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 **Repository:** `cmd/suproxy/`
 
 **Responsibilities:**
-- Proxy between supplier-d and supplier systems
+- Proxy between web applications under test and supplier systems
 - Request/response transformation
 - Header and body manipulation
 - Tag processing
@@ -76,6 +151,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 
 **Dependencies:**
 - Supplier Systems (external)
+- S3 / object storage (Parquet taglists)
 - Redis (optional caching)
 
 **Configuration:** `configs/suproxy.pkl`
@@ -128,11 +204,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 
 **Responsibilities:**
 - Persistent storage for:
-  - User accounts
-  - Chat sessions and history
-  - Test definitions
-  - Test execution results
-  - System configuration
+  - User Sessions
 
 **Schema Management:** SQLC (`sqlc.yaml`)
 
@@ -150,7 +222,22 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 
 ---
 
-### 8. Mock Services
+### 8. S3 / Object Storage
+**Technology:** AWS S3 or S3-compatible (e.g. MinIO)  
+**Configuration:** Via Doppler (endpoint, bucket, credentials)
+
+**Responsibilities:**
+- Parquet file storage for Autotester: chats, testcases, groups, media
+- Parquet taglist storage for Suproxy (central taglist lookup)
+- S3 API (PutObject, GetObject, ListObjectsV2, DeleteObject)
+
+**Consumers:**
+- Autotester (chatStorage, testcaseStorage, groupStorage, mediaStorage)
+- Suproxy (tagSearchService)
+
+---
+
+### 9. Mock Services
 
 #### Frontend Mock
 **Technology:** Node.js/Svelte  
@@ -160,7 +247,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 **Purpose:** Mock frontend application for testing Suproxy integration
 
 #### Supplier Mock
-**Technology:** Node.js  
+**Technology:** Go, Gin Framework  
 **Port:** 8083  
 **Image:** Custom GitLab registry image
 
@@ -168,7 +255,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source (diagram em
 
 ---
 
-### 9. Datadog Agent
+### 10. Datadog Agent
 **Technology:** Datadog Agent  
 **Ports:** 8126 (APM), 8125 (StatsD)  
 **Image:** `datadog/agent:latest`
@@ -194,6 +281,8 @@ All services communicate via Docker internal network:
 3. MCP → Autotester (internal token from `/auth/generate`)
 
 ### Test Creation Flow
+
+**Via Frontend:**
 1. User → Frontend (chat message)
 2. Frontend → Autotester (`/chat`)
 3. Autotester → MCP (context provision)
@@ -202,27 +291,43 @@ All services communicate via Docker internal network:
 6. MCP → Autotester (test code)
 7. Autotester → Frontend (response)
 
+**Via MCP (e.g. Cursor/IDE):**
+1. User → LLM client ↔ MCP (tool calls)
+2. MCP ↔ LLM Service (prompt, generated code)
+3. MCP → Autotester (API: context, validate, store test)
+4. MCP returns result to LLM client
+
 ### Test Execution Flow
+
+**Via Frontend:**
 1. Frontend → Autotester (execute test request)
 2. Autotester → Playwright (browser automation)
 3. Playwright → Web Application Under Test
 4. Playwright → Autotester (results)
-5. Autotester → PostgreSQL (store results)
+5. Autotester → S3 (store results)
 6. Autotester → Frontend (test results)
 
+**Via MCP:**
+1. LLM client → MCP (execute-test tool call)
+2. MCP → Autotester (execute API)
+3. Autotester → Playwright → Web App Under Test
+4. Playwright → Autotester (results)
+5. Autotester → S3 (store results)
+6. Autotester → MCP → LLM client (test results)
+
 ### Proxy Flow
-1. Frontend Under Test → Nginx
+1. Web Application Under Test → Nginx
 2. Nginx → Suproxy
-3. Suproxy → Supplier System
-4. Supplier System → Suproxy → Nginx → Frontend
+3. Suproxy → Supplier APIs
+4. Supplier APIs → Suproxy → Nginx → Web Application Under Test
 
 ## Technology Stack Summary
 
-| Container | Language | Framework | Port | Database |
-|-----------|----------|-----------|------|----------|
-| Autotester | Go | Gin | 8081 | PostgreSQL, Redis |
-| Autotester MCP | Go | Custom MCP | 8084 | - |
-| Suproxy | Go | Gin | 8080 | Redis (optional) |
+| Container | Language | Framework | Port | Storage / DB |
+|-----------|----------|-----------|------|--------------|
+| Autotester | Go | Gin | 8081 | PostgreSQL, Redis, S3 |
+| Autotester MCP | Go | Go MCP | 8084 | - |
+| Suproxy | Go | Gin | 8080 | Redis (optional), S3 |
 | Frontend | TypeScript | Svelte | - | - |
 | Nginx | - | Nginx | 80/443 | - |
 

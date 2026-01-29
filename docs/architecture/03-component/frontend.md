@@ -4,7 +4,78 @@ The Web Frontend provides the user interface for S.M.A.R.T, built with Svelte an
 
 ## Diagram
 
-See [frontend.mmd](diagrams/frontend.mmd) for the Mermaid source (diagram embedded below renders in GitLab/GitHub).
+```mermaid
+graph TB
+    subgraph CoreComponents["Core Application Components"]
+        Chat["Chat Component<br/>(Chat interface with LLM)"]
+        Sidebar["Sidebar Component<br/>(Chat history, navigation)"]
+        RunWindow["RunWindow Component<br/>(Test execution interface)"]
+        OutputView["OutputView Component<br/>(Test output display)"]
+    end
+
+    subgraph Services["Service Layer"]
+        APIService["API Service<br/>(Axios, HTTP client)"]
+        AuthService["Auth Service<br/>(Auth0 SDK, authentication)"]
+    end
+
+    subgraph State["State Management"]
+        SharedState["Shared State<br/>(Svelte stores, app state)"]
+    end
+
+    subgraph Utilities["Utilities"]
+        Runner["Runner<br/>(Test orchestration)"]
+        LogTransform["Log Transform<br/>(Log formatting)"]
+        SyntaxHighlight["Syntax Highlighting<br/>(Prism.js)"]
+    end
+
+    subgraph UILibrary["UI Component Library"]
+        UILib["UI Components<br/>(Buttons, inputs, terminal, etc.)"]
+    end
+
+    subgraph External["External Systems"]
+        AutotesterAPI["⚙️ Autotester API"]
+        Auth0["🔒 Auth0"]
+    end
+
+    Chat --> APIService
+    Chat --> SharedState
+    Chat --> SyntaxHighlight
+    Chat --> UILib
+
+    Sidebar --> APIService
+    Sidebar --> SharedState
+    Sidebar --> UILib
+
+    RunWindow --> APIService
+    RunWindow --> Runner
+    RunWindow --> UILib
+
+    OutputView --> LogTransform
+    OutputView --> SyntaxHighlight
+    OutputView --> UILib
+
+    APIService --> AutotesterAPI
+    APIService --> SharedState
+
+    AuthService --> Auth0
+    AuthService --> SharedState
+
+    Runner --> APIService
+    Runner --> SharedState
+
+    OutputView -.->|"SSE log stream"| AutotesterAPI
+
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef service fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+
+    class Chat,Sidebar,RunWindow,OutputView component
+    class APIService,AuthService,Runner,LogTransform,SyntaxHighlight service
+    class SharedState,UILib component
+    class AutotesterAPI,Auth0 external
+```
+
+See [frontend.mmd](diagrams/frontend.mmd) for the Mermaid source.
 
 ## Architecture Overview
 
@@ -13,7 +84,7 @@ The frontend follows a component-based architecture with Svelte:
 - **Components**: Reusable UI components
 - **Services**: Business logic and API communication
 - **State Management**: Reactive state with Svelte stores
-- **UI Library**: Custom component library
+- **UI Library**: Shadcn/UI
 
 ## Components
 
@@ -275,8 +346,8 @@ The frontend includes a comprehensive UI component library under `lib/components
 - **Language**: TypeScript
 - **HTTP Client**: Axios
 - **Authentication**: Auth0 SPA SDK
-- **Styling**: Tailwind CSS (implied by component structure)
-- **UI Components**: Custom library (bits-ui inspired)
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/UI
 - **Build Tool**: Vite (standard for Svelte)
 - **Code Highlighting**: Prism.js
 
