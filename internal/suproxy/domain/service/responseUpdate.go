@@ -111,9 +111,8 @@ func (s *responseUpdateService) handleMockCache(
 		return false, nil
 	}
 
-	var items []json.RawMessage
-	if err := json.Unmarshal(mockCached, &items); err != nil {
-		return false, fmt.Errorf("failed to unmarshal mock cached response: %w", err)
+	if !json.Valid(mockCached) {
+		return false, fmt.Errorf("mock cached response is not valid json")
 	}
 
 	return true, nil
@@ -176,6 +175,9 @@ func (s *responseUpdateService) runUpdatePipeline(
 		return fmt.Errorf("unexpected HTTP status code: %d", statusCode)
 	}
 
+	updatedEntry.Request = *mockRequest
+	updatedEntry.Tags = buildTagListFromString(mockRequest.Tags)
+
 	if err := s.databaseRepo.CreateRequest(ctx, *updatedEntry); err != nil {
 		return fmt.Errorf("failed to save updated response: %w", err)
 	}
@@ -191,6 +193,27 @@ func (s *responseUpdateService) runUpdatePipeline(
 	}
 
 	return nil
+}
+
+func buildTagListFromString(tags string) *sharedEntity.TagList {
+	if tags == "" {
+		return nil
+	}
+
+	raw := strings.Split(tags, ",")
+	list := make([]sharedEntity.Tag, 0, len(raw))
+
+	for _, t := range raw {
+		if name := strings.TrimSpace(t); name != "" {
+			list = append(list, sharedEntity.Tag{Name: name})
+		}
+	}
+
+	if len(list) == 0 {
+		return nil
+	}
+
+	return &sharedEntity.TagList{Tags: list}
 }
 
 // updateResponseFields updates only time-dependent fields on the ODT response.
@@ -220,7 +243,7 @@ func updateResponseFields(
 	for _, item := range relevantItems {
 		updateOfferDates(item, checkIn, checkOut)
 		if item.OfferID == "" {
-			item.OfferID = uuid.NewString()
+			item.OfferID = entity.FlexibleString(uuid.NewString())
 		}
 	}
 
@@ -484,25 +507,26 @@ func parseFlexibleTimestamp(value string) (time.Time, error) {
 
 // parseRequestBody parses the request body.
 func parseRequestBody(mockRequest *entity.Request) (*entity.RequestBody, error) {
-	if mockRequest.Body == "" {
+	if mockRequest == nil || mockRequest.Body == "" {
 		return nil, fmt.Errorf("mockRequest body cannot be empty")
 	}
 
-	var body entity.RequestBody
-	if err := json.Unmarshal([]byte(mockRequest.Body), &body); err != nil {
-		return nil, fmt.Errorf("failed to parse mockRequest body: %w", err)
+	var payload entity.UpdateRequestPayload
+	if err := json.Unmarshal([]byte(mockRequest.Body), &payload); err != nil {
+		return nil, fmt.Errorf("failed to parse request body: %w", err)
 	}
 
-	return &body, nil
+	if len(payload.Params) == 0 {
+		return nil, fmt.Errorf("params must contain at least one element")
+	}
+
+	return &payload.Params[0], nil
 }
 
 // validateRequestBody validates required request fields.
 func validateRequestBody(body *entity.RequestBody) error {
 	if body.DepartureDate == "" || body.ReturnDate == "" {
 		return fmt.Errorf("departureDate and returnDate are required")
-	}
-	if len(body.DepartureAirportList) == 0 {
-		return fmt.Errorf("at least one departure airport is required")
 	}
 	if len(body.Travelers) == 0 {
 		return fmt.Errorf("travelers must be provided")
