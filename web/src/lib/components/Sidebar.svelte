@@ -3,7 +3,7 @@
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
-    import { ChatDate, ChatFilter, user } from "$lib/shared.svelte";
+    import { ChatDate, ChatFilter, user, registerChatTitleUpdater } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
@@ -11,6 +11,9 @@
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
     import { Mutex } from "async-ts";
+    
+    registerChatTitleUpdater(updateChatTitleState);
+
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[]>([]);
@@ -108,7 +111,7 @@
         filteredItems.forEach((item) => {
             const time = new Date(Date.parse(item.updatedAt));
             const category = categorizeByDate(time);
-            add(category, item);
+            add(category, { ...item });
         });
 
         const result: { label: string; summaries: ApiChatSummary[] }[] = [];
@@ -210,6 +213,19 @@
         return "früher";
     }
 
+    function updateChatTitleState(chatId: string, title: string) {
+        if (!items) return;
+        items = items.map(chat =>
+        chat.chatId === chatId
+            ? {
+                  ...chat,
+                  title: title || "Neuer Chat",
+                  updatedAt: new Date().toISOString(),
+              }
+            : chat
+    );
+}
+
     function handleScroll() {
         if (!hasMore || loading || !container) return;
 
@@ -242,17 +258,22 @@
     });
 </script>
 
+
 <Sidebar.Root>
     <SidebarHeader />
-    <Sidebar.Content bind:ref={container} onscroll={handleScroll}>
-        {#each groupState, index (index)}
-            <Group group={groupState[index]} {updateChatSummary}></Group>
-        {/each}
+    <Sidebar.Content bind:ref={container} onscroll={handleScroll}>     
+    {#each groupState as group (group.label)}
+        <Group
+            {group}
+            {updateChatSummary}
+            updateChatTitleState={updateChatTitleState}
+        />
+    {/each}
         {#if loading}
             <Sidebar.Group class="mt-2 flex items-center justify-center">
                 <Spinner class="size-6"></Spinner>
             </Sidebar.Group>
-        {:else if error != ""}
+         {:else if error != ""}
             <Sidebar.Group>
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
             </Sidebar.Group>
