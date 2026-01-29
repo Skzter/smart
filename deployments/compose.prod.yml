@@ -23,9 +23,6 @@ services:
     restart: "no"
 
   autotester:
-    build:
-      context: ..
-      dockerfile: deployments/autotester/Dockerfile.prod
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
     restart: always
     depends_on:
