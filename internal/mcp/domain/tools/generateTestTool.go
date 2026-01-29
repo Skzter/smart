@@ -11,7 +11,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// GenerateTestTool as a struct
+// GenerateTestTool is a tool that creates a new test from the provided specification after validation
 type GenerateTestTool struct {
 	logger               *slog.Logger
 	autotesterAPIService service.AutotesterAPIService

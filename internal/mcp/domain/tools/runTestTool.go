@@ -12,7 +12,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// RunTestTool is an amazing tool
+// RunTestTool is a tool to run tests
 type RunTestTool struct {
 	logger               *slog.Logger
 	autotesterAPIService service.AutotesterAPIService
