@@ -15,6 +15,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
 )
 
 func TestRunTestTool(t *testing.T) {
@@ -27,7 +28,9 @@ func TestRunTestTool(t *testing.T) {
 	repo, err := repository.NewAutotesterAPIRepository(logger, httpClient, baseURL, tracer)
 	require.NoError(t, err)
 
-	autotesterService, err := service.NewAutotesterAPIService(logger, repo)
+	store := store.NewTestLogStreamStore()
+
+	autotesterService, err := service.NewAutotesterAPIService(logger, repo, store)
 	require.NoError(t, err)
 
 	tool, err := NewRunTestTool(logger, autotesterService)

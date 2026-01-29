@@ -77,7 +77,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
                           
-  /validate:
+  /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"
       requestBody:
