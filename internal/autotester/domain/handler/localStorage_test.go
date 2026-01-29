@@ -94,6 +94,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -103,6 +104,7 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,
@@ -211,6 +213,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 			ctx, _ := gin.CreateTestContext(rec)
 			ctx.Request = req
 
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			controller, err := NewAutotesterController(
 				logger,
 				cfg,
@@ -220,6 +223,7 @@ func TestHandleDeleteLocalRequest(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,

@@ -18,6 +18,7 @@ services:
     volumes:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
       - /tmp/smart/logs/:/tmp/smart/logs/
+      - /tmp/smart/media/:/tmp/smart/media/
       - /tmp/tests:/tmp/tests
       - /home/stud/.env:/.env:ro
     ports:

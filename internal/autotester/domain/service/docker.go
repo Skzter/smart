@@ -1,10 +1,16 @@
 package service
 
 import (
+	"archive/tar"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"path"
+	"path/filepath"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -21,7 +27,7 @@ import (
 
 // Docker interface
 type Docker interface {
-	RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, error)
+	RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, <-chan []entity.File, error)
 	AttachToContainer(ctx context.Context, containerID string) (*types.HijackedResponse, error)
 	WaitContainer(ctx context.Context, containerID string) (<-chan container.WaitResponse, <-chan error)
 	GetContainerInfo(testID string) (*entity.ContainerInfo, bool)
@@ -57,6 +63,9 @@ type DockerClient interface {
 		string,
 		container.StopOptions,
 	) error
+
+	CopyFromContainer(ctx context.Context, containerID, srcPath string) (io.ReadCloser, container.PathStat, error)
+	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
 }
 
 type docker struct {
@@ -82,7 +91,7 @@ func NewDocker(logger *slog.Logger, config *config.Autotester, client DockerClie
 }
 
 // RunTest creates and starts a container for running tests
-func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, error) {
+func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, chatID string) (string, <-chan []entity.File, error) {
 	basefile := path.Base(filename)
 
 	ctx, span := d.tracer.Start(ctx, "docker.RunTest")
@@ -101,7 +110,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 	}
 
 	hostConfig := &container.HostConfig{
-		AutoRemove:  true,
+		AutoRemove:  false,
 		NetworkMode: "host",
 		Mounts: []mount.Mount{
 			{
@@ -114,11 +123,11 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 
 	resp, err := d.client.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
-		return "", fmt.Errorf("failed to create container: %w", err)
+		return "", nil, fmt.Errorf("failed to create container: %w", err)
 	}
 
 	if resp.ID == "" {
-		return "", fmt.Errorf("container created without ID")
+		return "", nil, fmt.Errorf("container created without ID")
 	}
 
 	d.logger.Debug("Container created",
@@ -127,7 +136,7 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 	)
 
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return "", fmt.Errorf("failed to start container: %w", err)
+		return "", nil, fmt.Errorf("failed to start container: %w", err)
 	}
 
 	d.testContainerMap[testID] = &entity.ContainerInfo{
@@ -141,7 +150,9 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 		slog.String("testID", testID),
 	)
 
-	return resp.ID, nil
+	copyChan := d.attachCopyFromContainer(resp.ID)
+
+	return resp.ID, copyChan, nil
 }
 
 // AttachToContainer attaches to an already running container to stream logs
@@ -167,4 +178,72 @@ func (d *docker) WaitContainer(ctx context.Context, containerID string) (<-chan 
 func (d *docker) GetContainerInfo(testID string) (*entity.ContainerInfo, bool) {
 	info, ok := d.testContainerMap[testID]
 	return info, ok
+}
+
+func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.File {
+	outchan := make(chan []entity.File, 1)
+
+	statusChan, errChan := d.WaitContainer(context.Background(), containerID)
+	go func() {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
+
+			if err := d.client.ContainerRemove(ctx, containerID, container.RemoveOptions{
+				RemoveVolumes: true,
+			}); err != nil {
+				d.logger.Error("error removing Container", "err", err)
+			}
+		}()
+		defer close(outchan)
+
+		select {
+		case err := <-errChan:
+			if err != nil {
+				d.logger.Error("errChan", "err", err)
+				return
+			}
+		case <-statusChan:
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		reader, info, err := d.client.CopyFromContainer(ctx, containerID, "/app/test-results")
+		if err != nil {
+			d.logger.Error("error copying from container", "err", err)
+			return
+		}
+
+		formats := []string{"png", "webm"}
+
+		d.logger.Debug("copied from container", "info", info)
+		tr := tar.NewReader(reader)
+		files := []entity.File{}
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break // End of archive
+			}
+			if err != nil {
+				d.logger.Error(err.Error())
+				continue
+			}
+
+			d.logger.Debug("reading file from container", "file", hdr.Name)
+			extension, _ := strings.CutPrefix(filepath.Ext(hdr.Name), ".")
+			if !slices.Contains(formats, extension) {
+				continue
+			}
+
+			bytes, err := io.ReadAll(tr)
+			if err != nil {
+				d.logger.Error("error reading file", "file", hdr.Name, "err", err)
+				continue
+			}
+			files = append(files, entity.NewFile(filepath.Base(hdr.Name), bytes, extension))
+		}
+		outchan <- files
+	}()
+
+	return outchan
 }
