@@ -27,4 +27,4 @@ RUN wget -q -t3 'https://packages.doppler.com/public/cli/rsa.8004D9FF50437357.ke
 RUN chmod +x /bin/run-migrations.sh
 RUN mkdir -p /var/log/smart/
 
-ENTRYPOINT ["/bin/run-migrations.sh", "/bin/autotester"]
+ENTRYPOINT ["/bin/autotester"]
