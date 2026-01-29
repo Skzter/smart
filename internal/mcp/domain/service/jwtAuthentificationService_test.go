@@ -55,6 +55,7 @@ func TestJWTExtraction(t *testing.T) {
 		expectedAbort     bool
 		expectedAbortCode int
 		expectedJWTSet    bool
+		expectedJWTString string
 	}{
 		{
 			name:              "success-valid-bearer-token",
@@ -62,6 +63,7 @@ func TestJWTExtraction(t *testing.T) {
 			expectedAbort:     false,
 			expectedAbortCode: 0,
 			expectedJWTSet:    true,
+			expectedJWTString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
 		},
 		{
 			name:              "error-missing-token",
@@ -69,6 +71,7 @@ func TestJWTExtraction(t *testing.T) {
 			expectedAbort:     true,
 			expectedAbortCode: 401,
 			expectedJWTSet:    false,
+			expectedJWTString: "",
 		},
 		{
 			name:              "error-malformed-header-no-bearer",
@@ -76,6 +79,7 @@ func TestJWTExtraction(t *testing.T) {
 			expectedAbort:     true,
 			expectedAbortCode: 401,
 			expectedJWTSet:    false,
+			expectedJWTString: "",
 		},
 		{
 			name:              "error-malformed-header-only-bearer",
@@ -83,6 +87,7 @@ func TestJWTExtraction(t *testing.T) {
 			expectedAbort:     true,
 			expectedAbortCode: 401,
 			expectedJWTSet:    false,
+			expectedJWTString: "",
 		},
 		{
 			name:              "error-wrong-scheme",
@@ -90,6 +95,23 @@ func TestJWTExtraction(t *testing.T) {
 			expectedAbort:     true,
 			expectedAbortCode: 401,
 			expectedJWTSet:    false,
+			expectedJWTString: "",
+		},
+		{
+			name:              "error-empty-bearer-token-with-space",
+			authHeader:        "Bearer ",
+			expectedAbort:     true,
+			expectedAbortCode: 401,
+			expectedJWTSet:    false,
+			expectedJWTString: "",
+		},
+		{
+			name:              "error-bearer-with-only-whitespace",
+			authHeader:        "Bearer    ",
+			expectedAbort:     true,
+			expectedAbortCode: 401,
+			expectedJWTSet:    false,
+			expectedJWTString: "",
 		},
 	}
 
@@ -118,7 +140,7 @@ func TestJWTExtraction(t *testing.T) {
 
 					jwtValue, ok := val.(string)
 					require.True(t, ok)
-					require.NotEmpty(t, jwtValue)
+					require.Equal(t, test.expectedJWTString, jwtValue)
 				}
 			}
 		})
