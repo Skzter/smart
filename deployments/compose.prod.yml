@@ -20,7 +20,7 @@ services:
       - /tmp/smart/logs/:/tmp/smart/logs/
       - /tmp/smart/media/:/tmp/smart/media/
       - /tmp/tests:/tmp/tests
-      - /home/stud/.env:/.env:ro
+      - .env:/.env:ro
     ports:
       - "8079:8081"
     networks:
