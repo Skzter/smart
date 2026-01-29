@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 )
@@ -22,6 +24,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 		client    *http.Client
 		baseURL   string
 		expectErr bool
+		tracer    trace.Tracer
 	}{
 		{
 			name:      "success",
@@ -29,6 +32,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 			client:    &http.Client{},
 			baseURL:   "http://example.com",
 			expectErr: false,
+			tracer:    nil,
 		},
 		{
 			name:      "nil-logger",
@@ -36,6 +40,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 			client:    &http.Client{},
 			baseURL:   "http://example.com",
 			expectErr: true,
+			tracer:    nil,
 		},
 		{
 			name:      "nil-client",
@@ -43,12 +48,13 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 			client:    nil,
 			baseURL:   "http://example.com",
 			expectErr: true,
+			tracer:    nil,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			repo, err := NewAutotesterAPIRepository(test.logger, test.client, test.baseURL)
+			repo, err := NewAutotesterAPIRepository(test.logger, test.client, test.baseURL, test.tracer)
 			if test.expectErr {
 				require.Error(t, err)
 				require.Nil(t, repo)
@@ -62,6 +68,7 @@ func TestNewAutotesterAPIRepository(t *testing.T) {
 
 func TestGetTemplate(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name            string
@@ -106,7 +113,7 @@ func TestGetTemplate(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			res, err := repo.GetTemplate(context.Background())
@@ -123,6 +130,7 @@ func TestGetTemplate(t *testing.T) {
 
 func TestValidatePrompt(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name         string
@@ -174,7 +182,7 @@ func TestValidatePrompt(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			req := &entity.GenerateTestRequest{
@@ -199,6 +207,7 @@ func TestValidatePrompt(t *testing.T) {
 }
 func TestGenerateTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name         string
@@ -243,7 +252,7 @@ func TestGenerateTest(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			req := &entity.GenerateTestRequest{
@@ -266,6 +275,7 @@ func TestGenerateTest(t *testing.T) {
 
 func TestSaveTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name         string
@@ -310,7 +320,7 @@ func TestSaveTest(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			req := &entity.SaveTestRequest{
@@ -336,6 +346,7 @@ func TestSaveTest(t *testing.T) {
 
 func TestRunTest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -380,7 +391,7 @@ func TestRunTest(t *testing.T) {
 			defer srv.Close()
 
 			client := srv.Client()
-			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL, tracer)
 			require.NoError(t, err)
 
 			req := &entity.RunTestRequest{
@@ -404,6 +415,7 @@ func TestRunTest(t *testing.T) {
 // nolint:funlen
 func TestReadTestLogStream(t *testing.T) {
 	logger := slog.Default()
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name           string
@@ -536,7 +548,7 @@ func TestReadTestLogStream(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			repo, err := NewAutotesterAPIRepository(logger, srv.Client(), srv.URL)
+			repo, err := NewAutotesterAPIRepository(logger, srv.Client(), srv.URL, tracer)
 			require.NoError(t, err)
 
 			eventsCh := make(chan *entity.LogEvent, 2)
@@ -581,6 +593,7 @@ func TestReadTestLogStream(t *testing.T) {
 
 func TestNewJSONRequest(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
+	tracer := otel.Tracer("test")
 
 	tests := []struct {
 		name              string
@@ -635,7 +648,7 @@ func TestNewJSONRequest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			client := &http.Client{}
-			repo, err := NewAutotesterAPIRepository(logger, client, "http://example.com")
+			repo, err := NewAutotesterAPIRepository(logger, client, "http://example.com", tracer)
 			require.NoError(t, err)
 
 			concreteRepo := repo.(*autotesterAPIRepository)

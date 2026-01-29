@@ -33,6 +33,28 @@ func (q *Queries) ReadToken(ctx context.Context, userID string) (RefreshToken, e
 	return i, err
 }
 
+const readTokenByToken = `-- name: ReadTokenByToken :one
+select id, user_id, token, created_at, updated_at, expires_at, revoked_at
+from refresh_tokens
+where
+token = $1
+`
+
+func (q *Queries) ReadTokenByToken(ctx context.Context, token string) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, readTokenByToken, token)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const upsertToken = `-- name: UpsertToken :one
 insert into refresh_tokens (
     user_id,

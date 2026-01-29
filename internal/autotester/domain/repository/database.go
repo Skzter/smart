@@ -10,4 +10,5 @@ import (
 type TokenDatabase interface {
 	ReadToken(ctx context.Context, userID string) (database.RefreshToken, error)
 	UpsertToken(ctx context.Context, arg database.UpsertTokenParams) (database.RefreshToken, error)
+	ReadTokenByToken(ctx context.Context, token string) (database.RefreshToken, error)
 }

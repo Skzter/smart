@@ -11,7 +11,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// GetTemplateTool is an amazing tool
+// GetTemplateTool is a tool to retrieve the test generation template
 type GetTemplateTool struct {
 	logger               *slog.Logger
 	autotesterAPIService service.AutotesterAPIService
