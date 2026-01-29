@@ -16,8 +16,7 @@ import (
 	mocksStore "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/mocks/store"
 )
 
-// vorerst TODO
-const token = ""
+const token = "token"
 
 func TestNewAutotesterAPIService(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
@@ -73,16 +72,18 @@ func TestGetTemplate(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		setupMock       func(*mocks.MockAutotesterAPIRepository)
+		token           string
+		setupMock       func(*mocks.MockAutotesterAPIRepository, string)
 		expectErr       bool
 		expectedContent string
 		ctx             context.Context
 	}{
 		{
-			name: "success",
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			name:  "success",
+			token: token,
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					GetTemplate(context.Background(), token).
+					GetTemplate(mock.Anything, token).
 					Return(&entity.TemplateResponse{Content: "test template"}, nil).
 					Once()
 			},
@@ -91,10 +92,11 @@ func TestGetTemplate(t *testing.T) {
 			ctx:             context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "repository-error",
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			name:  "repository-error",
+			token: token,
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					GetTemplate(context.Background(), token).
+					GetTemplate(mock.Anything, token).
 					Return(nil, errors.New("repo error")).
 					Once()
 			},
@@ -102,18 +104,31 @@ func TestGetTemplate(t *testing.T) {
 			expectedContent: "",
 			ctx:             context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
+		{
+			name:  "empty-token",
+			token: "",
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
+				m.EXPECT().
+					GetTemplate(mock.Anything, token).
+					Return(nil, errors.New("unauthorized")).
+					Once()
+			},
+			expectErr:       true,
+			expectedContent: "",
+			ctx:             context.WithValue(context.Background(), entity.JwtContextKey{}, ""),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 			mockStore := mocksStore.NewMockTestLogStreamStore(t)
-			test.setupMock(mockRepo)
+			test.setupMock(mockRepo, test.token)
 
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
-			res, err := svc.GetTemplate(context.Background())
+			res, err := svc.GetTemplate(test.ctx)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -131,23 +146,25 @@ func TestGenerateTest(t *testing.T) {
 
 	tests := []struct {
 		name                string
+		token               string
 		request             *entity.GenerateTestRequest
-		setupMock           func(*mocks.MockAutotesterAPIRepository)
+		setupMock           func(*mocks.MockAutotesterAPIRepository, string)
 		expectErr           bool
 		expectedValidateMsg *entity.ValidateMessage
 		expectedGenerateMsg *entity.GenerateMessage
 		ctx                 context.Context
 	}{
 		{
-			name: "success - validation passes, test generated",
+			name:  "success - validation passes, test generated",
+			token: token,
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+					ValidatePrompt(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -159,7 +176,7 @@ func TestGenerateTest(t *testing.T) {
 					ChatId: "chat-456",
 				}, nil).Once()
 				m.EXPECT().
-					GenerateTest(context.Background(), &entity.GenerateTestRequest{
+					GenerateTest(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -183,15 +200,16 @@ func TestGenerateTest(t *testing.T) {
 			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "validation fails - returns validation message",
+			name:  "validation fails - returns validation message",
+			token: token,
 			request: &entity.GenerateTestRequest{
 				Prompt: "bad prompt",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+					ValidatePrompt(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "bad prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -212,8 +230,9 @@ func TestGenerateTest(t *testing.T) {
 		},
 		{
 			name:    "nil-request",
+			token:   token,
 			request: nil,
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 			},
 			expectErr:           true,
 			expectedValidateMsg: nil,
@@ -221,15 +240,16 @@ func TestGenerateTest(t *testing.T) {
 			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "validation-error",
+			name:  "validation-error",
+			token: token,
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+					ValidatePrompt(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -241,15 +261,16 @@ func TestGenerateTest(t *testing.T) {
 			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "generate-error",
+			name:  "generate-error",
+			token: token,
 			request: &entity.GenerateTestRequest{
 				Prompt: "test prompt",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					ValidatePrompt(context.Background(), &entity.GenerateTestRequest{
+					ValidatePrompt(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -261,7 +282,7 @@ func TestGenerateTest(t *testing.T) {
 					ChatId: "chat-456",
 				}, nil).Once()
 				m.EXPECT().
-					GenerateTest(context.Background(), &entity.GenerateTestRequest{
+					GenerateTest(mock.Anything, &entity.GenerateTestRequest{
 						Prompt: "test prompt",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -272,18 +293,39 @@ func TestGenerateTest(t *testing.T) {
 			expectedGenerateMsg: nil,
 			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
+		{
+			name:  "empty-token",
+			token: "",
+			request: &entity.GenerateTestRequest{
+				Prompt: "test prompt",
+				UserId: "user-123",
+				ChatId: "chat-456",
+			},
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
+				m.EXPECT().
+					ValidatePrompt(mock.Anything, &entity.GenerateTestRequest{
+						Prompt: "test prompt",
+						UserId: "user-123",
+						ChatId: "chat-456",
+					}, token).Return(nil, errors.New("unauthorized")).Once()
+			},
+			expectErr:           true,
+			expectedValidateMsg: nil,
+			expectedGenerateMsg: nil,
+			ctx:                 context.WithValue(context.Background(), entity.JwtContextKey{}, ""),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 			mockStore := mocksStore.NewMockTestLogStreamStore(t)
-			test.setupMock(mockRepo)
+			test.setupMock(mockRepo, test.token)
 
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
-			res, err := svc.GenerateTest(context.Background(), test.request)
+			res, err := svc.GenerateTest(test.ctx, test.request)
 			if test.expectErr {
 				require.Error(t, err)
 				require.Nil(t, res)
@@ -303,22 +345,24 @@ func TestExecuteTest(t *testing.T) {
 
 	tests := []struct {
 		name          string
+		token         string
 		request       *entity.ExecuteTestRequest
-		setupMock     func(*mocks.MockAutotesterAPIRepository)
+		setupMock     func(*mocks.MockAutotesterAPIRepository, string)
 		expectErr     bool
 		expectedMatch string
 		ctx           context.Context
 	}{
 		{
-			name: "success",
+			name:  "success",
+			token: token,
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					SaveTest(context.Background(), &entity.SaveTestRequest{
+					SaveTest(mock.Anything, &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -330,7 +374,7 @@ func TestExecuteTest(t *testing.T) {
 					Once()
 
 				m.EXPECT().
-					RunTest(context.Background(), &entity.RunTestRequest{
+					RunTest(mock.Anything, &entity.RunTestRequest{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -346,23 +390,25 @@ func TestExecuteTest(t *testing.T) {
 		},
 		{
 			name:    "nil-request",
+			token:   token,
 			request: nil,
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 			},
 			expectErr:     true,
 			expectedMatch: "",
 			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "save-error",
+			name:  "save-error",
+			token: token,
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					SaveTest(context.Background(), &entity.SaveTestRequest{
+					SaveTest(mock.Anything, &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -375,15 +421,16 @@ func TestExecuteTest(t *testing.T) {
 			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
 		{
-			name: "run-error",
+			name:  "run-error",
+			token: token,
 			request: &entity.ExecuteTestRequest{
 				Test:   "test code",
 				UserId: "user-123",
 				ChatId: "chat-456",
 			},
-			setupMock: func(m *mocks.MockAutotesterAPIRepository) {
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
 				m.EXPECT().
-					SaveTest(context.Background(), &entity.SaveTestRequest{
+					SaveTest(mock.Anything, &entity.SaveTestRequest{
 						Code:   "test code",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -395,7 +442,7 @@ func TestExecuteTest(t *testing.T) {
 					Once()
 
 				m.EXPECT().
-					RunTest(context.Background(), &entity.RunTestRequest{
+					RunTest(mock.Anything, &entity.RunTestRequest{
 						TestId: "550e8400-e29b-41d4-a716-446655440000",
 						UserId: "user-123",
 						ChatId: "chat-456",
@@ -407,18 +454,40 @@ func TestExecuteTest(t *testing.T) {
 			expectedMatch: "",
 			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
+		{
+			name:  "empty-token",
+			token: "",
+			request: &entity.ExecuteTestRequest{
+				Test:   "test code",
+				UserId: "user-123",
+				ChatId: "chat-456",
+			},
+			setupMock: func(m *mocks.MockAutotesterAPIRepository, token string) {
+				m.EXPECT().
+					SaveTest(mock.Anything, &entity.SaveTestRequest{
+						Code:   "test code",
+						UserId: "user-123",
+						ChatId: "chat-456",
+					}, token).
+					Return(nil, errors.New("unauthorized")).
+					Once()
+			},
+			expectErr:     true,
+			expectedMatch: "",
+			ctx:           context.WithValue(context.Background(), entity.JwtContextKey{}, ""),
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewMockAutotesterAPIRepository(t)
 			mockStore := mocksStore.NewMockTestLogStreamStore(t)
-			test.setupMock(mockRepo)
+			test.setupMock(mockRepo, test.token)
 
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
 			require.NoError(t, err)
 
-			res, err := svc.ExecuteTest(context.Background(), test.request)
+			res, err := svc.ExecuteTest(test.ctx, test.request)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -434,16 +503,18 @@ func TestExecuteTest(t *testing.T) {
 func TestReadTestLogStream(t *testing.T) {
 	tests := []struct {
 		name                 string
+		token                string
 		testId               string
 		expectedStoreContent []entity.LogEvent
 		excpectError         bool
 		cancelContextDuring  bool
 		readLogs             bool
-		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, *[]entity.LogEvent)
+		setupMock            func(*mocks.MockAutotesterAPIRepository, *mocksStore.MockTestLogStreamStore, *[]entity.LogEvent, string)
 		ctx                  context.Context
 	}{
 		{
 			name:   "success - transmits all events to store",
+			token:  token,
 			testId: "test-123",
 			expectedStoreContent: []entity.LogEvent{
 				{Event: "log", Data: "test started"},
@@ -451,7 +522,7 @@ func TestReadTestLogStream(t *testing.T) {
 				{Event: "finish", Data: "terminated"},
 			},
 			excpectError: false,
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
 				events := []entity.LogEvent{
 					{Event: "log", Data: "test started"},
 					{Event: "log", Data: "something"},
@@ -459,8 +530,8 @@ func TestReadTestLogStream(t *testing.T) {
 				}
 
 				mr.EXPECT().
-					ReadTestLogStream(mock.Anything, "test-123", mock.Anything).
-					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+					ReadTestLogStream(mock.Anything, "test-123", token, mock.Anything).
+					Run(func(ctx context.Context, id, token string, ch chan<- *entity.LogEvent) {
 						for i := range events {
 							ch <- &events[i]
 						}
@@ -482,12 +553,13 @@ func TestReadTestLogStream(t *testing.T) {
 		},
 		{
 			name:                 "repo returns error when connecting",
+			token:                token,
 			testId:               "test-123",
 			expectedStoreContent: []entity.LogEvent{},
 			excpectError:         true,
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
 				mr.EXPECT().
-					ReadTestLogStream(mock.Anything, "test-123", mock.Anything).
+					ReadTestLogStream(mock.Anything, "test-123", token, mock.Anything).
 					Return(errors.New("connection failed")).
 					Once()
 
@@ -497,14 +569,15 @@ func TestReadTestLogStream(t *testing.T) {
 		},
 		{
 			name:   "handles nil events - filters them out",
+			token:  token,
 			testId: "test-nil",
 			expectedStoreContent: []entity.LogEvent{
 				{Event: "valid", Data: "data"},
 			},
 			excpectError: false,
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
-				mr.EXPECT().ReadTestLogStream(mock.Anything, "test-nil", mock.Anything).
-					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
+				mr.EXPECT().ReadTestLogStream(mock.Anything, "test-nil", token, mock.Anything).
+					Run(func(ctx context.Context, id, token string, ch chan<- *entity.LogEvent) {
 						ch <- &entity.LogEvent{Event: "valid", Data: "data"}
 						ch <- nil // should be ignored
 					}).Return(nil).Once()
@@ -517,14 +590,15 @@ func TestReadTestLogStream(t *testing.T) {
 		},
 		{
 			name:                 "terminates processing on context cancellation",
+			token:                token,
 			testId:               "test-cancel",
 			expectedStoreContent: []entity.LogEvent{},
 			excpectError:         true,
 			cancelContextDuring:  true,
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
 				mr.EXPECT().
-					ReadTestLogStream(mock.Anything, "test-cancel", mock.Anything).
-					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+					ReadTestLogStream(mock.Anything, "test-cancel", token, mock.Anything).
+					Run(func(ctx context.Context, id, token string, ch chan<- *entity.LogEvent) {
 						<-ctx.Done()
 					}).
 					Return(context.Canceled).Once()
@@ -535,6 +609,7 @@ func TestReadTestLogStream(t *testing.T) {
 		},
 		{
 			name:   "channel fills to 90% capacity - monitor logs warning",
+			token:  token,
 			testId: "test-full",
 			expectedStoreContent: func() []entity.LogEvent {
 				events := make([]entity.LogEvent, 2150)
@@ -545,11 +620,11 @@ func TestReadTestLogStream(t *testing.T) {
 			}(),
 			excpectError: false,
 			readLogs:     true,
-			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent) {
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
 				release := make(chan struct{})
 				mr.EXPECT().
-					ReadTestLogStream(mock.Anything, "test-full", mock.Anything).
-					Run(func(ctx context.Context, id string, ch chan<- *entity.LogEvent) {
+					ReadTestLogStream(mock.Anything, "test-full", token, mock.Anything).
+					Run(func(ctx context.Context, id, token string, ch chan<- *entity.LogEvent) {
 						// Send many events rapidly to fill channel to ~90% capacity
 						for range 1900 {
 							ch <- &entity.LogEvent{Event: "log", Data: "event"}
@@ -575,6 +650,22 @@ func TestReadTestLogStream(t *testing.T) {
 			},
 			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, token),
 		},
+		{
+			name:                 "empty-token",
+			token:                "",
+			testId:               "test-token",
+			expectedStoreContent: []entity.LogEvent{},
+			excpectError:         true,
+			setupMock: func(mr *mocks.MockAutotesterAPIRepository, ms *mocksStore.MockTestLogStreamStore, captured *[]entity.LogEvent, token string) {
+				mr.EXPECT().
+					ReadTestLogStream(mock.Anything, "test-token", token, mock.Anything).
+					Return(errors.New("unauthorized")).
+					Once()
+
+				ms.EXPECT().CompleteStream("test-token").Once()
+			},
+			ctx: context.WithValue(context.Background(), entity.JwtContextKey{}, ""),
+		},
 	}
 
 	for _, test := range tests {
@@ -583,7 +674,7 @@ func TestReadTestLogStream(t *testing.T) {
 			mockStore := mocksStore.NewMockTestLogStreamStore(t)
 			capturedEvents := []entity.LogEvent{}
 
-			test.setupMock(mockRepo, mockStore, &capturedEvents)
+			test.setupMock(mockRepo, mockStore, &capturedEvents, test.token)
 			logBuffer := &bytes.Buffer{}
 			logger := slog.New(slog.NewTextHandler(logBuffer, nil))
 			svc, err := NewAutotesterAPIService(logger, mockRepo, mockStore)
@@ -594,13 +685,13 @@ func TestReadTestLogStream(t *testing.T) {
 			var cancel context.CancelFunc
 
 			if test.cancelContextDuring {
-				ctx, cancel = context.WithCancel(context.Background())
+				ctx, cancel = context.WithCancel(test.ctx)
 				go func() {
 					time.Sleep(50 * time.Millisecond)
 					cancel()
 				}()
 			} else {
-				ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+				ctx, cancel = context.WithTimeout(test.ctx, 2*time.Second)
 			}
 			defer cancel()
 

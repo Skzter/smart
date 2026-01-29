@@ -35,7 +35,7 @@ type AutotesterAPIRepository interface {
 	// ReadTestLogStream opens a connection to the backend SSE stream.
 	// This method is blocking and writes events to the provided channel.
 	// Returns an error if the stream cannot be established or fails.
-	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error
+	ReadTestLogStream(ctx context.Context, testId, token string, eventsCh chan<- *entity.LogEvent) error
 }
 
 type autotesterAPIRepository struct {
@@ -146,7 +146,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 // ReadTestLogStream establishes an SSE connection to the backend stream and
 // parses events in a line-oriented manner.
 // The method is blocking and follows the lifecycle of `ctx`
-func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId, token string, eventsCh chan<- *entity.LogEvent) error {
 	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
 	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
 
@@ -158,6 +158,7 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := a.httpClient.Do(req)
 	if err != nil {

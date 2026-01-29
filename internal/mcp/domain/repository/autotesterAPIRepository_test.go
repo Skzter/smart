@@ -68,6 +68,7 @@ func TestGetTemplate(t *testing.T) {
 
 	tests := []struct {
 		name            string
+		token           string
 		statusCode      int
 		responseBody    string
 		expectErr       bool
@@ -75,6 +76,7 @@ func TestGetTemplate(t *testing.T) {
 	}{
 		{
 			name:            "success",
+			token:           token,
 			statusCode:      http.StatusOK,
 			responseBody:    `{"template":"template text"}`,
 			expectErr:       false,
@@ -82,6 +84,7 @@ func TestGetTemplate(t *testing.T) {
 		},
 		{
 			name:            "non-200",
+			token:           token,
 			statusCode:      http.StatusInternalServerError,
 			responseBody:    `error`,
 			expectErr:       true,
@@ -89,8 +92,17 @@ func TestGetTemplate(t *testing.T) {
 		},
 		{
 			name:            "invalid-json",
+			token:           token,
 			statusCode:      http.StatusOK,
 			responseBody:    `{"template":`,
+			expectErr:       true,
+			expectedContent: "",
+		},
+		{
+			name:            "empty-token",
+			token:           "",
+			statusCode:      http.StatusUnauthorized,
+			responseBody:    `unauthorized`,
 			expectErr:       true,
 			expectedContent: "",
 		},
@@ -103,6 +115,10 @@ func TestGetTemplate(t *testing.T) {
 					http.NotFound(w, r)
 					return
 				}
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
 				w.WriteHeader(test.statusCode)
 				_, _ = w.Write([]byte(test.responseBody))
 			}))
@@ -112,7 +128,7 @@ func TestGetTemplate(t *testing.T) {
 			repo, err := NewAutotesterAPIRepository(logger, client, srv.URL)
 			require.NoError(t, err)
 
-			res, err := repo.GetTemplate(context.Background(), token)
+			res, err := repo.GetTemplate(context.Background(), test.token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -129,6 +145,7 @@ func TestValidatePrompt(t *testing.T) {
 
 	tests := []struct {
 		name         string
+		token        string
 		statusCode   int
 		responseBody string
 		expectErr    bool
@@ -136,6 +153,7 @@ func TestValidatePrompt(t *testing.T) {
 	}{
 		{
 			name:         "success - valid prompt",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"message":{"body":""},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
@@ -143,6 +161,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:         "success - invalid prompt with feedback",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"message":{"body":"Please provide more context"},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
@@ -150,6 +169,7 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:         "non-200 feedback",
+			token:        token,
 			statusCode:   http.StatusBadRequest,
 			responseBody: `error`,
 			expectErr:    true,
@@ -157,8 +177,17 @@ func TestValidatePrompt(t *testing.T) {
 		},
 		{
 			name:         "invalid-json",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"message":`,
+			expectErr:    true,
+			expectedMsg:  "",
+		},
+		{
+			name:         "empty-token",
+			token:        "",
+			statusCode:   http.StatusUnauthorized,
+			responseBody: `unauthorized`,
 			expectErr:    true,
 			expectedMsg:  "",
 		},
@@ -169,6 +198,10 @@ func TestValidatePrompt(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/api/v1/validate" {
 					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 				w.WriteHeader(test.statusCode)
@@ -186,7 +219,7 @@ func TestValidatePrompt(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.ValidatePrompt(context.Background(), req, token)
+			res, err := repo.ValidatePrompt(context.Background(), req, test.token)
 			if test.expectErr {
 				require.Error(t, err)
 				require.Nil(t, res)
@@ -205,6 +238,7 @@ func TestGenerateTest(t *testing.T) {
 
 	tests := []struct {
 		name         string
+		token        string
 		statusCode   int
 		responseBody string
 		expectErr    bool
@@ -212,6 +246,7 @@ func TestGenerateTest(t *testing.T) {
 	}{
 		{
 			name:         "success",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"message":{"id":"msg-1","role":"assistant","body":"generated test code","createdAt":"2025-12-11T10:00:00Z"},"userId":"user-123","chatId":"chat-456"}`,
 			expectErr:    false,
@@ -219,6 +254,7 @@ func TestGenerateTest(t *testing.T) {
 		},
 		{
 			name:         "non-200",
+			token:        token,
 			statusCode:   http.StatusBadRequest,
 			responseBody: `error`,
 			expectErr:    true,
@@ -226,8 +262,17 @@ func TestGenerateTest(t *testing.T) {
 		},
 		{
 			name:         "invalid-json",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"message":`,
+			expectErr:    true,
+			expectedTest: "",
+		},
+		{
+			name:         "empty-token",
+			token:        "",
+			statusCode:   http.StatusUnauthorized,
+			responseBody: `unauthorized`,
 			expectErr:    true,
 			expectedTest: "",
 		},
@@ -238,6 +283,10 @@ func TestGenerateTest(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/api/v1/chat" {
 					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 				w.WriteHeader(test.statusCode)
@@ -255,7 +304,7 @@ func TestGenerateTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.GenerateTest(context.Background(), req, token)
+			res, err := repo.GenerateTest(context.Background(), req, test.token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -272,6 +321,7 @@ func TestSaveTest(t *testing.T) {
 
 	tests := []struct {
 		name         string
+		token        string
 		statusCode   int
 		responseBody string
 		expectErr    bool
@@ -279,6 +329,7 @@ func TestSaveTest(t *testing.T) {
 	}{
 		{
 			name:         "success",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"testcaseId":"550e8400-e29b-41d4-a716-446655440000","action":"saved"}`,
 			expectErr:    false,
@@ -286,6 +337,7 @@ func TestSaveTest(t *testing.T) {
 		},
 		{
 			name:         "non-200",
+			token:        token,
 			statusCode:   http.StatusInternalServerError,
 			responseBody: `error`,
 			expectErr:    true,
@@ -293,8 +345,17 @@ func TestSaveTest(t *testing.T) {
 		},
 		{
 			name:         "invalid-json",
+			token:        token,
 			statusCode:   http.StatusOK,
 			responseBody: `{"testcaseId":`,
+			expectErr:    true,
+			expectUUID:   false,
+		},
+		{
+			name:         "empty-token",
+			token:        "",
+			statusCode:   http.StatusUnauthorized,
+			responseBody: `unauthorized`,
 			expectErr:    true,
 			expectUUID:   false,
 		},
@@ -305,6 +366,10 @@ func TestSaveTest(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/api/v1/saveLocal" {
 					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 				w.WriteHeader(test.statusCode)
@@ -342,6 +407,7 @@ func TestRunTest(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		token          string
 		statusCode     int
 		responseBody   string
 		expectErr      bool
@@ -349,6 +415,7 @@ func TestRunTest(t *testing.T) {
 	}{
 		{
 			name:           "success",
+			token:          token,
 			statusCode:     http.StatusOK,
 			responseBody:   `{"result":"passed"}`,
 			expectErr:      false,
@@ -356,6 +423,7 @@ func TestRunTest(t *testing.T) {
 		},
 		{
 			name:           "non-200",
+			token:          token,
 			statusCode:     http.StatusInternalServerError,
 			responseBody:   `error`,
 			expectErr:      true,
@@ -363,8 +431,17 @@ func TestRunTest(t *testing.T) {
 		},
 		{
 			name:           "invalid-json",
+			token:          token,
 			statusCode:     http.StatusOK,
 			responseBody:   `{"result":`,
+			expectErr:      true,
+			expectedStatus: "",
+		},
+		{
+			name:           "empty-token",
+			token:          "",
+			statusCode:     http.StatusUnauthorized,
+			responseBody:   `unauthorized`,
 			expectErr:      true,
 			expectedStatus: "",
 		},
@@ -375,6 +452,10 @@ func TestRunTest(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/api/v1/run" {
 					http.NotFound(w, r)
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 				w.WriteHeader(test.statusCode)
@@ -392,7 +473,7 @@ func TestRunTest(t *testing.T) {
 				ChatId: "chat-456",
 			}
 
-			res, err := repo.RunTest(context.Background(), req, token)
+			res, err := repo.RunTest(context.Background(), req, test.token)
 			if test.expectErr {
 				require.Error(t, err)
 				return
@@ -411,6 +492,7 @@ func TestReadTestLogStream(t *testing.T) {
 	tests := []struct {
 		name           string
 		testId         string
+		token          string
 		statusCode     int
 		streamEvents   []string
 		expectedEvents []entity.LogEvent
@@ -420,6 +502,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "success-multiple-events",
 			testId:     "uuid-123",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{
 				"event:progress\ndata:{\"content\":\"started\"}\n\n",
@@ -434,6 +517,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:           "error-status-404",
 			testId:         "invalid-id",
+			token:          token,
 			statusCode:     http.StatusNotFound,
 			streamEvents:   []string{},
 			expectedEvents: nil,
@@ -442,6 +526,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "robustness-invalid-lines",
 			testId:     "uuid-456",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{
 				"event:progress\ndata:{\"content\":\"started\"}\n\n",
@@ -458,6 +543,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "context-canceled",
 			testId:     "uuid-ctx",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{ // more than buffered channel
 				"event:progress\ndata:{\"content\":\"started\"}\n\n",
@@ -470,6 +556,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "spaces-and-multiline-data",
 			testId:     "uuid-spaces",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{
 				"event:  trim-me  \ndata:   {\"key\": \"value\"}   \ndata: second-line \n\n",
@@ -482,6 +569,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "very-large-data-line",
 			testId:     "uuid-large",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{
 				"event:large\ndata:" + strings.Repeat("A", 70000) + "\n\n",
@@ -494,6 +582,7 @@ func TestReadTestLogStream(t *testing.T) {
 		{
 			name:       "robustness-invalid-and-comments",
 			testId:     "uuid-456",
+			token:      token,
 			statusCode: http.StatusOK,
 			streamEvents: []string{
 				": this is an SSE comment and should be ignored\n",
@@ -508,6 +597,15 @@ func TestReadTestLogStream(t *testing.T) {
 			},
 			expectErr: false,
 		},
+		{
+			name:           "empty-token",
+			testId:         "uuid-token",
+			token:          "",
+			statusCode:     http.StatusUnauthorized,
+			streamEvents:   []string{},
+			expectedEvents: nil,
+			expectErr:      true,
+		},
 	}
 
 	for _, test := range tests {
@@ -516,6 +614,11 @@ func TestReadTestLogStream(t *testing.T) {
 				expectedPath := fmt.Sprintf("/api/v1/test/%s/stream", test.testId)
 				if r.URL.Path != expectedPath {
 					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				if r.Header.Get("Authorization") != "Bearer "+test.token {
+					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
 
@@ -548,7 +651,7 @@ func TestReadTestLogStream(t *testing.T) {
 			if test.cancelContext {
 				errCh := make(chan error, 1)
 				go func() {
-					errCh <- repo.ReadTestLogStream(ctx, test.testId, eventsCh)
+					errCh <- repo.ReadTestLogStream(ctx, test.testId, test.token, eventsCh)
 				}()
 				time.Sleep(50 * time.Millisecond)
 				cancel()
@@ -556,7 +659,7 @@ func TestReadTestLogStream(t *testing.T) {
 				err = <-errCh
 				close(eventsCh)
 			} else {
-				err = repo.ReadTestLogStream(ctx, test.testId, eventsCh)
+				err = repo.ReadTestLogStream(ctx, test.testId, test.token, eventsCh)
 				close(eventsCh)
 				cancel()
 			}
@@ -652,6 +755,7 @@ func TestNewJSONRequest(t *testing.T) {
 			require.NotNil(t, req)
 			require.Equal(t, test.method, req.Method)
 			require.Equal(t, test.url, req.URL.String())
+			require.Equal(t, "Bearer "+token, req.Header.Get("Authorization"))
 			if test.expectContentType {
 				require.Equal(t, "application/json", req.Header.Get("Content-Type"))
 			} else {

@@ -169,6 +169,10 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 // is via `errgroup` and a derived context.
 func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
+
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Executing test with token: " + token)
+
 	const rawEventsCapacity = 2048
 	rawEventsCh := make(chan *entity.LogEvent, rawEventsCapacity)
 	wg, groupCtx := errgroup.WithContext(ctx)
@@ -178,7 +182,7 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 		defer close(rawEventsCh)
 		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
 
-		if err := s.repo.ReadTestLogStream(groupCtx, testId, rawEventsCh); err != nil {
+		if err := s.repo.ReadTestLogStream(groupCtx, testId, token, rawEventsCh); err != nil {
 			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
 			return err
 		}
