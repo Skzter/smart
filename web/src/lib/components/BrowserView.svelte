@@ -11,6 +11,15 @@
     let videoEl = $state<HTMLElement | null>(null);
     let containerEl: HTMLElement | null = null;
 
+    // Watch for test failures and fetch video URL
+    $effect(() => {
+        if (runner.model.summary.status === "failed") {
+            runner.fetchMediaUrl();
+        } else {
+            runner.clearVideoUrl();
+        }
+    });
+
     onMount(() => {
         updateVideoSize();
         window.addEventListener("resize", updateVideoSize);

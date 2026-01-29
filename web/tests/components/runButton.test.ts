@@ -4,14 +4,37 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 import RunButton from "../../src/lib/components/RunButton.svelte";
-import { Runner } from "../../src/lib/runner.svelte";
+import type { Runner } from "../../src/lib/runner.svelte";
+
+// Create a mock Runner since the real one uses $effect which can only run in component context
+function createMockRunner(overrides: Partial<Runner> = {}): Runner {
+    return {
+        isRunning: () => false,
+        getCurTest: () => "",
+        run: vi.fn(),
+        setTest: vi.fn(),
+        storeTest: vi.fn(),
+        getStorageState: () => "idle" as const,
+        logStatus: "idle" as const,
+        logError: null,
+        result: [],
+        videoUrl: null,
+        model: {
+            summary: { status: "idle" as const },
+            steps: [],
+        },
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
+        ...overrides,
+    } as unknown as Runner;
+}
 
 describe("RunButton", () => {
     let testRunner: Runner;
     let activeTab: string;
 
     beforeEach(() => {
-        testRunner = new Runner();
+        testRunner = createMockRunner();
         activeTab = "edit";
     });
 

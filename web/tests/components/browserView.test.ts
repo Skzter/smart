@@ -4,6 +4,19 @@ import "@testing-library/jest-dom/vitest";
 
 import BrowserView from "../../src/lib/components/BrowserView.svelte";
 
+// Mock runner with videoUrl property and required methods
+function createMockRunner(videoUrl: string | null = null) {
+    return {
+        videoUrl,
+        model: {
+            summary: { status: "idle" as const },
+            steps: [],
+        },
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
+    };
+}
+
 describe("BrowserView", () => {
     beforeEach(() => {
         vi.spyOn(window, "addEventListener");
@@ -15,7 +28,9 @@ describe("BrowserView", () => {
     });
 
     it("renders the preview header", () => {
-        const { container } = render(BrowserView);
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner() },
+        });
 
         const header = container.querySelector(".border-b.bg-muted\\/50");
         expect(header).toBeInTheDocument();
@@ -23,7 +38,9 @@ describe("BrowserView", () => {
     });
 
     it("centers the content", () => {
-        const { container } = render(BrowserView);
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner() },
+        });
 
         const centeredContent = container.querySelector(
             ".flex.justify-center.items-center.flex-1.overflow-hidden",
@@ -31,16 +48,32 @@ describe("BrowserView", () => {
         expect(centeredContent).toBeInTheDocument();
     });
 
-    it("renders a video element with controls", () => {
-        const { container } = render(BrowserView);
+    it("renders a video element with controls when videoUrl is set", () => {
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner("http://example.com/video.mp4") },
+        });
 
         const video = container.querySelector("video");
         expect(video).toBeInTheDocument();
         expect(video).toHaveAttribute("controls");
     });
 
+    it("shows placeholder text when videoUrl is null", () => {
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner(null) },
+        });
+
+        const video = container.querySelector("video");
+        expect(video).not.toBeInTheDocument();
+        expect(container.textContent).toContain(
+            "Video wird nach Fehlschlag angezeigt",
+        );
+    });
+
     it("has a container with h-full class for proper sizing", () => {
-        const { container } = render(BrowserView);
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner() },
+        });
 
         const mainContainer = container.querySelector("#container");
         expect(mainContainer).toBeInTheDocument();
@@ -48,7 +81,9 @@ describe("BrowserView", () => {
     });
 
     it("adds resize event listener on mount", () => {
-        render(BrowserView);
+        render(BrowserView, {
+            props: { runner: createMockRunner() },
+        });
 
         expect(window.addEventListener).toHaveBeenCalledWith(
             "resize",
@@ -57,7 +92,9 @@ describe("BrowserView", () => {
     });
 
     it("removes resize event listener on unmount", () => {
-        const { unmount } = render(BrowserView);
+        const { unmount } = render(BrowserView, {
+            props: { runner: createMockRunner() },
+        });
         unmount();
 
         expect(window.removeEventListener).toHaveBeenCalledWith(
@@ -67,7 +104,9 @@ describe("BrowserView", () => {
     });
 
     it("calculates video size based on parent height", async () => {
-        const { container } = render(BrowserView);
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner("http://example.com/video.mp4") },
+        });
 
         const mainContainer = container.querySelector(
             "#container",
@@ -96,7 +135,9 @@ describe("BrowserView", () => {
     });
 
     it("does not set video size if parent element is missing", async () => {
-        const { container } = render(BrowserView);
+        const { container } = render(BrowserView, {
+            props: { runner: createMockRunner("http://example.com/video.mp4") },
+        });
 
         const mainContainer = container.querySelector(
             "#container",

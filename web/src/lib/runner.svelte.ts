@@ -19,6 +19,8 @@ export class Runner {
     private retryCount = 0;
     private readonly MAX_RETRIES = 5;
 
+    private fetchingMedia: boolean = false;
+
     public videoUrl = $state<string | null>(null);
 
     public logStatus = $state<
@@ -49,14 +51,6 @@ export class Runner {
     constructor(chatId: string, userId: string) {
         this.chatId = chatId;
         this.userId = userId;
-
-        $effect(() => {
-            if (this.model.summary.status === "failed") {
-                this.fetchMediaUrl();
-            } else {
-                this.videoUrl = null;
-            }
-        });
     }
 
     public isRunning(): boolean {
@@ -218,15 +212,35 @@ export class Runner {
         }
     }
 
-    private async fetchMediaUrl() {
-        for (let i = 0; i < this.MAX_RETRIES; i++) {
-            await timeout(200 * (i + 1));
-            const resp = await getMedia(this.getCurTest());
-            if (resp.hasVideo) {
-                this.videoUrl = `${baseURL}/test/${this.getCurTest()}/video`;
-                return;
-            }
+    public async fetchMediaUrl() {
+        // Prevent multiple concurrent fetches
+        if (this.fetchingMedia) {
+            return;
         }
+        this.fetchingMedia = true;
+
+        try {
+            for (let i = 0; i < this.MAX_RETRIES; i++) {
+                await timeout(200 * (i + 1));
+                try {
+                    const resp = await getMedia(this.getCurTest());
+                    if (resp.hasVideo) {
+                        this.videoUrl = `${baseURL}/test/${this.getCurTest()}/video`;
+                        return;
+                    }
+                } catch (error) {
+                    // Don't retry on errors - they likely won't resolve with retries
+                    console.error("Error fetching media:", error);
+                    break;
+                }
+            }
+            this.videoUrl = null;
+        } finally {
+            this.fetchingMedia = false;
+        }
+    }
+
+    public clearVideoUrl() {
         this.videoUrl = null;
     }
 }

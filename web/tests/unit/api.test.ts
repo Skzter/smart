@@ -22,6 +22,7 @@ vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
     chat: { id: "chat456", isLoading: false },
     apiToken: { token: null },
+    baseURL: "http://localhost:8081/api/v1",
 }));
 
 describe("API Functions", () => {

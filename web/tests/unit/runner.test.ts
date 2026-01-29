@@ -11,6 +11,7 @@ vi.mock("../../src/lib/shared.svelte", () => ({
     chat: { id: "", isLoading: false },
     messages: [],
     ChatDate: { Range: undefined },
+    baseURL: "http://localhost:8081/api/v1",
 }));
 vi.mock("../../src/lib/api");
 
@@ -28,7 +29,7 @@ describe("Runner", () => {
         shared.user.id = mockUserId;
         shared.chat.id = mockChatId;
 
-        runner = new Runner();
+        runner = new Runner(mockChatId, mockUserId);
     });
 
     afterEach(() => {
@@ -160,9 +161,9 @@ describe("Runner", () => {
         });
 
         it("should handle missing user ID", async () => {
-            shared.user.id = "";
+            const runnerWithNoUser = new Runner(mockChatId, "");
 
-            await runner.storeTest(mockTestCode);
+            await runnerWithNoUser.storeTest(mockTestCode);
 
             expect(toast.error).toHaveBeenCalledWith(
                 "Speichern fehlgeschlagen",
@@ -170,13 +171,13 @@ describe("Runner", () => {
                     description: "Benutzer- oder Konversations-ID fehlt.",
                 },
             );
-            expect(runner.getStorageState()).toBe("idle");
+            expect(runnerWithNoUser.getStorageState()).toBe("idle");
         });
 
         it("should handle missing chat ID", async () => {
-            shared.chat.id = "";
+            const runnerWithNoChat = new Runner("", mockUserId);
 
-            await runner.storeTest(mockTestCode);
+            await runnerWithNoChat.storeTest(mockTestCode);
 
             expect(toast.error).toHaveBeenCalledWith(
                 "Speichern fehlgeschlagen",
@@ -184,7 +185,7 @@ describe("Runner", () => {
                     description: "Benutzer- oder Konversations-ID fehlt.",
                 },
             );
-            expect(runner.getStorageState()).toBe("idle");
+            expect(runnerWithNoChat.getStorageState()).toBe("idle");
         });
 
         it.skip("should handle API error with error instance", async () => {
@@ -319,9 +320,9 @@ describe("Runner", () => {
         });
 
         it("should handle missing user ID", async () => {
-            shared.user.id = "";
+            const runnerWithNoUser = new Runner(mockChatId, "");
 
-            await runner.run();
+            await runnerWithNoUser.run();
 
             expect(toast.error).toHaveBeenCalledWith(
                 "Speichern fehlgeschlagen",
@@ -330,13 +331,13 @@ describe("Runner", () => {
                         "Benutzer-, -Konversations oder Test-ID fehlt.",
                 },
             );
-            expect(runner.isRunning()).toBe(false);
+            expect(runnerWithNoUser.isRunning()).toBe(false);
         });
 
         it("should handle missing chat ID", async () => {
-            shared.chat.id = "";
+            const runnerWithNoChat = new Runner("", mockUserId);
 
-            await runner.run();
+            await runnerWithNoChat.run();
 
             expect(toast.error).toHaveBeenCalledWith(
                 "Speichern fehlgeschlagen",
@@ -345,11 +346,11 @@ describe("Runner", () => {
                         "Benutzer-, -Konversations oder Test-ID fehlt.",
                 },
             );
-            expect(runner.isRunning()).toBe(false);
+            expect(runnerWithNoChat.isRunning()).toBe(false);
         });
 
         it("should handle missing test ID", async () => {
-            runner = new Runner(); // Fresh runner without test set
+            runner = new Runner(mockChatId, mockUserId); // Fresh runner without test set
 
             await runner.run();
 
@@ -426,11 +427,11 @@ describe("Runner", () => {
         it("should handle all missing IDs in error message", async () => {
             shared.user.id = "";
             shared.chat.id = "";
-            runner = new Runner();
+            runner = new Runner("", "");
 
             const consoleSpy = vi
                 .spyOn(console, "error")
-                .mockImplementation(() => {});
+                .mockImplementation(() => { });
 
             await runner.run();
 
@@ -530,7 +531,7 @@ describe("Runner", () => {
 
     describe("Initial state", () => {
         it("should have correct initial values", () => {
-            const newRunner = new Runner();
+            const newRunner = new Runner(mockChatId, mockUserId);
 
             expect(newRunner.isRunning()).toBe(false);
             expect(newRunner.getCurTest()).toBe("");

@@ -20,17 +20,40 @@ vi.mock("monaco-editor", () => ({
 
 // Mock the worker
 vi.mock("monaco-editor/esm/vs/language/typescript/ts.worker?worker", () => ({
-    default: class MockWorker {},
+    default: class MockWorker { },
 }));
 
-import { Runner } from "../../src/lib/runner.svelte";
+import type { Runner } from "../../src/lib/runner.svelte";
 import RunWindowTestWrapper from "../helpers/RunWindowTestWrapper.svelte";
+
+// Create a mock Runner since the real one uses $effect which can only run in component context
+function createMockRunner(overrides: Partial<Runner> = {}): Runner {
+    return {
+        isRunning: () => false,
+        getCurTest: () => "",
+        run: vi.fn(),
+        setTest: vi.fn(),
+        storeTest: vi.fn(),
+        getStorageState: () => "idle" as const,
+        logStatus: "idle" as const,
+        logError: null,
+        result: [],
+        videoUrl: null,
+        model: {
+            summary: { status: "idle" as const },
+            steps: [],
+        },
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
+        ...overrides,
+    } as unknown as Runner;
+}
 
 describe("RunWindow", () => {
     let testRunner: Runner;
 
     beforeEach(() => {
-        testRunner = new Runner();
+        testRunner = createMockRunner();
     });
 
     it("renders the dialog content with correct styling", () => {
@@ -206,8 +229,7 @@ describe("RunWindow", () => {
     });
 
     it("renders with different testRunner instances", () => {
-        const customRunner = new Runner();
-        customRunner.result = "Custom result";
+        const customRunner = createMockRunner({ result: [] });
         const { container } = render(RunWindowTestWrapper, {
             props: {
                 code: "test code",
