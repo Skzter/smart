@@ -66,6 +66,7 @@ func TestHandleGetGroups(t *testing.T) {
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 			mockAuth := mocks.NewMockAuth(t)
@@ -92,6 +93,7 @@ func TestHandleGetGroups(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,
@@ -181,6 +183,7 @@ func TestHandleCreateGroup(t *testing.T) {
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 			mockAuth := mocks.NewMockAuth(t)
@@ -208,6 +211,7 @@ func TestHandleCreateGroup(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,
@@ -333,6 +337,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 			mockAuth := mocks.NewMockAuth(t)
@@ -367,6 +372,7 @@ func TestHandleAssignChatToGroups(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,
@@ -463,6 +469,7 @@ func TestHandleRemoveChatFromGroup(t *testing.T) {
 			mockDockerServ := mocks.NewMockDocker(t)
 			mockChatStorageServ := mocks.NewMockChatStorageService(t)
 			mockRemoteStorageServ := mocks.NewMockTestcaseStorageService(t)
+			mockMediaServ := mocks.NewMockMediaStorageService(t)
 			mockChatManager := mocks.NewMockChatManager(t)
 			mockGroupManager := mocks.NewMockGroupManager(t)
 			mockAuth := mocks.NewMockAuth(t)
@@ -495,6 +502,7 @@ func TestHandleRemoveChatFromGroup(t *testing.T) {
 				mockDockerServ,
 				mockChatStorageServ,
 				mockRemoteStorageServ,
+				mockMediaServ,
 				mockChatManager,
 				mockGroupManager,
 				tracer,

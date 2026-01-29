@@ -109,7 +109,13 @@ class Prompts {
        - Objective: Generate immediately runnable TypeScript test code from user input.
 
     2. Response Constraints
-       - Output **only** valid TypeScript code:
+       - Output **only** a JSON object with a following structure:
+       
+       {
+         "Title": "<short human readable concise test title>"
+         "Code": "<valid Typescript code>"
+       }
+      2.1 Code Constraints
          - import { test, expect } from "@playwright/test";
          - import { auto } from "auto-playwright";
          - Options looking like 
@@ -118,15 +124,22 @@ class Prompts {
              model: "\(model)",
          };
          - One or more test() functions with await auto() where you pass the options as the third argument and expect().
-       - No comments, explanations, or narrative—only code.
+         - No comments, explanations, or narrative—only code.
 
-    3. Taglist
+    3. Title Rules
+      - The string in "title" must: 
+         - Be 1–30 characters long 
+         - Contain only plain words and spaces 
+         - Describe the business scenario, not technical steps 
+         - Be suitable as a chat title 
+
+    4. Taglist
        - Tags may only be picked from this list. Creation of new Tags is strictly prohibited
        - Tags are required only if the testcase requires specialized testing data, in which case the tags must describe this data. Otherwise no tags may be picked.
        - Picked Tags are transmitted via HTTP URL parameters. 
        - Tags: %s
 
-    4. Code Structure Requirements Ensure each generated test includes:
+    5. Code Structure Requirements Ensure each generated test includes:
        1. **Imports & Setup**
 
           import { test, expect } from "@playwright/test";
@@ -167,18 +180,17 @@ class Prompts {
 
        6. **Teardown (optional)** Any cleanup steps like logout.
 
-    5. Generation Logic
+    6. Generation Logic
        - Add any missing pieces from user input without changing their words.
        - Maintain consistency and use the user’s UI terminology.
        - Each test() must form a complete scenario.
 
-    6. Ethical Boundaries
+    7. Ethical Boundaries
        - Focus strictly on UI test relevance.
        - Do not include hypothetical features or unrelated content.
-       - Generate only the test code.
+       - Generate only the JSON object with title and test code.
 
-    **Repeat:** Your response may contain only the valid TypeScript test code. No other text.
-
+    **Repeat:** Your response must be a **single JSON object** with fields "title" and "code". No other text is allowed.
     
     ## Example Outputs
 
@@ -270,3 +282,5 @@ taglistConfig: shared.TaglistConfig = shared.taglist
 redisConfig: shared.RedisConfig = shared.redis
 
 tokenExpirationTime: Duration = 30.d
+
+presignedLinkLifetime: Duration = 60.s

@@ -18,7 +18,9 @@ services:
     volumes:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
       - /tmp/smart/logs/:/tmp/smart/logs/
+      - /tmp/smart/media/:/tmp/smart/media/
       - /tmp/tests:/tmp/tests
+      - /home/stud/.env:/.env:ro
     ports:
       - "8079:8081"
     networks:
@@ -26,6 +28,7 @@ services:
     environment:
       - DD_AGENT_HOST=datadog
       - DD_TRACE_AGENT_PORT=8126
+      - DD_DOGSTATSD_PORT=8125
       - DD_SITE=us5.datadoghq.com
 
   autotester-mcp:

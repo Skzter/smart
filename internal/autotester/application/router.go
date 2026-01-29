@@ -37,6 +37,8 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/validate", controller.HandleChatRequestValidity)
 		apiV1.GET("/chats", controller.HandleGetChats)
 		apiV1.GET("/chats/:chatId", controller.GetChatById)
+		apiV1.PATCH("/chats/:chatId/title", controller.HandleUpdateChatTitle)
+
 		apiV1.GET("/template", controller.HandleGetTemplate)
 		apiV1.POST("/saveLocal", controller.HandleSaveLocalRequest)
 		apiV1.DELETE("/deleteLocal", controller.HandleDeleteLocalRequest)
@@ -48,6 +50,10 @@ func NewRouter(logger *slog.Logger, controller *handler.AutotesterController, is
 		apiV1.POST("/groups", controller.HandleCreateGroup)
 		apiV1.POST("/chats/:chatId/groups", controller.HandleAssignChatToGroups)
 		apiV1.DELETE("/chats/:chatId/groups/:groupId", controller.HandleRemoveChatFromGroup)
+
+		apiV1.GET("/test/:testId/screenshot", controller.HandleGetScreenshot)
+		apiV1.GET("/test/:testId/video", controller.HandleGetVideo)
+		apiV1.GET("/test/:testId/media", controller.HandleGetMediaInfo)
 	}
 
 	debugGroup := router.Group("/debug", pprofAuthMiddleware())

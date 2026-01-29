@@ -11,7 +11,7 @@ import (
 
 // Default permissions used by the filesystem implementation.
 const (
-	DefaultDirPerm  os.FileMode = 0o755 // rwxr-xr-x
+	DefaultDirPerm  os.FileMode = 0o750 // rwxr-x---
 	DefaultFilePerm os.FileMode = 0o644 // rw-r--r--
 )
 
