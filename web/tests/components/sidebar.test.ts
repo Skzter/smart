@@ -1,4 +1,4 @@
-import {render, waitFor } from "@testing-library/svelte";
+import { render, waitFor } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { tick } from "svelte";
@@ -38,7 +38,7 @@ vi.mock("$lib/components/Group.svelte", () => ({
     default: vi.fn(),
 }));
 
-import { getChats} from "$lib/api";
+import { getChats } from "$lib/api";
 import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 

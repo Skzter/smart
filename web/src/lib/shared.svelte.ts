@@ -6,6 +6,7 @@ import type { ApiToken } from "$types/api";
 
 let updater: ((chatId: string, title: string) => void) | null = null;
 
+export const baseURL = "http://localhost:8081/api/v1";
 
 export type MessageType = "user" | "validation" | "generation" | "error";
 export type Message = { t: MessageType; Message: string };

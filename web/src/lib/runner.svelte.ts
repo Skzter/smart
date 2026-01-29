@@ -1,7 +1,9 @@
 import { toast } from "svelte-sonner";
-import { Mutex } from "async-ts";
-import { runContainer, saveTestLocal } from "./api";
+import { Mutex, timeout } from "async-ts";
+import { getMedia, runContainer, saveTestLocal } from "./api";
+import { buildStepTree } from "$lib/runnerlogtransform";
 import type { SaveState } from "$types/save";
+import { baseURL } from "./shared.svelte";
 
 export class Runner {
     private chatId: string;
@@ -15,7 +17,9 @@ export class Runner {
 
     private eventSource?: EventSource;
     private retryCount = 0;
-    private readonly MAX_RETRIES = 3;
+    private readonly MAX_RETRIES = 5;
+
+    public videoUrl = $state<string | null>(null);
 
     public logStatus = $state<
         "idle" | "connecting" | "connected" | "error" | "closed"
@@ -25,9 +29,34 @@ export class Runner {
 
     public result: { begin: string; end?: string }[] = $state([]);
 
+    public model = $derived.by<Model>(() => {
+        const r = this.result as RunnerResult;
+
+        if (r && typeof r === "object" && "summary" in r && "steps" in r) {
+            return r as Model;
+        }
+
+        if (Array.isArray(r)) {
+            return buildStepTree(r);
+        }
+
+        return {
+            summary: { status: "idle" },
+            steps: [],
+        };
+    });
+
     constructor(chatId: string, userId: string) {
         this.chatId = chatId;
         this.userId = userId;
+
+        $effect(() => {
+            if (this.model.summary.status === "failed") {
+                this.fetchMediaUrl();
+            } else {
+                this.videoUrl = null;
+            }
+        });
     }
 
     public isRunning(): boolean {
@@ -95,7 +124,9 @@ export class Runner {
         this.logError = null;
 
         const connect = () => {
-            this.eventSource = new EventSource(`/api/v1/test/${testId}/stream`);
+            this.eventSource = new EventSource(
+                `${baseURL}/test/${testId}/stream`,
+            );
 
             this.eventSource.onopen = () => {
                 this.retryCount = 0;
@@ -186,4 +217,35 @@ export class Runner {
             this.running = false;
         }
     }
+
+    private async fetchMediaUrl() {
+        for (let i = 0; i < this.MAX_RETRIES; i++) {
+            await timeout(200 * (i + 1));
+            const resp = await getMedia(this.getCurTest());
+            if (resp.hasVideo) {
+                this.videoUrl = `${baseURL}/test/${this.getCurTest()}/video`;
+                return;
+            }
+        }
+        this.videoUrl = null;
+    }
 }
+
+type Summary = {
+    status: "idle" | "running" | "passed" | "failed";
+    durationMs?: number;
+};
+
+type Step = {
+    kind?: "group" | "step";
+    label: string;
+    status?: "running" | "done" | "failed";
+    children?: Step[];
+};
+
+type Model = {
+    summary: Summary;
+    steps: Step[];
+};
+
+type RunnerResult = Model | { begin: string }[] | null | undefined;

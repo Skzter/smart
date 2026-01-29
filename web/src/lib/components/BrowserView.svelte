@@ -1,7 +1,14 @@
 <script lang="ts">
+    import type { Runner } from "$lib/runner.svelte";
     import { onMount } from "svelte";
 
-    let videoEl: HTMLVideoElement | null = null;
+    let {
+        runner,
+    }: {
+        runner: Runner;
+    } = $props();
+
+    let videoEl = $state<HTMLElement | null>(null);
     let containerEl: HTMLElement | null = null;
 
     onMount(() => {
@@ -36,12 +43,12 @@
         Vorschau
     </div>
     <div class="flex justify-center items-center flex-1 overflow-hidden">
-        <video
-            bind:this={videoEl}
-            controls
-            src="https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4"
-        >
-            <track kind="captions" />
-        </video>
+        {#if runner.videoUrl != null}
+            <video bind:this={videoEl} controls src={runner.videoUrl}>
+                <track kind="captions" />
+            </video>
+        {:else}
+            Video wird nach Fehlschlag angezeigt
+        {/if}
     </div>
 </div>

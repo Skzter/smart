@@ -19,17 +19,18 @@ vi.mock("svelte-sonner", () => ({
 vi.mock("$lib/toast", () => ({
     toast: {
         success: vi.fn(),
-        error: vi.fn()
-    }
+        error: vi.fn(),
+    },
 }));
 
 vi.mock("$lib/hooks/api", () => ({
-    updateChatTitle: vi.fn()
+    updateChatTitle: vi.fn(),
 }));
 
 import ChatSummary from "../../src/lib/components/ChatSummary.svelte";
 import { getChatById } from "$lib/api";
-import { toast } from "svelte-sonner";import { chat, messages, user as sharedUser} from "$lib/shared.svelte";
+import { toast } from "svelte-sonner";
+import { chat, messages, user as sharedUser } from "$lib/shared.svelte";
 
 import type {
     ApiChatSummary,
@@ -923,14 +924,11 @@ describe("commitTitleChange and saveTitle", () => {
             );
         });
 
-
-    expect(updateChatTitleState).toHaveBeenCalledWith(
-        "chat-123",
-        "New title",
-    );
-
-});
-
+        expect(updateChatTitleState).toHaveBeenCalledWith(
+            "chat-123",
+            "New title",
+        );
+    });
 
     it("shows error toast when saveTitle fails", async () => {
         const summary = {
@@ -953,10 +951,12 @@ describe("commitTitleChange and saveTitle", () => {
         await fireEvent.input(input, { target: { value: " New title " } });
         await fireEvent.blur(input);
 
-        await waitFor(() => expect(toast.error).toHaveBeenCalledWith(
-            "Umbenennen fehlgeschlagen",
-            { description: "Boom" },
-        ));
+        await waitFor(() =>
+            expect(toast.error).toHaveBeenCalledWith(
+                "Umbenennen fehlgeschlagen",
+                { description: "Boom" },
+            ),
+        );
     });
 
     it("does nothing if title is unchanged on blur", async () => {
@@ -997,7 +997,7 @@ describe("commitTitleChange and saveTitle", () => {
             title: "New title",
             updatedAt: "2024-01-01",
             userId: "user-1",
-            createdAt: "2023-12-01"
+            createdAt: "2023-12-01",
         });
 
         const stub = vi.fn();
@@ -1014,6 +1014,8 @@ describe("commitTitleChange and saveTitle", () => {
         await fireEvent.input(input, { target: { value: " New title " } });
         await fireEvent.blur(input);
 
-        await waitFor(() => expect(stub).toHaveBeenCalledWith("chat-123", "New title"));
+        await waitFor(() =>
+            expect(stub).toHaveBeenCalledWith("chat-123", "New title"),
+        );
     });
 });

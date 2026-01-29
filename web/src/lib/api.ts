@@ -10,10 +10,10 @@ import type {
     ApiToken,
     ApiChatsRequest,
     ApiChatsResponse,
+    ApiChatSummary,
+    ApiMediaResponse,
 } from "$types/api";
-import { chat, user, apiToken } from "./shared.svelte";
-
-const baseURL = "http://localhost:8081/api/v1";
+import { chat, user, apiToken, baseURL } from "./shared.svelte";
 
 function getAuthHeaders() {
     return apiToken.token ? { Authorization: `Bearer ${apiToken.token}` } : {};
@@ -235,7 +235,6 @@ export async function getApiToken(): Promise<ApiToken> {
 export async function updateChatTitle(
     chatId: string,
     title: string,
-
 ): Promise<ApiChatSummary> {
     try {
         const response = await axios({
@@ -243,6 +242,20 @@ export async function updateChatTitle(
             url: `/chats/${chatId}/title`,
             baseURL,
             data: { title },
+        });
+
+        return response.data;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function getMedia(testId: string): Promise<ApiMediaResponse> {
+    try {
+        const response = await axios({
+            method: "get",
+            url: `test/${testId}/media`,
+            baseURL: baseURL,
         });
 
         return response.data;

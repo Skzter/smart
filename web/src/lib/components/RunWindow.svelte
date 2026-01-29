@@ -75,7 +75,7 @@
 
                     <!-- BROWSER -->
                     <div class="flex flex-col overflow-hidden">
-                        <BrowserView />
+                        <BrowserView runner={testRunner} />
                     </div>
                 </div>
             {:else if view === "code"}
@@ -85,7 +85,7 @@
                 </div>
             {:else if view === "browser"}
                 <div class="flex flex-col flex-1 overflow-hidden">
-                    <BrowserView />
+                    <BrowserView runner={testRunner} />
                 </div>
             {/if}
         </div>
