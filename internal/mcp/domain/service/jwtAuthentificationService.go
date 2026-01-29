@@ -1,21 +1,24 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
 // JwtExtractionService provides JWT extractor
 type JwtExtractionService interface {
-	JWTExtraction() gin.HandlerFunc
+	JWTExtractionIntoContext() gin.HandlerFunc
 }
 
 type jwtExtractionService struct {
-	logger *slog.Logger
+	logger        *slog.Logger
+	jwtContextKey entity.JwtContextKey
 }
 
 // NewJWTAuthentification creates a new service for JWTAuthentification
@@ -24,26 +27,29 @@ func NewJWTAuthentification(logger *slog.Logger) (JwtExtractionService, error) {
 		return nil, err
 	}
 	return &jwtExtractionService{
-		logger: logger,
+		logger:        logger,
+		jwtContextKey: entity.JwtContextKey{},
 	}, nil
 }
 
 // JWTExtraction extracts the token and pass it to gin.Context
-func (j *jwtExtractionService) JWTExtraction() gin.HandlerFunc {
+func (j *jwtExtractionService) JWTExtractionIntoContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
-		if header == "" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "token is missing"})
-			return
-		}
-		splitHeader := strings.Split(header, " ")
-		if len(splitHeader) < 2 || splitHeader[0] != "Bearer" {
-			c.AbortWithStatusJSON(401, gin.H{"error": "malformed authorization header"})
+		auth := c.GetHeader("Authorization")
+		if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			c.AbortWithStatusJSON(401, gin.H{"error": "missing or invalid authorization header"})
 			return
 		}
 
-		c.Set("jwt", splitHeader[1])
-		j.logger.Info("jwt: " + splitHeader[1])
+		token := strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
+		if token == "" {
+			c.AbortWithStatusJSON(401, gin.H{"error": "empty bearer token"})
+			return
+		}
+
+		ctx := context.WithValue(c.Request.Context(), j.jwtContextKey, token)
+		c.Request = c.Request.WithContext(ctx)
+		j.logger.Debug("JWTExtraction - wrote jwt: " + token + " to context.")
 		c.Next()
 	}
 }

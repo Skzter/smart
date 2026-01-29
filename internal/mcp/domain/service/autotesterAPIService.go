@@ -13,8 +13,6 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-const jwtKey = "jwt"
-
 // AutotesterAPIService provides business logic for interacting with the Autotester API.
 type AutotesterAPIService interface {
 	// GetTemplate retrieves the test generation template.
@@ -32,9 +30,10 @@ type AutotesterAPIService interface {
 }
 
 type autotesterAPIService struct {
-	logger *slog.Logger
-	repo   repository.AutotesterAPIRepository
-	store  store.TestLogStreamStore
+	logger        *slog.Logger
+	repo          repository.AutotesterAPIRepository
+	store         store.TestLogStreamStore
+	jwtContextKey entity.JwtContextKey
 }
 
 // NewAutotesterAPIService creates a new service for the Autotester API.
@@ -45,17 +44,18 @@ func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIR
 	}
 
 	return &autotesterAPIService{
-		logger: logger,
-		repo:   repo,
-		store:  store,
+		logger:        logger,
+		repo:          repo,
+		store:         store,
+		jwtContextKey: entity.JwtContextKey{},
 	}, nil
 }
 
 func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
 	s.logger.Debug("Fetching test template from API")
 
-	token, _ := ctx.Value(jwtKey).(string)
-	s.logger.Debug("token: " + token)
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Get template with token: " + token)
 
 	template, err := s.repo.GetTemplate(ctx, token)
 	if err != nil {
@@ -75,8 +75,8 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 		return nil, err
 	}
 
-	token, _ := ctx.Value(jwtKey).(string)
-	s.logger.Debug("token: " + token)
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Generate test with token: " + token)
 
 	valid, err := s.repo.ValidatePrompt(ctx, request, token)
 	if err != nil {
@@ -120,8 +120,8 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 		return nil, err
 	}
 
-	token, _ := ctx.Value(jwtKey).(string)
-	s.logger.Debug("token: " + token)
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Executing test with token: " + token)
 
 	saveReq := &entity.SaveTestRequest{
 		Code:   request.Test,

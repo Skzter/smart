@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/entity"
 )
 
 func TestNewJWTAuthentification(t *testing.T) {
@@ -101,7 +103,7 @@ func TestJWTExtraction(t *testing.T) {
 			}
 			ctx, _ := gin.CreateTestContext(w)
 			ctx.Request = req
-			handler := service.JWTExtraction()
+			handler := service.JWTExtractionIntoContext()
 
 			handler(ctx)
 
@@ -111,9 +113,12 @@ func TestJWTExtraction(t *testing.T) {
 				require.Equal(t, http.StatusOK, w.Code)
 
 				if test.expectedJWTSet {
-					jwtValue, exists := ctx.Get("jwt")
-					require.True(t, exists)
-					require.NotNil(t, jwtValue)
+					val := ctx.Request.Context().Value(entity.JwtContextKey{})
+					require.NotNil(t, val)
+
+					jwtValue, ok := val.(string)
+					require.True(t, ok)
+					require.NotEmpty(t, jwtValue)
 				}
 			}
 		})

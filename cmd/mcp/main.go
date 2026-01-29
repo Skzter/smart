@@ -34,16 +34,16 @@ func main() {
 	)
 	defer stop()
 
-	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return mcpServer.Server()
 	}, nil)
 
 	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
-	router.Use(mcpServer.JwtExtraction.JWTExtraction())
+	router.Use(mcpServer.JwtExtraction.JWTExtractionIntoContext())
 
-	router.Any("/mcp/*any", func(c *gin.Context) {
+	router.POST("/mcp", func(c *gin.Context) {
 		handler.ServeHTTP(c.Writer, c.Request)
 	})
 
