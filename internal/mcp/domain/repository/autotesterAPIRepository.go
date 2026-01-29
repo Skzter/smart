@@ -172,6 +172,16 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId,
 	}()
 
 	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			a.logger.Error("Failed to read error response body", "error", err, "status", resp.StatusCode)
+		}
+		a.logger.Error("Stream connection failed", "status", resp.StatusCode, "body", string(body))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("authentication failed: token expired or invalid (status 401)")
+		}
+
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
@@ -274,6 +284,11 @@ func doAndDecode[T any](client *http.Client, logger *slog.Logger, req *http.Requ
 			return fmt.Errorf("unexpected status code: %d (failed to read body: %w)", resp.StatusCode, err)
 		}
 		logger.Error("Unexpected status code", "status", resp.StatusCode, "body", string(body))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("authentication failed: token expired or invalid (status 401)")
+		}
+
 		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 

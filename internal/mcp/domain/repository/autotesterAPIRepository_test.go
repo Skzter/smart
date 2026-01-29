@@ -550,6 +550,11 @@ func TestReadTestLogStream(t *testing.T) {
 				"event:log\ndata:{\"content\":\"running test\"}\n\n",
 				"event:progress\ndata:{\"content\":\"started\"}\n\n",
 			},
+			expectedEvents: []entity.LogEvent{
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+				{Event: "log", Data: "{\"content\":\"running test\"}"},
+				{Event: "progress", Data: "{\"content\":\"started\"}"},
+			},
 			expectErr:     true,
 			cancelContext: true,
 		},
@@ -666,10 +671,15 @@ func TestReadTestLogStream(t *testing.T) {
 
 			if test.expectErr {
 				require.Error(t, err)
-				return
+				if test.statusCode == http.StatusUnauthorized {
+					require.Contains(t, err.Error(), "authentication failed: token expired or invalid")
+				}
+				if test.cancelContext {
+					return
+				}
+			} else {
+				require.NoError(t, err)
 			}
-
-			require.NoError(t, err)
 
 			var received []entity.LogEvent
 			for ev := range eventsCh {
@@ -858,6 +868,17 @@ func TestDoAndDecode(t *testing.T) {
 			nilReq:       false,
 		},
 		{
+			name:         "status-401-unauthorized",
+			statusCode:   http.StatusUnauthorized,
+			responseBody: `unauthorized`,
+			expectErr:    true,
+			expectedData: "",
+			useNilResult: false,
+			nilClient:    false,
+			nilLogger:    false,
+			nilReq:       false,
+		},
+		{
 			name:         "nil-client",
 			statusCode:   http.StatusOK,
 			responseBody: `{"data":"ignored"}`,
@@ -940,6 +961,9 @@ func TestDoAndDecode(t *testing.T) {
 
 			if test.expectErr {
 				require.Error(t, err)
+				if test.statusCode == http.StatusUnauthorized {
+					require.Contains(t, err.Error(), "authentication failed: token expired or invalid")
+				}
 				return
 			}
 			require.NoError(t, err)
