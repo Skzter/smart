@@ -9,7 +9,7 @@
     {
       "name": "get_template - Tool",
       "tags": ["Tools"],
-      "description": "Retrieves the test generation from the autotester backend",
+      "description": "Retrieves the test generation from the autotester backend and requires an authorization heaeder with the format Authorization: Bearer <Token>",
       "params": [],
       "result": {
         "name": "TemplateResponse",
@@ -29,7 +29,7 @@
     {
       "name": "generate_test - Tool",
       "tags": ["Tools"],
-      "description": "Takes prompt, sends it to backend to validate and then generates test code, if validation fails, returns validation message",
+      "description": "Takes prompt, sends it to backend to validate and then generates test code, if validation fails, returns validation message requires an authorization heaeder with the format Authorization: Bearer <Token>",
       "params": [
         {
           "name": "prompt",
@@ -105,7 +105,7 @@
     {
       "name": "run_test - Tool",
       "tags": ["Tools"],
-      "description": "Runs test based on testId, returns either success or failed",
+      "description": "Runs test based on testId, returns either success or failed requires an authorization heaeder with the format Authorization: Bearer <Token>",
       "params": [
         {
           "name": "userId",
@@ -148,7 +148,7 @@
     },
     {
       "name": "read_testLogStream - Tool",
-      "description": "Reads the log stream for a given testId and returns JSON with content and meta.final.",
+      "description": "Reads the log stream for a given testId and returns JSON with content and meta.final. It requires an authorization heaeder with the format Authorization: Bearer <Token>",
       "params": [
         {
           "name": "testId",
