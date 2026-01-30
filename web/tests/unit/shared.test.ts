@@ -75,9 +75,7 @@ describe("shared state", () => {
 describe("chat title updater", () => {
     it("does nothing if no updater is registered", () => {
         // should not throw
-        expect(() =>
-            updateChatTitle("chat-id", "New Title"),
-        ).not.toThrow();
+        expect(() => updateChatTitle("chat-id", "New Title")).not.toThrow();
     });
 
     it("calls registered updater with correct arguments", () => {

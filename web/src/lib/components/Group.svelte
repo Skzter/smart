@@ -3,7 +3,6 @@
     import type { ApiChatSummary } from "$types/api";
     import ChatSummary from "./ChatSummary.svelte";
 
-
     let {
         group,
         updateChatTitleState,
@@ -24,7 +23,7 @@
         <Sidebar.Menu>
             {#each group.summaries as chat (chat.chatId)}
                 <ChatSummary
-                    updateChatTitleState={updateChatTitleState}
+                    {updateChatTitleState}
                     summary={chat}
                     onUpdate={(updated) =>
                         updateChatSummary(chat.chatId, updated)}

@@ -303,8 +303,7 @@ describe("User", () => {
 
             expect(mockWriteText).toHaveBeenCalledWith("test-token-to-copy");
             expect(toast.success).toHaveBeenCalledWith("Token kopiert!", {
-                description:
-                    "Der Token wurde in die Zwischenablage kopiert.",
+                description: "Der Token wurde in die Zwischenablage kopiert.",
             });
         }
     });
@@ -388,7 +387,9 @@ describe("User", () => {
         await user.click(closeButton);
 
         await waitFor(() => {
-            expect(screen.queryByText("API Token Settings")).not.toBeInTheDocument();
+            expect(
+                screen.queryByText("API Token Settings"),
+            ).not.toBeInTheDocument();
         });
     });
 
