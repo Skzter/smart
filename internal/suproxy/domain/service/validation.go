@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	sharedEntity "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
+
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/suproxy/domain/entity"
@@ -136,16 +138,17 @@ func (v *validator) Validate(ctx context.Context, offers *entity.SupplierRespons
 		}
 		msg, err := v.openAiService.Request(ctx, req)
 		if err != nil {
+			v.Logger.Error("OpenAI request failed", slog.String("error", err.Error()))
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "OpenAI request failed")
-			return nil, err
+			return nil, sharedErrors.ErrGeneration
 		}
 
 		if strings.TrimSpace(msg.Body) == "" {
-			err := fmt.Errorf("empty openai result for req: %v", req)
+			v.Logger.Error("empty OpenAI result", slog.String("req", fmt.Sprintf("%v", req)))
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "empty OpenAI result")
-			return nil, err
+			return nil, sharedErrors.ErrGeneration
 		}
 
 		var validationResult OpenAIValidationResult
@@ -153,10 +156,14 @@ func (v *validator) Validate(ctx context.Context, offers *entity.SupplierRespons
 		err = json.Unmarshal([]byte(msg.Body), &validationResult)
 
 		if err != nil {
-			err := fmt.Errorf("invalid OpenAI response format at index %d: %v", i, err)
+			v.Logger.Error("invalid OpenAI responce format",
+				slog.Int("index", i),
+				slog.String("error", err.Error()),
+				slog.String("response", msg.Body),
+			)
 			span.RecordError(err)
 			span.SetStatus(codes.Error, "invalid OpenAI response format")
-			return nil, err
+			return nil, sharedErrors.ErrGeneration
 		}
 
 		if !validationResult.Valid {
