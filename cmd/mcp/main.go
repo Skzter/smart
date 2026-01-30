@@ -52,6 +52,7 @@ func main() {
 	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
+	router.Use(mcpServer.JwtExtraction.JWTExtractionIntoContext())
 
 	router.POST("/mcp", func(c *gin.Context) {
 		handler.ServeHTTP(c.Writer, c.Request)

@@ -30,9 +30,10 @@ type AutotesterAPIService interface {
 }
 
 type autotesterAPIService struct {
-	logger *slog.Logger
-	repo   repository.AutotesterAPIRepository
-	store  store.TestLogStreamStore
+	logger        *slog.Logger
+	repo          repository.AutotesterAPIRepository
+	store         store.TestLogStreamStore
+	jwtContextKey entity.JwtContextKey
 }
 
 // NewAutotesterAPIService creates a new service for the Autotester API.
@@ -43,16 +44,20 @@ func NewAutotesterAPIService(logger *slog.Logger, repo repository.AutotesterAPIR
 	}
 
 	return &autotesterAPIService{
-		logger: logger,
-		repo:   repo,
-		store:  store,
+		logger:        logger,
+		repo:          repo,
+		store:         store,
+		jwtContextKey: entity.JwtContextKey{},
 	}, nil
 }
 
 func (s *autotesterAPIService) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
 	s.logger.Debug("Fetching test template from API")
 
-	template, err := s.repo.GetTemplate(ctx)
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Get template with token")
+
+	template, err := s.repo.GetTemplate(ctx, token)
 	if err != nil {
 		s.logger.Error("Failed to fetch template", "error", err)
 		return nil, err
@@ -70,7 +75,10 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 		return nil, err
 	}
 
-	valid, err := s.repo.ValidatePrompt(ctx, request)
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Generate test with token")
+
+	valid, err := s.repo.ValidatePrompt(ctx, request, token)
 	if err != nil {
 		s.logger.Error("Failed to validate prompt", "error", err)
 		return nil, err
@@ -90,7 +98,7 @@ func (s *autotesterAPIService) GenerateTest(ctx context.Context, request *entity
 
 	request.ChatId = valid.ChatId
 
-	resp, err := s.repo.GenerateTest(ctx, request)
+	resp, err := s.repo.GenerateTest(ctx, request, token)
 	if err != nil {
 		s.logger.Error("Failed to generate test", "error", err)
 		return nil, err
@@ -112,13 +120,16 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 		return nil, err
 	}
 
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Executing test with token")
+
 	saveReq := &entity.SaveTestRequest{
 		Code:   request.Test,
 		UserId: request.UserId,
 		ChatId: request.ChatId,
 	}
 
-	saveResp, err := s.repo.SaveTest(ctx, saveReq)
+	saveResp, err := s.repo.SaveTest(ctx, saveReq, token)
 	if err != nil {
 		s.logger.Error("Failed to save test before execution", "error", err)
 		return nil, err
@@ -130,7 +141,7 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 		ChatId: request.ChatId,
 	}
 
-	runResp, err := s.repo.RunTest(ctx, runReq)
+	runResp, err := s.repo.RunTest(ctx, runReq, token)
 	if err != nil {
 		s.logger.Error("Failed to run test", "error", err)
 		return nil, err
@@ -158,6 +169,10 @@ func (s *autotesterAPIService) ExecuteTest(ctx context.Context, request *entity.
 // is via `errgroup` and a derived context.
 func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId string) error {
 	s.logger.Info("Start reading and processing log stream", "testId", testId)
+
+	token, _ := ctx.Value(s.jwtContextKey).(string)
+	s.logger.Debug("Executing test with token")
+
 	const rawEventsCapacity = 2048
 	rawEventsCh := make(chan *entity.LogEvent, rawEventsCapacity)
 	wg, groupCtx := errgroup.WithContext(ctx)
@@ -167,7 +182,7 @@ func (s *autotesterAPIService) ReadTestLogStream(ctx context.Context, testId str
 		defer close(rawEventsCh)
 		s.logger.Debug("PRODUCER: Starting SSE stream read", "testId", testId)
 
-		if err := s.repo.ReadTestLogStream(groupCtx, testId, rawEventsCh); err != nil {
+		if err := s.repo.ReadTestLogStream(groupCtx, testId, token, rawEventsCh); err != nil {
 			s.logger.Warn("PRODUCER: SSE stream ended with error", "testId", testId, "error", err)
 			return err
 		}
