@@ -1,43 +1,25 @@
-FROM golang:latest AS builder
+FROM golang:1.24-alpine
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-
+# Preload modules so Air rebuilds are fast even before the volume is mounted.
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy only necessary files and directories for the mcp build
-COPY cmd/mcp/ ./cmd/mcp/
-COPY internal/ ./internal/
-COPY configs/ ./configs/
-COPY web/embed.go ./web/
-COPY web/auth_config.json ./web/
-COPY web/dist/ ./web/dist/
+RUN apk add --no-cache ca-certificates git wget && \
+    wget -q -t3 'https://packages.doppler.com/public/cli/rsa.8004D9FF50437357.key' -O /etc/apk/keys/cli@doppler-8004D9FF50437357.rsa.pub && \
+    echo 'https://packages.doppler.com/public/cli/alpine/any-version/main' >> /etc/apk/repositories && \
+    apk add --no-cache doppler
 
-RUN go tool golangci-lint run
+# Tooling used by the Air config (see Taskfile).
+RUN go install github.com/air-verse/air@v1.52.3 && \
+    go install github.com/go-task/task/v3/cmd/task@v3.39.2 && \
+    go install github.com/google/wire/cmd/wire@v0.6.0 && \
+    go install github.com/apple/pkl-go/cmd/pkl-gen-go@v0.10.0
 
-RUN go test ./...
+COPY deployments/dev-entrypoint.sh /usr/local/bin/dev-entrypoint.sh
+RUN chmod +x /usr/local/bin/dev-entrypoint.sh
 
-# CGO_ENABLED=0 ensures static linking for scratch container
-# -ldflags="-s -w" reduces binary size by stripping debug information
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/mcp ./cmd/mcp
+ENV PATH="/app/bin:/go/bin:${PATH}"
 
-FROM alpine:latest AS security_provider
-RUN addgroup -g 1001 -S nonroot && \
-    adduser -S -D -H -u 1001 -h /tmp -s /sbin/nologin -G nonroot -g nonroot nonroot
-
-FROM scratch AS production
-
-# Copy user configuration from security_provider stage
-COPY --from=security_provider /etc/passwd /etc/passwd
-COPY --from=security_provider /etc/group /etc/group
-
-# Set non-root user before copying binary
-USER nonroot
-
-COPY --from=builder /app/bin/mcp /bin/mcp
-
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-ENTRYPOINT ["/bin/mcp"]
+CMD ["dev-entrypoint.sh"]

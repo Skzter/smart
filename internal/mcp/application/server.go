@@ -6,6 +6,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/resource"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
@@ -18,6 +19,7 @@ type McpServer struct {
 	server            *mcp.Server
 	autotesterService service.AutotesterAPIService
 	store             store.TestLogStreamStore
+	JwtExtraction     handler.JwtExtractionHandler
 	logger            *slog.Logger
 }
 
@@ -26,9 +28,10 @@ func NewMcpServer(
 	server *mcp.Server,
 	autotesterService service.AutotesterAPIService,
 	store store.TestLogStreamStore,
+	jwtExtraction handler.JwtExtractionHandler,
 	logger *slog.Logger,
 ) (*McpServer, error) {
-	if err := assert.NotNil(server, autotesterService, store, logger); err != nil {
+	if err := assert.NotNil(server, autotesterService, store, jwtExtraction, logger); err != nil {
 		return nil, err
 	}
 
@@ -36,6 +39,7 @@ func NewMcpServer(
 		server:            server,
 		autotesterService: autotesterService,
 		store:             store,
+		JwtExtraction:     jwtExtraction,
 		logger:            logger,
 	}
 
