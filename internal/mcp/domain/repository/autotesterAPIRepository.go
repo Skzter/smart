@@ -23,24 +23,24 @@ import (
 // AutotesterAPIRepository handles HTTP communication with the Autotester backend API.
 type AutotesterAPIRepository interface {
 	// GetTemplate fetches the test generation template from the API.
-	GetTemplate(ctx context.Context) (*entity.TemplateResponse, error)
+	GetTemplate(ctx context.Context, token string) (*entity.TemplateResponse, error)
 
 	// ValidatePrompt validates a prompt against the API.
-	ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error)
+	ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error)
 
 	// GenerateTest sends a test generation request to the API.
-	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error)
+	GenerateTest(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error)
 
 	// SaveTest persists a generated test to the API.
-	SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error)
+	SaveTest(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error)
 
 	// RunTest executes a test by ID via the API.
-	RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error)
+	RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error)
 
 	// ReadTestLogStream opens a connection to the backend SSE stream.
 	// This method is blocking and writes events to the provided channel.
 	// Returns an error if the stream cannot be established or fails.
-	ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error
+	ReadTestLogStream(ctx context.Context, testId, token string, eventsCh chan<- *entity.LogEvent) error
 }
 
 type autotesterAPIRepository struct {
@@ -65,13 +65,13 @@ func NewAutotesterAPIRepository(logger *slog.Logger, httpClient *http.Client, ba
 	}, nil
 }
 
-func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.TemplateResponse, error) {
+func (a *autotesterAPIRepository) GetTemplate(ctx context.Context, token string) (*entity.TemplateResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/template", a.baseURL)
 
 	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.GetTemplate")
 	defer span.End()
 
-	req, err := a.newJSONRequest(ctx, http.MethodGet, url, nil)
+	req, err := a.newJSONRequest(ctx, http.MethodGet, url, nil, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -89,9 +89,9 @@ func (a *autotesterAPIRepository) GetTemplate(ctx context.Context) (*entity.Temp
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest) (*entity.ValidatePromptResponse, error) {
+func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.ValidatePromptResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/validate", a.baseURL)
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to validate prompt", "error", err)
 		return nil, err
@@ -106,7 +106,7 @@ func (a *autotesterAPIRepository) ValidatePrompt(ctx context.Context, request *e
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest) (*entity.GenerateTestResponse, error) {
+func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *entity.GenerateTestRequest, token string) (*entity.GenerateTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/chat", a.baseURL)
 
 	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.GenerateTest")
@@ -116,7 +116,7 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 		attribute.String("chat.Id", request.ChatId),
 	)
 
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		span.RecordError(err)
@@ -136,7 +136,7 @@ func (a *autotesterAPIRepository) GenerateTest(ctx context.Context, request *ent
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest) (*entity.SaveTestResponse, error) {
+func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.SaveTestRequest, token string) (*entity.SaveTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/saveLocal", a.baseURL)
 
 	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.SaveTest")
@@ -146,7 +146,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 		attribute.String("conversation.id", request.ChatId),
 	)
 
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -162,7 +162,7 @@ func (a *autotesterAPIRepository) SaveTest(ctx context.Context, request *entity.
 	return &result, nil
 }
 
-func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest) (*entity.RunTestResponse, error) {
+func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.RunTestRequest, token string) (*entity.RunTestResponse, error) {
 	url := fmt.Sprintf("%s/api/v1/run", a.baseURL)
 
 	ctx, span := a.tracer.Start(ctx, "autotesterAPIRepository.RunTest")
@@ -173,7 +173,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 		attribute.String("conversation.id", request.ChatId),
 	)
 
-	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request)
+	req, err := a.newJSONRequest(ctx, http.MethodPost, url, request, token)
 	if err != nil {
 		a.logger.Error("Failed to create request", "error", err)
 		return nil, err
@@ -191,7 +191,7 @@ func (a *autotesterAPIRepository) RunTest(ctx context.Context, request *entity.R
 // ReadTestLogStream establishes an SSE connection to the backend stream and
 // parses events in a line-oriented manner.
 // The method is blocking and follows the lifecycle of `ctx`
-func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId string, eventsCh chan<- *entity.LogEvent) error {
+func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId, token string, eventsCh chan<- *entity.LogEvent) error {
 	url := fmt.Sprintf("%s/api/v1/test/%s/stream", a.baseURL, testId)
 	a.logger.Debug("Establishing SSE stream to backend", "testId", testId, "url", url)
 
@@ -203,6 +203,7 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
@@ -216,6 +217,16 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 	}()
 
 	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			a.logger.Error("Failed to read error response body", "error", err, "status", resp.StatusCode)
+		}
+		a.logger.Error("Stream connection failed", "status", resp.StatusCode, "body", string(body))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("authentication failed: token expired or invalid (status 401)")
+		}
+
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
@@ -268,7 +279,7 @@ func (a *autotesterAPIRepository) ReadTestLogStream(ctx context.Context, testId 
 
 // newJSONRequest creates an HTTP request with an optional JSON body and sets
 // the Content-Type header when a body is provided.
-func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
+func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, url string, body any, token string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -286,6 +297,8 @@ func (a *autotesterAPIRepository) newJSONRequest(ctx context.Context, method, ur
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	return req, nil
 }
@@ -316,6 +329,11 @@ func doAndDecode[T any](client *http.Client, logger *slog.Logger, req *http.Requ
 			return fmt.Errorf("unexpected status code: %d (failed to read body: %w)", resp.StatusCode, err)
 		}
 		logger.Error("Unexpected status code", "status", resp.StatusCode, "body", string(body))
+
+		if resp.StatusCode == http.StatusUnauthorized {
+			return fmt.Errorf("authentication failed: token expired or invalid (status 401)")
+		}
+
 		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
 	}
 

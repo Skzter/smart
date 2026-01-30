@@ -42,7 +42,10 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 	tt.logger.Debug("Test started successfully", "result", testResult)
 
 	go func() {
+		token, _ := ctx.Value(entity.JwtContextKey{}).(string)
+
 		streamCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		streamCtx = context.WithValue(streamCtx, entity.JwtContextKey{}, token)
 		defer cancel()
 
 		if err := tt.autotesterAPIService.ReadTestLogStream(streamCtx, testResult.TestId); err != nil {
