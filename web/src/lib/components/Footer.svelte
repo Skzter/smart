@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { generatePrompt,  validatePrompt } from "$lib/api";
+    import { generatePrompt, validatePrompt } from "$lib/api";
     import * as ButtonGroup from "$lib/components/ui/button-group";
     import { chat, messages, user, updateChatTitle } from "$lib/shared.svelte";
     import type { ApiChatRequest } from "$types/api";
@@ -56,7 +56,6 @@
             chat.isLoading = false;
         }
     }
-
 </script>
 
 <div class="p-4 pt-0 sticky bottom-0 bg-background z-10">

@@ -10,6 +10,9 @@ import type {
     ApiToken,
     ApiChatsRequest,
     ApiChatsResponse,
+    ApiGroup,
+    ApiCreateGroupRequest,
+    ApiCreateGroupResponse,
 } from "$types/api";
 import { chat, user, apiToken } from "./shared.svelte";
 
@@ -33,7 +36,13 @@ axios.interceptors.response.use(
             if (originalRequest.url?.includes("auth/generate")) {
                 return Promise.reject(error);
             }
-
+            
+            // If we don't have a user id (e.g. auth not ready / logged out), we can't refresh a token
+            if (!user.id) {
+                apiToken.token = null;
+                return Promise.reject(error);
+            }
+            
             try {
                 // Get new token
                 const tokenResponse = await axios({
@@ -185,11 +194,18 @@ export async function runContainer(request: ApiRunContainer): Promise<void> {
     });
 }
 
-export async function getChatById(): Promise<ApiGetChatByIdResponse> {
+export async function getChatById(
+    chatId?: string,
+): Promise<ApiGetChatByIdResponse> {
     try {
+        const id = chatId ?? chat.id;
+        if (!id) {
+            throw new Error("chatId is required");
+        }
+
         const response = await axios({
             method: "get",
-            url: `/chats/${chat.id}`,
+            url: `/chats/${id}`,
             baseURL: baseURL,
             headers: getAuthHeaders(),
         });
@@ -235,7 +251,6 @@ export async function getApiToken(): Promise<ApiToken> {
 export async function updateChatTitle(
     chatId: string,
     title: string,
-
 ): Promise<ApiChatSummary> {
     try {
         const response = await axios({
@@ -258,5 +273,69 @@ function getErrorMessage(error: unknown): Error {
         return new Error(
             "no axios error returned - something went horribly wrong",
         );
+    }
+}
+
+export async function getGroups(): Promise<ApiGroup[]> {
+    try {
+        const response = await axios({
+            method: "get",
+            url: "/groups",
+            baseURL: baseURL,
+            headers: getAuthHeaders(),
+        });
+        return response.data as ApiGroup[];
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function createGroup(
+    request: ApiCreateGroupRequest,
+): Promise<ApiCreateGroupResponse> {
+    try {
+        const response = await axios({
+            method: "post",
+            url: "/groups",
+            baseURL: baseURL,
+            headers: getAuthHeaders(),
+            data: request,
+        });
+        return response.data as ApiCreateGroupResponse;
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function assignChatToGroups(
+    chatId: string,
+    groupIds: string[],
+): Promise<void> {
+    try {
+        await axios({
+            method: "post",
+            url: `/chats/${chatId}/groups`,
+            baseURL: baseURL,
+            headers: getAuthHeaders(),
+            data: { groupIds },
+        });
+    } catch (error) {
+        throw getErrorMessage(error);
+    }
+}
+
+export async function removeChatFromGroup(
+    chatId: string,
+    groupId: string,
+): Promise<void> {
+    try {
+        await axios({
+            method: "delete",
+            url: `/chats/${chatId}/groups/${groupId}`,
+            baseURL: baseURL,
+            headers: getAuthHeaders(),
+        });
+    } catch (error) {
+        throw getErrorMessage(error);
     }
 }

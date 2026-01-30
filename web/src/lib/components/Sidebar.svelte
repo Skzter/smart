@@ -3,7 +3,13 @@
     import Group from "./Group.svelte";
     import { getChats } from "$lib/api";
     import type { ApiChatSummary } from "$types/api";
-    import { ChatDate, ChatFilter, user, registerChatTitleUpdater } from "$lib/shared.svelte";
+    import {
+        ChatDate,
+        ChatFilter,
+        user,
+        registerChatTitleUpdater,
+        GroupFilter,
+    } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
     import { SvelteMap } from "svelte/reactivity";
@@ -11,9 +17,10 @@
     import type { DateRange } from "bits-ui";
     import User from "./User.svelte";
     import { Mutex } from "async-ts";
-    
+
     registerChatTitleUpdater(updateChatTitleState);
 
+    type GroupState = { label: string; summaries: ApiChatSummary[] };
 
     let error = $state<string>("");
     let items = $state<ApiChatSummary[]>([]);
@@ -21,15 +28,14 @@
 
     let container = $state<HTMLElement | null>(null);
 
-    let timeout = 500;
-    const maxTimeout = 10000;
     const scrollThreshold = 100; // Load more when within 100px of bottom
 
     let hasMore = $state(true);
     let page = $state(0);
     let initialized = $state(false);
+    let lastToast = $state<string | null>(null);
 
-    let groupState = $derived.by(() =>
+    let groupState = $derived.by<GroupState[]>(() =>
         updateGroupsWithDateRange(
             items,
             ChatDate.Range,
@@ -47,43 +53,74 @@
 
     let mu = new Mutex();
     async function loadMore() {
-        let release = await mu.obtain();
-        if (!user.id || loading || !hasMore) return;
+        const release = await mu.obtain();
+        if (!user.id || loading || !hasMore) {
+            release();
+            return;
+        }
+
         loading = true;
         release();
 
         try {
             const response = await getChats({
                 page: page,
-                groupIds: [],
+                groupIds: GroupFilter.selectedIds,
             });
             hasMore = response.hasMore;
             items = items.concat(response.summaries);
             page++;
             error = "";
         } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                toast.error(err.message, {});
-            } else {
-                error = "Unbekannter Fehler";
-                toast.error("Unbekannter Fehler", {});
+            const msg = err instanceof Error ? err.message : "Unbekannter Fehler";
+            error = msg;
+
+            if (lastToast !== msg) {
+                lastToast = msg;
+                toast.error(msg, {});
             }
-            if (timeout < maxTimeout) {
-                timeout = Math.min(timeout * 2, maxTimeout);
-            }
-            setTimeout(loadMore, timeout);
+
+            hasMore = false;
         } finally {
             loading = false;
         }
     }
+
+    let lastGroupFilterKey = $state<string | null>(null);
+
+    function resetAndReload() {
+        error = "";
+        items = [];
+        hasMore = true;
+        page = 0;
+        initialized = false;
+        loading = false;
+        lastToast = null;
+
+        lastGroupFilterKey = GroupFilter.selectedIds.slice().sort().join(",");
+        void loadMore();
+    }
+
+    $effect(() => {
+        const key = GroupFilter.selectedIds.slice().sort().join(",");
+
+        if (lastGroupFilterKey === null) {
+            lastGroupFilterKey = key;
+            return;
+        }
+
+        if (key !== lastGroupFilterKey) {
+            lastGroupFilterKey = key;
+            resetAndReload();
+        }
+    });
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
         dateRange: DateRange | undefined,
         sortBy: "recent" | "created",
         timeFilter: "all" | "today" | "week" | "month",
-    ): { label: string; summaries: ApiChatSummary[] }[] {
+    ): GroupState[] {
         if (!items) return [];
 
         let filteredItems = items.filter((item) => {
@@ -215,16 +252,16 @@
 
     function updateChatTitleState(chatId: string, title: string) {
         if (!items) return;
-        items = items.map(chat =>
-        chat.chatId === chatId
-            ? {
-                  ...chat,
-                  title: title || "Neuer Chat",
-                  updatedAt: new Date().toISOString(),
-              }
-            : chat
-    );
-}
+        items = items.map((chat) =>
+            chat.chatId === chatId
+                ? {
+                      ...chat,
+                      title: title || "Neuer Chat",
+                      updatedAt: new Date().toISOString(),
+                  }
+                : chat,
+        );
+    }
 
     function handleScroll() {
         if (!hasMore || loading || !container) return;
@@ -258,22 +295,17 @@
     });
 </script>
 
-
 <Sidebar.Root>
     <SidebarHeader />
-    <Sidebar.Content bind:ref={container} onscroll={handleScroll}>     
-    {#each groupState as group (group.label)}
-        <Group
-            {group}
-            {updateChatSummary}
-            updateChatTitleState={updateChatTitleState}
-        />
-    {/each}
+    <Sidebar.Content bind:ref={container} onscroll={handleScroll}>
+        {#each groupState as group (group.label)}
+            <Group {group} {updateChatSummary} {updateChatTitleState} />
+        {/each}
         {#if loading}
             <Sidebar.Group class="mt-2 flex items-center justify-center">
                 <Spinner class="size-6"></Spinner>
             </Sidebar.Group>
-         {:else if error != ""}
+        {:else if error != ""}
             <Sidebar.Group>
                 <Sidebar.GroupLabel>{error}</Sidebar.GroupLabel>
             </Sidebar.Group>
