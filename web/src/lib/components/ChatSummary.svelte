@@ -4,15 +4,14 @@
     import { LucideMessageSquare, Pencil } from "@lucide/svelte";
     import { getChatById } from "$lib/api";
     import { toast } from "svelte-sonner";
-    import { type Message, chat, messages, user } from "$lib/shared.svelte";
+    import { type Message, chat, messages } from "$lib/shared.svelte";
     import { updateChatTitle as updateChatTitleApi } from "$lib/api";
-    
-    let {   
+
+    let {
         summary,
         updateChatTitleState,
         onUpdate,
-    }:{
-       
+    }: {
         summary: ApiChatSummary;
         updateChatTitleState?: (chatId: string, title: string) => void;
         onUpdate?: (updated: ApiChatSummary) => void;
@@ -74,17 +73,16 @@
 
     async function invokeSwitchChat() {
         try {
-            user.id = summary.userId;
             chat.id = summary.chatId;
             chat.isLoading = false;
-            const response = await getChatById();
+            const response = await getChatById(summary.chatId);
+            chat.groups = response.groups ?? [];
             messages.length = 0;
             messages.push(...convertApiMessagesToMessages(response.messages));
 
             if (response.title && response.title !== summary.title) {
                 updateChatTitleState?.(summary.chatId, response.title);
             }
-
         } catch (error) {
             let errorMsg = "Unbekannter Fehler";
             if (error instanceof Error) {
@@ -113,7 +111,6 @@
         try {
             const updated = await updateChatTitleApi(summary.chatId, trimmed);
             updateChatTitleState?.(summary.chatId, updated.title);
-
         } catch (error) {
             toast.error("Umbenennen fehlgeschlagen", {
                 description:
@@ -130,7 +127,6 @@
 
         saveTitle(newTitle);
     }
-
 </script>
 
 <Sidebar.MenuItem>
@@ -140,7 +136,7 @@
         tabindex={0}
         onclick={() => {
             if (!edit) invokeSwitchChat();
-}}
+        }}
     >
         <LucideMessageSquare class="mr-1" />
         <div class="flex flex-col justify-between min-w-0 mr-2">
@@ -148,23 +144,27 @@
                 <input
                     use:focusAction
                     value={summary.title || "Neuer Chat"}
-                        onblur={(e) => {
-                            const newTitle = (e.target as HTMLInputElement).value.trim();
-                            if (newTitle && newTitle !== summary.title) {
-                                commitTitleChange(e.target as HTMLInputElement);
-                            }
-                        onUpdate?.(summary);
-                            edit = false;
-                        }}
-                    onkeydown={(e) => {
-                        if (e.key === "Enter") {
-                        const newTitle = (e.target as HTMLInputElement).value.trim();
+                    onblur={(e) => {
+                        const newTitle = (
+                            e.target as HTMLInputElement
+                        ).value.trim();
                         if (newTitle && newTitle !== summary.title) {
                             commitTitleChange(e.target as HTMLInputElement);
-                            edit = false;
+                        }
+                        onUpdate?.(summary);
+                        edit = false;
+                    }}
+                    onkeydown={(e) => {
+                        if (e.key === "Enter") {
+                            const newTitle = (
+                                e.target as HTMLInputElement
+                            ).value.trim();
+                            if (newTitle && newTitle !== summary.title) {
+                                commitTitleChange(e.target as HTMLInputElement);
+                                edit = false;
+                            }
                         }
                     }}
-                    }
                 />
             {:else}
                 <p class="truncate">

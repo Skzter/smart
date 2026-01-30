@@ -6,6 +6,7 @@
     function NewChat() {
         chat.id = "";
         chat.isLoading = false;
+        chat.groups = [];
         // empty the array
         messages.length = 0;
     }

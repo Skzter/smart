@@ -1,11 +1,11 @@
 import type { DateRange } from "bits-ui";
+import type { ApiGroup } from "$types/api";
 import { getApiToken } from "$lib/api";
 import { toast } from "svelte-sonner";
 import { AxiosError } from "axios";
 import type { ApiToken } from "$types/api";
 
 let updater: ((chatId: string, title: string) => void) | null = null;
-
 
 export type MessageType = "user" | "validation" | "generation" | "error";
 export type Message = { t: MessageType; Message: string };
@@ -46,6 +46,7 @@ export const apiToken = new ApiTokenStore();
 export const chat = $state({
     id: "",
     isLoading: false,
+    groups: [] as string[],
 });
 
 export const ChatDate = $state({
@@ -55,6 +56,16 @@ export const ChatDate = $state({
 export const ChatFilter = $state({
     sortBy: "recent" as "recent" | "created",
     timeFilter: "all" as "all" | "today" | "week" | "month",
+});
+
+export const GroupsState = $state({
+    items: [] as ApiGroup[],
+    isLoading: false,
+    error: "",
+});
+
+export const GroupFilter = $state({
+    selectedIds: [] as string[],
 });
 
 export async function getToken() {
