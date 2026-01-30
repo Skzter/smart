@@ -41,7 +41,7 @@ func NewOpenAiRepository(client OpenAIClient, timeout int, tracer trace.Tracer) 
 	}
 
 	if timeout <= 0 {
-		return nil, fmt.Errorf("invalid timout: %d seconds", timeout)
+		return nil, fmt.Errorf("invalid timeout: %d seconds", timeout)
 	}
 
 	return &openAI{

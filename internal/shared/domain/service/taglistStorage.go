@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/repository"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -38,12 +39,14 @@ func NewTaglistStorage(logger *slog.Logger, repo repository.TaglistStorage) (Tag
 // StoreTaglist updates stored taglist
 func (d *taglistStorage) StoreTaglist(ctx context.Context, taglist *entity.TagList) error {
 	if err := assert.NotNil(ctx); err != nil {
-		return fmt.Errorf("context cannot be nil, %w", err)
+		d.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
+		return sharedErrors.ErrGeneration
 	}
 	// Check if taglist exists
 	exists, err := d.repo.TaglistExists(ctx)
 	if err != nil {
-		return fmt.Errorf("S3 Error: %w", err)
+		d.logger.Error(fmt.Sprintf("S3 Error: %s", err))
+		return sharedErrors.ErrInternalServer
 	}
 
 	// Create or update taglist
@@ -53,7 +56,8 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, taglist *entity.TagLi
 		err = d.repo.UpdateTaglist(ctx, taglist)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to save taglist: %w", err)
+		d.logger.Error(fmt.Sprintf("failed to save taglist: %s", err))
+		return sharedErrors.ErrInternalServer
 	}
 
 	d.logger.Debug("Taglist saved successfully", "taglist", taglist)
@@ -63,7 +67,8 @@ func (d *taglistStorage) StoreTaglist(ctx context.Context, taglist *entity.TagLi
 // GetTaglist retrieves Taglist from storage
 func (d *taglistStorage) GetTaglist(ctx context.Context) (*entity.TagList, error) {
 	if err := assert.NotNil(ctx); err != nil {
-		return nil, fmt.Errorf("context cannot be nil, %w", err)
+		d.logger.Error(fmt.Sprintf("context cannot be nil, %s", err))
+		return nil, sharedErrors.ErrInternalServer
 	}
 
 	list, err := d.repo.ReadTaglist(ctx)
