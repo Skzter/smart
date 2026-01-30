@@ -22,6 +22,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/build"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
@@ -123,7 +124,8 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 
 	resp, err := d.client.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create container: %w", err)
+		d.logger.Error("failed to create container", "err", err)
+		return "", nil, errors.ErrInternalServer
 	}
 
 	if resp.ID == "" {
@@ -136,7 +138,8 @@ func (d *docker) RunTest(ctx context.Context, filename string, testID, userID, c
 	)
 
 	if err := d.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return "", nil, fmt.Errorf("failed to start container: %w", err)
+		d.logger.Error("failed to start container", "err", err)
+		return "", nil, errors.ErrInternalServer
 	}
 
 	d.testContainerMap[testID] = &entity.ContainerInfo{
