@@ -12,13 +12,13 @@ graph TB
     end
 
     subgraph State["State Management"]
-        SharedState["Shared State<br/>(Svelte stores, app state)"]
+        SharedState["Shared State<br/>(auth store, Svelte 5 runes)"]
     end
 
     subgraph Utilities["Utilities"]
         Runner["Runner<br/>(Test orchestration)"]
         LogTransform["Log Transform<br/>(Log formatting)"]
-        SyntaxHighlight["Syntax Highlighting<br/>(Prism.js)"]
+        SyntaxHighlight["Code Display<br/>(Monaco Editor)"]
     end
 
     subgraph UILibrary["UI Component Library"]

@@ -5,7 +5,7 @@ The Container diagram zooms into the S.M.A.R.T system to show the high-level tec
 ## Diagram
 
 ![Containers](diagrams/containers.mmd.svg)
-See [containers.mmd](diagrams/containers.mmd) for the Mermaid source.
+See [containers.mmd](diagrams/containers.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Containers Overview
 
@@ -120,7 +120,8 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source.
 
 **Security Rules:**
 - `/api/v1/auth/generate` restricted to internal networks only
-- CIDR-based access control (127.0.0.1, 172.16.0.0/12, 192.168.0.0/16)
+- Nginx CIDR: 127.0.0.1, 172.16.0.0/12, 192.168.0.0/16
+- Application middleware CIDR: 127.0.0.0/8, ::1/128, 10.89.0.0/8 (Podman), 172.16.0.0/12 (Docker)
 
 ---
 
@@ -130,8 +131,7 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source.
 **Image:** `postgres:17-alpine`
 
 **Responsibilities:**
-- Persistent storage for:
-  - User Sessions
+- Token management (storage and validation of internal auth tokens)
 
 **Schema Management:** SQLC (`sqlc.yaml`)
 
@@ -169,14 +169,14 @@ See [containers.mmd](diagrams/containers.mmd) for the Mermaid source.
 #### Frontend Mock
 **Technology:** Node.js/Svelte  
 **Port:** 8082  
-**Image:** Custom GitLab registry image
+**Image:** `gitlab.dit.htwk-leipzig.de:5050/.../frontend-mock`
 
 **Purpose:** Mock frontend application for testing Suproxy integration
 
 #### Supplier Mock
 **Technology:** Go, Gin Framework  
 **Port:** 8083  
-**Image:** Custom GitLab registry image
+**Image:** `gitlab.dit.htwk-leipzig.de:5050/.../supplier-mock`
 
 **Purpose:** Mock supplier API for testing without external dependencies
 
@@ -205,24 +205,23 @@ All services communicate via Docker internal network:
 ### Authentication Flow
 1. User → Frontend → Auth0 (OAuth)
 2. Frontend → Autotester (with Auth0 token)
-3. MCP → Autotester (internal token from `/auth/generate`)
+3. Token for MCP: obtained via Frontend (user calls `/auth/generate` from allowed networks); token is passed to MCP at startup and sent by MCP in the `Authorization` header on every request to Autotester.
 
 ### Test Creation Flow
 
 **Via Frontend:**
 1. User → Frontend (chat message)
-2. Frontend → Autotester (`/chat`)
-3. Autotester → MCP (context provision)
-4. MCP → LLM Service (prompt)
-5. LLM → MCP (generated code)
-6. MCP → Autotester (test code)
-7. Autotester → Frontend (response)
+2. Frontend → Autotester (`/validate` then `/chat`)
+3. Autotester → LLM Service (prompt)
+4. LLM → Autotester (generated test code)
+5. Autotester → Frontend (response)
 
 **Via MCP (e.g. Cursor/IDE):**
-1. User → LLM client ↔ MCP (tool calls)
-2. MCP ↔ LLM Service (prompt, generated code)
-3. MCP → Autotester (API: context, validate, store test)
-4. MCP returns result to LLM client
+1. User → MCP Client (e.g. Cursor) ↔ MCP (tool calls)
+2. MCP → Autotester (API: `/validate`, `/chat`; MCP does not call LLM directly)
+3. Autotester → LLM Service (prompt, generated code)
+4. Autotester → MCP (result)
+5. MCP returns result to MCP Client
 
 ### Test Execution Flow
 
@@ -256,7 +255,7 @@ All services communicate via Docker internal network:
 | Autotester MCP | Go | Go MCP | 8084 | - |
 | Suproxy | Go | Gin | 8080 | Redis (optional), S3 |
 | Frontend | TypeScript | Svelte | - | - |
-| Nginx | - | Nginx | 80/443 | - |
+| Nginx | - | Nginx | 80/8081 | - |
 
 ## Deployment
 

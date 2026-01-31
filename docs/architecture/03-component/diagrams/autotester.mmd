@@ -10,11 +10,11 @@ graph TB
     end
 
     subgraph Services["Domain - Services"]
-        ChatManager["Chat Manager<br/>(LLM orchestration)"]
+        ChatManager["Chat Manager<br/>(Create/save/update chats)"]
         ChatStorageSvc["Chat Storage Service<br/>(Persistence)"]
-        TestLocalSvc["Testcase Local Storage<br/>(File management)"]
-        TestStorageSvc["Testcase Storage Service<br/>(S3 storage)"]
-        DockerSvc["Docker Service<br/>(Container orchestration)"]
+        TestLocalSvc["Testcase Local Storage<br/>(Local test management)"]
+        TestStorageSvc["Testcase Storage Service<br/>(Remote tests in S3)"]
+        DockerSvc["Docker Service<br/>(Container output, lifecycle)"]
         LLMSuite["LLM Test Suite<br/>(Test generation)"]
         Validator["Validator<br/>(Validation logic)"]
         AuthSvc["Auth Service<br/>(Token management)"]
@@ -23,23 +23,24 @@ graph TB
     end
 
     subgraph Repositories["Domain - Repositories"]
-        ChatRepo["Chat Storage Repository<br/>(SQLC)"]
+        ChatRepo["Chat Storage Repository<br/>(S3)"]
         TestLocalRepo["Testcase Local Repository<br/>(File system)"]
         TokenRepo["Token Database<br/>(SQLC)"]
-        GroupRepo["Group Storage Repository<br/>(SQLC)"]
+        GroupRepo["Group Storage Repository<br/>(S3)"]
     end
 
     subgraph Infrastructure["Infrastructure Layer"]
         PostgresConn["PostgreSQL Connection<br/>(SQLC)"]
-        RedisConn["Redis Connection<br/>(Go-Redis)"]
+        RedisConn["Valkey Connection<br/>(Go-Redis)"]
+        S3Conn["S3 Client"]
     end
 
     subgraph External["External Dependencies"]
         Postgres["🗄️ PostgreSQL"]
-        Redis["💾 Redis"]
+        Redis["💾 Valkey (Redis-compatible)"]
         LLMAPI["🤖 LLM API"]
         DockerEngine["🐳 Docker Engine"]
-        S3["☁️ Object Storage"]
+        S3["📦 S3"]
     end
 
     Router --> MiddlewareInternal
@@ -55,7 +56,6 @@ graph TB
     Controller --> AuthSvc
     Controller --> GroupMgr
 
-    ChatManager --> LLMSuite
     ChatManager --> ChatStorageSvc
     GroupMgr --> GroupStorageSvc
 
@@ -64,17 +64,17 @@ graph TB
     AuthSvc --> TokenRepo
     GroupStorageSvc --> GroupRepo
 
-    ChatRepo --> PostgresConn
+    ChatRepo --> S3Conn
     TokenRepo --> PostgresConn
-    GroupRepo --> PostgresConn
-    ChatStorageSvc --> RedisConn
-    TestStorageSvc --> RedisConn
+    GroupRepo --> S3Conn
+    TestStorageSvc --> S3Conn
 
     PostgresConn --> Postgres
     RedisConn --> Redis
+    Controller --> LLMSuite
     LLMSuite --> LLMAPI
     DockerSvc --> DockerEngine
-    TestStorageSvc --> S3
+    S3Conn --> S3
 
     classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
     classDef infrastructure fill:#438dd5,stroke:#2e6295,color:#ffffff
@@ -83,5 +83,5 @@ graph TB
     class Router,MiddlewareInternal,MiddlewareSSE,Controller component
     class ChatManager,ChatStorageSvc,TestLocalSvc,TestStorageSvc,DockerSvc,LLMSuite,Validator,AuthSvc,GroupMgr,GroupStorageSvc component
     class ChatRepo,TestLocalRepo,TokenRepo,GroupRepo component
-    class PostgresConn,RedisConn infrastructure
+    class PostgresConn,RedisConn,S3Conn infrastructure
     class Postgres,Redis,LLMAPI,DockerEngine,S3 external

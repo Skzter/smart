@@ -5,11 +5,11 @@ This document describes the detailed code-level flow for LLM-powered test genera
 ## Diagram
 
 ![LLM Flow](diagrams/llm-flow.mmd.svg)
-See [llm-flow.mmd](diagrams/llm-flow.mmd) for the Mermaid source.
+See [llm-flow.mmd](diagrams/llm-flow.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Overview
 
-The LLM integration flow enables natural language test generation by orchestrating interactions between the frontend, Autotester service, and LLM API. The flow supports both validation and generation modes.
+The LLM integration flow enables natural language test generation by orchestrating interactions between the frontend, Autotester service, and LLM API. Validation and generation are always combined (validate then generate); user prompt goes directly to validation then to Generate. There is no separate Prompt Builder; the diagram's LLM Test Suite (which tests the system prompt) is not part of the regular LLM flow.
 
 ## Sequence Diagrams
 
@@ -49,15 +49,13 @@ The LLM integration flow enables natural language test generation by orchestrati
    - Validates request structure
    - Extracts userId, chatId, message
 
-4. **Chat Manager Orchestration**
-   - ChatManager.ProcessChat() called
+4. **Chat Manager**
+   - ChatManager creates or orchestrates loading/updating chat (chat entity only; no orchestration of LLM flow)
    - Retrieves chat history from ChatStorageService
-   - Builds context from previous messages
-   - Determines if validation or generation needed
+   - User prompt goes directly to validation then to Generate (no Prompt Builder)
 
-5. **Prompt Construction**
-   - LLMTestSuite.BuildPrompt() called
-   - Loads prompt template from Pkl config
+5. **Validation and Generation**
+   - Validation and generate flow are always combined (not separate)
    - Constructs system prompt with:
      - Test generation instructions
      - Playwright syntax guidelines
@@ -73,7 +71,7 @@ The LLM integration flow enables natural language test generation by orchestrati
    - Prepares request:
      ```json
      {
-       "model": "gpt-5.2",
+       "model": "gpt-5-mini-2025-08-07",
        "messages": [
          {"role": "system", "content": "You are..."},
          {"role": "user", "content": "Create a test..."}
@@ -85,20 +83,8 @@ The LLM integration flow enables natural language test generation by orchestrati
    - Handles streaming response (optional)
 
 7. **Response Processing**
-   - LLMTestSuite.ParseResponse() called
-   - Extracts test code from response
-   - Validates code structure
-   - Checks for:
-     - Valid Playwright syntax
-     - Proper async/await usage
-     - Required imports
-     - Test structure
-
-8. **Code Extraction**
-   - Extracts code blocks from markdown
-   - Identifies language (TypeScript/JavaScript)
-   - Removes markdown formatting
-   - Validates completeness
+   - Response is pass-through of the LLM JSON response: either test code only, or (if prompt validation failed) only hints for the prompt
+   - No separate code extraction/validation step in this flow
 
 9. **Persistence**
    - ChatStorageService.SaveMessage() called
@@ -128,52 +114,9 @@ The LLM integration flow enables natural language test generation by orchestrati
 
 ---
 
-### 2. Validation Flow
+### 2. Validation and Generation (combined)
 
-**Purpose:** Validate user prompt before full generation (faster feedback)
-
-**Steps:**
-
-1. **User Input**
-   - User types prompt
-   - Frontend may trigger validation on-the-fly
-
-2. **Frontend Processing**
-   - API service constructs ChatRequest
-   - POST to `/api/v1/validate`
-
-3. **Autotester API Layer**
-   - Router routes to AutotesterController.HandleChatRequestValidity()
-   - Validates request
-
-4. **Validator Service**
-   - Validator.ValidatePrompt() called
-   - Checks prompt structure
-   - Verifies clarity and completeness
-   - May call LLM for semantic validation
-
-5. **LLM Validation Call**
-   - Simplified prompt to LLM:
-     - "Is this test request clear and actionable?"
-     - Returns yes/no with suggestions
-   - Faster, cheaper than full generation
-
-6. **Validation Response**
-   - Returns validation result:
-     ```json
-     {
-       "message": {
-         "body": "Prompt is valid. Ready to generate test."
-       },
-       "isValid": true,
-       "suggestions": []
-     }
-     ```
-
-7. **Frontend Feedback**
-   - Displays validation result
-   - Shows suggestions if needed
-   - Enables/disables generate button
+**Purpose:** Validation and generation are always combined: user prompt goes to validation then to Generate (no separate validation-only flow in practice). Frontend calls `/validate` then `/chat`. Response is either test code or (if validation failed) hints for the prompt.
 
 ---
 
@@ -183,14 +126,14 @@ The LLM integration flow enables natural language test generation by orchestrati
 **File:** `internal/autotester/domain/service/chatManager.go`
 
 **Responsibilities:**
-- Orchestrate entire chat flow
+- Chat entity management (create, save, update chats)
 - Manage conversation context
-- Coordinate between services
+- Does not orchestrate LLM flow; validation and generation are handled by other services
 
 **Key Methods:**
 - `ProcessChat(request)` - Main entry point
 - `BuildContext()` - Gather chat history
-- `HandleResponse()` - Process LLM output
+- `HandleResponse()` - Process LLM output (pass-through of JSON: test or validation hints)
 
 ### LLMTestSuite
 **File:** `internal/autotester/domain/service/llmTestSuite.go`
@@ -206,38 +149,7 @@ The LLM integration flow enables natural language test generation by orchestrati
 - `ParseResponse(llmOutput)` - Extract test code
 - `ValidateTestCode(code)` - Syntax validation
 
-### Prompt Builder
-**Responsibilities:**
-- Load templates from Pkl config
-- Inject user context
-- Format for LLM consumption
-
-**Template Structure:**
-```
-System: You are an expert test automation engineer...
-- Use Playwright for browser automation
-- Write tests in TypeScript
-- Follow best practices...
-
-User Context:
-- Previous tests: [...]
-- Current request: [user message]
-
-Task: Generate a Playwright test for: [specific requirement]
-```
-
-### Response Parser
-**Responsibilities:**
-- Extract code from markdown
-- Validate syntax
-- Clean formatting
-
-**Parsing Logic:**
-1. Identify code blocks (```typescript...```)
-2. Extract code content
-3. Remove comments if excessive
-4. Validate structure
-5. Return cleaned code
+**Note:** Prompt Builder is not used; user prompt goes directly to validation then to Generate. Response processing is pass-through of the LLM JSON (test code or validation hints).
 
 ---
 
@@ -264,6 +176,8 @@ Task: Generate a Playwright test for: [specific requirement]
 
 ## Performance Optimizations
 
+*(All items below are future/planned if not already implemented.)*
+
 1. **Caching**
    - Cache common prompts
    - Redis for chat history
@@ -288,26 +202,13 @@ Task: Generate a Playwright test for: [specific requirement]
 
 ## Code Examples
 
-### Prompt Construction
-```go
-func (s *LLMTestSuite) BuildPrompt(userMessage string, chatHistory []Message) string {
-    template := s.config.PromptTemplate
-    
-    // Build context from history
-    context := formatChatHistory(chatHistory)
-    
-    // Inject into template
-    prompt := fmt.Sprintf(template, context, userMessage)
-    
-    return prompt
-}
-```
+*Code examples should be verified against the current codebase; implementation details may differ.*
 
-### LLM API Call
+### LLM API Call (conceptual)
 ```go
 func (s *LLMTestSuite) CallLLM(prompt string) (string, error) {
     req := openai.ChatCompletionRequest{
-        Model: "gpt-4",
+        Model: "gpt-5-mini-2025-08-07",
         Messages: []openai.ChatCompletionMessage{
             {Role: "system", Content: systemPrompt},
             {Role: "user", Content: prompt},
@@ -321,28 +222,6 @@ func (s *LLMTestSuite) CallLLM(prompt string) (string, error) {
     }
     
     return resp.Choices[0].Message.Content, nil
-}
-```
-
-### Code Extraction
-```go
-func (s *LLMTestSuite) ExtractCode(response string) (string, error) {
-    // Find code blocks
-    re := regexp.MustCompile("```(?:typescript|javascript)\\n([\\s\\S]*?)```")
-    matches := re.FindStringSubmatch(response)
-    
-    if len(matches) < 2 {
-        return "", ErrNoCodeFound
-    }
-    
-    code := matches[1]
-    
-    // Validate syntax
-    if err := s.ValidateCode(code); err != nil {
-        return "", err
-    }
-    
-    return code, nil
 }
 ```
 
@@ -370,7 +249,7 @@ prompts {
 
 llm {
   provider = "openai"
-  model = "gpt-4"
+  model = "gpt-5-mini-2025-08-07"
   temperature = 0.7
   maxTokens = 2000
   timeout = "30s"

@@ -114,7 +114,7 @@
 <line x1="1308.275" y1="1662" x2="1906.3000000000002" y2="1662" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
 <text x="1607.2875000000001" y="1656" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">HandleGenerateToken()</text>
 <polyline points="1906.3000000000002,1702 1936.3000000000002,1702 1936.3000000000002,1722 1906.3000000000002,1722" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
-<text x="1942.3000000000002" y="1712" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Create JWT, sign</text>
+<text x="1942.3000000000002" y="1712" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Generate random token</text>
 <line x1="1906.3000000000002" y1="1772" x2="874.7" y2="1772" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
 <text x="1390.5" y="1766" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">INSERT token</text>
 <line x1="874.7" y1="1812" x2="1906.3000000000002" y2="1812" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
@@ -134,7 +134,7 @@
 <line x1="2256.7000000000003" y1="2152" x2="1308.275" y2="2152" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
 <text x="1782.4875000000002" y="2146" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">POST /api/v1/chat, Authorization: Bearer token</text>
 <polyline points="1308.275,2192 1338.275,2192 1338.275,2212 1308.275,2212" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
-<text x="1344.275" y="2202" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Extract token, validate JWT&lt;br/&gt;Signature, expiry, issuer</text>
+<text x="1344.275" y="2202" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Extract token, validate via DB lookup&lt;br/&gt;(not JWT; random string with metadata in PostgreSQL)</text>
 <line x1="1308.275" y1="2290" x2="2256.7000000000003" y2="2290" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
 <text x="1782.4875000000002" y="2284" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">401 Unauthorized (no refresh, user must reconfigure MCP)</text>
 <polyline points="1308.275,2354 1338.275,2354 1338.275,2374 1308.275,2374" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />

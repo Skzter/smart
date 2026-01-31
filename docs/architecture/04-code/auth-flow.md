@@ -5,13 +5,13 @@ This document describes the detailed code-level authentication flows in S.M.A.R.
 ## Diagrams
 
 ![Auth Flow](diagrams/auth-flow.mmd.svg)
-See [auth-flow.mmd](diagrams/auth-flow.mmd) for the Mermaid source.
+See [auth-flow.mmd](diagrams/auth-flow.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Overview
 
 S.M.A.R.T implements two distinct authentication mechanisms:
 1. **Frontend User Authentication** - Auth0 OAuth for HTWK users
-2. **Internal Service Authentication** - JWT tokens for service-to-service (MCP ↔ Autotester)
+2. **Internal Service Authentication** - Bearer tokens for MCP ↔ Autotester (not real JWT; random strings with metadata in PostgreSQL)
 
 ## 1. Frontend User Authentication (Auth0)
 
@@ -154,27 +154,28 @@ S.M.A.R.T implements two distinct authentication mechanisms:
 
 ## 2. Internal Service Authentication (MCP ↔ Autotester)
 
-**Purpose:** MCP authenticates to Autotester by sending a **bearer token in the `Authorization` header**. MCP does **not** call `/auth/generate`; the token is obtained by an authenticated user (e.g. via Frontend) and provided to MCP at startup.
+**Purpose:** MCP authenticates to Autotester by sending a **bearer token in the `Authorization` header with each request**. The token is not stored in MCP config; the MCP client sends it per request. MCP does **not** call `/auth/generate`; the token is obtained by an authenticated user (e.g. via Frontend) and passed by the client with every MCP→Autotester request.
 
 **Actors:**
 - Authenticated user (obtains token via Frontend)
-- MCP Service (receives token at startup, sends it on every request)
+- MCP Client (sends token in header with each request to Autotester)
+- MCP Service / Autotester API Repository (uses the token from the request; no token management)
 - Autotester API (validates token)
 
-### Token Provision (user → MCP)
+### Token Provision (user → MCP client)
 
 1. **User obtains token**
    - Authenticated user (from allowed networks) calls `/api/v1/auth/generate` via Frontend (see [1. Frontend Authentication](#1-frontend-authentication) for user auth).
    - Nginx and Autotester enforce IP restriction (internal only).
-   - Autotester returns JWT; Frontend (or user) receives it.
+   - Autotester returns token; Frontend receives it and stores it in a store (frontend stores the token only in a store).
 
-2. **Token provided to MCP at startup**
-   - Bearer token is passed to MCP via configuration (e.g. IDE/CLI env or config).
-   - MCP stores the token in memory for the lifetime of the process.
+2. **Token sent per request**
+   - MCP client sends the bearer token in the `Authorization` header with every request to Autotester.
+   - The repository uses the token provided with the request; token is not held or managed by MCP beyond the request.
 
 3. **MCP does not call `/auth/generate`**
    - No token request is made by MCP to Autotester.
-   - No automatic refresh by MCP; if the token expires, the user must obtain a new token and restart/reconfigure MCP.
+   - Token validity is checked via database access (no real JWT; tokens are random strings with metadata in PostgreSQL; they can live longer than 24h).
 
 ---
 
@@ -188,7 +189,7 @@ S.M.A.R.T implements two distinct authentication mechanisms:
 
 2. **Repository Prepares Request**
    - Autotester API Repository is called
-   - Uses the bearer token provided at startup
+   - Uses the bearer token from the current request (provided by MCP client in header)
    - Adds to request headers:
      ```go
      req.Header.Set("Authorization", "Bearer "+token)
@@ -199,18 +200,10 @@ S.M.A.R.T implements two distinct authentication mechanisms:
    - Includes `Authorization: Bearer <token>` header
 
 4. **Token Validation**
-   - Autotester validates token:
-     ```go
-     tokenString := extractToken(req)
-     token, err := jwt.Parse(tokenString, keyFunc)
-     if err != nil || !token.Valid {
-         return ErrUnauthorized
-     }
-     ```
-   - Checks:
-     - Signature valid
-     - Not expired
-     - Issuer correct
+   - Autotester validates token via database lookup (not JWT parse):
+     - Token is a random string with metadata stored in PostgreSQL
+     - Validity is checked by DB access; tokens can live longer than 24h
+     - No JWT signature/expiry checks
 
 5. **Authorization Success**
    - Request proceeds to handler
@@ -250,10 +243,9 @@ S.M.A.R.T implements two distinct authentication mechanisms:
    - CIDR-based IP validation
    - No external access possible
 
-2. **JWT Tokens**
-   - Signed with secret key
-   - Tamper-proof
-   - Time-limited (24h)
+2. **Internal Tokens**
+   - Not real JWT; random strings with metadata in PostgreSQL
+   - Validity via DB access; can live longer than 24h
 
 3. **Token Storage**
    - Database storage enables revocation
@@ -334,26 +326,15 @@ func internalOnlyMiddleware(logger *slog.Logger) gin.HandlerFunc {
 ### Backend: Token Generation
 ```go
 // internal/autotester/domain/service/auth.go
+// Tokens are not JWT; they are random strings with metadata stored in PostgreSQL.
+// Validity is checked via DB access; tokens can live longer than 24h.
 func (s *AuthService) GenerateToken(userId string) (string, error) {
-    claims := jwt.MapClaims{
-        "sub": userId,
-        "iat": time.Now().Unix(),
-        "exp": time.Now().Add(24 * time.Hour).Unix(),
-        "iss": "autotester",
-    }
-    
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    signed, err := token.SignedString([]byte(s.secretKey))
-    if err != nil {
+    token := generateRandomToken()
+    // Store in database with metadata
+    if err := s.tokenRepo.SaveToken(userId, token, expiry); err != nil {
         return "", err
     }
-    
-    // Store in database
-    if err := s.tokenRepo.SaveToken(userId, signed, time.Now().Add(24*time.Hour)); err != nil {
-        return "", err
-    }
-    
-    return signed, nil
+    return token, nil
 }
 ```
 

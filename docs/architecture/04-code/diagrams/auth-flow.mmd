@@ -66,7 +66,7 @@ sequenceDiagram
     Middleware2->>Router2: Continue
     Router2->>AuthSvc2: HandleGenerateToken()
     activate AuthSvc2
-    AuthSvc2->>AuthSvc2: Create JWT, sign
+    AuthSvc2->>AuthSvc2: Generate random token
     AuthSvc2->>TokenDB2: INSERT token
     TokenDB2-->>AuthSvc2: OK
     AuthSvc2-->>Router2: {token, expiresAt}
@@ -89,7 +89,7 @@ sequenceDiagram
     MCP->>MCP: Tool invoked<br/>Call Autotester API
     MCP->>Router2: POST /api/v1/chat, Authorization: Bearer token
     activate Router2
-    Router2->>Router2: Extract token, validate JWT<br/>Signature, expiry, issuer
+    Router2->>Router2: Extract token, validate via DB lookup<br/>(not JWT; random string with metadata in PostgreSQL)
     alt Token invalid or expired
         Router2-->>MCP: 401 Unauthorized (no refresh, user must reconfigure MCP)
     else Token valid

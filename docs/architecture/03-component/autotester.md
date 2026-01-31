@@ -5,7 +5,7 @@ The Autotester service is the core of S.M.A.R.T, responsible for LLM-powered tes
 ## Diagram
 
 ![Autotester](diagrams/autotester.mmd.svg)
-See [autotester.mmd](diagrams/autotester.mmd) for the Mermaid source.
+See [autotester.mmd](diagrams/autotester.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Architecture Overview
 
@@ -43,8 +43,8 @@ The Autotester follows a layered architecture:
 **Allowed Networks:**
 - `127.0.0.0/8` - Localhost
 - `::1/128` - IPv6 localhost
-- `172.16.0.0/12` - Docker bridge
-- `192.168.0.0/16` - Docker Compose
+- `10.89.0.0/8` - Podman default bridge
+- `172.16.0.0/12` - Docker default bridge
 
 #### SSE Middleware
 **Responsibilities:**
@@ -81,51 +81,44 @@ The Autotester follows a layered architecture:
 
 #### ChatManager (`domain/service/chatManager.go`)
 **Responsibilities:**
-- Chat session orchestration
-- LLM communication
-- Context management
-- Response processing
+- Create, save, and update chat sessions
+- Orchestrate loading/updating of chat context
+- No LLM service dependency; test generation is handled elsewhere (e.g. GeneratePrompt service, validation before)
 
 **Dependencies:**
-- LLM Service (external)
 - ChatStorageService
 
 #### ChatStorageService (`domain/service/chatStorageService.go`)
 **Responsibilities:**
-- Chat persistence logic
-- Chat retrieval and updates
-- User chat management
+- Chat persistence logic (retrieval, updates)
+- Does not perform chat management; ChatManager handles that
 
 **Dependencies:**
-- ChatStorageRepository
-- PostgreSQL database
+- ChatStorageRepository (S3-backed)
 
 #### TestcaseLocalStorageService (`domain/service/testcaseLocalStorageService.go`)
 **Responsibilities:**
 - Local test storage management
-- File system operations for tests
-- Test template generation
+- Does not perform file system operations (repository does); does not perform test template generation
 
 **Dependencies:**
 - TestcaseLocalStorageRepository
 
 #### TestcaseStorageService (`domain/service/testcaseStorageService.go`)
 **Responsibilities:**
-- Remote test storage in S3/object storage
-- Test versioning
-- Test retrieval and listing
+- Remote test storage in S3 (via repository)
+- Test versioning, retrieval, and listing
 
 #### Docker Service (`domain/service/docker.go`)
 **Responsibilities:**
 - Docker container management for test execution
 - Playwright container orchestration
-- Log streaming from containers
-- Container lifecycle management
+- Provides container output for reading (streaming via SSE is done by handler/controller)
 
 **Key Operations:**
 - Start Playwright containers
 - Execute tests in isolated environments
-- Stream logs via SSE
+- Expose container output for handlers to stream
 - Cleanup containers
 
 #### LLM Test Suite Service (`domain/service/llmTestSuite.go`)
@@ -162,11 +155,10 @@ The Autotester follows a layered architecture:
 
 #### ChatStorageRepository (`domain/repository/chatStorageRepository.go`)
 **Responsibilities:**
-- Database queries for chats
-- CRUD operations on chat data
-- User chat associations
+- Chat data in S3 (Parquet)
+- CRUD operations on chat data, user chat associations
 
-**Technology:** SQLC-generated code, PostgreSQL
+**Technology:** S3 API (not PostgreSQL)
 
 #### TestcaseLocalStorageRepository (`domain/repository/testcaseLocalStorageRepository.go`)
 **Responsibilities:**
@@ -180,8 +172,10 @@ The Autotester follows a layered architecture:
 
 #### GroupStorage Repository (`infrastructure/repository/groupStorage.go`)
 **Responsibilities:**
-- Group data persistence
+- Group data persistence (S3, not PostgreSQL)
 - Group-chat relationship management
+
+**Technology:** S3 API
 
 ---
 
@@ -211,12 +205,7 @@ Key domain entities:
 - Transaction management
 
 **Tables:**
-- Users
-- Chats
-- Messages
-- Tests
-- Tokens
-- Groups
+- Tokens (token management only)
 
 **Generated Code:** SQLC generates type-safe Go code from SQL
 
@@ -243,19 +232,19 @@ Key domain entities:
 
 ### Test Creation Flow
 1. **Router** receives chat request
-2. **AutotesterController** validates request
-3. **ChatManager** orchestrates LLM interaction
-4. **LLM Test Suite Service** generates test code
-5. **ChatStorageService** persists chat history
+2. **Middleware** validates (e.g. auth)
+3. **GeneratePrompt service** and **validation** run (e.g. `/validate`) before generation
+4. **ChatManager** creates or orchestrates loading/updating chat; **LLM Test Suite** is not part of this orchestration
+5. **ChatStorageService** persists chat history (via ChatStorageRepository to S3)
 6. **Response** returned to user
 
 ### Test Execution Flow
 1. **Router** receives run request
 2. **AutotesterController** validates
-3. **Docker Service** creates Playwright container
+3. **Docker Service** creates Playwright container and provides container output
 4. **Container** executes test
-5. **Docker Service** streams logs via SSE
-6. **TestcaseStorageService** saves results
+5. **Handler/Controller** streams logs asynchronously via SSE from the output Docker Service provides
+6. **TestcaseStorageService** (via repository) saves results
 7. **Response** with results returned
 
 ### Authentication Flow
@@ -289,8 +278,9 @@ Key domain entities:
 ## Technology Stack
 
 - **Framework**: Gin (HTTP router)
-- **Database**: PostgreSQL 17 with SQLC
-- **Caching**: Redis/Valkey
+- **Database**: PostgreSQL 17 with SQLC (tokens only)
+- **Caching**: Valkey (Redis-compatible)
+- **Object Storage**: S3 (chats, testcases, groups)
 - **Monitoring**: Datadog APM
 - **Configuration**: Pkl
 - **Testing**: Go standard testing + Mockery

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2544.6625 677" width="2544.6625" height="677" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2537.5125 677" width="2537.5125" height="677" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Inter', system-ui, sans-serif; }
@@ -26,70 +26,70 @@
     <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
   </marker>
 </defs>
-<rect x="40" y="40" width="2464.6625" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="40" y="40" width="2464.6625" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="2457.5125" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="40" width="2457.5125" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
 <text x="52" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Core Application Components&quot;</text>
-<rect x="1247.425" y="369" width="815.1125000000002" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="1247.425" y="369" width="815.1125000000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-<text x="1259.425" y="383" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Service Layer&quot;</text>
-<rect x="54.899999999999864" y="525" width="1331.9625" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="54.899999999999864" y="525" width="1331.9625" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-<text x="66.89999999999986" y="539" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;State Management&quot;</text>
-<rect x="1014.4124999999999" y="196" width="994.1624999999999" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="1014.4124999999999" y="196" width="994.1624999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-<text x="1026.4125" y="210" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Utilities&quot;</text>
-<rect x="194.33749999999986" y="196" width="454.94999999999993" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="194.33749999999986" y="196" width="454.94999999999993" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-<text x="206.33749999999986" y="210" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;UI Component Library&quot;</text>
-<rect x="1618.975" y="525" width="595.7625000000003" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
-<rect x="1618.975" y="525" width="595.7625000000003" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-<text x="1630.975" y="539" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;External Systems&quot;</text>
-<polyline points="580.0875000000001,132 580.0875000000001,152 918.625,152 918.625,328 1354.35,328 1354.35,443 1351.9375,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="580.0875000000001,132 580.0875000000001,152 174.33749999999986,152 174.33749999999986,599 747.2124999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="580.0875000000001,132 580.0875000000001,152 1695.175,152 1695.175,270 1697.175,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="580.0875000000001,132 580.0875000000001,152 345.9499999999999,152 345.9499999999999,270 216.3374999999998,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="979.2875000000001,132 979.2875000000001,152 2028.5749999999998,152 2028.5749999999998,328 1733.1625,328 1733.1625,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="979.2875000000001,132 979.2875000000001,152 745.1499999999999,152 745.1499999999999,599 747.2124999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="979.2875000000001,132 979.2875000000001,152 433.5999999999999,152 433.5999999999999,270 627.2874999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1404.525,132 1404.525,152 2173.1125,152 2173.1125,328 1753.1625,328 1753.1625,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1404.525,132 1404.525,152 1170.3874999999998,152 1170.3874999999998,252" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1404.525,132 1404.525,152 500.65,152 500.65,270 627.2874999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1818.025,132 1818.025,152 1528.475,152 1528.475,252" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1818.025,132 1818.025,152 1915.225,152 1915.225,270 1986.575,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1818.025,132 1818.025,152 525.5499999999998,152 525.5499999999998,270 627.2874999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1503.7875,461 1503.7875,481 1691.9375,481 1691.9375,599 1897.3875,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1503.7875,461 1503.7875,481 1354.35,481 1354.35,501 1237.425,501 1237.425,599 1100.9624999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1860.0875,461 1860.0875,481 1949.9250000000002,481 1949.9250000000002,501 2140.9875,501 2140.9875,581" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1860.0875,461 1860.0875,481 1542.5,481 1542.5,501 1257.425,501 1257.425,599 1100.9624999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1170.3874999999998,288 1170.3874999999998,308 1351.775,308 1351.775,328 1773.1625,328 1773.1625,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1170.3874999999998,288 1170.3874999999998,308 1112.3999999999999,308 1112.3999999999999,328 927.4875,328 927.4875,501 1277.425,501 1277.425,599 1100.9624999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
-<polyline points="1818.025,132 1818.025,152 2389.8625,152 2389.8625,501 2051.15,501 2051.15,599 2065.2375,599" fill="none" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
-<rect x="2336.1025" y="343" width="107.52000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
-<text x="2389.8625" y="356.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;SSE log stream&quot;</text>
-<rect x="399.63750000000005" y="96" width="360.90000000000003" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
-<rect x="784.5375000000001" y="96" width="389.50000000000006" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
-<rect x="1202.625" y="96" width="403.8" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
-<rect x="1630.4250000000002" y="96" width="375.20000000000005" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1243.85" y="369" width="818.6875000000002" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1243.85" y="369" width="818.6875000000002" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1255.85" y="383" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Service Layer&quot;</text>
+<rect x="58.47499999999991" y="525" width="1328.3875" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="58.47499999999991" y="525" width="1328.3875" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="70.47499999999991" y="539" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;State Management&quot;</text>
+<rect x="1021.5624999999999" y="196" width="979.8625" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1021.5624999999999" y="196" width="979.8625" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1033.5625" y="210" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Utilities&quot;</text>
+<rect x="201.4874999999999" y="196" width="454.94999999999993" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="201.4874999999999" y="196" width="454.94999999999993" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="213.4874999999999" y="210" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;UI Component Library&quot;</text>
+<rect x="1618.9750000000001" y="525" width="595.7624999999998" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1618.9750000000001" y="525" width="595.7624999999998" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1630.9750000000001" y="539" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;External Systems&quot;</text>
+<polyline points="583.6624999999998,132 583.6624999999998,152 925.7750000000001,152 925.7750000000001,328 1350.7749999999999,328 1350.7749999999999,443 1351.9375,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="583.6624999999998,132 583.6624999999998,152 179.69999999999993,152 179.69999999999993,599 736.4875,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="583.6624999999998,132 583.6624999999998,152 1698.75,152 1698.75,270 1704.325,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="583.6624999999998,132 583.6624999999998,152 353.0999999999999,152 353.0999999999999,270 223.48749999999984,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="982.8624999999998,132 982.8624999999998,152 2021.425,152 2021.425,328 1733.1625000000001,328 1733.1625000000001,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="982.8624999999998,132 982.8624999999998,152 752.2999999999998,152 752.2999999999998,599 736.4875,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="982.8624999999998,132 982.8624999999998,152 437.17499999999995,152 437.17499999999995,270 634.4374999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1408.1000000000001,132 1408.1000000000001,152 2165.9625,152 2165.9625,328 1753.1625000000001,328 1753.1625000000001,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1408.1000000000001,132 1408.1000000000001,152 1177.5375,152 1177.5375,252" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1408.1000000000001,132 1408.1000000000001,152 504.22499999999997,152 504.22499999999997,270 634.4374999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1821.6000000000001,132 1821.6000000000001,152 1535.625,152 1535.625,252" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1821.6000000000001,132 1821.6000000000001,152 1911.6499999999999,152 1911.6499999999999,270 1979.425,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1821.6000000000001,132 1821.6000000000001,152 532.6999999999998,152 532.6999999999998,270 634.4374999999999,270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1503.7875,461 1503.7875,481 1691.9375,481 1691.9375,599 1897.3875000000003,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1503.7875,461 1503.7875,481 1350.7749999999999,481 1350.7749999999999,501 1233.85,501 1233.85,599 1104.5375,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1860.0875,461 1860.0875,481 1949.925,481 1949.925,501 2140.9875,501 2140.9875,581" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1860.0875,461 1860.0875,481 1538.925,481 1538.925,501 1253.85,501 1253.85,599 1104.5375,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1177.5375,288 1177.5375,308 1358.925,308 1358.925,328 1773.1625000000001,328 1773.1625000000001,443 1655.6374999999998,443" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1177.5375,288 1177.5375,308 1119.5500000000002,308 1119.5500000000002,328 934.6374999999999,328 934.6374999999999,501 1273.85,501 1273.85,599 1104.5375,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1821.6000000000001,132 1821.6000000000001,152 2382.7125000000005,152 2382.7125000000005,501 2051.15,501 2051.15,599 2065.2375,599" fill="none" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<rect x="2328.9525000000003" y="343" width="107.52000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2382.7125000000005" y="356.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;SSE log stream&quot;</text>
+<rect x="403.21249999999975" y="96" width="360.90000000000003" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="788.1124999999998" y="96" width="389.50000000000006" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1206.2" y="96" width="403.8" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1634" y="96" width="375.20000000000005" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
 <rect x="1351.9375" y="425" width="303.70000000000005" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
 <rect x="1679.6375" y="425" width="360.90000000000003" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
-<rect x="747.2124999999999" y="581" width="353.75" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
-<rect x="1036.4125" y="252" width="267.95000000000005" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
-<rect x="1383.7749999999999" y="252" width="289.40000000000003" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
-<rect x="1697.175" y="252" width="289.40000000000003" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
-<rect x="216.3374999999998" y="252" width="410.95000000000005" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
-<rect x="1897.3875" y="581" width="167.85000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="736.4875" y="581" width="368.05" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1043.5625" y="252" width="267.95000000000005" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
+<rect x="1390.925" y="252" width="289.40000000000003" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
+<rect x="1704.325" y="252" width="275.1" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
+<rect x="223.48749999999984" y="252" width="410.95000000000005" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1897.3875000000003" y="581" width="167.85000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
 <rect x="2089.2375" y="581" width="103.5" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
-<text x="580.0875000000001" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Chat Component&lt;br/&gt;(Chat interface with LLM)&quot;</text>
-<text x="979.2875000000001" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Sidebar Component&lt;br/&gt;(Chat history, navigation)&quot;</text>
-<text x="1404.525" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;RunWindow Component&lt;br/&gt;(Test execution interface)&quot;</text>
-<text x="1818.025" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;OutputView Component&lt;br/&gt;(Test output display)&quot;</text>
+<text x="583.6624999999998" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Chat Component&lt;br/&gt;(Chat interface with LLM)&quot;</text>
+<text x="982.8624999999998" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Sidebar Component&lt;br/&gt;(Chat history, navigation)&quot;</text>
+<text x="1408.1000000000001" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;RunWindow Component&lt;br/&gt;(Test execution interface)&quot;</text>
+<text x="1821.6" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;OutputView Component&lt;br/&gt;(Test output display)&quot;</text>
 <text x="1503.7875" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;API Service&lt;br/&gt;(Axios, HTTP client)&quot;</text>
 <text x="1860.0875" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Auth Service&lt;br/&gt;(Auth0 SDK, authentication)&quot;</text>
-<text x="924.0874999999999" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Shared State&lt;br/&gt;(Svelte stores, app state)&quot;</text>
-<text x="1170.3874999999998" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Runner&lt;br/&gt;(Test orchestration)&quot;</text>
-<text x="1528.475" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Log Transform&lt;br/&gt;(Log formatting)&quot;</text>
-<text x="1841.875" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Syntax Highlighting&lt;br/&gt;(Prism.js)&quot;</text>
-<text x="421.81249999999983" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;UI Components&lt;br/&gt;(Buttons, inputs, terminal, etc.)&quot;</text>
-<text x="1981.3125" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;⚙️ Autotester API&quot;</text>
+<text x="920.5124999999999" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Shared State&lt;br/&gt;(auth store, Svelte 5 runes)&quot;</text>
+<text x="1177.5375" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Runner&lt;br/&gt;(Test orchestration)&quot;</text>
+<text x="1535.625" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Log Transform&lt;br/&gt;(Log formatting)&quot;</text>
+<text x="1841.875" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;Code Display&lt;br/&gt;(Monaco Editor)&quot;</text>
+<text x="428.96249999999986" y="270" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;UI Components&lt;br/&gt;(Buttons, inputs, terminal, etc.)&quot;</text>
+<text x="1981.3125000000002" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;⚙️ Autotester API&quot;</text>
 <text x="2140.9875" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔒 Auth0&quot;</text>
 </svg>

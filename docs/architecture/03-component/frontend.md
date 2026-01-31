@@ -5,15 +5,14 @@ The Web Frontend provides the user interface for S.M.A.R.T, built with Svelte an
 ## Diagram
 
 ![Frontend](diagrams/frontend.mmd.svg)
-See [frontend.mmd](diagrams/frontend.mmd) for the Mermaid source.
+See [frontend.mmd](diagrams/frontend.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Architecture Overview
 
 The frontend follows a component-based architecture with Svelte:
-- **Pages/Routes**: Top-level pages and routing
-- **Components**: Reusable UI components
+- **Components**: Reusable UI components (no separate pages/routing layer)
 - **Services**: Business logic and API communication
-- **State Management**: Reactive state with Svelte stores
+- **State Management**: One Svelte store (auth); otherwise Svelte 5 runes (`$state`, `$derived`) for reactive state
 - **UI Library**: Shadcn/UI
 
 ## Components
@@ -28,10 +27,9 @@ The frontend follows a component-based architecture with Svelte:
 - Message history management
 
 **Features:**
-- Markdown rendering for LLM responses
-- Code syntax highlighting
+- LLM responses: code shown in Monaco Editor, otherwise plain text (no markdown rendering)
 - Message type indicators (user, validation, generation, error)
-- Streaming responses (via SSE)
+- Response not streamed for chat; streaming only for live logs (test execution)
 
 #### Sidebar Component (`lib/components/Sidebar.svelte`)
 **Responsibilities:**
@@ -78,7 +76,7 @@ The frontend follows a component-based architecture with Svelte:
 
 #### API Service (`lib/api.ts`)
 **Responsibilities:**
-- HTTP client wrapper
+- Axios-based API client
 - API endpoint communication
 - Request/response transformation
 - Error handling
@@ -93,7 +91,7 @@ The frontend follows a component-based architecture with Svelte:
 - `deleteLocalTest(testcaseId)` - Delete local test
 - `runContainer(request)` - Execute test in container
 
-**Technology:** Axios for HTTP requests
+**Technology:** Axios client
 **Base URL:** `http://localhost:8081/api/v1/`
 
 #### Auth Service (`lib/authService.ts`)
@@ -155,17 +153,13 @@ The frontend follows a component-based architecture with Svelte:
 - Parse log entries
 - Format for display
 
-#### Syntax Highlighting (`lib/syntaxHighlighting.ts`)
+#### Code Display
 **Responsibilities:**
-- Code syntax highlighting
-- Language detection
-- Prism.js integration
+- Code display and syntax highlighting via Monaco Editor (replaces Prism.js)
 
 #### Utils (`lib/utils.ts`)
 **Responsibilities:**
-- Common utility functions
-- Helper methods
-- Formatting functions
+- Common utility functions and helper methods (no formatting helpers)
 
 ---
 
@@ -222,32 +216,23 @@ The frontend includes a comprehensive UI component library under `lib/components
 8. **Shared State** updated with user ID
 9. User redirected to main app
 
-### Chat Interaction Flow
+### Chat Interaction Flow (Test Creation)
 1. User types message in **Chat Component**
 2. **Chat Component** updates **Shared State** messages
-3. **API Service** sends request to `/chat` endpoint
+3. **API Service** calls `/validate` then `/chat` (response not streamed)
 4. Backend processes via LLM
-5. Response streamed back
-6. **Chat Component** displays response
-7. **Shared State** updated with new messages
-
-### Test Creation Flow
-1. User describes test in **Chat Component**
-2. **API Service** calls `generatePrompt()`
-3. LLM generates test code
-4. **Chat Component** displays generated code
-5. User can save test via **API Service** `saveTestLocal()`
-6. Test stored locally in backend
+5. **Chat Component** displays response (code in Monaco, else plain)
+6. **Shared State** updated with new messages
 
 ### Test Execution Flow
 1. User opens **RunWindow Component**
 2. User configures test parameters
 3. User clicks "Run Test"
-4. **API Service** calls `runContainer()`
+4. **API Service** calls `saveTestLocal()` before `runContainer()` (save before run)
 5. Backend starts Docker container
-6. **OutputView Component** connects to SSE endpoint
+6. **OutputView Component** connects to SSE endpoint (streaming only for live logs)
 7. Logs streamed in real-time
-8. **OutputView** displays logs with syntax highlighting
+8. **OutputView** displays logs
 9. Final result displayed (pass/fail)
 
 ### Chat History Flow
@@ -279,7 +264,7 @@ The frontend includes a comprehensive UI component library under `lib/components
 - **Styling**: Tailwind CSS
 - **UI Components**: Shadcn/UI
 - **Build Tool**: Vite (standard for Svelte)
-- **Code Highlighting**: Prism.js
+- **Code Display**: Monaco Editor
 
 ## State Management Strategy
 
@@ -290,9 +275,7 @@ Svelte 5's new runes system for reactive state:
 - No explicit stores needed for simple state
 
 ### Svelte Stores
-Traditional stores for complex state:
-- `auth` store - Authentication state
-- Custom stores for specific features
+- `auth` store - Authentication state (only store used; rest of state via Svelte 5 runes)
 
 ## Real-time Features
 

@@ -1,18 +1,20 @@
 # Level 3: Suproxy Components
 
-The Suproxy service acts as an intelligent proxy between web applications under test and external supplier systems, providing request/response transformation, caching, and validation.
+The Suproxy service acts as an intelligent proxy between web applications under test and external supplier systems, providing request forwarding, response caching, optional LLM-based response validation, and mock response updates (tag-based).
 
 ## Diagram
 
 ![Suproxy](diagrams/suproxy.mmd.svg)
-See [suproxy.mmd](diagrams/suproxy.mmd) for the Mermaid source.
+See [suproxy.mmd](diagrams/suproxy.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## Architecture Overview
 
-Suproxy follows a simplified layered architecture optimized for request proxying and transformation:
-- **Application Layer**: Router, middleware
-- **Domain Layer**: Handler, services, repositories
-- **Infrastructure Layer**: External API clients
+Suproxy follows a layered architecture:
+- **Application Layer**: Router, CORS and recovery middleware, optional pprof debug
+- **Domain Layer**: Handler, services (Validator, TagSearchService, TaglistSync, CacheService, DatabaseService, ResponseUpdateService), repositories
+- **Infrastructure**: Redis (via shared Cache), S3 + Parquet (via shared wrappers), HTTP client, OpenAI (for validation)
+
+**Storage:** No PostgreSQL. Request/response pairs and taglist data are stored in S3 as Parquet; cache uses Redis (Valkey).
 
 ## Components
 
@@ -20,25 +22,16 @@ Suproxy follows a simplified layered architecture optimized for request proxying
 
 #### Router (`application/router.go`)
 **Responsibilities:**
-- HTTP server initialization
+- HTTP server initialization (Gin)
 - Route registration
-- CORS configuration
-- Middleware setup (recovery, Datadog tracing)
+- Middleware: Recovery, Datadog tracing, CORS
+- Optional pprof under `/debug` with BasicAuth
 
 **Key Routes:**
-- `POST /api/v1/Offerlist` - Proxy offerlist requests to suppliers
+- `POST /api/v1/Offerlist` – Proxy offerlist requests to suppliers (client sends `Destination` URL, `Header`, `Body`, optional `Tags`)
 
-**CORS Policy:**
-- Allow all origins (`*`)
-- Support credentials
-- Methods: POST, GET, PUT, DELETE, OPTIONS
-- Headers: Content-Type, Authorization, etc.
-
-#### CORS Middleware
-**Responsibilities:**
-- Cross-Origin Resource Sharing headers
-- Preflight request handling
-- Enable frontend access
+**CORS:**
+- Allow origin `*`, credentials, methods POST/OPTIONS/GET/PUT/DELETE, common headers (Content-Type, Authorization, etc.)
 
 ---
 
@@ -46,23 +39,23 @@ Suproxy follows a simplified layered architecture optimized for request proxying
 
 #### SuproxyController (`domain/handler/handler.go`)
 **Responsibilities:**
-- HTTP request handling
-- Request validation and parsing
-- Response transformation
-- Error handling
+- HTTP request handling for `/api/v1/Offerlist`
+- Request binding (JSON → `Request`: Header, Tags, Destination, Body)
+- Optional response update when `Tags` is set (non-blocking call to ResponseUpdateService)
+- Cache lookup (supplier cache); on hit return cached response
+- Forward request to supplier (`Destination`), then cache and return response
+- Async post-processing: validate supplier response (Validator), sync taglist (TaglistSync), store request/response/tags (DatabaseService → S3/Parquet)
 
-**Handler Method:**
-- `PostOfferlist` - Main proxy endpoint handler
+**Dependencies:**
+- Validator, DatabaseService, TaglistSync, CacheService, ResponseUpdateService, HTTP client, metrics, tracer, config
 
 **Processing Flow:**
-1. Parse incoming request
-2. Validate request structure
-3. Check cache (if enabled)
-4. Transform request for supplier
-5. Forward to supplier system
-6. Transform response
-7. Cache response (if enabled)
-8. Return to client
+1. Bind JSON to `Request`
+2. If `Tags` non-empty: call `ResponseUpdateService.UpdateResponse` (non-blocking; may serve from mock cache or update stored mock)
+3. Cache lookup (supplier cache); if hit, return cached response
+4. `fetchOffers`: HTTP POST to `Request.Destination` with `Request.Header` and `Request.Body`
+5. On success: async `HandleRequest` (validate response via OpenAI, sync taglist, store entry in S3/Parquet)
+6. Cache store (supplier cache), record metrics, return response to client
 
 ---
 
@@ -70,214 +63,139 @@ Suproxy follows a simplified layered architecture optimized for request proxying
 
 #### Validator Service (`domain/service/validation.go`)
 **Responsibilities:**
-- Request validation logic
-- Header validation
-- Body structure validation
-- Destination validation
+- Validate **supplier response** (offer list), not the incoming request
+- Sends individual offers (up to `MaxItemsPerValidation`) to an OpenAI service for consistency checks
+- Returns a `TagList` of tags for invalid or empty offers (e.g. `no_offer`, `non_200`, or custom tags from OpenAI)
+- Used in async post-processing after a successful supplier call
 
-**Validation Checks:**
-- Required fields present
-- Valid destination format
-- Valid header structure
-- Body format correctness
+**Dependencies:** OpenAI service (shared), config, tracer
 
 #### Tag Search Service (`domain/service/tagSearchService.go`)
 **Responsibilities:**
-- Tag extraction from requests
-- Tag-based routing logic
-- Tag list synchronization
+- Find S3 Parquet file keys by tag string (used for mock response resolution)
+- Lists Parquet files in S3, parses keys from filenames (prefix stripped, tags in name), matches given tags
+- Used by ResponseUpdateService to find a base response for mock updates (not for routing requests)
 
-**Features:**
-- Parse tags from request body
-- Match tags to suppliers
-- Route based on tag patterns
+**Dependencies:** Config (entry prefix), S3 wrapper (shared)
 
 #### Taglist Sync Service (`domain/service/taglistsync.go`)
 **Responsibilities:**
-- Synchronize tag lists from configuration
-- Update tag mappings
-- Maintain tag consistency
+- Hold current taglist in memory; sync incoming taglist (merge) and persist via shared TaglistStorage
+- `GetCurrentTaglist()` – return in-memory taglist (used by Validator and handler)
+- `SyncTaglist(ctx, taglist)` – merge and store updated taglist
+- Taglist source: shared TaglistStorage (S3 or config, e.g. `configs/shared/taglist.pkl`)
 
-**Configuration Source:** `configs/shared/taglist.pkl`
+**Dependencies:** Shared TaglistStorage service
+
+#### Response Update Service (`domain/service/responseUpdate.go`)
+**Responsibilities:**
+- Update stored mock responses when a request includes `Tags`
+- Flow: (1) Check mock cache – if hit, done; (2) Resolve base entry (supplier cache or TagSearchService → read Parquet from S3); (3) Update ODT response fields (dates, offer IDs, etc.), run deterministic validation, save via DatabaseRepository (S3/Parquet), store in mock cache
+- Handles request body with `UpdateRequestPayload` (e.g. departureDate, returnDate, travelers, travelType, departureAirportList)
+
+**Dependencies:** TagSearchService, DatabaseRepository, CacheService, tracer
 
 #### Database Service (`domain/service/database.go`)
 **Responsibilities:**
-- Business logic for data persistence
-- Query orchestration
-- Transaction management
+- Save request/response/tags as a single entry (`SaveDbEntry`)
+- List all stored keys (`GetAllKeys`)
+- Delegates to DatabaseRepository (S3 + Parquet); no PostgreSQL
 
-**Operations:**
-- Store request/response pairs
-- Retrieve historical data
-- Analytics data collection
+**Dependencies:** DatabaseRepository, tracer
 
 #### Cache Service (`domain/service/cache.go`)
 **Responsibilities:**
-- Caching strategy implementation
-- TTL policy management
-- Cache key generation
-- Cache invalidation
+- Two logical caches: supplier responses (`isMock=false`) and mock responses (`isMock=true`)
+- Lookup, Store, Invalidate, BuildKey (request-based key, e.g. MD5 of normalized request)
+- TTL policy: SupplierOK, MockOK, ErrorOrEmpty (configurable durations)
+- Uses shared Cache repository (Redis)
 
-**Caching Strategy:**
-- Request-based cache keys
-- Configurable TTL policies
-- Destination-aware caching
-- Header-based cache control
+**Dependencies:** Shared Cache repository, config, tracer
 
 ---
 
 ### Domain Layer - Repositories
 
-#### Cache Repository (`domain/repository/cache.go`)
+#### Cache (shared `internal/shared/domain/repository/cache.go`)
 **Responsibilities:**
-- Redis operations for caching
-- Cache read/write operations
-- TTL management
+- Redis operations: Get, Set, Delete
+- Used by Suproxy CacheService for both supplier and mock cache
 
-**Technology:** Go-Redis client
-
-**Operations:**
-- `Get(key)` - Retrieve cached response
-- `Set(key, value, ttl)` - Store response
-- `Delete(key)` - Invalidate cache entry
-- `Exists(key)` - Check cache presence
+**Technology:** go-redis, Valkey-compatible
 
 #### Database Repository (`domain/repository/database.go`)
 **Responsibilities:**
-- PostgreSQL operations
-- Request/response logging
-- Analytics data storage
+- Persist and retrieve request/response/tags as Parquet files in S3
+- CreateRequest (write Parquet to S3), ReadRequest, UpdateRequest, DeleteRequest, ListAllKeys (list Parquet files under prefix)
+- Key generation from tags and timestamp; no SQL, no PostgreSQL
 
-**Schema:**
-- Request headers
-- Request body
-- Response body
-- Timestamp
-- Destination
-- Processing time
+**Technology:** S3 API + Parquet (shared S3 and Parquet wrappers)
 
 ---
 
 ### Domain Layer - Entities
 
-#### Request (`domain/entity/request.go`)
-**Structure:**
-- `Header` - HTTP headers map
-- `Tags` - Optional tag string
-- `Destination` - Target supplier URL/IP
-- `Body` - JSON request body string
-
-#### Response (`domain/entity/response.go`)
-**Structure:**
-- Raw response string from supplier
-- Can be JSON or other formats
-
-#### ValidationResponse (`domain/entity/validation_response.go`)
-**Structure:**
-- Validation result
-- Error messages
-- Field-level errors
-
-#### CacheEntry (`domain/entity/cacheEntry.go`)
-**Structure:**
-- Cached response data
-- Metadata (timestamp, TTL)
-- Cache key
-
-#### CacheTTLPolicy (`domain/entity/cacheTTLPolicy.go`)
-**Structure:**
-- TTL duration per destination
-- Cache control policies
-
-#### DBEntry (`domain/entity/dbEntry.go`)
-**Structure:**
-- Request data
-- Response data
-- Metadata for analytics
+- **Request** – Header (map), Tags (string), Destination (URL), Body (string)
+- **Response** – Response (raw string)
+- **SupplierResponse** – HTTPStatusCode, Data (SupplierOfferList with Items as JSON raw messages)
+- **DatabaseEntry** – Request, Response, Tags (*shared.TagList), Updated (bool)
+- **CacheEntry** – Mock (bool), Key, Request, Response (JSON), CachedAt, Version
+- **CacheTTLPolicy** – SupplierOK, MockOK, ErrorOrEmpty (durations)
+- **ODTResponse / ODTItem** – Offer structure (dates, flight, accommodation, etc.) for response update and validation
+- **UpdateRequestPayload / RequestBody** – Params with departureDate, returnDate, travelers, travelType, departureAirportList
+- **ValidationResponse** – (Validator returns TagList; OpenAIValidationResult: Valid, Reason []Tag)
 
 ---
 
 ### Configuration
 
-#### Pkl Config (`domain/config/`)
-**Configuration Files:**
-- `Config.pkl.go` - Main configuration
-- `RedisConfig.pkl.go` - Redis settings
-- `Prompts.pkl.go` - Transformation templates
-
-**Configuration Includes:**
-- Server port (8080)
-- Redis connection
-- Database connection
-- Supplier endpoints
-- Cache TTL policies
-- Tag list configuration
+- **Source:** Pkl config loaded from embed `configs/suproxy.msgpack` (`domain/config/config.go`, `LoadAppConfig()`)
+- **Includes:** Server port (8080), Redis, S3/taglist/entry prefix, OpenAI/model/prompts, TTL defaults, etc. No database connection (no PostgreSQL).
 
 ---
 
 ## Component Interactions
 
 ### Request Proxy Flow
-1. **Router** receives `/api/v1/Offerlist` request
-2. **CORS Middleware** adds headers
-3. **SuproxyController** receives request
-4. **Validator** validates request structure
-5. **Cache Service** checks for cached response
-   - If hit: return cached response
-   - If miss: continue
-6. **Tag Search Service** extracts tags and determines destination
-7. **Controller** transforms request headers/body
-8. **HTTP Client** forwards to supplier system
-9. **Supplier** processes and returns response
-10. **Cache Service** stores response (if cacheable)
-11. **Database Service** logs request/response (optional)
-12. **Controller** transforms response
-13. **Response** returned to client
+1. **Router** receives `POST /api/v1/Offerlist`, CORS and recovery applied
+2. **SuproxyController** binds JSON to `Request` (client provides Destination, Header, Body, optional Tags)
+3. If `Tags` set: **ResponseUpdateService.UpdateResponse** (non-blocking) – mock cache or update stored mock
+4. **CacheService** lookup (supplier cache); if hit → return cached response
+5. **Controller** calls `fetchOffers`: HTTP POST to `Request.Destination` with Header and Body
+6. Supplier returns response; **Controller** returns same response to client
+7. On success: async **HandleRequest** – unmarshal SupplierResponse, **Validator** validates offers via OpenAI, **TaglistSync** merges/stores taglist, **DatabaseService** saves entry to S3/Parquet
+8. **CacheService** stores response in supplier cache (and optionally in mock cache after update)
 
-### Cache Hit Flow
-1. Request arrives
-2. **Cache Service** generates cache key
-3. **Cache Repository** queries Redis
-4. Cache hit found
-5. Response returned immediately (no supplier call)
+### Mock Response Update Flow (when request has Tags)
+1. **ResponseUpdateService** checks mock cache → if hit, done
+2. Else: **TagSearchService.FindKeysByTags** to get S3 keys; **DatabaseRepository.ReadRequest** to load base entry
+3. Update ODT fields (dates, etc.), validate, **DatabaseRepository.CreateRequest** (new Parquet in S3), **CacheService.Store** with isMock true
 
-### Tag-based Routing Flow
-1. Request contains tags in body or query
-2. **Tag Search Service** parses tags
-3. **Taglist Sync** provides tag-to-supplier mapping
-4. **Controller** selects appropriate destination
-5. Request forwarded to correct supplier
+### Taglist Sync
+- After successful supplier response, **Validator** returns TagList; **TaglistSync.SyncTaglist** merges with current and persists via shared TaglistStorage (S3/config)
 
 ---
 
 ## Key Design Patterns
 
-1. **Proxy Pattern**: Central pattern for request forwarding
-2. **Cache-Aside Pattern**: Check cache, then load from source
-3. **Strategy Pattern**: Different transformation strategies per supplier
-4. **Repository Pattern**: Abstract data access
-5. **Middleware Pattern**: Cross-cutting concerns
+1. **Proxy** – Forward request to client-specified Destination
+2. **Cache-Aside** – Supplier and mock caches with distinct TTLs
+3. **Repository** – DatabaseRepository (S3/Parquet), Cache (shared Redis)
+4. **Async post-processing** – Validation and storage after responding to client
 
 ## Technology Stack
 
-- **Framework**: Gin (HTTP router)
-- **Caching**: Redis/Valkey with TTL policies
-- **Database**: PostgreSQL (optional logging)
-- **Monitoring**: Datadog APM
-- **Configuration**: Pkl
-- **HTTP Client**: Go standard library
-
-## Performance Considerations
-
-1. **Caching Strategy**: Redis-based caching reduces supplier load
-2. **Connection Pooling**: Reuse HTTP connections to suppliers
-3. **Async Logging**: Non-blocking database writes
-4. **TTL Policies**: Configurable per-destination cache duration
+- **Framework:** Gin
+- **Caching:** Redis/Valkey (shared Cache repository)
+- **Persistence:** S3 + Parquet (request/response/tags; taglist via shared TaglistStorage)
+- **Validation:** OpenAI (supplier offer validation)
+- **Config:** Pkl (embed configs/suproxy.msgpack)
+- **Monitoring:** Datadog APM, optional pprof under `/debug`
 
 ## Security Considerations
 
-1. **CORS Configuration**: Controlled cross-origin access
-2. **Request Validation**: Prevent malformed requests
-3. **Destination Whitelist**: Only allow configured suppliers
-4. **Header Sanitization**: Remove sensitive headers before forwarding
-5. **Rate Limiting**: (Future) Prevent abuse
+1. **CORS** – Configured for frontend access
+2. **Request binding** – JSON validation on input
+3. **Destination** – Client-provided; consider allowlist in deployment
+4. **pprof** – Protected by BasicAuth when enabled
+5. **Secrets** – Config/Doppler for Redis, S3, OpenAI

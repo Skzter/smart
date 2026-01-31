@@ -1,6 +1,7 @@
 graph TB
     subgraph "Users"
         Developer["👤 Developer/Tester"]
+        MCPClient["🔌 MCP Client<br/>(e.g. Cursor/IDE)"]
     end
 
     subgraph SMART["S.M.A.R.T System"]
@@ -10,13 +11,13 @@ graph TB
         MCP["🔌 Autotester MCP<br/>(Go, MCP Protocol, Port 8084)"]
         Suproxy["🔄 Suproxy Service<br/>(Go, Gin, Port 8080)"]
         
-        Postgres["🗄️ PostgreSQL<br/>(Users, chats, tests, results)"]
+        Postgres["🗄️ PostgreSQL<br/>(Token storage only)"]
         Redis["💾 Redis/Valkey<br/>(Cache, sessions)"]
         
         DatadogAgent["📊 Datadog Agent<br/>(Collects traces, metrics)"]
         
         FrontendMock["🎭 Frontend Mock<br/>(Node.js, Port 8082)"]
-        SupplierMock["🎭 Supplier Mock<br/>(Node.js, Port 8083)"]
+        SupplierMock["🎭 Supplier Mock<br/>(Go, Port 8083)"]
     end
 
     subgraph "External Systems"
@@ -43,8 +44,9 @@ graph TB
     Suproxy -->|"Reads Parquet taglists (S3 API)"| S3
 
     Autotester -->|"Generates tests (HTTPS)"| LLM
+    Developer -->|"Uses (MCP)"| MCPClient
+    MCPClient -->|"Tool calls (MCP)"| MCP
     MCP -->|"Calls API (HTTP)"| Autotester
-    MCP -->|"Tool calls (MCP)"| LLM
 
     Autotester -->|"Executes tests (Playwright)"| WebApp
     Suproxy -->|"Proxies (HTTPS)"| Supplier
@@ -68,4 +70,4 @@ graph TB
     class Frontend,Nginx,Autotester,MCP,Suproxy,DatadogAgent,FrontendMock,SupplierMock container
     class Postgres,Redis database
     class Auth0,LLM,S3,DatadogCloud,Doppler,Supplier,WebApp external
-    class Developer person
+    class Developer,MCPClient person

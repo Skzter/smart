@@ -5,7 +5,7 @@ The System Context diagram shows the S.M.A.R.T system as a black box, focusing o
 ## Diagram
 
 ![System Context](diagrams/system-context.mmd.svg)
-See [system-context.mmd](diagrams/system-context.mmd) for the Mermaid source.
+See [system-context.mmd](diagrams/system-context.mmd) for the Mermaid source. The SVG is generated from it (see [Regenerating SVGs](../README.md#regenerating-svgs) in the architecture README).
 
 ## System: S.M.A.R.T
 
@@ -47,7 +47,7 @@ See [system-context.mmd](diagrams/system-context.mmd) for the Mermaid source.
 **Interactions:**
 - Frontend authenticates users via Auth0
 - Issues JWT tokens for authenticated sessions
-- **Note:** Only used for service-to-service communication (MCP ↔ Autotester)
+- **Note:** Auth0 is for frontend user authentication only. Internal service-to-service communication (MCP ↔ Autotester) uses random bearer tokens stored in PostgreSQL.
 
 ### OpenAI / LLM Service
 **Type:** External AI Service

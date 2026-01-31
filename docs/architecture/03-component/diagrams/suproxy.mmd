@@ -1,36 +1,38 @@
 graph TB
     subgraph Application["Application Layer"]
-        Router["Router<br/>(Gin, CORS middleware)"]
+        Router["Router<br/>(Gin, CORS, pprof /debug)"]
     end
 
     subgraph Handlers["Domain - Handler"]
-        Controller["Suproxy Controller<br/>(Request handling, transformation)"]
+        Controller["Suproxy Controller<br/>(PostOfferlist, fetchOffers, HandleRequest)"]
     end
 
     subgraph Services["Domain - Services"]
-        Validator["Validator Service<br/>(Request validation)"]
-        TagSearch["Tag Search Service<br/>(Tag extraction, routing)"]
-        TaglistSync["Taglist Sync<br/>(Tag synchronization)"]
-        CacheSvc["Cache Service<br/>(Caching strategy, TTL)"]
-        DBSvc["Database Service<br/>(Request/response logging)"]
+        Validator["Validator Service<br/>(Supplier response validation via OpenAI)"]
+        TagSearch["Tag Search Service<br/>(Find S3 keys by tags)"]
+        TaglistSync["Taglist Sync<br/>(Merge/store taglist)"]
+        CacheSvc["Cache Service<br/>(Supplier + mock cache, TTL)"]
+        DBSvc["Database Service<br/>(Save/list entries)"]
+        ResponseUpdate["Response Update Service<br/>(Mock response update)"]
     end
 
-    subgraph Repositories["Domain - Repositories"]
-        CacheRepo["Cache Repository<br/>(Go-Redis)"]
-        DBRepo["Database Repository<br/>(SQLC)"]
+    subgraph Repositories["Repositories"]
+        CacheRepo["Cache<br/>(shared Redis)"]
+        DBRepo["Database Repository<br/>(S3 + Parquet)"]
     end
 
     subgraph Infrastructure["Infrastructure Layer"]
-        RedisConn["Redis Connection<br/>(Go-Redis)"]
-        PostgresConn["PostgreSQL Connection"]
-        HTTPClient["HTTP Client<br/>(Supplier API client)"]
+        RedisConn["Redis Connection"]
+        S3Conn["S3 Client"]
+        HTTPClient["HTTP Client<br/>(Supplier API)"]
     end
 
     subgraph External["External Dependencies"]
-        Redis["💾 Redis"]
-        Postgres["🗄️ PostgreSQL"]
+        Redis["💾 Redis/Valkey"]
+        S3["📦 S3<br/>(Parquet: entries)"]
+        TaglistStorage["📄 Taglist Storage<br/>(shared S3/config)"]
         Supplier["🌐 Supplier APIs"]
-        TaglistConfig["📄 Taglist Config<br/>(taglist.pkl)"]
+        OpenAI["🤖 OpenAI<br/>(Response validation)"]
     end
 
     Router --> Controller
@@ -39,26 +41,32 @@ graph TB
     Controller --> TagSearch
     Controller --> CacheSvc
     Controller --> DBSvc
+    Controller --> ResponseUpdate
     Controller --> HTTPClient
+    Controller --> TaglistSync
 
-    TagSearch --> TaglistSync
+    ResponseUpdate --> TagSearch
+    ResponseUpdate --> CacheSvc
+    ResponseUpdate --> DBRepo
+
+    TagSearch --> S3Conn
+    TaglistSync --> TaglistStorage
     CacheSvc --> CacheRepo
     DBSvc --> DBRepo
-    TaglistSync --> TaglistConfig
+    DBRepo --> S3Conn
 
     CacheRepo --> RedisConn
-    DBRepo --> PostgresConn
-
     RedisConn --> Redis
-    PostgresConn --> Postgres
+    S3Conn --> S3
     HTTPClient --> Supplier
+    Validator --> OpenAI
 
     classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
     classDef infrastructure fill:#438dd5,stroke:#2e6295,color:#ffffff
     classDef external fill:#999999,stroke:#666666,color:#ffffff
 
     class Router,Controller component
-    class Validator,TagSearch,TaglistSync,CacheSvc,DBSvc component
+    class Validator,TagSearch,TaglistSync,CacheSvc,DBSvc,ResponseUpdate component
     class CacheRepo,DBRepo component
-    class RedisConn,PostgresConn,HTTPClient infrastructure
-    class Redis,Postgres,Supplier,TaglistConfig external
+    class RedisConn,S3Conn,HTTPClient infrastructure
+    class Redis,S3,TaglistStorage,Supplier,OpenAI external
