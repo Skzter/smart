@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { tick } from "svelte";
 import SidebarTestWrapper from "../helpers/SidebarTestWrapper.svelte";
-import type { ApiChatSummary } from "$lib/types";
+import type { ApiChatSummary, ApiChatsResponse } from "$types/api";
 import type { DateRange } from "bits-ui";
 
 // Mock toast
@@ -16,19 +16,25 @@ vi.mock("svelte-sonner", () => ({
 // Mock API
 vi.mock("$lib/api", () => ({
     getChats: vi.fn(),
+    getGroups: vi.fn().mockResolvedValue([]),
+    createGroup: vi.fn(),
 }));
 
 // Mock shared state
 vi.mock("$lib/shared.svelte", async (importOriginal) => {
     const actual = await importOriginal<typeof import("$lib/shared.svelte")>();
 
+    actual.user.id = "test-user-123";
+    actual.ChatDate.Range = undefined;
+    actual.ChatFilter.sortBy = "recent";
+    actual.ChatFilter.timeFilter = "all";
+    actual.GroupFilter.selectedIds = [];
+    actual.GroupsState.items = [];
+    actual.GroupsState.isLoading = false;
+    actual.GroupsState.error = "";
+
     return {
         ...actual,
-
-        user: { id: "test-user-123" },
-        ChatDate: { Range: undefined },
-        ChatFilter: { sortBy: "recent", timeFilter: "all" },
-
         registerChatTitleUpdater: vi.fn(),
         updateChatTitle: vi.fn(),
     };
@@ -39,7 +45,7 @@ vi.mock("$lib/components/Group.svelte", () => ({
 }));
 
 import { getChats } from "$lib/api";
-import { user, ChatDate, ChatFilter } from "$lib/shared.svelte";
+import { user, ChatDate, ChatFilter, GroupFilter } from "$lib/shared.svelte";
 import { toast } from "svelte-sonner";
 
 describe("Sidebar", () => {
@@ -49,18 +55,28 @@ describe("Sidebar", () => {
         ChatDate.Range = undefined;
         ChatFilter.sortBy = "recent";
         ChatFilter.timeFilter = "all";
+        GroupFilter.selectedIds = [];
     });
 
     it("renders the sidebar with loading state initially", async () => {
-        vi.mocked(getChats).mockImplementation(() => new Promise(() => {})); // Never resolves
+        let resolveChats!: (val: ApiChatsResponse) => void;
+
+        vi.mocked(getChats).mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    resolveChats = resolve;
+                }),
+        );
 
         const { container } = render(SidebarTestWrapper);
 
-        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
         await waitFor(() => {
             const spinner = container.querySelector(".size-6");
             expect(spinner).toBeInTheDocument();
         });
+
+        resolveChats({ summaries: [], hasMore: false, pageSize: 10 });
+        await tick();
     });
 
     it("loads user chats successfully", async () => {
@@ -71,6 +87,7 @@ describe("Sidebar", () => {
                 title: "Test chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -96,16 +113,6 @@ describe("Sidebar", () => {
         });
     });
 
-    it("does not load chats when user.id is undefined", async () => {
-        (user as unknown as { id: undefined }).id = undefined;
-        vi.clearAllMocks(); // Clear any mocks from beforeEach
-
-        render(SidebarTestWrapper);
-        await tick();
-
-        expect(getChats).not.toHaveBeenCalled();
-    });
-
     it("categorizes chat as 'Heute' for today's chats", async () => {
         const today = new Date();
         const mockChats: ApiChatSummary[] = [
@@ -115,6 +122,7 @@ describe("Sidebar", () => {
                 title: "Today's chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -141,6 +149,7 @@ describe("Sidebar", () => {
                 title: "Yesterday's chat",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -167,6 +176,7 @@ describe("Sidebar", () => {
                 title: "Last week's chat",
                 createdAt: lastWeek.toISOString(),
                 updatedAt: lastWeek.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -193,6 +203,7 @@ describe("Sidebar", () => {
                 title: "This month's chat",
                 createdAt: thisMonth.toISOString(),
                 updatedAt: thisMonth.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -219,6 +230,7 @@ describe("Sidebar", () => {
                 title: "Old chat",
                 createdAt: older.toISOString(),
                 updatedAt: older.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -265,6 +277,7 @@ describe("Sidebar", () => {
                 updatedAt: new Date(
                     today.getTime() - 30 * 24 * 60 * 60 * 1000,
                 ).toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -290,6 +303,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -326,6 +340,7 @@ describe("Sidebar", () => {
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-2",
@@ -333,6 +348,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -374,6 +390,7 @@ describe("Sidebar", () => {
                 title: "Today 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-2",
@@ -381,6 +398,7 @@ describe("Sidebar", () => {
                 title: "Today 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-3",
@@ -388,6 +406,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -431,6 +450,7 @@ describe("Sidebar", () => {
                 title: "Today",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-2",
@@ -438,6 +458,7 @@ describe("Sidebar", () => {
                 title: "Yesterday",
                 createdAt: yesterday.toISOString(),
                 updatedAt: yesterday.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -477,6 +498,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -534,6 +556,7 @@ describe("Sidebar", () => {
                 title: "Chat",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -550,15 +573,24 @@ describe("Sidebar", () => {
     });
 
     it("returns empty array when items is undefined in updateGroupsWithDateRange", async () => {
-        vi.mocked(getChats).mockImplementation(() => new Promise(() => {}));
+        let resolveChats!: (val: ApiChatsResponse) => void;
+
+        vi.mocked(getChats).mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    resolveChats = resolve;
+                }),
+        );
 
         const { container } = render(SidebarTestWrapper);
 
-        // Wait for the spinner to appear (loading state is set asynchronously in an effect)
         await waitFor(() => {
             const spinner = container.querySelector(".size-6");
             expect(spinner).toBeInTheDocument();
         });
+
+        resolveChats({ summaries: [], hasMore: false, pageSize: 10 });
+        await tick();
     });
 
     it("adds items to existing group category", async () => {
@@ -571,6 +603,7 @@ describe("Sidebar", () => {
                 title: "Chat 1",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-2",
@@ -578,6 +611,7 @@ describe("Sidebar", () => {
                 title: "Chat 2",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
             {
                 chatId: "chat-3",
@@ -585,6 +619,7 @@ describe("Sidebar", () => {
                 title: "Chat 3",
                 createdAt: today.toISOString(),
                 updatedAt: today.toISOString(),
+                groups: [],
             },
         ];
         vi.mocked(getChats).mockResolvedValue({
@@ -598,5 +633,53 @@ describe("Sidebar", () => {
         await waitFor(() => {
             expect(getChats).toHaveBeenCalled();
         });
+    });
+
+    it("resets group filter and loads all chats", async () => {
+        vi.mocked(getChats).mockResolvedValue({
+            summaries: [],
+            hasMore: false,
+            pageSize: 10,
+        });
+
+        render(SidebarTestWrapper);
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenCalledWith({ groupIds: [], page: 0 });
+        });
+
+        GroupFilter.selectedIds = ["g1"];
+        await tick();
+
+        await new Promise((r) => setTimeout(r, 0));
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenCalledTimes(2);
+        });
+        expect(getChats).toHaveBeenNthCalledWith(2, {
+            groupIds: ["g1"],
+            page: 0,
+        });
+
+        GroupFilter.selectedIds = [];
+        await tick();
+
+        await waitFor(() => {
+            expect(getChats).toHaveBeenLastCalledWith({
+                groupIds: [],
+                page: 0,
+            });
+        });
+    });
+
+    it("does not load chats when user.id is undefined", async () => {
+        user.id = undefined;
+
+        render(SidebarTestWrapper);
+
+        await tick();
+
+        expect(getChats).not.toHaveBeenCalled();
+        expect(toast.error).not.toHaveBeenCalled();
     });
 });

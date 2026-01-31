@@ -8,6 +8,7 @@
         ChatFilter,
         user,
         registerChatTitleUpdater,
+        GroupFilter,
     } from "$lib/shared.svelte";
     import Spinner from "./ui/spinner/spinner.svelte";
     import SidebarHeader from "$lib/components/SidebarHeader.svelte";
@@ -19,21 +20,22 @@
 
     registerChatTitleUpdater(updateChatTitleState);
 
+    type GroupState = { label: string; summaries: ApiChatSummary[] };
+
     let error = $state<string>("");
     let items = $state<ApiChatSummary[]>([]);
     let loading = $state<boolean>(false);
 
     let container = $state<HTMLElement | null>(null);
 
-    let timeout = 500;
-    const maxTimeout = 10000;
     const scrollThreshold = 100; // Load more when within 100px of bottom
 
     let hasMore = $state(true);
     let page = $state(0);
     let initialized = $state(false);
+    let lastToast = $state<string | null>(null);
 
-    let groupState = $derived.by(() =>
+    let groupState = $derived.by<GroupState[]>(() =>
         updateGroupsWithDateRange(
             items,
             ChatDate.Range,
@@ -51,43 +53,75 @@
 
     let mu = new Mutex();
     async function loadMore() {
-        let release = await mu.obtain();
-        if (!user.id || loading || !hasMore) return;
+        const release = await mu.obtain();
+        if (!user.id || loading || !hasMore) {
+            release();
+            return;
+        }
+
         loading = true;
         release();
 
         try {
             const response = await getChats({
                 page: page,
-                groupIds: [],
+                groupIds: GroupFilter.selectedIds,
             });
             hasMore = response.hasMore;
             items = items.concat(response.summaries);
             page++;
             error = "";
         } catch (err) {
-            if (err instanceof Error) {
-                error = err.message;
-                toast.error(err.message, {});
-            } else {
-                error = "Unbekannter Fehler";
-                toast.error("Unbekannter Fehler", {});
+            const msg =
+                err instanceof Error ? err.message : "Unbekannter Fehler";
+            error = msg;
+
+            if (lastToast !== msg) {
+                lastToast = msg;
+                toast.error(msg, {});
             }
-            if (timeout < maxTimeout) {
-                timeout = Math.min(timeout * 2, maxTimeout);
-            }
-            setTimeout(loadMore, timeout);
+
+            hasMore = false;
         } finally {
             loading = false;
         }
     }
+
+    let lastGroupFilterKey = $state<string | null>(null);
+
+    function resetAndReload() {
+        error = "";
+        items = [];
+        hasMore = true;
+        page = 0;
+        initialized = false;
+        loading = false;
+        lastToast = null;
+
+        lastGroupFilterKey = GroupFilter.selectedIds.slice().sort().join(",");
+        void loadMore();
+    }
+
+    $effect(() => {
+        const key = GroupFilter.selectedIds.slice().sort().join(",");
+
+        if (lastGroupFilterKey === null) {
+            lastGroupFilterKey = key;
+            return;
+        }
+
+        if (key !== lastGroupFilterKey) {
+            lastGroupFilterKey = key;
+            resetAndReload();
+        }
+    });
 
     function updateGroupsWithDateRange(
         items: ApiChatSummary[] | undefined,
         dateRange: DateRange | undefined,
         sortBy: "recent" | "created",
         timeFilter: "all" | "today" | "week" | "month",
-    ): { label: string; summaries: ApiChatSummary[] }[] {
+    ): GroupState[] {
         if (!items) return [];
 
         let filteredItems = items.filter((item) => {

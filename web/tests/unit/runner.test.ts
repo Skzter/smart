@@ -431,7 +431,7 @@ describe("Runner", () => {
 
             const consoleSpy = vi
                 .spyOn(console, "error")
-                .mockImplementation(() => { });
+                .mockImplementation(() => {});
 
             await runner.run();
 

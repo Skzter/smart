@@ -24,6 +24,7 @@ import (
 type Auth interface {
 	GenerateToken(ctx context.Context, userId string) (*entity.Token, error)
 	GetBearerToken(headers http.Header) (string, error)
+	ValidateToken(ctx context.Context, token string) (*entity.ValidationResult, error)
 }
 
 type auth struct {
@@ -131,4 +132,48 @@ func convSqlNullTimeIntoTime(sqltime sql.NullTime) *time.Time {
 	} else {
 		return &sqltime.Time
 	}
+}
+
+// ValidateToken validates an opaque bearer token using DB state
+func (a *auth) ValidateToken(ctx context.Context, token string) (*entity.ValidationResult, error) {
+	if err := assert.NotNil(ctx); err != nil {
+		return nil, err
+	}
+
+	ctx, span := a.tracer.Start(ctx, "autotesterController.ValidateToken")
+	defer span.End()
+
+	token = strings.TrimSpace(token)
+	if err := assert.StringNotEmpty(token); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "missing token")
+		return nil, err
+	}
+
+	// DB lookup
+	dbToken, err := a.db.ReadTokenByToken(ctx, token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			span.SetStatus(codes.Ok, "token unknown")
+			return &entity.ValidationResult{Valid: false, Revoked: false}, nil
+		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "read database error")
+		return nil, err
+	}
+
+	// expiry check (DB-based)
+	if dbToken.ExpiresAt.Before(time.Now().UTC()) {
+		span.SetStatus(codes.Ok, "token expired")
+		return &entity.ValidationResult{Valid: false, Revoked: false}, nil
+	}
+
+	// revoke check (DB-based)
+	if dbToken.RevokedAt.Valid {
+		span.SetStatus(codes.Ok, "token revoked")
+		return &entity.ValidationResult{Valid: false, Revoked: true}, nil
+	}
+
+	span.SetStatus(codes.Ok, "")
+	return &entity.ValidationResult{Valid: true, Revoked: false}, nil
 }

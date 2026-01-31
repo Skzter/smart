@@ -6,6 +6,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/handler"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/resource"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/store"
@@ -18,6 +19,7 @@ type McpServer struct {
 	server            *mcp.Server
 	autotesterService service.AutotesterAPIService
 	store             store.TestLogStreamStore
+	JwtExtraction     handler.JwtExtractionHandler
 	logger            *slog.Logger
 }
 
@@ -26,9 +28,10 @@ func NewMcpServer(
 	server *mcp.Server,
 	autotesterService service.AutotesterAPIService,
 	store store.TestLogStreamStore,
+	jwtExtraction handler.JwtExtractionHandler,
 	logger *slog.Logger,
 ) (*McpServer, error) {
-	if err := assert.NotNil(server, autotesterService, store, logger); err != nil {
+	if err := assert.NotNil(server, autotesterService, store, jwtExtraction, logger); err != nil {
 		return nil, err
 	}
 
@@ -36,6 +39,7 @@ func NewMcpServer(
 		server:            server,
 		autotesterService: autotesterService,
 		store:             store,
+		JwtExtraction:     jwtExtraction,
 		logger:            logger,
 	}
 
@@ -85,21 +89,22 @@ func (m *McpServer) registerTools() error {
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "get_template",
-		Description: "Retrieves the test generation template from the autotester backend",
+		Description: "Fetches the prompt template to structure test generation requests so that LLM can use it",
 	}, getTemplateTool.GetTemplate)
 
 	m.logger.Debug("Registered tool: get_template")
 
 	mcp.AddTool(m.server, &mcp.Tool{
-		Name:        "generate_test",
-		Description: "takes prompt, sends it to backend and receives feedback to display in frontend",
+		Name: "generate_test",
+		Description: `Generates test code from a user prompt. ChatId must be empty by default. Sends prompt, userId, and chatId to backend for validation. 
+	Returns generated test code or validation message if validation fails.`,
 	}, generateTestTool.GenerateTest)
 
 	m.logger.Debug("Registered tool: generate_test")
 
 	mcp.AddTool(m.server, &mcp.Tool{
 		Name:        "run_test",
-		Description: "Runs test based on testId, returns either success or failed",
+		Description: "At first it saves test code provided by the user and runs it afterwards, then it returns message to the user whether test started succeeded or failed to start",
 	}, runTestTool.RunTest)
 
 	m.logger.Debug("Registered tool: run_test")

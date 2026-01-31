@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	ddgin "github.com/DataDog/dd-trace-go/contrib/gin-gonic/gin/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/mcp/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/tracing"
 )
 
 func main() {
@@ -20,46 +23,70 @@ func main() {
 		panic(err)
 	}
 
-	mcpServer, err := InitializeMcpServer(cfg)
+	tracer, shutdownTracer, err := tracing.Setup("mcp")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := shutdownTracer(); err != nil {
+			slog.Error("tracer shutdown error", "error", err)
+		}
+	}()
+
+	mcpServer, err := InitializeMcpServer(cfg, tracer)
 	if err != nil {
 		panic(err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		log.Println("Shutting down MCP server...")
-		cancel()
-	}()
-
-	log.Printf("Starting MCP server on HTTP %s\n", cfg.Port)
-
-	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server {
+	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return mcpServer.Server()
 	}, nil)
 
-	mux := http.NewServeMux()
-	mux.Handle("/mcp/", handler)
+	router := gin.Default()
+	router.Use(gin.Recovery())
+	router.Use(ddgin.Middleware(os.Getenv("DD_SERVICE")))
+	router.Use(mcpServer.JwtExtraction.JWTExtractionIntoContext())
 
-	srv := &http.Server{
-		Addr:              cfg.Port,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
+	router.POST("/mcp", func(c *gin.Context) {
+		handler.ServeHTTP(c.Writer, c.Request)
+	})
+
+	httpServer := &http.Server{
+		Addr:    cfg.Port,
+		Handler: router,
+
+		ReadHeaderTimeout: 60 * time.Second,
+		ReadTimeout:       600 * time.Second,
+		WriteTimeout:      600 * time.Second,
+		IdleTimeout:       600 * time.Second,
 	}
 
 	go func() {
-		<-ctx.Done()
-		log.Println("Shutting down MCP HTTP server...")
-		mcpServer.ShutdownComponents()
-		_ = srv.Shutdown(context.Background())
+		slog.Info("Starting MCP server", "port", cfg.Port)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("listen error", "error", err)
+			os.Exit(1)
+		}
 	}()
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		panic(err)
+	<-ctx.Done()
+	slog.Info("Shutdown signal received")
+	mcpServer.ShutdownComponents()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	slog.Info("Shutting down HTTP server")
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		slog.Error("HTTP shutdown error", "error", err)
 	}
+
+	slog.Info("MCP server exited gracefully")
 }

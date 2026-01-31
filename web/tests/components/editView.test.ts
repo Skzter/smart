@@ -20,7 +20,7 @@ vi.mock("monaco-editor", () => ({
 
 // Mock the worker
 vi.mock("monaco-editor/esm/vs/language/typescript/ts.worker?worker", () => ({
-    default: class MockWorker { },
+    default: class MockWorker {},
 }));
 
 import EditView from "../../src/lib/components/EditView.svelte";

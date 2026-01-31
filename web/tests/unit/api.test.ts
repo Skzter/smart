@@ -9,6 +9,10 @@ import {
     getChatById,
     deleteLocalTest,
     validatePrompt,
+    getGroups,
+    createGroup,
+    assignChatToGroups,
+    removeChatFromGroup,
     updateChatTitle,
     getApiToken,
 } from "../../src/lib/api";
@@ -20,7 +24,7 @@ vi.mock("axios");
 // Mock the shared module
 vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
-    chat: { id: "chat456", isLoading: false },
+    chat: { id: "chat456", isLoading: false, groups: [] },
     apiToken: { token: null },
     baseURL: "http://localhost:8081/api/v1",
 }));
@@ -129,6 +133,7 @@ describe("API Functions", () => {
                 title: "Test Chat 1",
                 createdAt: "2024-01-01T00:00:00Z",
                 updatedAt: "2024-01-01T00:00:00Z",
+                groups: [],
             },
             {
                 chatId: "chat2",
@@ -136,6 +141,7 @@ describe("API Functions", () => {
                 title: "Test Chat 2",
                 createdAt: "2024-01-02T00:00:00Z",
                 updatedAt: "2024-01-02T00:00:00Z",
+                groups: ["g1"],
             },
         ];
 
@@ -179,6 +185,23 @@ describe("API Functions", () => {
             await expect(getChats({ page: 0, groupIds: [] })).rejects.toThrow(
                 "Failed to fetch user chats",
             );
+        });
+
+        it("should make a GET request to /chats with group filter", async () => {
+            const mockedAxios = axios as unknown as Mock;
+
+            mockedAxios.mockResolvedValue({
+                data: { chatSummarys: [] },
+            });
+
+            await getChats({ page: 0, groupIds: ["g1", "g2"] });
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/chats?page=0&groups=g1,g2",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+            });
         });
     });
     describe.skip("validatePrompt TOOD: fix this test", () => {
@@ -382,6 +405,7 @@ describe("API Functions", () => {
             createdAt: "2024-01-01T00:00:00Z",
             updatedAt: "2024-01-01T00:00:00Z",
             title: "Test Chat",
+            groups: ["g1", "g2"],
             messages: [
                 {
                     id: "msg1",
@@ -510,6 +534,95 @@ describe("API Functions", () => {
             await expect(deleteLocalTest(mockTestcaseId)).rejects.toThrow(
                 "Failed to delete test",
             );
+        });
+    });
+
+    describe("groups", () => {
+        it("should make a GET request to /groups and return array", async () => {
+            const mockedAxios = axios as unknown as Mock;
+
+            const mockGroups = [
+                {
+                    id: "g1",
+                    name: "Group 1",
+                    description: "desc 1",
+                    createdAt: "2025-01-01T00:00:00Z",
+                    createdBy: mockUserId,
+                },
+                {
+                    id: "g2",
+                    name: "Group 2",
+                    description: "desc 2",
+                    createdAt: "2025-01-02T00:00:00Z",
+                    createdBy: mockUserId,
+                },
+            ];
+
+            mockedAxios.mockResolvedValue({ data: mockGroups });
+
+            const result = await getGroups();
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: "/groups",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+            });
+            expect(result).toEqual(mockGroups);
+        });
+
+        it("should make a POST request to /groups and return groupId", async () => {
+            const mockedAxios = axios as unknown as Mock;
+
+            const mockRequest = {
+                groupName: "My Group",
+                description: "hello",
+                userId: mockUserId,
+            };
+
+            mockedAxios.mockResolvedValue({
+                data: { groupId: "new-group-id" },
+            });
+
+            const result = await createGroup(mockRequest);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: "/groups",
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+                data: mockRequest,
+            });
+            expect(result).toEqual({ groupId: "new-group-id" });
+        });
+
+        it("should make a POST request to /chats/:chatId/groups with groupIds[]", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: {} });
+
+            await assignChatToGroups(mockChatId, ["g1", "g2"]);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "post",
+                url: `/chats/${mockChatId}/groups`,
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+                data: { groupIds: ["g1", "g2"] },
+            });
+        });
+
+        it("should make a DELETE request to /chats/:chatId/groups/:groupId", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: {} });
+
+            await removeChatFromGroup(mockChatId, "g1");
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "delete",
+                url: `/chats/${mockChatId}/groups/g1`,
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+            });
         });
     });
 

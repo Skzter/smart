@@ -3,8 +3,10 @@ info:
   title: "Autotester API"
   description: api for the connection from frontend to backend.
   version: 1.0.0
-servers:
-  - url: https://localhost:8081/api/v1
+
+# NOTE: All paths must include /api/v1/ prefix for Prism API mock to work correctly.
+# Do not add a servers section with a baseUrl - paths must start with /api/v1/
+
 tags:
   - name: Chat
     description: Chat and message operations
@@ -17,7 +19,7 @@ tags:
   - name: Media
     description: Test debugging media
 paths:
-  /chat:
+  /api/v1/chat:
     post:
       summary: "Takes user message and returns LLMs message."
       tags:
@@ -48,7 +50,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /chats/{chatId}/title:
+  /api/v1/chats/{chatId}/title:
     patch:
       summary: "Updates the title of a chat"
       requestBody:
@@ -88,7 +90,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
                           
-  /validate:
+  /api/v1/validate:
     post:
       summary: "Validates a prompt with user/chat context"
       tags:
@@ -129,7 +131,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /template:
+  /api/v1/userInfo:
+    post:
+      summary: "Requests User Info from Backend on inital load"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+
+      responses:
+        "200":
+          description: Successful Request for user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/template:
     get:
       summary: "Gets Template from Autotester Config and returns it"
       tags:
@@ -149,7 +181,7 @@ paths:
                 type: string
                 example: ""
 
-  /saveLocal:
+  /api/v1/saveLocal:
     post:
       summary: "Takes a testcode and saves it locally"
       tags:
@@ -181,7 +213,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /deleteLocal:
+  /api/v1/deleteLocal:
     delete:
       summary: "Deletes a locally stored test case by its ID"
       tags:
@@ -236,7 +268,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /run:
+  /api/v1/run:
     post:
       summary: Run automated Playwright test in container
       description: Executes a Playwright test file in a containerized environment and returns the test output logs
@@ -300,7 +332,7 @@ paths:
                     description: Error message describing the internal error
                     example: "Command execution error: exit status 1"
 
-  /test/{testId}/stream:
+  /api/v1/test/{testId}/stream:
     get:
       summary: Stream test execution logs as JSON events
       description: |
@@ -338,7 +370,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /auth/generate:
+  /api/v1/auth/generate:
     post:
       summary: Generate authentication token for a user
       description: |
@@ -489,7 +521,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /chats:
+  /api/v1/chats:
     get:
       summary: "Returns the chat history"
       tags:
@@ -542,7 +574,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /chats/{chatId}:
+  /api/v1/chats/{chatId}:
     get:
       summary: Get full chat by ID
       tags:
@@ -582,7 +614,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /tests:
+  /api/v1/tests:
     get:
       summary: Retrieve stored test cases with optional filters
       tags:
@@ -680,7 +712,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /groups:
+  /api/v1/groups:
     get:
       summary: List all groups
       tags:
@@ -745,7 +777,7 @@ paths:
                   error:
                     type: string
 
-  /chats/{chatId}/groups:
+  /api/v1/chats/{chatId}/groups:
     post:
       summary: Assign chat to groups
       tags:
@@ -781,7 +813,7 @@ paths:
                   error:
                     type: string
 
-  /chats/{chatId}/groups/{groupId}:
+  /api/v1/chats/{chatId}/groups/{groupId}:
     delete:
       summary: Remove chat from group
       tags:
@@ -831,6 +863,17 @@ components:
       properties:
         userId:
           type: string
+
+    UserResponse:
+      type: object
+      properties:
+        userId:
+          type: string
+          example: "9177b856-46a0-11f0-9fe2-0242ac120002"
+        allChats:
+          type: array
+          items:
+            $ref: "#/components/schemas/Chat"
 
     Chat:
       type: object

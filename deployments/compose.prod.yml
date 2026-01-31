@@ -12,15 +12,27 @@ services:
       - DD_DOGSTATSD_PORT=8125
       - DD_SITE=us5.datadoghq.com
 
+  autotester-migrate:
+    image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
+    entrypoint: ["/bin/run-migrations.sh"]
+    env_file: .env
+    networks:
+      - default
+    depends_on:
+      - postgres
+    restart: "no"
+
   autotester:
     image: gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/autotester:latest
     restart: always
+    depends_on:
+      - autotester-migrate
     volumes:
       - /run/user/1001/podman/podman.sock:/var/run/docker.sock
       - /tmp/smart/logs/:/tmp/smart/logs/
       - /tmp/smart/media/:/tmp/smart/media/
       - /tmp/tests:/tmp/tests
-      - /home/stud/.env:/.env:ro
+      - .env:/.env:ro
     ports:
       - "8079:8081"
     networks:
@@ -87,8 +99,6 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    depends_on:
-      - autotester
     networks:
       - default
     environment:

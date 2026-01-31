@@ -12,7 +12,7 @@ import (
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
 
-// RunTestTool is an amazing tool
+// RunTestTool is a tool to run tests
 type RunTestTool struct {
 	logger               *slog.Logger
 	autotesterAPIService service.AutotesterAPIService
@@ -42,7 +42,10 @@ func (tt *RunTestTool) RunTest(ctx context.Context, request *mcp.CallToolRequest
 	tt.logger.Debug("Test started successfully", "result", testResult)
 
 	go func() {
+		token, _ := ctx.Value(entity.JwtContextKey{}).(string)
+
 		streamCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		streamCtx = context.WithValue(streamCtx, entity.JwtContextKey{}, token)
 		defer cancel()
 
 		if err := tt.autotesterAPIService.ReadTestLogStream(streamCtx, testResult.TestId); err != nil {

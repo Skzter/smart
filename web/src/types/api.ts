@@ -12,6 +12,7 @@ export type ApiChatSummary = {
     title: string;
     createdAt: string;
     updatedAt: string;
+    groups: string[];
 };
 
 export type ApiChatRequest = {
@@ -53,6 +54,29 @@ export type ApiGetChatByIdResponse = {
     messages: ApiMessage[];
     lastTest: string;
     lastAutoPlaywrightPrompt: string;
+    groups: string[];
+};
+
+export type ApiGroup = {
+    id: string;
+    name: string;
+    description: string;
+    createdAt: string;
+    createdBy: string;
+};
+
+export type ApiCreateGroupRequest = {
+    groupName: string;
+    description: string;
+    userId: string;
+};
+
+export type ApiCreateGroupResponse = {
+    groupId: string;
+};
+
+export type ApiAssignChatToGroupsRequest = {
+    groupIds: string[];
 };
 
 export type ApiToken = {

@@ -14,6 +14,7 @@ import (
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/repository"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 	sharedService "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/service"
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
@@ -106,7 +107,7 @@ func (s *chatStorageService) SaveChat(ctx context.Context, chat *entity.Chat) er
 	if err := s.repo.Create(ctx, chat, summary); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while storing chat")
-		return err
+		return errors.ErrInternalServer
 	}
 
 	if err := s.cache.Store(ctx, chat); err != nil {
@@ -143,9 +144,10 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 	defer span.End()
 
 	if err := assert.StringNotEmpty(chatId); err != nil {
+		s.logger.Error("missing chatId", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "missing chatId")
-		return nil, fmt.Errorf("chatId must not be empty")
+		return nil, errors.ErrValidation
 	}
 
 	start := time.Now()
@@ -172,15 +174,17 @@ func (s *chatStorageService) LoadChat(ctx context.Context, chatId string) (*enti
 
 	chat, err := s.repo.Read(ctx, chatId)
 	if err != nil {
+		s.logger.Error("error while reading chat", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "error while reading chat")
-		return nil, err
+		return nil, errors.ErrInternalServer
 	}
 
 	if err := s.validator.ValidateChat(ctx, chat); err != nil {
+		s.logger.Error("retrieved invalid chat from storage", slog.String("error", err.Error()))
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "retrieved invalid chat")
-		return nil, fmt.Errorf("retrieved invalid chat from s3: %w", err)
+		return nil, errors.ErrValidation
 	}
 
 	if err := s.cache.Store(ctx, chat); err != nil {
