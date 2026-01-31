@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3355.8500000000004 2160" width="3355.8500000000004" height="2160" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.4, 0 4.8" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<line x1="70" y1="70" x2="70" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="269.675" y1="70" x2="269.675" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="531.1500000000001" y1="70" x2="531.1500000000001" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="785.4750000000001" y1="70" x2="785.4750000000001" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="1093.4250000000002" y1="70" x2="1093.4250000000002" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="1412.1000000000001" y1="70" x2="1412.1000000000001" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="1709.3250000000003" y1="70" x2="1709.3250000000003" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="2013.7000000000003" y1="70" x2="2013.7000000000003" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="2296.6250000000005" y1="70" x2="2296.6250000000005" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="2590.2750000000005" y1="70" x2="2590.2750000000005" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="2894.6500000000005" y1="70" x2="2894.6500000000005" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="3191.8750000000005" y1="70" x2="3191.8750000000005" y2="2130" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line x1="70" y1="90" x2="269.675" y2="90" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="169.8375" y="84" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Types test description&lt;br/&gt;&quot;Create test for login button&quot;</text>
+<polyline points="269.675,130 299.675,130 299.675,150 269.675,150" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="305.675" y="140" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Capture input</text>
+<line x1="269.675" y1="200" x2="531.1500000000001" y2="200" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="400.4125" y="194" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">generatePrompt(request)</text>
+<line x1="531.1500000000001" y1="240" x2="785.4750000000001" y2="240" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="658.3125000000001" y="234" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">POST /api/v1/chat&lt;br/&gt;{userId, chatId, message}</text>
+<line x1="785.4750000000001" y1="280" x2="1093.4250000000002" y2="280" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="939.4500000000002" y="274" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">HandleChatRequest()</text>
+<polyline points="1093.4250000000002,320 1123.4250000000002,320 1123.4250000000002,340 1093.4250000000002,340" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="1129.4250000000002" y="330" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Validate request</text>
+<line x1="1093.4250000000002" y1="390" x2="1412.1000000000001" y2="390" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="1252.7625000000003" y="384" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ProcessChat(request)</text>
+<line x1="1412.1000000000001" y1="430" x2="2894.6500000000005" y2="430" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="424" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">GetChatHistory(chatId)</text>
+<line x1="2894.6500000000005" y1="470" x2="3191.8750000000005" y2="470" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="464" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Get chat (Parquet) by prefix</text>
+<line x1="3191.8750000000005" y1="510" x2="2894.6500000000005" y2="510" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="504" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Chat history (Parquet)</text>
+<line x1="2894.6500000000005" y1="550" x2="1412.1000000000001" y2="550" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="544" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Previous messages</text>
+<line x1="1412.1000000000001" y1="590" x2="1709.3250000000003" y2="590" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="1560.7125" y="584" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">GenerateTest(userMessage, context)</text>
+<line x1="1709.3250000000003" y1="630" x2="2013.7000000000003" y2="630" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="1861.5125000000003" y="624" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">BuildPrompt(message, history)</text>
+<polyline points="2013.7000000000003,670 2043.7000000000003,670 2043.7000000000003,690 2013.7000000000003,690" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2049.7000000000003" y="680" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Load template from config</text>
+<polyline points="2013.7000000000003,740 2043.7000000000003,740 2043.7000000000003,760 2013.7000000000003,760" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2049.7000000000003" y="750" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Inject context</text>
+<polyline points="2013.7000000000003,810 2043.7000000000003,810 2043.7000000000003,830 2013.7000000000003,830" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2049.7000000000003" y="820" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Format for LLM</text>
+<line x1="2013.7000000000003" y1="880" x2="1709.3250000000003" y2="880" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="1861.5125000000003" y="874" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Constructed prompt</text>
+<line x1="1709.3250000000003" y1="920" x2="2296.6250000000005" y2="920" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2002.9750000000004" y="914" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">POST /v1/chat/completions&lt;br/&gt;{model, messages, temperature}</text>
+<polyline points="2296.6250000000005,960 2326.6250000000005,960 2326.6250000000005,980 2296.6250000000005,980" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2332.6250000000005" y="970" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Process prompt</text>
+<polyline points="2296.6250000000005,1030 2326.6250000000005,1030 2326.6250000000005,1050 2296.6250000000005,1050" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2332.6250000000005" y="1040" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Generate test code</text>
+<line x1="2296.6250000000005" y1="1100" x2="1709.3250000000003" y2="1100" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="2002.9750000000004" y="1094" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Response with test code</text>
+<line x1="1709.3250000000003" y1="1140" x2="2590.2750000000005" y2="1140" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2149.8" y="1134" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ParseResponse(llmOutput)</text>
+<polyline points="2590.2750000000005,1180 2620.2750000000005,1180 2620.2750000000005,1200 2590.2750000000005,1200" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2626.2750000000005" y="1190" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Extract code blocks</text>
+<polyline points="2590.2750000000005,1250 2620.2750000000005,1250 2620.2750000000005,1270 2590.2750000000005,1270" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2626.2750000000005" y="1260" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Validate syntax</text>
+<polyline points="2590.2750000000005,1320 2620.2750000000005,1320 2620.2750000000005,1340 2590.2750000000005,1340" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2626.2750000000005" y="1330" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Clean formatting</text>
+<line x1="2590.2750000000005" y1="1390" x2="1709.3250000000003" y2="1390" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="2149.8" y="1384" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Validated test code</text>
+<line x1="1709.3250000000003" y1="1430" x2="1412.1000000000001" y2="1430" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="1560.7125" y="1424" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Generated test code</text>
+<line x1="1412.1000000000001" y1="1470" x2="2894.6500000000005" y2="1470" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="1464" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">SaveMessage(userMessage)</text>
+<line x1="2894.6500000000005" y1="1510" x2="3191.8750000000005" y2="1510" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="1504" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Upload Parquet (user message)</text>
+<line x1="3191.8750000000005" y1="1550" x2="2894.6500000000005" y2="1550" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="1544" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">OK</text>
+<line x1="2894.6500000000005" y1="1590" x2="1412.1000000000001" y2="1590" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="1584" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Saved</text>
+<line x1="1412.1000000000001" y1="1630" x2="2894.6500000000005" y2="1630" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="1624" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">SaveMessage(llmResponse)</text>
+<line x1="2894.6500000000005" y1="1670" x2="3191.8750000000005" y2="1670" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="1664" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Upload Parquet (LLM response)</text>
+<line x1="3191.8750000000005" y1="1710" x2="2894.6500000000005" y2="1710" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="3043.2625000000007" y="1704" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">OK</text>
+<line x1="2894.6500000000005" y1="1750" x2="1412.1000000000001" y2="1750" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="2153.3750000000005" y="1744" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Saved</text>
+<line x1="1412.1000000000001" y1="1790" x2="1093.4250000000002" y2="1790" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="1252.7625000000003" y="1784" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ChatResponse&lt;br/&gt;{message, chatId, userId}</text>
+<line x1="1093.4250000000002" y1="1830" x2="785.4750000000001" y2="1830" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="939.4500000000002" y="1824" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">JSON response</text>
+<line x1="785.4750000000001" y1="1870" x2="531.1500000000001" y2="1870" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="658.3125000000001" y="1864" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">HTTP 200&lt;br/&gt;{message, chatId}</text>
+<line x1="531.1500000000001" y1="1910" x2="269.675" y2="1910" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="400.4125" y="1904" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">ChatResponse</text>
+<polyline points="269.675,1950 299.675,1950 299.675,1970 269.675,1970" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="305.675" y="1960" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Update messages state</text>
+<polyline points="269.675,2020 299.675,2020 299.675,2040 269.675,2040" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#seq-arrow)" />
+<text x="305.675" y="2030" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">Render with syntax highlighting</text>
+<line x1="269.675" y1="2090" x2="70" y2="2090" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+<text x="169.8375" y="2084" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)">Display generated test</text>
+<rect x="2419.1500000000005" y="924" width="342.04" height="27" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+<polygon points="2755.1900000000005,924 2761.1900000000005,930 2755.1900000000005,930" fill="var(--_inner-stroke)" />
+<text x="2590.1700000000005" y="937.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">System: &quot;You are an expert...&quot;&lt;br/&gt;User: &quot;Create test...&quot;</text>
+<rect x="30" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="70" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">User</text>
+<rect x="150" y="30" width="239.35000000000002" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="269.675" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Frontend&lt;br/&gt;(Chat Component)</text>
+<rect x="429.3500000000001" y="30" width="203.60000000000002" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="531.1500000000001" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">API Service&lt;br/&gt;(api.ts)</text>
+<rect x="672.9500000000002" y="30" width="225.05" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="785.4750000000001" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Autotester API&lt;br/&gt;(Router)</text>
+<rect x="938.0000000000002" y="30" width="310.85" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1093.4250000000002" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Chat Controller&lt;br/&gt;(HandleChatRequest)</text>
+<rect x="1288.8500000000001" y="30" width="246.50000000000003" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1412.1000000000001" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Chat Manager&lt;br/&gt;(ProcessChat)</text>
+<rect x="1575.3500000000004" y="30" width="267.95000000000005" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1709.3250000000003" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">LLM Test Suite&lt;br/&gt;(GenerateTest)</text>
+<rect x="1883.3000000000002" y="30" width="260.8" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="2013.7000000000003" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Prompt Builder&lt;br/&gt;(BuildPrompt)</text>
+<rect x="2184.1000000000004" y="30" width="225.05" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="2296.6250000000005" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">LLM API&lt;br/&gt;(OpenAI/Claude)</text>
+<rect x="2449.1500000000005" y="30" width="282.25" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="2590.2750000000005" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Response Parser&lt;br/&gt;(ParseResponse)</text>
+<rect x="2771.4000000000005" y="30" width="246.50000000000003" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="2894.6500000000005" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">Chat Storage&lt;br/&gt;(SaveMessage)</text>
+<rect x="3057.9000000000005" y="30" width="267.95000000000005" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="3191.8750000000005" y="50" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="var(--_text)">S3 / Object Storage&lt;br/&gt;(Parquet)</text>
+</svg>

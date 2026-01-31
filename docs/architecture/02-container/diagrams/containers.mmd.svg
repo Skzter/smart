@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3472.4525 1057" width="3472.4525" height="1057" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<rect x="1086.4499999999996" y="40" width="226.1500000000001" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1086.4499999999996" y="40" width="226.1500000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1098.4499999999996" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Users&quot;</text>
+<rect x="40" y="213" width="3392.4525" height="631" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="213" width="3392.4525" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="227" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;S.M.A.R.T System&quot;</text>
+<rect x="106.64499999999998" y="905" width="2989.245" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="106.64499999999998" y="905" width="2989.245" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="118.64499999999998" y="919" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;External Systems&quot;</text>
+<polyline points="1199.5249999999996,132 1199.5249999999996,269" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1199.5249999999996,305 1199.5249999999996,325 2594.6749999999997,325 2594.6749999999997,442" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2594.6749999999997,478 2594.6749999999997,633 2598.7899999999995,633" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2594.6749999999997,478 2594.6749999999997,498 1877.2399999999998,498 1877.2399999999998,633 1309.7824999999998,633" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1199.5249999999996,305 1199.5249999999996,325 180.39499999999998,325 180.39499999999998,961" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 3212.1275,671 3212.1275,788" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 3033.615,671 3033.615,806 2809.8650000000002,806" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 2916.3025,671 2916.3025,979 2983.5124999999994,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 1887.82,671 1887.82,806 2499.015,806" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 1790.8799999999999,671 1790.8799999999999,979 2479.6124999999997,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 2369.64,671 2369.64,979 1602.8,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="492.3499999999999,478 492.3499999999999,498 630.7600000000002,498 630.7600000000002,633 2223.5899999999997,633" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="492.3499999999999,478 492.3499999999999,498 554.7725,498 554.7725,979 1456.3999999999999,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 2187.2,671 2187.2,979 2102.1049999999996,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 1213.5299999999997,671 1213.5299999999997,979 779.8699999999995,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="891.5500000000002,478 891.5500000000002,633 956.0324999999998,633" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 969.185,671 969.185,788" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 2085.98,671 2085.98,806 1670.4999999999998,806" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 816.4124999999999,671 816.4124999999999,806 1288.1499999999999,806" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="492.3499999999999,478 492.3499999999999,498 381.0625,498 381.0625,806 1288.1499999999999,806" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1479.3249999999998,824 1479.3249999999998,979 1005.1174999999995,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="2411.1899999999996,651 2411.1899999999996,671 1984.76,671 1984.76,979 1318.0099999999998,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1132.9074999999998,651 1132.9074999999998,671 701.96,671 701.96,979 1200.2099999999996,979" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<rect x="1151.4849999999997" y="187" width="96.08" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1199.5249999999996" y="200.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Uses (HTTPS)&quot;</text>
+<rect x="2555.2149999999997" y="360" width="78.92" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2594.6749999999997" y="373.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;API calls&quot;</text>
+<rect x="2555.2149999999997" y="533" width="78.92" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2594.6749999999997" y="546.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Routes to&quot;</text>
+<rect x="1837.7799999999997" y="533" width="78.92" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1877.2399999999998" y="546.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Routes to&quot;</text>
+<rect x="103.75499999999998" y="619.5" width="153.28" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="180.39499999999998" y="633" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Authenticates (OAuth2)&quot;</text>
+<rect x="3146.9275000000002" y="706" width="130.4" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="3212.1275" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Reads/writes (SQL)&quot;</text>
+<rect x="2979.8549999999996" y="706" width="107.52000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="3033.615" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Caches (Redis)&quot;</text>
+<rect x="2836.8025" y="792.5" width="159" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2916.3025" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Stores Parquet (S3 API)&quot;</text>
+<rect x="1834.06" y="706" width="107.52000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1887.82" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Caches (Redis)&quot;</text>
+<rect x="1688.4999999999998" y="792.5" width="204.76000000000002" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1790.8799999999999" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Reads Parquet taglists (S3 API)&quot;</text>
+<rect x="2290.14" y="792.5" width="159" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2369.64" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Generates tests (HTTPS)&quot;</text>
+<rect x="571.2800000000002" y="533" width="118.96000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="630.7600000000002" y="546.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Calls API (HTTP)&quot;</text>
+<rect x="495.2925" y="706" width="118.96000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="554.7725" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Tool calls (MCP)&quot;</text>
+<rect x="2096.2599999999998" y="792.5" width="181.88" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2187.2" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Executes tests (Playwright)&quot;</text>
+<rect x="1156.9099999999999" y="792.5" width="113.24000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1213.5299999999997" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Proxies (HTTPS)&quot;</text>
+<rect x="840.6500000000002" y="533" width="101.8" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="891.5500000000002" y="546.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Test requests&quot;</text>
+<rect x="926.8649999999999" y="706" width="84.64" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="969.185" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Proxies to&quot;</text>
+<rect x="2000.76" y="706" width="170.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2085.98" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Sends traces (StatsD/APM)&quot;</text>
+<rect x="731.1924999999999" y="706" width="170.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="816.4124999999999" y="719.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Sends traces (StatsD/APM)&quot;</text>
+<rect x="295.8425" y="619.5" width="170.44" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="381.0625" y="633" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Sends traces (StatsD/APM)&quot;</text>
+<rect x="1419.8449999999998" y="879" width="118.96000000000001" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1479.3249999999998" y="892.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Forwards (HTTPS)&quot;</text>
+<rect x="1905.26" y="792.5" width="159" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1984.76" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Fetches secrets (HTTPS)&quot;</text>
+<rect x="622.46" y="792.5" width="159" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="701.96" y="806" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Fetches secrets (HTTPS)&quot;</text>
+<rect x="1108.4499999999996" y="96" width="182.15" height="36" rx="0" ry="0" fill="#08427b" stroke="#052e56" stroke-width="0.75" />
+<rect x="1033.3749999999995" y="269" width="332.3" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="2378.475" y="442" width="432.40000000000003" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="2223.5899999999997" y="615" width="375.20000000000005" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="286.8749999999999" y="442" width="410.95000000000005" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="956.0324999999998" y="615" width="353.75" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="3013.8025000000002" y="788" width="396.65000000000003" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
+<rect x="2499.015" y="788" width="310.85" height="36" rx="0" ry="0" fill="#438dd5" stroke="#2e6295" stroke-width="0.75" />
+<rect x="1288.1499999999999" y="788" width="382.35" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="721.8250000000002" y="442" width="339.45000000000005" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="799.4599999999999" y="788" width="339.45000000000005" height="36" rx="0" ry="0" fill="#1168bd" stroke="#0b4884" stroke-width="0.75" />
+<rect x="128.64499999999998" y="961" width="103.5" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="1456.3999999999999" y="961" width="146.4" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="2479.6124999999997" y="961" width="503.90000000000003" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="844.4174999999994" y="961" width="160.70000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="1200.2099999999996" y="961" width="117.80000000000001" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="619.1699999999995" y="961" width="160.70000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="2102.1049999999996" y="961" width="196.45000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<text x="1199.5249999999996" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;👤 Developer/Tester&quot;</text>
+<text x="1199.5249999999996" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;📱 Web Frontend&lt;br/&gt;(Svelte, TypeScript)&quot;</text>
+<text x="2594.6749999999997" y="460" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔀 Nginx Reverse Proxy&lt;br/&gt;(Request routing, security)&quot;</text>
+<text x="2411.1899999999996" y="633" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;⚙️ Autotester Service&lt;br/&gt;(Go, Gin, Port 8081)&quot;</text>
+<text x="492.3499999999999" y="460" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔌 Autotester MCP&lt;br/&gt;(Go, MCP Protocol, Port 8084)&quot;</text>
+<text x="1132.9074999999998" y="633" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔄 Suproxy Service&lt;br/&gt;(Go, Gin, Port 8080)&quot;</text>
+<text x="3212.1275" y="806" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🗄️ PostgreSQL&lt;br/&gt;(Users, chats, tests, results)&quot;</text>
+<text x="2654.44" y="806" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;💾 Redis/Valkey&lt;br/&gt;(Cache, sessions)&quot;</text>
+<text x="1479.3249999999998" y="806" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;📊 Datadog Agent&lt;br/&gt;(Collects traces, metrics)&quot;</text>
+<text x="891.5500000000002" y="460" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🎭 Frontend Mock&lt;br/&gt;(Node.js, Port 8082)&quot;</text>
+<text x="969.185" y="806" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🎭 Supplier Mock&lt;br/&gt;(Node.js, Port 8083)&quot;</text>
+<text x="180.39499999999998" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔒 Auth0&quot;</text>
+<text x="1529.6" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🤖 LLM Service&quot;</text>
+<text x="2731.5624999999995" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;📦 S3 / Object Storage&lt;br/&gt;(Parquet: chats, testcases, taglists)&quot;</text>
+<text x="924.7674999999995" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;📊 Datadog Cloud&quot;</text>
+<text x="1259.1099999999997" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🔑 Doppler&quot;</text>
+<text x="699.5199999999995" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🌐 Supplier APIs&quot;</text>
+<text x="2200.3299999999995" y="979" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;💻 Web App Under Test&quot;</text>
+</svg>

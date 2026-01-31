@@ -4,73 +4,7 @@ The Suproxy service acts as an intelligent proxy between web applications under 
 
 ## Diagram
 
-```mermaid
-graph TB
-    subgraph Application["Application Layer"]
-        Router["Router<br/>(Gin, CORS middleware)"]
-    end
-
-    subgraph Handlers["Domain - Handler"]
-        Controller["Suproxy Controller<br/>(Request handling, transformation)"]
-    end
-
-    subgraph Services["Domain - Services"]
-        Validator["Validator Service<br/>(Request validation)"]
-        TagSearch["Tag Search Service<br/>(Tag extraction, routing)"]
-        TaglistSync["Taglist Sync<br/>(Tag synchronization)"]
-        CacheSvc["Cache Service<br/>(Caching strategy, TTL)"]
-        DBSvc["Database Service<br/>(Request/response logging)"]
-    end
-
-    subgraph Repositories["Domain - Repositories"]
-        CacheRepo["Cache Repository<br/>(Go-Redis)"]
-        DBRepo["Database Repository<br/>(SQLC)"]
-    end
-
-    subgraph Infrastructure["Infrastructure Layer"]
-        RedisConn["Redis Connection<br/>(Go-Redis)"]
-        PostgresConn["PostgreSQL Connection"]
-        HTTPClient["HTTP Client<br/>(Supplier API client)"]
-    end
-
-    subgraph External["External Dependencies"]
-        Redis["💾 Redis"]
-        Postgres["🗄️ PostgreSQL"]
-        Supplier["🌐 Supplier APIs"]
-        TaglistConfig["📄 Taglist Config<br/>(taglist.pkl)"]
-    end
-
-    Router --> Controller
-
-    Controller --> Validator
-    Controller --> TagSearch
-    Controller --> CacheSvc
-    Controller --> DBSvc
-    Controller --> HTTPClient
-
-    TagSearch --> TaglistSync
-    CacheSvc --> CacheRepo
-    DBSvc --> DBRepo
-    TaglistSync --> TaglistConfig
-
-    CacheRepo --> RedisConn
-    DBRepo --> PostgresConn
-
-    RedisConn --> Redis
-    PostgresConn --> Postgres
-    HTTPClient --> Supplier
-
-    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
-    classDef infrastructure fill:#438dd5,stroke:#2e6295,color:#ffffff
-    classDef external fill:#999999,stroke:#666666,color:#ffffff
-
-    class Router,Controller component
-    class Validator,TagSearch,TaglistSync,CacheSvc,DBSvc component
-    class CacheRepo,DBRepo component
-    class RedisConn,PostgresConn,HTTPClient infrastructure
-    class Redis,Postgres,Supplier,TaglistConfig external
-```
-
+![Suproxy](diagrams/suproxy.mmd.svg)
 See [suproxy.mmd](diagrams/suproxy.mmd) for the Mermaid source.
 
 ## Architecture Overview

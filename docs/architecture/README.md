@@ -31,28 +31,22 @@ The C4 model provides a hierarchical set of software architecture diagrams at di
 
 ## Viewing Diagrams
 
-Diagrams are created using Mermaid, which has native support in GitLab, GitHub, and many IDEs.
+Diagrams are Mermaid source (`.mmd`) with rendered SVGs (`.mmd.svg`) next to each file. The docs reference the SVG files so they display in GitLab, GitHub, and IDEs.
 
 ### Viewing in GitLab/GitHub
-Mermaid diagrams render automatically when viewing markdown files in GitLab and GitHub.
+Rendered `.mmd.svg` images show in markdown; Mermaid also renders inline in some viewers.
 
 ### Viewing in IDE
 - **VS Code**: Mermaid preview built-in or install Mermaid Editor extension
 - **IntelliJ/GoLand**: Mermaid plugin
 - **Cursor**: Built-in Mermaid support
 
-### Generating Images (Optional)
+### Regenerating SVGs
+Requires [Deno](https://deno.land). Run from the `scripts/` directory (script uses `../docs/architecture`):
 ```bash
-# Install Mermaid CLI
-npm install -g @mermaid-js/mermaid-cli
-
-# Generate PNG next to each .mmd (run from repo root)
-find docs/architecture -name '*.mmd' -exec sh -c 'mmdc -i "$1" -o "${1%.mmd}.png"' _ {} \;
-
-# Generate SVG into output/
-mkdir -p docs/architecture/output
-find docs/architecture -name '*.mmd' -exec sh -c 'mmdc -i "$1" -o "docs/architecture/output/$(basename "$1" .mmd).svg" -t svg' _ {} \;
+cd scripts && ./render-mermaid.sh
 ```
+Writes `${file}.svg` next to each `.mmd` under `docs/architecture`.
 
 ### Live Preview
 Open any `.mmd` file in your IDE or use the [Mermaid Live Editor](https://mermaid.live) to preview and edit diagrams.
@@ -74,4 +68,4 @@ This documentation should be updated when:
 - External system integrations change
 - Key component responsibilities shift
 
-Last updated: 2026-01-20
+Last updated: 2026-01-31

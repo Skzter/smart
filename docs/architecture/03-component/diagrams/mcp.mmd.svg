@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2237.17 1006" width="2237.17" height="1006" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 30%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="4.8" refX="8" refY="2.4" orient="auto">
+    <polygon points="0 0, 8 2.4, 0 4.8" fill="var(--_arrow)" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="4.8" refX="0" refY="2.4" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.4, 8 4.8" fill="var(--_arrow)" />
+  </marker>
+</defs>
+<rect x="209.60000000000002" y="213" width="1270.7875000000001" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="209.60000000000002" y="213" width="1270.7875000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="221.60000000000002" y="227" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Application Layer&quot;</text>
+<rect x="40" y="369" width="1189" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="40" y="369" width="1189" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="52" y="383" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Domain - Tools&quot;</text>
+<rect x="209.60000000000002" y="525" width="870.9125000000001" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="209.60000000000002" y="525" width="870.9125000000001" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="221.60000000000002" y="539" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Domain - Service&quot;</text>
+<rect x="428.4749999999999" y="681" width="469.25" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="428.4749999999999" y="681" width="469.25" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="440.4749999999999" y="695" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Domain - Repository&quot;</text>
+<rect x="1249" y="369" width="397.75" height="112" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1249" y="369" width="397.75" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1261" y="383" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;Configuration&quot;</text>
+<rect x="1666.7500000000002" y="40" width="516.1399999999999" height="926" rx="0" ry="0" fill="var(--_group-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+<rect x="1666.7500000000002" y="40" width="516.1399999999999" height="28" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+<text x="1678.7500000000002" y="54" dy="0.35em" font-size="12" font-weight="600" fill="var(--_text-sec)">&quot;External Systems&quot;</text>
+<polyline points="868.0625,305 868.0625,325 249.5999999999999,325 249.5999999999999,425" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="868.0625,305 868.0625,325 663.0999999999999,325 663.0999999999999,425" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="868.0625,305 868.0625,325 1048,325 1048,425" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="868.0625,305 868.0625,325 1447.875,325 1447.875,425" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="249.5999999999999,461 249.5999999999999,599 486.2249999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="663.0999999999999,461 663.0999999999999,581" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1048,461 1048,599 839.9749999999999,599" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="663.0999999999999,617 663.0999999999999,737" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="663.0999999999999,773 663.0999999999999,813 1927.6800000000003,813 1927.6800000000003,910" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="1934.4725,132 1934.4725,152 1813.5800000000002,152 1813.5800000000002,287 1044.9375,287" fill="none" stroke="var(--_line)" stroke-width="0.75" marker-end="url(#arrowhead)" />
+<polyline points="868.0625,269 868.0625,249 2030.3400000000001,249 2030.3400000000001,114 2093.4725,114" fill="none" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<rect x="1736.6400000000003" y="828" width="382.08000000000004" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1927.6800000000003" y="841.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;API calls (HTTPS/REST)&lt;br/&gt;Authorization: Bearer &amp;lt;token&amp;gt;&quot;</text>
+<rect x="1716.92" y="187" width="193.32" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="1813.5800000000002" y="200.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Tool calls&lt;br/&gt;(MCP Protocol)&quot;</text>
+<rect x="1922.2400000000002" y="187" width="216.20000000000002" height="27" rx="4" ry="4" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="2030.3400000000001" y="200.5" text-anchor="middle" dy="0.35em" font-size="11" font-weight="400" fill="var(--_text-muted)">&quot;Tool responses&lt;br/&gt;(MCP Protocol)&quot;</text>
+<rect x="691.1875" y="269" width="353.75" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="61.999999999999886" y="425" width="375.20000000000005" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="461.19999999999993" y="425" width="403.8" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="889" y="425" width="318" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="486.2249999999999" y="581" width="353.75" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="450.4749999999999" y="737" width="425.25000000000006" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1271" y="425" width="353.75" height="36" rx="0" ry="0" fill="#85bbf0" stroke="#5d82a8" stroke-width="0.75" />
+<rect x="1829.4550000000004" y="910" width="196.45000000000002" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<rect x="1775.4725" y="96" width="318" height="36" rx="0" ry="0" fill="#999999" stroke="#666666" stroke-width="0.75" />
+<text x="868.0625" y="287" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;MCP Server&lt;br/&gt;(MCP SDK, tool registration)&quot;</text>
+<text x="249.5999999999999" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Get Template Tool&lt;br/&gt;(Retrieve test template)&quot;</text>
+<text x="663.0999999999999" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Generate Test Tool&lt;br/&gt;(Generate test from prompt)&quot;</text>
+<text x="1048" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Run Test Tool&lt;br/&gt;(Execute test by ID)&quot;</text>
+<text x="663.0999999999999" y="599" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Autotester API Service&lt;br/&gt;(Business logic)&quot;</text>
+<text x="663.0999999999999" y="755" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Autotester API Repository&lt;br/&gt;(HTTP client, net/http)&quot;</text>
+<text x="1447.875" y="443" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#000000">&quot;Pkl Configuration&lt;br/&gt;(MCP &amp; HTTP settings)&quot;</text>
+<text x="1927.6800000000003" y="928" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;⚙️ Autotester Service&quot;</text>
+<text x="1934.4725" y="114" text-anchor="middle" dy="0.35em" font-size="13" font-weight="500" fill="#ffffff">&quot;🤖 LLM System&lt;br/&gt;(Claude/GPT via MCP)&quot;</text>
+</svg>
