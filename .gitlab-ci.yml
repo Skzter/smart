@@ -89,6 +89,7 @@ replace_api_paths:
     - sed -i 's|"/api/v1"|"/v1"|g' internal/suproxy/application/router.go
     # Frontend API file - replace baseURL from "http://localhost:8081/api/v1" to "/v1"
     - sed -i 's|http://localhost:8081/api/v1|/v1|g' web/src/lib/api.ts
+    - sed -i 's|http://localhost:8081/api/v1|/v1|g' web/src/lib/shared.svelte.ts
     # Test files - replace all /api/v1/* routes with /v1/*
     - sed -i 's|/api/v1/userInfo|/v1/userInfo|g' internal/autotester/domain/handler/chat_test.go
     - sed -i 's|/api/v1/template|/v1/template|g' internal/autotester/domain/handler/template_test.go
@@ -365,7 +366,9 @@ deploy_htwk:
       export CI_REGISTRY_USER=$CI_REGISTRY_USER;
       export CI_REGISTRY_PASSWORD=$CI_REGISTRY_PASSWORD;
       export CI_REGISTRY=$CI_REGISTRY;
-      echo "DD_API_KEY={$DATADOG_KEY}" >> ~/.env;
+      echo "
+      DD_API_KEY={$DATADOG_KEY}
+      DB_URL=postgres://postgres:postgres-pass@deployments-postgres-1:5432/smart?sslmode=disable" > ~/.env;
       echo \$CI_REGISTRY_PASSWORD | podman login \$CI_REGISTRY -u \$CI_REGISTRY_USER --password-stdin &&
       podman pull gitlab.dit.htwk-leipzig.de:5050/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/auto-playwright:latest &&
       podman-compose -f compose.prod.yml pull &&

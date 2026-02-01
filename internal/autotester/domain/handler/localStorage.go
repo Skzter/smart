@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 // HandleSaveLocalRequest processes a request to save a test case locally.
@@ -48,6 +49,16 @@ func (a *AutotesterController) HandleSaveLocalRequest(c *gin.Context) {
 		a.metricsService.RecordRequestDuration(time.Since(start))
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: "Saving failed due to internal server error"})
 		return
+	}
+
+	// Update chat's lastTest so GET /chats/:chatId returns it for the frontend
+	if chat, loadErr := a.chatStorageService.LoadChat(ctx, localSaveRequest.ChatId); loadErr == nil {
+		chat.LastTest = testcaseToSave.TestID
+		if saveErr := a.chatManager.SaveChat(ctx, chat, localSaveRequest.UserId); saveErr != nil {
+			a.logger.Debug("failed to update chat lastTest", "err", saveErr)
+		}
+	} else if !errors.Is(loadErr, sharedErrors.ErrChatNotFound) {
+		a.logger.Debug("failed to load chat for lastTest update", "err", loadErr)
 	}
 
 	span.SetStatus(codes.Ok, "successfully saved testcase locally")

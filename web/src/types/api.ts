@@ -101,6 +101,6 @@ export type ApiChatsResponse = {
 
 export type ApiMediaResponse = {
     testID: string;
-    hasScreenshot: string;
-    hasVideo: string;
+    hasScreenshot: boolean;
+    hasVideo: boolean;
 };

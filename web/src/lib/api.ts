@@ -18,7 +18,7 @@ import type {
 } from "$types/api";
 import { chat, user, apiToken, baseURL } from "./shared.svelte";
 
-function getAuthHeaders() {
+export function getAuthHeaders(): Record<string, string> {
     return apiToken.token ? { Authorization: `Bearer ${apiToken.token}` } : {};
 }
 
@@ -258,6 +258,7 @@ export async function updateChatTitle(
             url: `/chats/${chatId}/title`,
             baseURL,
             data: { title },
+            headers: getAuthHeaders(),
         });
 
         return response.data;
@@ -272,12 +273,49 @@ export async function getMedia(testId: string): Promise<ApiMediaResponse> {
             method: "get",
             url: `test/${testId}/media`,
             baseURL: baseURL,
+            headers: getAuthHeaders(),
         });
 
         return response.data;
     } catch (error) {
         throw getErrorMessage(error);
     }
+}
+
+/** Returns presigned S3 URL for video. Uses JSON when backend sends it; otherwise uses redirect Location (no redirect follow to avoid CORS). */
+export async function getVideoUrl(testId: string): Promise<string> {
+    const response = await axios({
+        method: "get",
+        url: `test/${testId}/video`,
+        baseURL: baseURL,
+        headers: { ...getAuthHeaders(), Accept: "application/json" },
+        maxRedirects: 0,
+        validateStatus: (status) => status === 200 || status === 307,
+    });
+    if (response.status === 307) {
+        const location = response.headers.location;
+        if (typeof location === "string") return location;
+        throw new Error("Missing Location header in redirect");
+    }
+    return (response.data as { url: string }).url;
+}
+
+/** Returns presigned S3 URL for screenshot. Uses JSON when backend sends it; otherwise uses redirect Location (no redirect follow to avoid CORS). */
+export async function getScreenshotUrl(testId: string): Promise<string> {
+    const response = await axios({
+        method: "get",
+        url: `test/${testId}/screenshot`,
+        baseURL: baseURL,
+        headers: { ...getAuthHeaders(), Accept: "application/json" },
+        maxRedirects: 0,
+        validateStatus: (status) => status === 200 || status === 307,
+    });
+    if (response.status === 307) {
+        const location = response.headers.location;
+        if (typeof location === "string") return location;
+        throw new Error("Missing Location header in redirect");
+    }
+    return (response.data as { url: string }).url;
 }
 
 function getErrorMessage(error: unknown): Error {

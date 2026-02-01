@@ -1,6 +1,13 @@
 import { toast } from "svelte-sonner";
 import { Mutex, timeout } from "async-ts";
-import { getMedia, runContainer, saveTestLocal } from "./api";
+import {
+    getAuthHeaders,
+    getMedia,
+    getScreenshotUrl,
+    getVideoUrl,
+    runContainer,
+    saveTestLocal,
+} from "./api";
 import { buildStepTree } from "$lib/runnerlogtransform";
 import type { SaveState } from "$types/save";
 import { baseURL } from "./shared.svelte";
@@ -15,13 +22,18 @@ export class Runner {
     private storageState: SaveState = $state("idle");
     private storedTest: string = $state("");
 
-    private eventSource?: EventSource;
+    private streamAbortController?: AbortController;
     private retryCount = 0;
     private readonly MAX_RETRIES = 5;
 
     private fetchingMedia: boolean = false;
+    private mediaPollTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    private mediaPollCount = 0;
+    private static readonly MAX_MEDIA_POLL_ATTEMPTS = 12; // 12 * 5s = 60s
+    private static readonly MEDIA_POLL_INTERVAL_MS = 5000;
 
     public videoUrl = $state<string | null>(null);
+    public screenshotUrl = $state<string | null>(null);
 
     public logStatus = $state<
         "idle" | "connecting" | "connected" | "error" | "closed"
@@ -48,9 +60,10 @@ export class Runner {
         };
     });
 
-    constructor(chatId: string, userId: string) {
+    constructor(chatId: string, userId: string, initialTestId = "") {
         this.chatId = chatId;
         this.userId = userId;
+        this.storedTest = initialTestId;
     }
 
     public isRunning(): boolean {
@@ -117,28 +130,76 @@ export class Runner {
         this.logStatus = "connecting";
         this.logError = null;
 
-        const connect = () => {
-            this.eventSource = new EventSource(
-                `${baseURL}/test/${testId}/stream`,
-            );
+        const connect = async () => {
+            this.streamAbortController = new AbortController();
+            const signal = this.streamAbortController.signal;
 
-            this.eventSource.onopen = () => {
+            try {
+                const response = await fetch(
+                    `${baseURL}/test/${testId}/stream`,
+                    {
+                        headers: {
+                            Accept: "text/event-stream",
+                            ...getAuthHeaders(),
+                        },
+                        signal,
+                    },
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 this.retryCount = 0;
                 this.logStatus = "connected";
-            };
 
-            this.eventSource.addEventListener("log", (event) => {
-                const e = event as MessageEvent<string>;
-                this.result = [...this.result, { begin: e.data }];
-            });
+                const reader = response.body?.getReader();
+                const decoder = new TextDecoder();
+                if (!reader) {
+                    throw new Error("No response body");
+                }
 
-            this.eventSource.addEventListener("finished", () => {
+                const processLines = (lines: string[]) => {
+                    let eventType = "log";
+                    const dataLines: string[] = [];
+                    for (const line of lines) {
+                        if (line.startsWith("event:")) {
+                            eventType = line.slice(6).trim();
+                        } else if (line.startsWith("data:")) {
+                            dataLines.push(line.slice(5));
+                        } else if (line === "") {
+                            const data = dataLines.join("\n").trim();
+                            if (eventType === "log" && data) {
+                                this.result = [...this.result, { begin: data }];
+                            } else if (eventType === "finished") {
+                                this.stopLogStream();
+                                return true;
+                            }
+                            eventType = "log";
+                            dataLines.length = 0;
+                        }
+                    }
+                    return false;
+                };
+
+                let buffer = "";
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (value) {
+                        buffer += decoder.decode(value, { stream: true });
+                    }
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() ?? "";
+                    if (processLines(lines)) return;
+                    if (done) {
+                        if (buffer.trim() && processLines([...buffer.split("\n"), ""])) return;
+                        break;
+                    }
+                }
                 this.stopLogStream();
-            });
-
-            this.eventSource.onerror = () => {
-                this.eventSource?.close();
-
+            } catch {
+                if (signal.aborted) return;
+                this.streamAbortController = undefined;
                 if (this.retryCount < this.MAX_RETRIES) {
                     this.retryCount++;
                     const delay = 1000 * this.retryCount;
@@ -147,15 +208,15 @@ export class Runner {
                     this.logStatus = "error";
                     this.logError = "Live-Log-Verbindung fehlgeschlagen";
                 }
-            };
+            }
         };
 
         connect();
     }
 
     private stopLogStream() {
-        this.eventSource?.close();
-        this.eventSource = undefined;
+        this.streamAbortController?.abort();
+        this.streamAbortController = undefined;
         this.logStatus = "closed";
     }
 
@@ -224,8 +285,15 @@ export class Runner {
                 await timeout(200 * (i + 1));
                 try {
                     const resp = await getMedia(this.getCurTest());
+                    const testId = this.getCurTest();
                     if (resp.hasVideo) {
-                        this.videoUrl = `${baseURL}/test/${this.getCurTest()}/video`;
+                        this.videoUrl = await getVideoUrl(testId);
+                    }
+                    if (resp.hasScreenshot) {
+                        this.screenshotUrl = await getScreenshotUrl(testId);
+                    }
+                    if (resp.hasVideo || resp.hasScreenshot) {
+                        this.mediaPollCount = 0;
                         return;
                     }
                 } catch (error) {
@@ -234,14 +302,36 @@ export class Runner {
                     break;
                 }
             }
-            this.videoUrl = null;
+            // Video/screenshot not ready yet (upload in progress): poll again later
+            if (
+                this.mediaPollCount < Runner.MAX_MEDIA_POLL_ATTEMPTS &&
+                this.model.summary.status === "failed"
+            ) {
+                this.mediaPollCount++;
+                this.mediaPollTimeoutId = setTimeout(() => {
+                    this.mediaPollTimeoutId = null;
+                    this.fetchMediaUrl();
+                }, Runner.MEDIA_POLL_INTERVAL_MS);
+            } else {
+                this.clearMediaUrls();
+            }
         } finally {
             this.fetchingMedia = false;
         }
     }
 
     public clearVideoUrl() {
+        this.clearMediaUrls();
+    }
+
+    private clearMediaUrls() {
+        if (this.mediaPollTimeoutId != null) {
+            clearTimeout(this.mediaPollTimeoutId);
+            this.mediaPollTimeoutId = null;
+        }
+        this.mediaPollCount = 0;
         this.videoUrl = null;
+        this.screenshotUrl = null;
     }
 }
 

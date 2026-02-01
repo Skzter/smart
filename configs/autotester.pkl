@@ -10,7 +10,7 @@ logDir_autopw: String = "/tmp/smart/logs"
 
 port: String = "8081" 
 
-logLevel: String = "info"
+logLevel: String = "debug"
 
 logFilePath: String = ""
 
@@ -283,4 +283,4 @@ redisConfig: shared.RedisConfig = shared.redis
 
 tokenExpirationTime: Duration = 30.d
 
-presignedLinkLifetime: Duration = 60.s
+presignedLinkLifetime: Duration = 10.min

@@ -16,10 +16,11 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/config"
+	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
 	mocks "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/mocks/service"
 )
 
-// nolint:dupl
+// nolint:dupl,funlen
 func TestHandleSaveLocalRequest(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	logger := slog.New(slog.DiscardHandler)
@@ -81,6 +82,10 @@ func TestHandleSaveLocalRequest(t *testing.T) {
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordStatusCode", mock.Anything).Return().Maybe()
+
+			// lastTest update: LoadChat and SaveChat may be called on success
+			mockChatStorageServ.On("LoadChat", mock.Anything, mock.Anything).Return(&entity.Chat{Id: "chat456", Author: "user123"}, nil).Maybe()
+			mockChatManager.On("SaveChat", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
 
 			test.SetupMock(mockLocalStorageServ)
 

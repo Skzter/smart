@@ -7,6 +7,8 @@
     import TabsView from "./TabsView.svelte";
     import EditView from "./EditView.svelte";
     import ResultView from "./ResultView.svelte";
+    import { Play } from "@lucide/svelte";
+    import { Button } from "$lib/components/ui/button";
     import type { Runner } from "$lib/runner.svelte";
 
     let {
@@ -44,6 +46,15 @@
             {#if activeTab === "edit"}
                 <CloseButton onCloseClick={handleCloseClick} />
             {:else if activeTab === "run"}
+                <Button
+                    variant="default"
+                    size="sm"
+                    onclick={() => testRunner.run()}
+                    disabled={testRunner.isRunning() || testRunner.getCurTest() === ""}
+                >
+                    <Play class="h-3.5 w-3.5" />
+                    {testRunner.isRunning() ? "Läuft..." : "Erneut ausführen"}
+                </Button>
                 <SwitchView onCloseClick={handleCloseClick} bind:view />
             {:else if activeTab === "result"}
                 <CloseButton onCloseClick={handleCloseClick} />

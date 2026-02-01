@@ -49,6 +49,7 @@ export const chat = $state({
     id: "",
     isLoading: false,
     groups: [] as string[],
+    lastTest: "",
 });
 
 export const ChatDate = $state({

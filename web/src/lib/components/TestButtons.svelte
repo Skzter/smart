@@ -24,17 +24,7 @@
     <CopyButton bind:code={message} />
     {#if iscode}
         <Dialog.Root>
-            {#if testRunner.getCurTest() !== ""}
-                <Dialog.Trigger>
-                    <RunButton
-                        classes="h-7 gap-1.5 px-2 cursor-pointer"
-                        variant="outline"
-                        size="sm"
-                        bind:activeTab
-                        {testRunner}
-                    />
-                </Dialog.Trigger>
-            {:else}
+            <Dialog.Trigger>
                 <RunButton
                     classes="h-7 gap-1.5 px-2 cursor-pointer"
                     variant="outline"
@@ -42,7 +32,7 @@
                     bind:activeTab
                     {testRunner}
                 />
-            {/if}
+            </Dialog.Trigger>
             <Dialog.Trigger>
                 <EditButton bind:activeTab />
             </Dialog.Trigger>

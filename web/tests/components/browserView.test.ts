@@ -4,10 +4,23 @@ import "@testing-library/jest-dom/vitest";
 
 import BrowserView from "../../src/lib/components/BrowserView.svelte";
 
-// Mock runner with videoUrl property and required methods
-function createMockRunner(videoUrl: string | null = null) {
+// Mock runner with videoUrl, screenshotUrl, getCurTest and required methods
+function createMockRunner(
+    overrides: {
+        videoUrl?: string | null;
+        screenshotUrl?: string | null;
+        getCurTest?: () => string;
+    } = {},
+) {
+    const {
+        videoUrl = null,
+        screenshotUrl = null,
+        getCurTest = () => "",
+    } = overrides;
     return {
         videoUrl,
+        screenshotUrl,
+        getCurTest: vi.fn(getCurTest),
         model: {
             summary: { status: "idle" as const },
             steps: [],
@@ -34,7 +47,7 @@ describe("BrowserView", () => {
 
         const header = container.querySelector(".border-b.bg-muted\\/50");
         expect(header).toBeInTheDocument();
-        expect(header?.textContent?.trim()).toBe("Vorschau");
+        expect(header?.textContent).toContain("Vorschau");
     });
 
     it("centers the content", () => {
@@ -50,7 +63,11 @@ describe("BrowserView", () => {
 
     it("renders a video element with controls when videoUrl is set", () => {
         const { container } = render(BrowserView, {
-            props: { runner: createMockRunner("http://example.com/video.mp4") },
+            props: {
+                runner: createMockRunner({
+                    videoUrl: "http://example.com/video.mp4",
+                }),
+            },
         });
 
         const video = container.querySelector("video");
@@ -60,7 +77,7 @@ describe("BrowserView", () => {
 
     it("shows placeholder text when videoUrl is null", () => {
         const { container } = render(BrowserView, {
-            props: { runner: createMockRunner(null) },
+            props: { runner: createMockRunner({ videoUrl: null }) },
         });
 
         const video = container.querySelector("video");
@@ -105,7 +122,11 @@ describe("BrowserView", () => {
 
     it("calculates video size based on parent height", async () => {
         const { container } = render(BrowserView, {
-            props: { runner: createMockRunner("http://example.com/video.mp4") },
+            props: {
+                runner: createMockRunner({
+                    videoUrl: "http://example.com/video.mp4",
+                }),
+            },
         });
 
         const mainContainer = container.querySelector(
@@ -136,7 +157,11 @@ describe("BrowserView", () => {
 
     it("does not set video size if parent element is missing", async () => {
         const { container } = render(BrowserView, {
-            props: { runner: createMockRunner("http://example.com/video.mp4") },
+            props: {
+                runner: createMockRunner({
+                    videoUrl: "http://example.com/video.mp4",
+                }),
+            },
         });
 
         const mainContainer = container.querySelector(

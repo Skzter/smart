@@ -232,7 +232,7 @@ func (d *docker) attachCopyFromContainer(containerID string) <-chan []entity.Fil
 				continue
 			}
 
-			d.logger.Debug("reading file from container", "file", hdr.Name)
+			d.logger.Debug("reading file from container", "file", hdr.Name, "size", hdr.Size)
 			extension, _ := strings.CutPrefix(filepath.Ext(hdr.Name), ".")
 			if !slices.Contains(formats, extension) {
 				continue
