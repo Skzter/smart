@@ -1,0 +1,73 @@
+graph TB
+    subgraph "Users"
+        Developer["👤 Developer/Tester"]
+        MCPClient["🔌 MCP Client<br/>(e.g. Cursor/IDE)"]
+    end
+
+    subgraph SMART["S.M.A.R.T System"]
+        Frontend["📱 Web Frontend<br/>(Svelte, TypeScript)"]
+        Nginx["🔀 Nginx Reverse Proxy<br/>(Request routing, security)"]
+        Autotester["⚙️ Autotester Service<br/>(Go, Gin, Port 8081)"]
+        MCP["🔌 Autotester MCP<br/>(Go, MCP Protocol, Port 8084)"]
+        Suproxy["🔄 Suproxy Service<br/>(Go, Gin, Port 8080)"]
+        
+        Postgres["🗄️ PostgreSQL<br/>(Token storage only)"]
+        Redis["💾 Redis/Valkey<br/>(Cache, sessions)"]
+        
+        DatadogAgent["📊 Datadog Agent<br/>(Collects traces, metrics)"]
+        
+        FrontendMock["🎭 Frontend Mock<br/>(Node.js, Port 8082)"]
+        SupplierMock["🎭 Supplier Mock<br/>(Go, Port 8083)"]
+    end
+
+    subgraph "External Systems"
+        Auth0["🔒 Auth0"]
+        LLM["🤖 LLM Service"]
+        S3["📦 S3 / Object Storage<br/>(Parquet: chats, testcases, taglists)"]
+        DatadogCloud["📊 Datadog Cloud"]
+        Doppler["🔑 Doppler"]
+        Supplier["🌐 Supplier APIs"]
+        WebApp["💻 Web App Under Test"]
+    end
+
+    Developer -->|"Uses (HTTPS)"| Frontend
+    Frontend -->|"API calls"| Nginx
+    Nginx -->|"Routes to"| Autotester
+    Nginx -->|"Routes to"| Suproxy
+
+    Frontend -->|"Authenticates (OAuth2)"| Auth0
+    
+    Autotester -->|"Reads/writes (SQL)"| Postgres
+    Autotester -->|"Caches (Redis)"| Redis
+    Autotester -->|"Stores Parquet (S3 API)"| S3
+    Suproxy -->|"Caches (Redis)"| Redis
+    Suproxy -->|"Reads Parquet taglists (S3 API)"| S3
+
+    Autotester -->|"Generates tests (HTTPS)"| LLM
+    Developer -->|"Uses (MCP)"| MCPClient
+    MCPClient -->|"Tool calls (MCP)"| MCP
+    MCP -->|"Calls API (HTTP)"| Autotester
+
+    Autotester -->|"Executes tests (Playwright)"| WebApp
+    Suproxy -->|"Proxies (HTTPS)"| Supplier
+
+    FrontendMock -->|"Test requests"| Suproxy
+    Suproxy -->|"Proxies to"| SupplierMock
+
+    Autotester -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    Suproxy -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    MCP -->|"Sends traces (StatsD/APM)"| DatadogAgent
+    DatadogAgent -->|"Forwards (HTTPS)"| DatadogCloud
+
+    Autotester -->|"Fetches secrets (HTTPS)"| Doppler
+    Suproxy -->|"Fetches secrets (HTTPS)"| Doppler
+
+    classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff
+    classDef database fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+    classDef person fill:#08427b,stroke:#052e56,color:#ffffff
+
+    class Frontend,Nginx,Autotester,MCP,Suproxy,DatadogAgent,FrontendMock,SupplierMock container
+    class Postgres,Redis database
+    class Auth0,LLM,S3,DatadogCloud,Doppler,Supplier,WebApp external
+    class Developer,MCPClient person

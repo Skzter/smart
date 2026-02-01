@@ -489,3 +489,12 @@ tasks:
     desc: "Setup the benchmark dependencies"
     cmds:
       - go tool playwright install
+
+  # --------------------------------------------------------------------------------
+  # Documentation
+  # --------------------------------------------------------------------------------
+  docs-render:
+    desc: "Render the documentation mermaid diagrams"
+    dir: scripts
+    cmds:
+      - ./render-mermaid.sh

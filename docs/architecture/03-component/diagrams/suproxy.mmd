@@ -1,0 +1,72 @@
+graph TB
+    subgraph Application["Application Layer"]
+        Router["Router<br/>(Gin, CORS, pprof /debug)"]
+    end
+
+    subgraph Handlers["Domain - Handler"]
+        Controller["Suproxy Controller<br/>(PostOfferlist, fetchOffers, HandleRequest)"]
+    end
+
+    subgraph Services["Domain - Services"]
+        Validator["Validator Service<br/>(Supplier response validation via OpenAI)"]
+        TagSearch["Tag Search Service<br/>(Find S3 keys by tags)"]
+        TaglistSync["Taglist Sync<br/>(Merge/store taglist)"]
+        CacheSvc["Cache Service<br/>(Supplier + mock cache, TTL)"]
+        DBSvc["Database Service<br/>(Save/list entries)"]
+        ResponseUpdate["Response Update Service<br/>(Mock response update)"]
+    end
+
+    subgraph Repositories["Repositories"]
+        CacheRepo["Cache<br/>(shared Redis)"]
+        DBRepo["Database Repository<br/>(S3 + Parquet)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        RedisConn["Redis Connection"]
+        S3Conn["S3 Client"]
+        HTTPClient["HTTP Client<br/>(Supplier API)"]
+    end
+
+    subgraph External["External Dependencies"]
+        Redis["💾 Redis/Valkey"]
+        S3["📦 S3<br/>(Parquet: entries)"]
+        TaglistStorage["📄 Taglist Storage<br/>(shared S3/config)"]
+        Supplier["🌐 Supplier APIs"]
+        OpenAI["🤖 OpenAI<br/>(Response validation)"]
+    end
+
+    Router --> Controller
+
+    Controller --> Validator
+    Controller --> TagSearch
+    Controller --> CacheSvc
+    Controller --> DBSvc
+    Controller --> ResponseUpdate
+    Controller --> HTTPClient
+    Controller --> TaglistSync
+
+    ResponseUpdate --> TagSearch
+    ResponseUpdate --> CacheSvc
+    ResponseUpdate --> DBRepo
+
+    TagSearch --> S3Conn
+    TaglistSync --> TaglistStorage
+    CacheSvc --> CacheRepo
+    DBSvc --> DBRepo
+    DBRepo --> S3Conn
+
+    CacheRepo --> RedisConn
+    RedisConn --> Redis
+    S3Conn --> S3
+    HTTPClient --> Supplier
+    Validator --> OpenAI
+
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000000
+    classDef infrastructure fill:#438dd5,stroke:#2e6295,color:#ffffff
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+
+    class Router,Controller component
+    class Validator,TagSearch,TaglistSync,CacheSvc,DBSvc,ResponseUpdate component
+    class CacheRepo,DBRepo component
+    class RedisConn,S3Conn,HTTPClient infrastructure
+    class Redis,S3,TaglistStorage,Supplier,OpenAI external

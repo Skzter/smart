@@ -1,0 +1,84 @@
+sequenceDiagram
+    participant User
+    participant Frontend as Frontend<br/>(Chat Component)
+    participant API as API Service<br/>(api.ts)
+    participant Router as Autotester API<br/>(Router)
+    participant Controller as Chat Controller<br/>(HandleChatRequest)
+    participant ChatManager as Chat Manager<br/>(Chat entity only)
+    participant Validate as Validation
+    participant LLMSuite as LLM Generate
+    participant LLM as LLM API<br/>(OpenAI/Claude)
+    participant Storage as Chat Storage<br/>(SaveMessage)
+    participant S3 as S3<br/>(Parquet)
+    Note over LLMSuite: LLM Test Suite (system prompt testing) is separate from this flow
+
+    User->>Frontend: Types test description<br/>"Create test for login button"
+    activate Frontend
+    Frontend->>Frontend: Capture input
+    Frontend->>API: generatePrompt(request)
+    activate API
+    
+    API->>Router: POST /api/v1/chat<br/>{userId, chatId, message}
+    activate Router
+    Router->>Controller: HandleChatRequest()
+    activate Controller
+    
+    Controller->>Controller: Validate request
+    Controller->>ChatManager: ProcessChat(request)
+    activate ChatManager
+    
+    ChatManager->>Storage: GetChatHistory(chatId)
+    activate Storage
+    Storage->>S3: Get chat (Parquet) by prefix
+    activate S3
+    S3-->>Storage: Chat history (Parquet)
+    deactivate S3
+    Storage-->>ChatManager: Previous messages
+    deactivate Storage
+    
+    ChatManager->>Validate: Validate prompt (user message)
+    activate Validate
+    Validate-->>ChatManager: Validation result
+    deactivate Validate
+    
+    ChatManager->>LLMSuite: Generate(userMessage, context)
+    activate LLMSuite
+    Note right of LLMSuite: User prompt → validation → Generate (no Prompt Builder)
+    LLMSuite->>LLM: POST /v1/chat/completions<br/>{model, messages, temperature}
+    activate LLM
+    LLM->>LLM: Process prompt
+    LLM->>LLM: Generate test code
+    LLM-->>LLMSuite: JSON response (test code or validation hints)
+    deactivate LLM
+    LLMSuite-->>ChatManager: Pass-through response
+    deactivate LLMSuite
+    
+    ChatManager->>Storage: SaveMessage(userMessage)
+    activate Storage
+    Storage->>S3: Upload Parquet (user message)
+    S3-->>Storage: OK
+    Storage-->>ChatManager: Saved
+    deactivate Storage
+    
+    ChatManager->>Storage: SaveMessage(llmResponse)
+    activate Storage
+    Storage->>S3: Upload Parquet (LLM response)
+    S3-->>Storage: OK
+    Storage-->>ChatManager: Saved
+    deactivate Storage
+    
+    ChatManager-->>Controller: ChatResponse<br/>{message, chatId, userId}
+    deactivate ChatManager
+    
+    Controller-->>Router: JSON response
+    deactivate Controller
+    Router-->>API: HTTP 200<br/>{message, chatId}
+    deactivate Router
+    
+    API-->>Frontend: ChatResponse
+    deactivate API
+    
+    Frontend->>Frontend: Update messages state
+    Frontend->>Frontend: Display (Monaco if code, else plain)
+    Frontend-->>User: Display generated test
+    deactivate Frontend

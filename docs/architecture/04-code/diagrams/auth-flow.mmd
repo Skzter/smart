@@ -1,0 +1,99 @@
+sequenceDiagram
+    autonumber
+    
+    Note over User,Auth0: Frontend User Authentication (Auth0)
+    
+    participant User
+    participant Frontend as Frontend<br/>(Svelte)
+    participant AuthService as Auth Service<br/>(authService.ts)
+    participant Auth0 as Auth0<br/>(SSO Provider)
+    
+    User->>Frontend: Navigate to app
+    activate Frontend
+    Frontend->>AuthService: initAuth()
+    activate AuthService
+    
+    AuthService->>AuthService: Fetch /auth_config.json
+    AuthService->>AuthService: createAuth0Client()
+    AuthService->>AuthService: Check isAuthenticated()
+    
+    alt Not Authenticated
+        AuthService-->>Frontend: isAuthenticated = false
+        Frontend-->>User: Show login screen
+        
+        User->>Frontend: Click "Login"
+        Frontend->>AuthService: login()
+        AuthService->>Auth0: loginWithRedirect()
+        Auth0-->>User: Redirect to Auth0 login page
+        
+        User->>Auth0: Enter HTWK credentials
+        Auth0->>Auth0: Validate with HTWK SSO
+        Auth0-->>User: Redirect to app<br/>?code=abc&state=xyz
+        
+        User->>Frontend: Callback with code
+        Frontend->>AuthService: handleRedirectCallback()
+        AuthService->>Auth0: Exchange code for tokens
+        Auth0-->>AuthService: Access token, ID token
+        AuthService->>AuthService: Store in localStorage
+        AuthService->>Auth0: getUser()
+        Auth0-->>AuthService: User profile
+        AuthService-->>Frontend: Update auth state
+        Frontend-->>User: Show main app
+    else Already Authenticated
+        AuthService->>AuthService: Retrieve from cache
+        AuthService-->>Frontend: isAuthenticated = true<br/>user = {...}
+        Frontend-->>User: Show main app
+    end
+    
+    deactivate AuthService
+    deactivate Frontend
+    
+    Note over Frontend,TokenDB2: Internal token (for MCP): obtained by authenticated user via Frontend. MCP does NOT call /auth/generate.
+    
+    participant Nginx2 as Nginx<br/>(Reverse Proxy)
+    participant Router2 as Autotester<br/>(Router)
+    participant Middleware2 as Internal Middleware<br/>(CIDR Check)
+    participant AuthSvc2 as Auth Service<br/>(GenerateToken)
+    participant TokenDB2 as Token Database<br/>(PostgreSQL)
+    
+    Frontend->>Nginx2: POST /api/v1/auth/generate<br/>(from allowed network)
+    activate Nginx2
+    Nginx2->>Nginx2: Check source IP<br/>Allow: 127.0.0.1, 172.16.0.0/12, 192.168.0.0/16
+    Nginx2->>Router2: Forward request
+    activate Router2
+    Router2->>Middleware2: internalOnlyMiddleware()
+    Middleware2->>Middleware2: Validate CIDRs
+    Middleware2->>Router2: Continue
+    Router2->>AuthSvc2: HandleGenerateToken()
+    activate AuthSvc2
+    AuthSvc2->>AuthSvc2: Generate random token
+    AuthSvc2->>TokenDB2: INSERT token
+    TokenDB2-->>AuthSvc2: OK
+    AuthSvc2-->>Router2: {token, expiresAt}
+    deactivate AuthSvc2
+    Router2-->>Nginx2: 200 OK {token}
+    deactivate Router2
+    Nginx2-->>Frontend: 200 OK {token}
+    deactivate Nginx2
+    
+    Note over User2,MCP: Token provided to MCP at startup (e.g. IDE/CLI config). MCP does not call /auth/generate.
+    
+    participant User2 as User / Config<br/>(provides token to MCP)
+    participant MCP as MCP Service<br/>(API Repository)
+    
+    User2->>MCP: Bearer token at startup<br/>(e.g. from Frontend / IDE config)
+    MCP->>MCP: Store token in memory
+    
+    Note over MCP,Router2: API Request with Token (Bearer in Authorization header)
+    
+    MCP->>MCP: Tool invoked<br/>Call Autotester API
+    MCP->>Router2: POST /api/v1/chat, Authorization: Bearer token
+    activate Router2
+    Router2->>Router2: Extract token, validate via DB lookup<br/>(not JWT; random string with metadata in PostgreSQL)
+    alt Token invalid or expired
+        Router2-->>MCP: 401 Unauthorized (no refresh, user must reconfigure MCP)
+    else Token valid
+        Router2->>Router2: Process request normally
+        Router2-->>MCP: 200 OK with response
+    end
+    deactivate Router2
