@@ -114,6 +114,7 @@ func internalOnlyMiddleware(logger *slog.Logger) gin.HandlerFunc {
 		"127.0.0.0/8",   // Localhost IPv4
 		"::1/128",       // Localhost IPv6
 		"10.89.0.0/8",   // Podman default bridge
+		"10.88.0.0/16",  // Podman default gateway
 		"172.16.0.0/12", // Docker default bridge
 	}
 
