@@ -15,6 +15,9 @@ import {
     removeChatFromGroup,
     updateChatTitle,
     getApiToken,
+    getMedia,
+    getVideoUrl,
+    getScreenshotUrl,
 } from "../../src/lib/api";
 import * as shared from "../../src/lib/shared.svelte";
 
@@ -26,6 +29,7 @@ vi.mock("../../src/lib/shared.svelte", () => ({
     user: { id: "user123" },
     chat: { id: "chat456", isLoading: false, groups: [] },
     apiToken: { token: null },
+    baseURL: "http://localhost:8081/api/v1",
 }));
 
 describe("API Functions", () => {
@@ -625,6 +629,127 @@ describe("API Functions", () => {
         });
     });
 
+    describe("getMedia", () => {
+        const testId = "test-123";
+        const mockMediaResponse = { hasVideo: true, hasScreenshot: true };
+
+        it("should make a GET request to test/:testId/media with auth headers", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({ data: mockMediaResponse });
+
+            const result = await getMedia(testId);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `test/${testId}/media`,
+                baseURL: "http://localhost:8081/api/v1",
+                headers: {},
+            });
+            expect(result).toEqual(mockMediaResponse);
+        });
+
+        it("should reject when the API call fails", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            const err = new AxiosError("Media unavailable");
+            err.response = {
+                data: { message: "Media unavailable" },
+                status: 500,
+                statusText: "Internal Server Error",
+                headers: {},
+                config: {} as InternalAxiosRequestConfig,
+            };
+            mockedAxios.mockRejectedValue(err);
+
+            await expect(getMedia(testId)).rejects.toThrow("Media unavailable");
+        });
+    });
+
+    describe("getVideoUrl", () => {
+        const testId = "test-123";
+        const presignedUrl = "https://s3.example.com/video?signature=abc";
+
+        it("should return url from 200 JSON response", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                status: 200,
+                data: { url: presignedUrl },
+            });
+
+            const result = await getVideoUrl(testId);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `test/${testId}/video`,
+                baseURL: "http://localhost:8081/api/v1",
+                headers: { Accept: "application/json" },
+                maxRedirects: 0,
+                validateStatus: expect.any(Function),
+            });
+            expect(result).toBe(presignedUrl);
+        });
+
+        it("should return Location header from 307 redirect", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                status: 307,
+                headers: { location: presignedUrl },
+            });
+
+            const result = await getVideoUrl(testId);
+
+            expect(result).toBe(presignedUrl);
+        });
+
+        it("should throw when 307 has no Location header", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                status: 307,
+                headers: {},
+            });
+
+            await expect(getVideoUrl(testId)).rejects.toThrow(
+                "Missing Location header in redirect",
+            );
+        });
+    });
+
+    describe("getScreenshotUrl", () => {
+        const testId = "test-123";
+        const presignedUrl = "https://s3.example.com/screenshot?signature=xyz";
+
+        it("should return url from 200 JSON response", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                status: 200,
+                data: { url: presignedUrl },
+            });
+
+            const result = await getScreenshotUrl(testId);
+
+            expect(mockedAxios).toHaveBeenCalledWith({
+                method: "get",
+                url: `test/${testId}/screenshot`,
+                baseURL: "http://localhost:8081/api/v1",
+                headers: { Accept: "application/json" },
+                maxRedirects: 0,
+                validateStatus: expect.any(Function),
+            });
+            expect(result).toBe(presignedUrl);
+        });
+
+        it("should return Location header from 307 redirect", async () => {
+            const mockedAxios = axios as unknown as Mock;
+            mockedAxios.mockResolvedValue({
+                status: 307,
+                headers: { location: presignedUrl },
+            });
+
+            const result = await getScreenshotUrl(testId);
+
+            expect(result).toBe(presignedUrl);
+        });
+    });
+
     describe("getApiToken", () => {
         const mockTokenResponse = {
             userId: mockUserId,
@@ -714,6 +839,7 @@ describe("updateChatTitle", () => {
             method: "patch",
             url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1",
+            headers: {},
             data: {
                 title: newTitle,
             },
@@ -739,6 +865,7 @@ describe("updateChatTitle", () => {
             method: "patch",
             url: `/chats/${mockChatId}/title`,
             baseURL: "http://localhost:8081/api/v1",
+            headers: {},
             data: {
                 title: newTitle,
             },

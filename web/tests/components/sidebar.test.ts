@@ -23,7 +23,7 @@ vi.mock("$lib/api", () => ({
 // Mock shared state
 vi.mock("$lib/shared.svelte", async (importOriginal) => {
     const actual = await importOriginal<typeof import("$lib/shared.svelte")>();
-  
+
     actual.user.id = "test-user-123";
     actual.ChatDate.Range = undefined;
     actual.ChatFilter.sortBy = "recent";
@@ -34,11 +34,11 @@ vi.mock("$lib/shared.svelte", async (importOriginal) => {
     actual.GroupsState.error = "";
 
     return {
-      ...actual,
-      registerChatTitleUpdater: vi.fn(),
-      updateChatTitle: vi.fn(),
+        ...actual,
+        registerChatTitleUpdater: vi.fn(),
+        updateChatTitle: vi.fn(),
     };
-  });  
+});
 
 vi.mock("$lib/components/Group.svelte", () => ({
     default: vi.fn(),
@@ -60,24 +60,24 @@ describe("Sidebar", () => {
 
     it("renders the sidebar with loading state initially", async () => {
         let resolveChats!: (val: ApiChatsResponse) => void;
-      
+
         vi.mocked(getChats).mockImplementation(
-          () =>
-            new Promise((resolve) => {
-              resolveChats = resolve;
-            }),
+            () =>
+                new Promise((resolve) => {
+                    resolveChats = resolve;
+                }),
         );
-      
+
         const { container } = render(SidebarTestWrapper);
-      
+
         await waitFor(() => {
-          const spinner = container.querySelector(".size-6");
-          expect(spinner).toBeInTheDocument();
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
         });
-      
+
         resolveChats({ summaries: [], hasMore: false, pageSize: 10 });
         await tick();
-    });      
+    });
 
     it("loads user chats successfully", async () => {
         const mockChats: ApiChatSummary[] = [
@@ -574,25 +574,24 @@ describe("Sidebar", () => {
 
     it("returns empty array when items is undefined in updateGroupsWithDateRange", async () => {
         let resolveChats!: (val: ApiChatsResponse) => void;
-      
+
         vi.mocked(getChats).mockImplementation(
-          () =>
-            new Promise((resolve) => {
-              resolveChats = resolve;
-            }),
+            () =>
+                new Promise((resolve) => {
+                    resolveChats = resolve;
+                }),
         );
-      
+
         const { container } = render(SidebarTestWrapper);
-      
+
         await waitFor(() => {
-          const spinner = container.querySelector(".size-6");
-          expect(spinner).toBeInTheDocument();
+            const spinner = container.querySelector(".size-6");
+            expect(spinner).toBeInTheDocument();
         });
-      
+
         resolveChats({ summaries: [], hasMore: false, pageSize: 10 });
         await tick();
     });
-      
 
     it("adds items to existing group category", async () => {
         const today = new Date();
@@ -638,43 +637,48 @@ describe("Sidebar", () => {
 
     it("resets group filter and loads all chats", async () => {
         vi.mocked(getChats).mockResolvedValue({
-          summaries: [],
-          hasMore: false,
-          pageSize: 10,
+            summaries: [],
+            hasMore: false,
+            pageSize: 10,
         });
-      
+
         render(SidebarTestWrapper);
-      
+
         await waitFor(() => {
-          expect(getChats).toHaveBeenCalledWith({ groupIds: [], page: 0 });
+            expect(getChats).toHaveBeenCalledWith({ groupIds: [], page: 0 });
         });
-      
+
         GroupFilter.selectedIds = ["g1"];
         await tick();
 
         await new Promise((r) => setTimeout(r, 0));
-      
+
         await waitFor(() => {
             expect(getChats).toHaveBeenCalledTimes(2);
         });
-        expect(getChats).toHaveBeenNthCalledWith(2, { groupIds: ["g1"], page: 0 });          
-      
+        expect(getChats).toHaveBeenNthCalledWith(2, {
+            groupIds: ["g1"],
+            page: 0,
+        });
+
         GroupFilter.selectedIds = [];
         await tick();
-      
+
         await waitFor(() => {
-          expect(getChats).toHaveBeenLastCalledWith({ groupIds: [], page: 0 });
+            expect(getChats).toHaveBeenLastCalledWith({
+                groupIds: [],
+                page: 0,
+            });
         });
     });
-      
 
     it("does not load chats when user.id is undefined", async () => {
         user.id = undefined;
-    
+
         render(SidebarTestWrapper);
-    
+
         await tick();
-    
+
         expect(getChats).not.toHaveBeenCalled();
         expect(toast.error).not.toHaveBeenCalled();
     });

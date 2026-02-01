@@ -65,8 +65,8 @@ function parseEvent(raw: string): PlaywrightEvent | null {
         ) {
             return parsed as PlaywrightEvent;
         }
-    } catch (error) {
-        console.error("Failed to parse event:", error);
+    } catch {
+        // Skip non-JSON lines
     }
     return null;
 }

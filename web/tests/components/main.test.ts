@@ -78,12 +78,20 @@ describe("Main", () => {
         const emptyMessage = container.querySelector(
             ".flex.items-center.justify-center.flex-1",
         );
-        expect(emptyMessage?.textContent).toMatch(/Start a chat\.\.\.|Chat starten\.\.\./);
+        expect(emptyMessage?.textContent).toMatch(
+            /Start a chat\.\.\.|Chat starten\.\.\./,
+        );
     });
 
     it("renders messages in Chat component", () => {
-        messages.push({ t: "user", Message: "Test question" } as unknown as Message);
-        messages.push({ t: "bot", Message: "Test answer" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "Test question",
+        } as unknown as Message);
+        messages.push({
+            t: "bot",
+            Message: "Test answer",
+        } as unknown as Message);
 
         const { container } = render(Main);
 
@@ -94,7 +102,10 @@ describe("Main", () => {
     });
 
     it("shows loading indicator when chat is loading", () => {
-        messages.push({ t: "user", Message: "Test question" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "Test question",
+        } as unknown as Message);
         messages.push({ t: "bot", Message: "" } as unknown as Message);
 
         chat.isLoading = true;
@@ -141,11 +152,20 @@ describe("Main", () => {
     });
 
     it("renders with multiple messages", () => {
-        messages.push({ t: "user", Message: "Question 1" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "Question 1",
+        } as unknown as Message);
         messages.push({ t: "bot", Message: "Answer 1" } as unknown as Message);
-        messages.push({ t: "user", Message: "Question 2" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "Question 2",
+        } as unknown as Message);
         messages.push({ t: "bot", Message: "Answer 2" } as unknown as Message);
-        messages.push({ t: "user", Message: "Question 3" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "Question 3",
+        } as unknown as Message);
         messages.push({ t: "bot", Message: "Answer 3" } as unknown as Message);
 
         const { container } = render(Main);
@@ -166,7 +186,10 @@ describe("Main", () => {
         expect(emptyState).toBeInTheDocument();
 
         // Add a message (simulating Footer action)
-        messages.push({ t: "user", Message: "New question" } as unknown as Message);
+        messages.push({
+            t: "user",
+            Message: "New question",
+        } as unknown as Message);
 
         // Re-render to reflect state change
         const { container: updatedContainer } = render(Main);

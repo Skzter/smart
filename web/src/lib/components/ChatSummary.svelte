@@ -77,6 +77,7 @@
             chat.isLoading = false;
             const response = await getChatById(summary.chatId);
             chat.groups = response.groups ?? [];
+            chat.lastTest = response.lastTest ?? "";
             messages.length = 0;
             messages.push(...convertApiMessagesToMessages(response.messages));
 

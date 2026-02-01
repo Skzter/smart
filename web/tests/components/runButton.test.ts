@@ -4,14 +4,37 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 import RunButton from "../../src/lib/components/RunButton.svelte";
-import { Runner } from "../../src/lib/runner.svelte";
+import type { Runner } from "../../src/lib/runner.svelte";
+
+// Create a mock Runner since the real one uses $effect which can only run in component context
+function createMockRunner(overrides: Partial<Runner> = {}): Runner {
+    return {
+        isRunning: () => false,
+        getCurTest: () => "",
+        run: vi.fn(),
+        setTest: vi.fn(),
+        storeTest: vi.fn(),
+        getStorageState: () => "idle" as const,
+        logStatus: "idle" as const,
+        logError: null,
+        result: [],
+        videoUrl: null,
+        model: {
+            summary: { status: "idle" as const },
+            steps: [],
+        },
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
+        ...overrides,
+    } as unknown as Runner;
+}
 
 describe("RunButton", () => {
     let testRunner: Runner;
     let activeTab: string;
 
     beforeEach(() => {
-        testRunner = new Runner();
+        testRunner = createMockRunner();
         activeTab = "edit";
     });
 
@@ -90,7 +113,9 @@ describe("RunButton", () => {
         expect(icon).toBeInTheDocument();
     });
 
-    it("displays 'Ausführen' text when not running", () => {
+    it("displays 'Ausführen' when getCurTest is empty", () => {
+        vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
+
         const { container } = render(RunButton, {
             props: {
                 activeTab,
@@ -105,26 +130,7 @@ describe("RunButton", () => {
         expect(paragraph?.textContent).toBe("Ausführen");
     });
 
-    it("displays 'Lädt...' text when running", async () => {
-        // Mock isRunning to return true
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(true);
-
-        const { container } = render(RunButton, {
-            props: {
-                activeTab,
-                testRunner,
-                classes: "",
-                variant: "default",
-                size: "default",
-            },
-        });
-
-        const paragraph = container.querySelector("p");
-        expect(paragraph?.textContent).toBe("Lädt...");
-    });
-
-    it("is disabled when testRunner is running", () => {
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(true);
+    it("displays 'Ergebnis anzeigen' when getCurTest is not empty", () => {
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
 
         const { container } = render(RunButton, {
@@ -137,12 +143,11 @@ describe("RunButton", () => {
             },
         });
 
-        const button = container.querySelector("button");
-        expect(button).toBeDisabled();
+        const paragraph = container.querySelector("p");
+        expect(paragraph?.textContent).toBe("Ergebnis anzeigen");
     });
 
     it("is disabled when current test is empty", () => {
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
 
         const { container } = render(RunButton, {
@@ -159,8 +164,7 @@ describe("RunButton", () => {
         expect(button).toBeDisabled();
     });
 
-    it("is enabled when not running and test exists", () => {
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
+    it("is enabled when test exists", () => {
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
 
         const { container } = render(RunButton, {
@@ -177,10 +181,9 @@ describe("RunButton", () => {
         expect(button).not.toBeDisabled();
     });
 
-    it("calls testRunner.run() when clicked", async () => {
+    it("does not call testRunner.run() when clicked (only sets activeTab)", async () => {
         const user = userEvent.setup();
         const runSpy = vi.spyOn(testRunner, "run");
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
 
         const { container } = render(RunButton, {
@@ -196,14 +199,12 @@ describe("RunButton", () => {
         const button = container.querySelector("button") as HTMLButtonElement;
         await user.click(button);
 
-        expect(runSpy).toHaveBeenCalled();
+        expect(runSpy).not.toHaveBeenCalled();
     });
 
     it("sets activeTab to 'run' when clicked", async () => {
         const user = userEvent.setup();
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
-        vi.spyOn(testRunner, "run").mockResolvedValue(undefined);
 
         let currentTab = "edit";
 
@@ -228,23 +229,6 @@ describe("RunButton", () => {
         expect(currentTab).toBe("run");
     });
 
-    it("handles both disabled conditions simultaneously", () => {
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(true);
-        vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
-
-        const { container } = render(RunButton, {
-            props: {
-                activeTab,
-                testRunner,
-                classes: "",
-                variant: "default",
-                size: "default",
-            },
-        });
-
-        const button = container.querySelector("button");
-        expect(button).toBeDisabled();
-    });
 
     it("renders with different variant values", () => {
         const variants: Array<
@@ -296,11 +280,10 @@ describe("RunButton", () => {
         });
     });
 
-    it("updates button text reactively when isRunning changes", () => {
-        const isRunningSpy = vi
-            .spyOn(testRunner, "isRunning")
-            .mockReturnValue(false);
-        vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
+    it("updates button text when getCurTest changes", () => {
+        const getCurTestSpy = vi
+            .spyOn(testRunner, "getCurTest")
+            .mockReturnValue("");
 
         const { container } = render(RunButton, {
             props: {
@@ -315,10 +298,8 @@ describe("RunButton", () => {
         let paragraph = container.querySelector("p");
         expect(paragraph?.textContent).toBe("Ausführen");
 
-        // Change mock to return true
-        isRunningSpy.mockReturnValue(true);
+        getCurTestSpy.mockReturnValue("test-123");
 
-        // Re-render to see effect
         const { container: container2 } = render(RunButton, {
             props: {
                 activeTab,
@@ -330,7 +311,7 @@ describe("RunButton", () => {
         });
 
         paragraph = container2.querySelector("p");
-        expect(paragraph?.textContent).toBe("Lädt...");
+        expect(paragraph?.textContent).toBe("Ergebnis anzeigen");
     });
 
     it("maintains icon size classes", () => {
@@ -413,10 +394,9 @@ describe("RunButton", () => {
         expect(button).toHaveClass("class-three");
     });
 
-    it("calls onclick handler with correct side effects", async () => {
+    it("sets activeTab to run on click without calling run()", async () => {
         const user = userEvent.setup();
-        const runSpy = vi.spyOn(testRunner, "run").mockResolvedValue(undefined);
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
+        const runSpy = vi.spyOn(testRunner, "run");
         vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
 
         let currentTab = "edit";
@@ -440,13 +420,11 @@ describe("RunButton", () => {
         await user.click(button);
 
         expect(currentTab).toBe("run");
-        expect(runSpy).toHaveBeenCalledTimes(1);
+        expect(runSpy).not.toHaveBeenCalled();
     });
 
-    it("evaluates disabled condition with OR logic correctly", () => {
-        // Test first condition true, second false
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(true);
-        vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
+    it("disabled only when getCurTest is empty", () => {
+        vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
 
         const { container: container1 } = render(RunButton, {
             props: {
@@ -460,9 +438,7 @@ describe("RunButton", () => {
 
         expect(container1.querySelector("button")).toBeDisabled();
 
-        // Test first condition false, second true
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
-        vi.spyOn(testRunner, "getCurTest").mockReturnValue("");
+        vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-123");
 
         const { container: container2 } = render(RunButton, {
             props: {
@@ -474,22 +450,6 @@ describe("RunButton", () => {
             },
         });
 
-        expect(container2.querySelector("button")).toBeDisabled();
-
-        // Test both conditions false (enabled)
-        vi.spyOn(testRunner, "isRunning").mockReturnValue(false);
-        vi.spyOn(testRunner, "getCurTest").mockReturnValue("test-456");
-
-        const { container: container3 } = render(RunButton, {
-            props: {
-                activeTab,
-                testRunner,
-                classes: "",
-                variant: "default",
-                size: "default",
-            },
-        });
-
-        expect(container3.querySelector("button")).not.toBeDisabled();
+        expect(container2.querySelector("button")).not.toBeDisabled();
     });
 });

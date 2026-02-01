@@ -153,7 +153,6 @@ tasks:
 
   run-autotester:
     desc: "Run the autotester service"
-    deps: [build-frontend-dev]
     cmds:
       - task: .run-app
         vars:

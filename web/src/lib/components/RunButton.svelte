@@ -28,10 +28,9 @@
     {size}
     onclick={() => {
         activeTab = "run";
-        testRunner.run();
     }}
-    disabled={testRunner.isRunning() || testRunner.getCurTest() === ""}
+    disabled={testRunner.getCurTest() === ""}
 >
     <Play class="h-3.5 w-3.5" />
-    <p>{testRunner.isRunning() ? "Lädt..." : "Ausführen"}</p>
+    <p>{testRunner.getCurTest() === "" ? "Ausführen" : "Ergebnis anzeigen"}</p>
 </Button>
