@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/svelte";
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 
 import OutputView from "../../src/lib/components/OutputView.svelte";
@@ -25,16 +25,20 @@ type Model = {
 };
 
 type TestRunnerMock = {
-    result: Model | { begin: string }[];
+    model: Model;
     logStatus: "idle" | "connecting" | "connected" | "error";
+    fetchMediaUrl: () => void;
+    clearVideoUrl: () => void;
 };
 
 /* ---------------- Helpers ---------------- */
 
-function makeRunner(result: Model | { begin: string }[]): TestRunnerMock {
+function makeRunner(model: Model): TestRunnerMock {
     return {
-        result,
+        model,
         logStatus: "idle",
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
     };
 }
 

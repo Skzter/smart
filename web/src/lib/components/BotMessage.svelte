@@ -17,7 +17,9 @@
 
     // treat message as code when it looks like code or contains Playwright imports/markers
     let message = $derived(msg.Message);
-    let runner = $derived(user.id ? new Runner(chat.id, user.id) : null);
+    let runner = $derived(
+        user.id ? new Runner(chat.id, user.id, chat.lastTest ?? "") : null,
+    );
 </script>
 
 <div class="flex justify-start gap-2 items-start">
@@ -35,7 +37,7 @@
                 testRunner={runner}
             />
         {/if}
-    
+
         {#if isCode(msg)}
             <MonacoEditor
                 bind:value={message}
@@ -47,5 +49,5 @@
                 {message}
             </div>
         {/if}
-    </div>    
+    </div>
 </div>

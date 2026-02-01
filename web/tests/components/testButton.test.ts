@@ -33,14 +33,37 @@ vi.mock("monaco-editor", () => ({
 }));
 
 import TestButtons from "../../src/lib/components/TestButtons.svelte";
-import { Runner } from "../../src/lib/runner.svelte";
+import type { Runner } from "../../src/lib/runner.svelte";
+
+// Create a mock Runner since the real one uses $effect which can only run in component context
+function createMockRunner(overrides: Partial<Runner> = {}): Runner {
+    return {
+        isRunning: () => false,
+        getCurTest: () => "",
+        run: vi.fn(),
+        setTest: vi.fn(),
+        storeTest: vi.fn(),
+        getStorageState: () => "idle" as const,
+        logStatus: "idle" as const,
+        logError: null,
+        result: [],
+        videoUrl: null,
+        model: {
+            summary: { status: "idle" as const },
+            steps: [],
+        },
+        fetchMediaUrl: vi.fn(),
+        clearVideoUrl: vi.fn(),
+        ...overrides,
+    } as unknown as Runner;
+}
 
 describe("TestButtons", () => {
     let testRunner: Runner;
     let message: string;
 
     beforeEach(() => {
-        testRunner = new Runner();
+        testRunner = createMockRunner();
         message = "test message";
         mockWriteText.mockClear();
     });
@@ -724,7 +747,7 @@ describe("TestButtons", () => {
 
         expect(c1.querySelector(".flex.justify-end")).toBeInTheDocument();
 
-        const newTestRunner = new Runner();
+        const newTestRunner = createMockRunner();
         const { container: c2 } = render(TestButtons, {
             props: {
                 message,

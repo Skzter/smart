@@ -2,11 +2,16 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/lib/assert"
 )
+
+func wantsJSON(c *gin.Context) bool {
+	return strings.Contains(c.GetHeader("Accept"), "application/json")
+}
 
 // HandleGetScreenshot handles requests for test screenshots.
 // GET /api/v1/test/:testId/screenshot
@@ -45,6 +50,10 @@ func (a *AutotesterController) HandleGetScreenshot(c *gin.Context) {
 		return
 	}
 
+	if wantsJSON(c) {
+		c.JSON(http.StatusOK, gin.H{"url": screenshotUrl})
+		return
+	}
 	c.Redirect(http.StatusTemporaryRedirect, screenshotUrl)
 }
 
@@ -85,6 +94,10 @@ func (a *AutotesterController) HandleGetVideo(c *gin.Context) {
 		return
 	}
 
+	if wantsJSON(c) {
+		c.JSON(http.StatusOK, gin.H{"url": videoUrl})
+		return
+	}
 	c.Redirect(http.StatusTemporaryRedirect, videoUrl)
 }
 

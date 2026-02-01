@@ -72,7 +72,8 @@
             page++;
             error = "";
         } catch (err) {
-            const msg = err instanceof Error ? err.message : "Unbekannter Fehler";
+            const msg =
+                err instanceof Error ? err.message : "Unbekannter Fehler";
             error = msg;
 
             if (lastToast !== msg) {

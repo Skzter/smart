@@ -221,6 +221,10 @@ func TestHandleRunContainer(t *testing.T) {
 			mockMetricsServ.On("IncRequestError", mock.Anything).Return().Maybe()
 			mockMetricsServ.On("RecordRequestDuration", mock.Anything).Return().Maybe()
 
+			// lastTest update: LoadChat and SaveChat may be called on success
+			mockChatStorageServ.On("LoadChat", mock.Anything, mock.Anything).Return(&entity.Chat{Id: "chat789", Author: "user123"}, nil).Maybe()
+			mockChatManager.On("SaveChat", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+
 			mockMediaServ := mocks.NewMockMediaStorageService(t)
 
 			if test.MockSetup != nil {

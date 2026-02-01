@@ -98,3 +98,9 @@ export type ApiChatsResponse = {
     pageSize: number;
     hasMore: boolean;
 };
+
+export type ApiMediaResponse = {
+    testID: string;
+    hasScreenshot: boolean;
+    hasVideo: boolean;
+};

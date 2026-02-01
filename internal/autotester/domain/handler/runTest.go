@@ -12,9 +12,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/autotester/domain/entity"
+	sharedErrors "gitlab.dit.htwk-leipzig.de/projekt2025-w-llm-unterstuetztes-autotesting-fuer-moderne-web-frontends/smart/internal/shared/domain/errors"
 )
 
 // HandleRunContainer validates the request, resolves the test file, and starts a Docker-based test run. Uploads any debugging media artifacts outside of request context.
+// nolint:funlen
 func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 	start := time.Now()
 	ctx := c.Request.Context()
@@ -62,6 +64,16 @@ func (a *AutotesterController) HandleRunContainer(c *gin.Context) {
 		a.logger.Error(err.Error())
 		c.JSON(http.StatusInternalServerError, entity.ErrorMessage{Error: err.Error()})
 		return
+	}
+
+	// Update chat's lastTest so GET /chats/:chatId returns it for the frontend
+	if chat, loadErr := a.chatStorageService.LoadChat(ctx, params.ChatID); loadErr == nil {
+		chat.LastTest = params.TestId
+		if saveErr := a.chatManager.SaveChat(ctx, chat, params.UserID); saveErr != nil {
+			a.logger.Debug("failed to update chat lastTest", "err", saveErr)
+		}
+	} else if !errors.Is(loadErr, sharedErrors.ErrChatNotFound) {
+		a.logger.Debug("failed to load chat for lastTest update", "err", loadErr)
 	}
 
 	go func() {

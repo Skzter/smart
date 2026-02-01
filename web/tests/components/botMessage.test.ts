@@ -49,7 +49,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("renders bot icon and message container", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "error", Message: "Test message" }
+                msg: { t: "error", Message: "Test message" },
             },
         });
 
@@ -65,7 +65,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("renders regular text message correctly", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "error", Message: "This is a regular message" }
+                msg: { t: "error", Message: "This is a regular message" },
             },
         });
 
@@ -77,7 +77,10 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("detects and renders Playwright code as Code component", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "generation", Message: "import { test } from '@playwright/test';" }
+                msg: {
+                    t: "generation",
+                    Message: "import { test } from '@playwright/test';",
+                },
             },
         });
 
@@ -90,7 +93,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("does not render Code component for regular text", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "validation", Message: "Just a regular message" }
+                msg: { t: "validation", Message: "Just a regular message" },
             },
         });
 
@@ -102,7 +105,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("renders TestButtons component", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "error", Message: "Test" }
+                msg: { t: "error", Message: "Test" },
             },
         });
 
@@ -113,7 +116,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("handles empty message in text mode", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "error", Message: "" }
+                msg: { t: "error", Message: "" },
             },
         });
 
@@ -125,7 +128,7 @@ describe.skip("BotMessage TODO: fix this test", () => {
     it("preserves whitespace in text messages", () => {
         const { container } = render(BotMessage, {
             props: {
-                msg: { t: "error", Message: "Line 1\n  Line 2\n    Line 3" }
+                msg: { t: "error", Message: "Line 1\n  Line 2\n    Line 3" },
             },
         });
 
