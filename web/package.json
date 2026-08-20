@@ -15,7 +15,7 @@
     "test:e2e:ui": "playwright test --headed"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^9.39.5",
     "@internationalized/date": "^3.10.0",
     "@lucide/svelte": "^0.544.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
